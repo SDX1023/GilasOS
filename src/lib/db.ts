@@ -28,7 +28,7 @@ export async function createCourse(course: { id: string; title: string; descript
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("courses")
-    .upsert(course)
+    .upsert({ id: course.id, title: course.title, description: course.description || "" })
     .select()
     .single();
 

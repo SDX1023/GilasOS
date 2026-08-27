@@ -99,12 +99,17 @@ export function AdminDashboard() {
 
   const handleAddCourse = async () => {
     if (!courseName.trim()) return;
-    const id = courseName.toLowerCase().replace(/\s+/g, "-");
-    await createCourse({ id, title: courseName, description: courseDesc });
-    setCourseName("");
-    setCourseDesc("");
-    setShowCourseForm(false);
-    refresh();
+    try {
+      const id = courseName.toLowerCase().replace(/\s+/g, "-");
+      await createCourse({ id, title: courseName, description: courseDesc || "" });
+      setCourseName("");
+      setCourseDesc("");
+      setShowCourseForm(false);
+      refresh();
+    } catch (error) {
+      console.error("Error creating course:", error);
+      alert("Failed to create course: " + (error as Error).message);
+    }
   };
 
   const handleAddModule = async (courseId: string) => {
