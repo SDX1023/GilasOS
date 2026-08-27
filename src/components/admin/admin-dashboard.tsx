@@ -171,7 +171,7 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage your courses, notes, standardized content, and flash cards</p>
+          <p className="text-muted-foreground mt-1">Manage your courses, notes, modules, and flash cards</p>
         </div>
         <button
           onClick={() => setShowCourseForm(true)}
@@ -350,7 +350,7 @@ export function AdminDashboard() {
 
                             {/* Standardized Content Section */}
                             <div className="flex items-center justify-between pt-2 border-t">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase">Standardized Content</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase">Module Content</p>
                               <button
                                 onClick={() => setShowContentForm(showContentForm === mod.id ? null : mod.id)}
                                 className="flex items-center gap-1 text-xs text-primary hover:underline"
