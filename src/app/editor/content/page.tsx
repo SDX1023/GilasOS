@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NoteEditor } from "@/components/admin/note-editor";
 import { getModuleContent, createModuleContent, updateModuleContent } from "@/lib/db";
-import { isAdmin } from "@/app/admin/page";
+import { isAdmin } from "@/lib/admin";
 
 function ContentEditorContent() {
   const router = useRouter();

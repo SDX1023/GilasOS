@@ -4,7 +4,7 @@ import { use, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useModuleContents } from "@/hooks/use-db";
 import { MarkdownRenderer } from "@/components/notes/markdown-renderer";
-import { isAdmin } from "@/app/admin/page";
+import { isAdmin } from "@/lib/admin";
 import { ChevronRight, Download, Pencil } from "lucide-react";
 import { exportToPdf } from "@/lib/export-pdf";
 

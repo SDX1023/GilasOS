@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useModuleDetail } from "@/hooks/use-db";
 import { loadCustomContent } from "@/lib/custom-content";
-import { isAdmin } from "@/app/admin/page";
+import { isAdmin } from "@/lib/admin";
 import { ChevronRight, FileText, Brain, BookOpen, Plus, Pencil } from "lucide-react";
 
 export default function ModulePage({ params }: { params: Promise<{ course: string; module: string }> }) {
