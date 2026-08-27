@@ -155,13 +155,13 @@ export function deleteNote(courseId: string, moduleId: string, noteId: string) {
 }
 
 // Reviewer operations
-export function addReviewer(courseId: string, moduleId: string, reviewer: Omit<CustomReviewer, "id">) {
+export function addReviewer(courseId: string, moduleId: string, reviewer: Omit<CustomReviewer, "id" | "courseId" | "moduleId">) {
   const store = loadCustomContent();
   const course = store.courses.find((c) => c.id === courseId);
   if (course) {
     const mod = course.modules.find((m) => m.id === moduleId);
     if (mod) {
-      const newReviewer: CustomReviewer = { ...reviewer, id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` };
+      const newReviewer: CustomReviewer = { ...reviewer, courseId, moduleId, id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` };
       mod.reviewers.push(newReviewer);
       saveCustomContent(store);
     }
