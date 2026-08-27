@@ -171,7 +171,7 @@ export function AdminDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage your courses, notes, and flash cards</p>
+          <p className="text-muted-foreground mt-1">Manage your courses, notes, standardized content, and flash cards</p>
         </div>
         <button
           onClick={() => setShowCourseForm(true)}
