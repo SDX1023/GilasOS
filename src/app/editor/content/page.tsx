@@ -12,13 +12,15 @@ function ContentEditorContent() {
   const courseId = searchParams.get("course") || "";
   const moduleId = searchParams.get("module") || "";
   const contentId = searchParams.get("id") || "";
-  const admin = isAdmin();
+  const [admin, setAdmin] = useState(false);
 
   const [existingContent, setExistingContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!admin) {
+    const adminStatus = isAdmin();
+    setAdmin(adminStatus);
+    if (!adminStatus) {
       setLoading(false);
       return;
     }
@@ -30,7 +32,7 @@ function ContentEditorContent() {
     } else {
       setLoading(false);
     }
-  }, [contentId, courseId, moduleId, admin]);
+  }, [contentId, courseId, moduleId]);
 
   const handleSave = async (data: { title: string; slug: string; content: string }) => {
     try {

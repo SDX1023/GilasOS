@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useModuleDetail } from "@/hooks/use-db";
 import { loadCustomContent } from "@/lib/custom-content";
@@ -10,7 +10,11 @@ import { ChevronRight, FileText, Brain, BookOpen, Plus, Pencil } from "lucide-re
 export default function ModulePage({ params }: { params: Promise<{ course: string; module: string }> }) {
   const { course: courseSlug, module: moduleSlug } = use(params);
   const { course, module: mod, notes, moduleContents, loading } = useModuleDetail(courseSlug, moduleSlug);
-  const admin = isAdmin();
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    setAdmin(isAdmin());
+  }, []);
 
   const customContent = loadCustomContent();
   const customCourse = customContent.courses.find((c) => c.id === courseSlug);

@@ -1,13 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { use, useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useModuleContents } from "@/hooks/use-db";
 import { MarkdownRenderer } from "@/components/notes/markdown-renderer";
 import { isAdmin } from "@/app/admin/page";
 import { ChevronRight, Download, Pencil } from "lucide-react";
 import { exportToPdf } from "@/lib/export-pdf";
-import { useRef } from "react";
 
 export default function ContentViewerPage({
   params,
@@ -17,7 +16,11 @@ export default function ContentViewerPage({
   const { course: courseSlug, module: moduleSlug, contentId } = use(params);
   const { contents, loading } = useModuleContents(courseSlug, moduleSlug);
   const contentRef = useRef<HTMLDivElement>(null);
-  const admin = isAdmin();
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    setAdmin(isAdmin());
+  }, []);
 
   const content = contents.find((c) => c.id === contentId);
 
