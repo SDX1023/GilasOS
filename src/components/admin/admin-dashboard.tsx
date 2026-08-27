@@ -71,16 +71,21 @@ export function AdminDashboard() {
       const reviewersMap: { [moduleId: string]: Reviewer[] } = {};
 
       for (const course of coursesData) {
-        const modulesData = await getModules(course.id);
-        modulesMap[course.id] = modulesData;
+        try {
+          const modulesData = await getModules(course.id);
+          modulesMap[course.id] = modulesData;
 
-        for (const mod of modulesData) {
-          const notesData = await getNotes(course.id, mod.id);
-          notesMap[mod.id] = notesData;
-
-          const reviewersData = await getReviewers(course.id, mod.id);
-          reviewersMap[mod.id] = reviewersData;
-        }
+          for (const mod of modulesData) {
+            try {
+              const [notesData, reviewersData] = await Promise.all([
+                getNotes(course.id, mod.id).catch(() => []),
+                getReviewers(course.id, mod.id).catch(() => []),
+              ]);
+              notesMap[mod.id] = notesData;
+              reviewersMap[mod.id] = reviewersData;
+            } catch {}
+          }
+        } catch {}
       }
 
       setModulesByCourse(modulesMap);
@@ -101,11 +106,13 @@ export function AdminDashboard() {
     if (!courseName.trim()) return;
     try {
       const id = courseName.toLowerCase().replace(/\s+/g, "-");
-      await createCourse({ id, title: courseName, description: courseDesc || "" });
+      console.log("Creating course:", { id, title: courseName, description: courseDesc || "" });
+      const result = await createCourse({ id, title: courseName, description: courseDesc || "" });
+      console.log("Course created:", result);
       setCourseName("");
       setCourseDesc("");
       setShowCourseForm(false);
-      refresh();
+      await refresh();
     } catch (error) {
       console.error("Error creating course:", error);
       alert("Failed to create course: " + (error as Error).message);
