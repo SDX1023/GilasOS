@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useReviewer } from "@/hooks/use-db";
+import { loadCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
 import { ChevronRight, Download } from "lucide-react";
 import jsPDF from "jspdf";
@@ -14,7 +14,6 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
   const contentW = pageW - margin * 2;
   let y = margin;
 
-  // Title
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(18);
   pdf.text(title, margin, y);
@@ -31,13 +30,11 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
   y += 8;
 
   cards.forEach((card, i) => {
-    // Check if we need a new page
     if (y > 270) {
       pdf.addPage();
       y = margin;
     }
 
-    // Question
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(11);
     pdf.setTextColor(40);
@@ -45,7 +42,6 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
     pdf.text(qLines, margin, y);
     y += qLines.length * 5 + 3;
 
-    // Answer
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
     pdf.setTextColor(80);
@@ -53,7 +49,6 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
     pdf.text(aLines, margin, y);
     y += aLines.length * 5 + 2;
 
-    // Hint
     if (card.hint) {
       pdf.setFontSize(9);
       pdf.setTextColor(140);
@@ -62,7 +57,6 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
       y += hLines.length * 4 + 2;
     }
 
-    // Separator
     y += 3;
     pdf.setDrawColor(220);
     pdf.line(margin, y, pageW - margin, y);
@@ -78,15 +72,11 @@ export default function ReviewerStudyPage({
   params: Promise<{ course: string; module: string; reviewer: string }>;
 }) {
   const { course: courseSlug, module: moduleSlug, reviewer: reviewerSlug } = use(params);
-  const { reviewer, loading } = useReviewer(reviewerSlug);
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  const customContent = loadCustomContent();
+  const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+  const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+  const reviewer = customModule?.reviewers.find((r) => r.id === reviewerSlug || r.id.endsWith(reviewerSlug));
 
   if (!reviewer) {
     return (
@@ -95,6 +85,8 @@ export default function ReviewerStudyPage({
       </div>
     );
   }
+
+  const cards = reviewer.cards || [];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -109,10 +101,10 @@ export default function ReviewerStudyPage({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">{reviewer.title}</h1>
-            <p className="text-muted-foreground mt-2">{reviewer.flashcards?.length || 0} cards</p>
+            <p className="text-muted-foreground mt-2">{cards.length} cards</p>
           </div>
           <button
-            onClick={() => exportFlashcardsToPdf(reviewer.title, reviewer.flashcards || [])}
+            onClick={() => exportFlashcardsToPdf(reviewer.title, cards)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print"
           >
             <Download className="h-4 w-4" /> Save PDF
@@ -121,8 +113,8 @@ export default function ReviewerStudyPage({
       </div>
 
       <div className="space-y-4">
-        {reviewer.flashcards?.map((card: any, i: number) => (
-          <div key={card.id || i} className="p-4 rounded-lg border bg-card">
+        {cards.map((card: any, i: number) => (
+          <div key={i} className="p-4 rounded-lg border bg-card">
             <p className="font-medium">Q: {card.front}</p>
             <p className="mt-2 text-muted-foreground">A: {card.back}</p>
             {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
@@ -131,7 +123,7 @@ export default function ReviewerStudyPage({
       </div>
 
       <div className="mt-8 no-print">
-        <FlashcardStudy cards={reviewer.flashcards || []} />
+        <FlashcardStudy cards={cards} />
       </div>
     </div>
   );

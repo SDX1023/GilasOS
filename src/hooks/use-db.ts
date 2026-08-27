@@ -6,9 +6,7 @@ import {
   getModules as dbGetModules,
   getNotes as dbGetNotes,
   getNote as dbGetNote,
-  getReviewers as dbGetReviewers,
-  getAllReviewers as dbGetAllReviewers,
-  getReviewerWithCards as dbGetReviewerWithCards,
+  getModuleContents as dbGetModuleContents,
   getAllNotes as dbGetAllNotes,
 } from "@/lib/db";
 
@@ -69,7 +67,7 @@ export function useModuleDetail(courseId: string, moduleId: string) {
   const [course, setCourse] = useState<any>(null);
   const [module, setModule] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
-  const [reviewers, setReviewers] = useState<any[]>([]);
+  const [moduleContents, setModuleContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,20 +76,20 @@ export function useModuleDetail(courseId: string, moduleId: string) {
         dbGetCourses().then((courses) => courses.find((c) => c.id === courseId)),
         dbGetModules(courseId).then((mods) => mods.find((m) => m.id === moduleId)),
         dbGetNotes(courseId, moduleId),
-        dbGetReviewers(courseId, moduleId),
+        dbGetModuleContents(courseId, moduleId),
       ])
-        .then(([courseData, modData, notesData, reviewersData]) => {
+        .then(([courseData, modData, notesData, contentsData]) => {
           setCourse(courseData);
           setModule(modData);
           setNotes(notesData);
-          setReviewers(reviewersData);
+          setModuleContents(contentsData);
         })
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   }, [courseId, moduleId]);
 
-  return { course, module, notes, reviewers, loading };
+  return { course, module, notes, moduleContents, loading };
 }
 
 export function useNote(courseId: string, moduleId: string, slug: string) {
@@ -110,34 +108,20 @@ export function useNote(courseId: string, moduleId: string, slug: string) {
   return { note, loading };
 }
 
-export function useAllReviewersWithCards() {
-  const [reviewers, setReviewers] = useState<any[]>([]);
+export function useModuleContents(courseId: string, moduleId: string) {
+  const [contents, setContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dbGetAllReviewers()
-      .then(setReviewers)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { reviewers, loading };
-}
-
-export function useReviewer(reviewerId: string) {
-  const [reviewer, setReviewer] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (reviewerId) {
-      dbGetReviewerWithCards(reviewerId)
-        .then(setReviewer)
+    if (courseId && moduleId) {
+      dbGetModuleContents(courseId, moduleId)
+        .then(setContents)
         .catch(console.error)
         .finally(() => setLoading(false));
     }
-  }, [reviewerId]);
+  }, [courseId, moduleId]);
 
-  return { reviewer, loading };
+  return { contents, loading };
 }
 
 export function useAllNotesLinks() {

@@ -92,12 +92,12 @@ export function NoteEditor({
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{courseId}</span>
-            <span>/</span>
-            <span>{moduleId}</span>
+            <span className="hidden sm:inline">{courseId}</span>
+            <span className="hidden sm:inline">/</span>
+            <span className="hidden sm:inline">{moduleId}</span>
             {slug && (
               <>
-                <span>/</span>
+                <span className="hidden sm:inline">/</span>
                 <span>{slug}</span>
               </>
             )}
@@ -136,13 +136,13 @@ export function NoteEditor({
       </div>
 
       {/* Title */}
-      <div className="px-8 pt-8 pb-2">
+      <div className="px-4 sm:px-8 pt-4 sm:pt-8 pb-2">
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled"
-          className="w-full text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
+          className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
         />
         <div className="mt-2 flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Slug:</span>
@@ -165,7 +165,7 @@ export function NoteEditor({
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
             <div
-              className="p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
+              className="p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
                 prose-headings:scroll-mt-20
                 prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline
                 prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg

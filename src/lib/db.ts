@@ -184,6 +184,76 @@ export async function deleteNote(id: string) {
   if (error) throw error;
 }
 
+// Module Content operations (standardized content per module)
+export async function getModuleContents(courseId: string, moduleId: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("module_content")
+    .select("*")
+    .eq("course_id", courseId)
+    .eq("module_id", moduleId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getModuleContent(courseId: string, moduleId: string, slug: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("module_content")
+    .select("*")
+    .eq("course_id", courseId)
+    .eq("module_id", moduleId)
+    .eq("id", slug)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function createModuleContent(content: {
+  id: string;
+  course_id: string;
+  module_id: string;
+  title: string;
+  content?: string;
+  sort_order?: number;
+}) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("module_content")
+    .upsert(content)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateModuleContent(id: string, updates: { title?: string; content?: string }) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("module_content")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteModuleContent(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("module_content")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
 // Reviewer operations
 export async function getReviewers(courseId: string, moduleId: string) {
   const supabase = getSupabase();

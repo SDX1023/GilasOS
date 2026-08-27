@@ -166,10 +166,10 @@ export function FlashcardStudy({ cards }: FlashcardProps) {
         <div className="space-y-4">
           <div
             onClick={() => setIsFlipped(!isFlipped)}
-            className="min-h-[300px] p-8 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
+            className="min-h-[200px] sm:min-h-[300px] p-4 sm:p-8 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
           >
             <div>
-              <p className="text-lg font-medium">{isFlipped ? currentCard.back : currentCard.front}</p>
+              <p className="text-base sm:text-lg font-medium">{isFlipped ? currentCard.back : currentCard.front}</p>
               {!isFlipped && currentCard.hint && (
                 <p className="text-sm text-muted-foreground mt-4 italic">Hint: {currentCard.hint}</p>
               )}
@@ -186,31 +186,31 @@ export function FlashcardStudy({ cards }: FlashcardProps) {
               </button>
             </div>
           ) : (
-            <div className="flex justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
               <button
                 onClick={() => handleRate(1)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-sm"
               >
                 <X className="h-4 w-4" />
                 Again
               </button>
               <button
                 onClick={() => handleRate(3)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-sm"
               >
                 <RotateCcw className="h-4 w-4" />
                 Hard
               </button>
               <button
                 onClick={() => handleRate(4)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-sm"
               >
                 <Check className="h-4 w-4" />
                 Good
               </button>
               <button
                 onClick={() => handleRate(5)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 text-sm"
               >
                 <ChevronRight className="h-4 w-4" />
                 Easy

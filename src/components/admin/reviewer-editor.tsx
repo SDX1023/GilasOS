@@ -134,18 +134,18 @@ export function ReviewerEditor({
       </div>
 
       {/* Title */}
-      <div className="px-8 pt-8 pb-4">
+      <div className="px-4 sm:px-8 pt-4 sm:pt-8 pb-4">
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled Reviewer"
-          className="w-full text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
+          className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
         />
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-auto px-8 pb-8">
+      <div className="flex-1 overflow-auto px-4 sm:px-8 pb-8">
         <div className="space-y-3">
           {cards.map((card, index) => (
             <div

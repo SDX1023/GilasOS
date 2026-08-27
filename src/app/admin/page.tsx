@@ -1,20 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, Lock } from "lucide-react";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 
 const ADMIN_PASSWORD = "SDX102310";
+const ADMIN_STORAGE_KEY = "gilasos_admin_auth";
+
+export function isAdmin(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(ADMIN_STORAGE_KEY) === "true";
+}
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setIsAuthenticated(isAdmin());
+  }, []);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
+      localStorage.setItem(ADMIN_STORAGE_KEY, "true");
       setError("");
     } else {
       setError("Invalid password");

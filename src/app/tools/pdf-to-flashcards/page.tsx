@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { FileText, Upload, Loader2, Save } from "lucide-react";
-import { createCourse, createModule, createReviewer, createFlashcard, getModules } from "@/lib/db";
+import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/custom-content";
 
 const PDF_COURSE_ID = "pdf-generated";
 const PDF_MODULE_ID = "pdf-cards";
@@ -14,11 +14,12 @@ export default function PdfToFlashcardsPage() {
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const ensureCourseAndModule = async () => {
-    const modules = await getModules(PDF_COURSE_ID);
-    if (modules.length === 0) {
-      await createCourse({ id: PDF_COURSE_ID, title: "PDF Generated", description: "Flashcards generated from PDFs" });
-      await createModule({ id: PDF_MODULE_ID, course_id: PDF_COURSE_ID, title: "My Decks", description: "Auto-saved from PDF to Flashcards" });
+  const ensureCourseAndModule = () => {
+    const custom = loadCustomContent();
+    const existingCourse = custom.courses.find((c) => c.id === PDF_COURSE_ID);
+    if (!existingCourse) {
+      addCourse({ id: PDF_COURSE_ID, title: "PDF Generated", description: "Flashcards generated from PDFs" });
+      addModule(PDF_COURSE_ID, { id: PDF_MODULE_ID, courseId: PDF_COURSE_ID, title: "My Decks", description: "Auto-saved from PDF to Flashcards" });
     }
   };
 
@@ -61,29 +62,15 @@ export default function PdfToFlashcardsPage() {
     }
   }, [pdfText]);
 
-  const saveDeck = async () => {
+  const saveDeck = () => {
     if (!deckName.trim() || generatedCards.length === 0) return;
     setSaving(true);
     try {
-      await ensureCourseAndModule();
-      const reviewerId = `pdf-${Date.now()}`;
-      await createReviewer({
-        id: reviewerId,
-        course_id: PDF_COURSE_ID,
-        module_id: PDF_MODULE_ID,
+      ensureCourseAndModule();
+      addReviewer(PDF_COURSE_ID, PDF_MODULE_ID, {
         title: deckName,
+        cards: generatedCards,
       });
-      for (let i = 0; i < generatedCards.length; i++) {
-        const card = generatedCards[i];
-        await createFlashcard({
-          id: `${reviewerId}-card-${i}`,
-          reviewer_id: reviewerId,
-          front: card.front,
-          back: card.back,
-          hint: card.hint,
-          sort_order: i,
-        });
-      }
       setDeckName("");
       setGeneratedCards([]);
       setPdfText("");
@@ -97,10 +84,10 @@ export default function PdfToFlashcardsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-2">PDF to Flashcards</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-2">PDF to Flashcards</h1>
       <p className="text-muted-foreground mb-8">Generate flashcards from your study materials using AI</p>
 
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
         <div className="space-y-6">
           <div className="p-6 rounded-xl border bg-card">
             <h2 className="font-semibold mb-4">PDF Content</h2>

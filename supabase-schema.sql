@@ -25,6 +25,7 @@ DROP POLICY IF EXISTS "Admin delete" ON flashcards;
 
 DROP TABLE IF EXISTS flashcards CASCADE;
 DROP TABLE IF EXISTS reviewers CASCADE;
+DROP TABLE IF EXISTS module_content CASCADE;
 DROP TABLE IF EXISTS notes CASCADE;
 DROP TABLE IF EXISTS modules CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
@@ -58,6 +59,16 @@ CREATE TABLE notes (
   UNIQUE(course_id, module_id, slug)
 );
 
+CREATE TABLE module_content (
+  id TEXT PRIMARY KEY,
+  module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+  course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE reviewers (
   id TEXT PRIMARY KEY,
   module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
@@ -80,6 +91,8 @@ CREATE TABLE flashcards (
 CREATE INDEX idx_modules_course ON modules(course_id);
 CREATE INDEX idx_notes_module ON notes(module_id);
 CREATE INDEX idx_notes_course ON notes(course_id);
+CREATE INDEX idx_module_content_module ON module_content(module_id);
+CREATE INDEX idx_module_content_course ON module_content(course_id);
 CREATE INDEX idx_reviewers_module ON reviewers(module_id);
 CREATE INDEX idx_reviewers_course ON reviewers(course_id);
 CREATE INDEX idx_flashcards_reviewer ON flashcards(reviewer_id);
@@ -88,6 +101,7 @@ CREATE INDEX idx_flashcards_reviewer ON flashcards(reviewer_id);
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE module_content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviewers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
 
@@ -95,5 +109,6 @@ ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all on courses" ON courses FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on modules" ON modules FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on notes" ON notes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on module_content" ON module_content FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on reviewers" ON reviewers FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all on flashcards" ON flashcards FOR ALL USING (true) WITH CHECK (true);
