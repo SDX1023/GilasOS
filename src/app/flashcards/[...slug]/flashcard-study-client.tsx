@@ -168,6 +168,19 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     return () => window.removeEventListener("keydown", handler);
   }, [reviewMode, reviewFlipped, reviewComplete]);
 
+  function saveProgressIfNeeded() {
+    const total = knownCount + forgotCount + dontKnowCount;
+    if (total > 0 && user) {
+      saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
+    }
+  }
+
+  function exitReview() {
+    saveProgressIfNeeded();
+    setShowSummary(false);
+    setReviewMode(false);
+  }
+
   if (!mounted) {
     return <div className="container mx-auto px-4 py-8 max-w-2xl"><p className="text-muted-foreground">Loading...</p></div>;
   }
@@ -392,7 +405,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                 className={`px-4 py-2 rounded-lg border text-base ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
-              <button onClick={() => setShowSummary(true)} className="px-4 py-2 rounded-lg border text-base hover:bg-muted">
+              <button onClick={exitReview} className="px-4 py-2 rounded-lg border text-base hover:bg-muted">
                 Exit Review
               </button>
             </div>
@@ -414,7 +427,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <span className="text-red-600">{forgotCount} forgot</span>
                 </div>
                 <p className="text-muted-foreground mb-8">Great job! Keep up the good work.</p>
-                <button onClick={() => setReviewMode(false)} className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium">
+                <button onClick={exitReview} className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium">
                   Back to Deck
                 </button>
               </div>
@@ -464,9 +477,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <div className="text-center"><p className="text-3xl font-bold text-red-600">{forgotCount}</p><p className="text-sm text-muted-foreground">Forgot</p></div>
                 </div>
                 <div className="flex gap-3 justify-center">
-                  <button onClick={() => { localStorage.removeItem(sessionKey); setShowSummary(false); startReview(); }}
+                  <button onClick={() => { saveProgressIfNeeded(); localStorage.removeItem(sessionKey); setShowSummary(false); startReview(); }}
                     className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">Review Again</button>
-                  <button onClick={() => { setShowSummary(false); setReviewMode(false); }}
+                  <button                     onClick={exitReview}
                     className="px-6 py-2 rounded-lg border hover:bg-muted">Back to Deck</button>
                 </div>
               </div>
