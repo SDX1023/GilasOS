@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useRef, useCallback } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
@@ -117,47 +117,19 @@ export default function FlashcardStudyClient({
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadData() {
-      if (user) {
-        try {
-          const cloudData = await Promise.race([
-            loadUserFlashcards(user.id),
-            new Promise<[]>((resolve) => setTimeout(() => resolve([]), 3000)),
-          ]);
-          if (cancelled) return;
-          const match = cloudData.find((d: any) =>
-            d.course_id === courseSlug && d.module_id === moduleSlug &&
-            (d.reviewer_id === reviewerSlug || d.reviewer_id.endsWith(reviewerSlug))
-          );
-          if (match) {
-            setReviewer({ id: match.reviewer_id, title: match.title, cards: match.cards });
-            setCards(match.cards || []);
-            setMounted(true);
-            return;
-          }
-        } catch {}
-      }
-
-      try {
-        const customContent = loadCustomContent();
-        const customCourse = customContent.courses.find((c) => c.id === courseSlug);
-        const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-        const found = customModule?.reviewers.find((r) => {
-          const rSlug = r.id.split("/").slice(2).join("/");
-          return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
-        });
-        if (found) {
-          setReviewer(found);
-          setCards(found.cards || []);
-        }
-      } catch {}
-      if (!cancelled) setMounted(true);
+    const customContent = loadCustomContent();
+    const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+    const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+    const found = customModule?.reviewers.find((r) => {
+      const rSlug = r.id.split("/").slice(2).join("/");
+      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+    });
+    if (found) {
+      setReviewer(found);
+      setCards(found.cards || []);
     }
-    loadData();
-    return () => { cancelled = true; };
-  }, [courseSlug, moduleSlug, reviewerSlug, user]);
+    setMounted(true);
+  }, [courseSlug, moduleSlug, reviewerSlug]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -414,7 +386,11 @@ export default function FlashcardStudyClient({
     }
   }
 
-  const handleKnow = useCallback(() => {
+  const handleKnowRef = useRef(() => {});
+  const handleDontKnowRef = useRef(() => {});
+  const handleForgotRef = useRef(() => {});
+
+  handleKnowRef.current = () => {
     showFlash("know");
     const current = queue[queueIndex];
     updateLevel(current, 1);
@@ -428,9 +404,9 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }, [queue, queueIndex, flashImages]);
+  };
 
-  const handleDontKnow = useCallback(() => {
+  handleDontKnowRef.current = () => {
     showFlash("dontknow");
     const current = queue[queueIndex];
     updateLevel(current, -1);
@@ -444,9 +420,9 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }, [queue, queueIndex, flashImages]);
+  };
 
-  const handleForgot = useCallback(() => {
+  handleForgotRef.current = () => {
     showFlash("forgot");
     const current = queue[queueIndex];
     updateLevel(current, -1);
@@ -460,7 +436,7 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }, [queue, queueIndex, flashImages]);
+  };
 
   useEffect(() => {
     if (!reviewMode || reviewComplete) return;
@@ -472,14 +448,14 @@ export default function FlashcardStudyClient({
           setReviewFlipped(true);
         }
       } else {
-        if (e.key === "1") { e.preventDefault(); handleForgot(); }
-        if (e.key === "2") { e.preventDefault(); handleDontKnow(); }
-        if (e.key === "3") { e.preventDefault(); handleKnow(); }
+        if (e.key === "1") { e.preventDefault(); handleForgotRef.current(); }
+        if (e.key === "2") { e.preventDefault(); handleDontKnowRef.current(); }
+        if (e.key === "3") { e.preventDefault(); handleKnowRef.current(); }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [reviewMode, reviewFlipped, reviewComplete, handleKnow, handleDontKnow, handleForgot]);
+  }, [reviewMode, reviewFlipped, reviewComplete]);
 
   const filteredCards = cards.filter((card) => {
     if (!searchQuery.trim()) return true;
@@ -631,19 +607,19 @@ export default function FlashcardStudyClient({
                   ) : (
                     <>
                       <button
-                        onClick={handleForgot}
+                        onClick={handleForgotRef.current}
                         className="px-6 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-base font-medium"
                       >
                         I Forgot
                       </button>
                       <button
-                        onClick={handleDontKnow}
+                        onClick={handleDontKnowRef.current}
                         className="px-6 py-3 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-base font-medium"
                       >
                         I Don&apos;t Know
                       </button>
                       <button
-                        onClick={handleKnow}
+                        onClick={handleKnowRef.current}
                         className="px-6 py-3 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-base font-medium"
                       >
                         I Know

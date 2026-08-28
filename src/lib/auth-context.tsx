@@ -33,13 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function checkAdmin(userId: string, userEmail: string) {
-    const supabase = getSupabase();
-    const { data } = await supabase
-      .from("admin_emails")
-      .select("email")
-      .eq("email", userEmail)
-      .single();
-    setIsAdmin(!!data);
+    try {
+      const supabase = getSupabase();
+      const { data } = await supabase
+        .from("admin_emails")
+        .select("email")
+        .eq("email", userEmail)
+        .maybeSingle();
+      setIsAdmin(!!data);
+    } catch {}
   }
 
   useEffect(() => {
@@ -70,13 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function fetchUsername(userId: string) {
-    const supabase = getSupabase();
-    const { data } = await supabase
-      .from("user_profiles")
-      .select("username")
-      .eq("user_id", userId)
-      .single();
-    if (data) setUsername(data.username);
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("username")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data) setUsername(data.username);
+    } catch {}
   }
 
   async function signUp(email: string, password: string, newUsername: string) {
