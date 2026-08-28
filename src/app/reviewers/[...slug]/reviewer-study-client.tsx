@@ -1,10 +1,10 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { loadCustomContent } from "@/lib/custom-content";
+import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
-import { ChevronRight, Download } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X } from "lucide-react";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -85,6 +85,12 @@ export default function ReviewerStudyClient({
     return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
   });
 
+  const [cards, setCards] = useState(reviewer?.cards || []);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editFront, setEditFront] = useState("");
+  const [editBack, setEditBack] = useState("");
+  const [editHint, setEditHint] = useState("");
+
   if (!reviewer) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -93,7 +99,37 @@ export default function ReviewerStudyClient({
     );
   }
 
-  const cards = reviewer.cards || [];
+  const startEdit = (i: number) => {
+    setEditingIndex(i);
+    setEditFront(cards[i].front);
+    setEditBack(cards[i].back);
+    setEditHint(cards[i].hint || "");
+  };
+
+  const saveEdit = () => {
+    if (editingIndex === null) return;
+    const updated = [...cards];
+    updated[editingIndex] = { front: editFront, back: editBack, hint: editHint || undefined };
+    setCards(updated);
+
+    const store = loadCustomContent();
+    const c = store.courses.find((c) => c.id === courseSlug);
+    const m = c?.modules.find((m) => m.id === moduleSlug);
+    const r = m?.reviewers.find((r) => {
+      const rSlug = r.id.split("/").slice(2).join("/");
+      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+    });
+    if (r) {
+      r.cards = updated;
+      saveCustomContent(store);
+    }
+
+    setEditingIndex(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -120,9 +156,66 @@ export default function ReviewerStudyClient({
       <div className="space-y-4">
         {cards.map((card: any, i: number) => (
           <div key={i} className="p-4 rounded-lg border bg-card">
-            <p className="font-medium">Q: {card.front}</p>
-            <p className="mt-2 text-muted-foreground">A: {card.back}</p>
-            {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
+            {editingIndex === i ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Question</label>
+                  <textarea
+                    value={editFront}
+                    onChange={(e) => setEditFront(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Answer</label>
+                  <textarea
+                    value={editBack}
+                    onChange={(e) => setEditBack(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
+                  <input
+                    value={editHint}
+                    onChange={(e) => setEditHint(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveEdit}
+                    className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"
+                  >
+                    <Check className="h-3 w-3" /> Save
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"
+                  >
+                    <X className="h-3 w-3" /> Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Q: {card.front}</p>
+                    <p className="mt-2 text-muted-foreground">A: {card.back}</p>
+                    {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
+                  </div>
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="ml-2 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground no-print shrink-0"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
