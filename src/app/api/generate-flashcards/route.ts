@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
 const CHUNK_SIZE = 20000;
 const MAX_CONCURRENT = 1;
 
@@ -31,45 +34,49 @@ function splitIntoChunks(text: string): string[] {
   return chunks;
 }
 
-async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 5): Promise<string> {
+async function callGroq(apiKey: string, prompt: string, chunk: string, retries = 3): Promise<string> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
+      await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
     }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${prompt}\n\n${chunk}` }] }],
-          generationConfig: { temperature: 0.7 },
-        }),
-        signal: AbortSignal.timeout(60000),
-      }
-    );
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: prompt },
+          { role: "user", content: chunk },
+        ],
+        temperature: 0.7,
+      }),
+      signal: AbortSignal.timeout(90000),
+    });
 
     if (res.status === 429 && attempt < retries) continue;
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      let errMsg = `Gemini API error (${res.status})`;
+      let errMsg = `Groq API error (${res.status})`;
       try { errMsg = JSON.parse(errText).error?.message || errMsg; } catch {}
       throw new Error(errMsg);
     }
 
     const data = await res.json().catch(() => null);
-    if (!data) throw new Error("Empty response from Gemini");
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!data) throw new Error("Empty response from Groq");
+    return data.choices?.[0]?.message?.content ?? "";
   }
   throw new Error("Rate limited — try again later");
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
   }
 
   const { text } = await req.json();
@@ -89,7 +96,7 @@ Make questions clear and concise. Answers should be informative but brief.
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
   async function processChunk(chunk: string): Promise<{ front: string; back: string; hint?: string }[]> {
-    const content = await callGemini(apiKey!, systemPrompt, chunk);
+    const content = await callGroq(apiKey!, systemPrompt, chunk);
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       try {
