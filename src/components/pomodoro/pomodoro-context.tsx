@@ -228,3 +228,7 @@ export function usePomodoro() {
   if (!ctx) throw new Error("usePomodoro must be used within PomodoroProvider");
   return ctx;
 }
+
+export function usePomodoroSafe() {
+  return useContext(PomodoroContext);
+}

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
-import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveUserFlashcard, saveStudyStats } from "@/lib/user-data";
+import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards } from "@/lib/user-data";
+import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -89,7 +90,10 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const flashIndex = useRef<Record<string, number>>({});
   const [cardLevels, setCardLevels] = useState<Record<number, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [shuffled, setShuffled] = useState(false);
+  const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const pomodoro = usePomodoroSafe();
 
   const sessionKey = `flash-session-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
   const levelsKey = `flash-levels-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
@@ -157,6 +161,15 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       setMounted(true);
     })();
   }, [courseSlug, moduleSlug, reviewerSlug]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadBookmarkedCards(user.id).then((cards) => {
+      const set = new Set<string>();
+      cards.forEach((c) => set.add(`${c.deck_id}:::${c.card_front}`));
+      setBookmarked(set);
+    }).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -265,6 +278,20 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     setCardLevels((prev) => ({ ...prev, [idx]: Math.max(0, Math.min(3, (prev[idx] || 0) + delta)) }));
   }
 
+  async function handleToggleBookmark(card: any) {
+    if (!user) return;
+    const deckId = reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+    const key = `${deckId}:::${card.front}`;
+    const wasBookmarked = bookmarked.has(key);
+    setBookmarked((prev) => {
+      const next = new Set(prev);
+      if (wasBookmarked) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    await toggleBookmark(user.id, deckId, reviewer?.title || "", card.front, card.back, card.hint || "");
+  }
+
   function pickRandom(type: string): string | null {
     const pool = flashImages[type] || [];
     if (!pool.length) return null;
@@ -291,7 +318,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
   function startReview() {
     const stored = localStorage.getItem(sessionKey);
-    if (stored) {
+    if (stored && !shuffled) {
       try {
         const data = JSON.parse(stored);
         if (data.date === new Date().toDateString() && data.queue?.length > 0) {
@@ -303,7 +330,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         }
       } catch {}
     }
-    setQueue(buildSpacedQueue(cards)); setQueueIndex(0); setKnownCount(0); setForgotCount(0);
+    const queueCards = shuffled ? shuffleArray(cards) : buildSpacedQueue(cards);
+    setQueue(queueCards); setQueueIndex(0); setKnownCount(0); setForgotCount(0);
     setDontKnowCount(0); setShowSummary(false); setReviewFlipped(false); setSwapped(false);
     setReviewComplete(false); setReviewMode(true);
   }
@@ -437,6 +465,10 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             <p className="text-muted-foreground mt-2">{cards.length} cards</p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setShuffled(!shuffled)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm ${shuffled ? "bg-primary/10 text-primary border-primary/30" : "hover:bg-muted"}`}>
+              <Shuffle className="h-4 w-4" /> {shuffled ? "Shuffled" : "Shuffle"}
+            </button>
             <button onClick={startReview} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm">
               <Play className="h-4 w-4" /> Review
             </button>
@@ -468,13 +500,26 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                 <span className="text-red-600">{forgotCount}</span>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 flex-wrap justify-end">
+              {pomodoro && (
+                <button onClick={() => { if (!pomodoro.isRunning) pomodoro.start(); }}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm ${pomodoro.isRunning ? "bg-green-500/10 text-green-600 border-green-500/30" : "hover:bg-muted"}`}>
+                  <Timer className="h-4 w-4" />
+                  {pomodoro.isRunning ? pomodoro.formatTime(pomodoro.timeLeft) : "Start Timer"}
+                </button>
+              )}
+              {!reviewComplete && queue[queueIndex] && (
+                <button onClick={() => handleToggleBookmark(queue[queueIndex])}
+                  className={`p-2 rounded-lg border text-sm ${bookmarked.has(`${reviewer?.id || ""}:::${queue[queueIndex]?.front}`) ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" : "hover:bg-muted"}`}>
+                  <Bookmark className="h-4 w-4" />
+                </button>
+              )}
               <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
-                className={`px-4 py-2 rounded-lg border text-base ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
+                className={`px-3 py-2 rounded-lg border text-sm ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
-              <button onClick={exitReview} className="px-4 py-2 rounded-lg border text-base hover:bg-muted">
-                Exit Review
+              <button onClick={exitReview} className="px-3 py-2 rounded-lg border text-sm hover:bg-muted">
+                Exit
               </button>
             </div>
           </div>
@@ -598,6 +643,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               ) : (
                 <div className="relative pr-16">
                   <div className="absolute top-0 right-0 flex gap-1 no-print">
+                    {user && (
+                      <button onClick={() => handleToggleBookmark(card)}
+                        className={`p-1.5 rounded-lg ${bookmarked.has(`${reviewer?.id || ""}:::${card.front}`) ? "text-yellow-500" : "hover:bg-muted text-muted-foreground hover:text-yellow-500"}`}>
+                        <Bookmark className="h-4 w-4" fill={bookmarked.has(`${reviewer?.id || ""}:::${card.front}`) ? "currentColor" : "none"} />
+                      </button>
+                    )}
                     <button onClick={() => { setEditingIndex(realIndex); setEditFront(card.front); setEditBack(card.back); setEditHint(card.hint || ""); }}
                       className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => deleteCard(realIndex)}
