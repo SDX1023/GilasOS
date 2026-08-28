@@ -39,7 +39,7 @@ export default function ReviewersPage() {
                   {courseReviewers.map(({ courseId: cid, moduleId, reviewer }) => (
                     <Link
                       key={reviewer.id}
-                      href={`/reviewers/${cid}/${moduleId}/${reviewer.id}`}
+                      href={`/reviewers/${reviewer.id}`}
                       className="p-4 rounded-lg border bg-card hover:shadow-lg transition-all group"
                     >
                       <h3 className="font-medium group-hover:text-primary transition-colors">
