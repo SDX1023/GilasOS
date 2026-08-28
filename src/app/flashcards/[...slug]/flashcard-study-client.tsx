@@ -107,6 +107,10 @@ export default function FlashcardStudyClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
 
+  const handleKnowRef = useRef(() => {});
+  const handleDontKnowRef = useRef(() => {});
+  const handleForgotRef = useRef(() => {});
+
   const sessionKey = `flash-session-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
   const levelsKey = `flash-levels-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
 
@@ -383,10 +387,6 @@ export default function FlashcardStudyClient() {
       setTimeout(() => setFlashImage(null), 2800);
     }
   }
-
-  const handleKnowRef = useRef(() => {});
-  const handleDontKnowRef = useRef(() => {});
-  const handleForgotRef = useRef(() => {});
 
   handleKnowRef.current = () => {
     showFlash("know");
