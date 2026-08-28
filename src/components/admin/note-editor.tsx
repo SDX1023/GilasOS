@@ -84,7 +84,7 @@ export function NoteEditor({
   }, [handleSave]);
 
   const previewClassName = [
-    mode === "split" ? "pt-10" : "",
+    mode === "split" ? "pt-12" : "",
     "p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative",
     "prose-headings:scroll-mt-20",
     "prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline",
