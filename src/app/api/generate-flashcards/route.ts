@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const CHUNK_SIZE = 30000;
-const MAX_CONCURRENT = 3;
+const MAX_CONCURRENT = 1;
 
 function splitIntoChunks(text: string): string[] {
   const chunks: string[] = [];
@@ -31,10 +31,10 @@ function splitIntoChunks(text: string): string[] {
   return chunks;
 }
 
-async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 3): Promise<string> {
+async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 5): Promise<string> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, attempt * 3000));
+      await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
     }
 
     const res = await fetch(
