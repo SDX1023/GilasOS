@@ -84,7 +84,6 @@ export function NoteEditor({
   }, [handleSave]);
 
   const previewClassName = [
-    mode === "split" ? "pt-12" : "",
     "p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative",
     "prose-headings:scroll-mt-20",
     "prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline",
@@ -149,33 +148,25 @@ export function NoteEditor({
         </div>
       </div>
 
-      <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2 border-b">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Untitled"
-          className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
-        />
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Slug:</span>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="note-slug"
-            className="text-sm bg-transparent outline-none text-muted-foreground w-64"
-          />
-        </div>
-      </div>
-
       <div className="flex-1 flex min-h-0">
-        <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} flex flex-col`}>
+        <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} flex flex-col overflow-auto`}>
+          <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled"
+              className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
+            />
+          </div>
           <InlineEditor content={content} onChange={setContent} />
         </div>
 
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
+            <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2">
+              <h1 className="text-2xl sm:text-4xl font-bold">{title || "Untitled"}</h1>
+            </div>
             <div
               className={previewClassName}
               dangerouslySetInnerHTML={{ __html: preview }}
