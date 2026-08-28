@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Flashcard } from "@/lib/content";
 import { ChevronLeft, ChevronRight, RotateCcw, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FlashcardProps {
-  cards: Flashcard[];
+  cards: { id?: string; front: string; back: string; hint?: string }[];
 }
 
 interface CardProgress {
