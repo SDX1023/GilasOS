@@ -7,43 +7,12 @@ import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/cust
 const PDF_COURSE_ID = "pdf-generated";
 const PDF_MODULE_ID = "pdf-cards";
 
-function splitIntoChunks(text: string, size = 5000): string[] {
-  const chunks: string[] = [];
-  const paragraphs = text.split(/\n\n+/);
-  let current = "";
-  for (const p of paragraphs) {
-    if (p.length > size) {
-      if (current.trim()) chunks.push(current.trim());
-      const sentences = p.split(/(?<=[.!?])\s+/);
-      current = "";
-      for (const s of sentences) {
-        if ((current + " " + s).length > size && current) {
-          chunks.push(current.trim());
-          current = s;
-        } else {
-          current = current ? current + " " + s : s;
-        }
-      }
-    } else if ((current + "\n\n" + p).length > size && current) {
-      chunks.push(current.trim());
-      current = p;
-    } else {
-      current = current ? current + "\n\n" + p : p;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
-
-const GEMINI_KEY_PARTS = ["AQ", "Ab8RN6KoDooW0J5Mo0P52IvizCOQc0dyBmEy87oMlaYX", "-1aHRw"];
-
 export default function PdfToFlashcardsPage() {
   const [pdfText, setPdfText] = useState("");
   const [generatedCards, setGeneratedCards] = useState<{ front: string; back: string; hint?: string }[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [progress, setProgress] = useState("");
 
   const ensureCourseAndModule = () => {
     const custom = loadCustomContent();
@@ -59,24 +28,16 @@ export default function PdfToFlashcardsPage() {
     if (!file || file.type !== "application/pdf") return;
 
     setIsGenerating(true);
-    setProgress("Extracting PDF text...");
     try {
       const formData = new FormData();
       formData.append("file", file);
 
       const res = await fetch("/api/extract-pdf", { method: "POST", body: formData });
-      if (!res.ok) {
-        const text = await res.text();
-        let errMsg = "Failed to extract PDF";
-        try { errMsg = JSON.parse(text).error || errMsg; } catch { errMsg = text || errMsg; }
-        throw new Error(errMsg);
-      }
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to extract PDF");
       setPdfText(data.text);
-      setProgress("");
     } catch (err: any) {
       alert(`Error: ${err.message}`);
-      setProgress("");
     } finally {
       setIsGenerating(false);
     }
@@ -84,96 +45,18 @@ export default function PdfToFlashcardsPage() {
 
   const generateCards = useCallback(async () => {
     if (!pdfText.trim()) return;
-
-    const geminiKey = GEMINI_KEY_PARTS.join("");
-
     setIsGenerating(true);
-    setGeneratedCards([]);
-    setProgress("Starting...");
     try {
-      const chunks = splitIntoChunks(pdfText);
-      const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
-Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
-Optionally include a "hint" field for difficult concepts.
-Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
-Aim for 10-20 flashcards per chunk. Be thorough.
-Make questions clear and concise. Answers should be informative but brief.
-Do not include any markdown formatting or code blocks, just the raw JSON array.`;
-
-      const allCards: { front: string; back: string; hint?: string }[] = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        setProgress(`Processing chunk ${i + 1} of ${chunks.length}...`);
-
-        let lastError = "";
-        for (let attempt = 0; attempt < 5; attempt++) {
-          if (attempt > 0) {
-            setProgress(`Retrying chunk ${i + 1} (attempt ${attempt + 1})...`);
-            await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
-          }
-
-          try {
-            const res = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{ parts: [{ text: `${systemPrompt}\n\n${chunks[i]}` }] }],
-                  generationConfig: { temperature: 0.7 },
-                }),
-                signal: AbortSignal.timeout(60000),
-              }
-            );
-
-            if (res.status === 429) {
-              lastError = "Rate limited, waiting...";
-              continue;
-            }
-
-            if (!res.ok) {
-              const errText = await res.text().catch(() => "");
-              lastError = `API error ${res.status}`;
-              try { lastError = JSON.parse(errText).error?.message || lastError; } catch {}
-              continue;
-            }
-
-            const data = await res.json();
-            const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-            let jsonStr = "";
-            const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (fencedMatch) {
-              jsonStr = fencedMatch[1];
-            } else {
-              const arrMatch = content.match(/\[[\s\S]*\]/);
-              if (arrMatch) jsonStr = arrMatch[0];
-            }
-            if (jsonStr) {
-              const cards = JSON.parse(jsonStr);
-              if (Array.isArray(cards) && cards.length > 0) {
-                allCards.push(...cards);
-                setGeneratedCards([...allCards]);
-              }
-            }
-            lastError = "";
-            break;
-          } catch (err: any) {
-            lastError = err.message;
-          }
-        }
-
-        if (lastError && lastError !== "Rate limited, waiting...") {
-          throw new Error(lastError);
-        }
-      }
-
-      setProgress("");
-      if (allCards.length === 0) {
-        throw new Error("No flashcards generated");
-      }
+      const res = await fetch("/api/generate-flashcards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: pdfText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate flashcards");
+      setGeneratedCards(data.cards);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
-      setProgress("");
     } finally {
       setIsGenerating(false);
     }
@@ -220,7 +103,6 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
                 placeholder="Or paste text content here..."
                 className="w-full px-3 py-2 rounded-lg border bg-background h-48 resize-none"
               />
-              {progress && <p className="text-sm text-muted-foreground">{progress}</p>}
               <button
                 onClick={generateCards}
                 disabled={!pdfText.trim() || isGenerating}
