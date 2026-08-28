@@ -119,7 +119,7 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
                 "Authorization": `Bearer ${apiKey.trim()}`,
               },
               body: JSON.stringify({
-                model: "llama3-70b-8192",
+                model: "openai/gpt-oss-120b",
                 messages: [
                   { role: "system", content: systemPrompt },
                   { role: "user", content: chunks[i] },
