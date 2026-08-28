@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
-import { ChevronRight, Download, Pencil, Check, X } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play } from "lucide-react";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -90,6 +90,9 @@ export default function ReviewerStudyClient({
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
   const [editHint, setEditHint] = useState("");
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewFlipped, setReviewFlipped] = useState(false);
 
   if (!reviewer) {
     return (
@@ -144,14 +147,101 @@ export default function ReviewerStudyClient({
             <h1 className="text-3xl font-bold">{reviewer.title}</h1>
             <p className="text-muted-foreground mt-2">{cards.length} cards</p>
           </div>
-          <button
-            onClick={() => exportFlashcardsToPdf(reviewer.title, cards)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print"
-          >
-            <Download className="h-4 w-4" /> Save PDF
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setReviewMode(true); setReviewIndex(0); setReviewFlipped(false); }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm"
+            >
+              <Play className="h-4 w-4" /> Review
+            </button>
+            <button
+              onClick={() => exportFlashcardsToPdf(reviewer.title, cards)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print"
+            >
+              <Download className="h-4 w-4" /> Save PDF
+            </button>
+          </div>
         </div>
       </div>
+
+      {reviewMode && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <span className="text-sm text-muted-foreground">{reviewIndex + 1} / {cards.length}</span>
+            <button
+              onClick={() => setReviewMode(false)}
+              className="px-3 py-1.5 rounded-lg border text-sm hover:bg-muted"
+            >
+              Exit Review
+            </button>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
+            <div
+              onClick={() => setReviewFlipped(!reviewFlipped)}
+              className="w-full max-w-lg min-h-[250px] p-8 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
+            >
+              <div>
+                <p className="text-lg font-medium">{reviewFlipped ? cards[reviewIndex].back : cards[reviewIndex].front}</p>
+                {!reviewFlipped && cards[reviewIndex].hint && (
+                  <p className="text-sm text-muted-foreground mt-4 italic">Hint: {cards[reviewIndex].hint}</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {!reviewFlipped ? (
+                <button
+                  onClick={() => setReviewFlipped(true)}
+                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                >
+                  Show Answer
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      if (reviewIndex < cards.length - 1) {
+                        setReviewIndex(reviewIndex + 1);
+                        setReviewFlipped(false);
+                      } else {
+                        setReviewMode(false);
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-sm font-medium"
+                  >
+                    I Forgot
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (reviewIndex < cards.length - 1) {
+                        setReviewIndex(reviewIndex + 1);
+                        setReviewFlipped(false);
+                      } else {
+                        setReviewMode(false);
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-sm font-medium"
+                  >
+                    I Don&apos;t Know
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (reviewIndex < cards.length - 1) {
+                        setReviewIndex(reviewIndex + 1);
+                        setReviewFlipped(false);
+                      } else {
+                        setReviewMode(false);
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-sm font-medium"
+                  >
+                    I Know
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {cards.map((card: any, i: number) => (
@@ -200,20 +290,16 @@ export default function ReviewerStudyClient({
                 </div>
               </div>
             ) : (
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium">Q: {card.front}</p>
-                    <p className="mt-2 text-muted-foreground">A: {card.back}</p>
-                    {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
-                  </div>
-                  <button
-                    onClick={() => startEdit(i)}
-                    className="ml-2 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground no-print shrink-0"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                </div>
+              <div className="relative">
+                <button
+                  onClick={() => startEdit(i)}
+                  className="absolute top-0 right-0 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground no-print"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <p className="font-medium pr-8">Q: {card.front}</p>
+                <p className="mt-2 text-muted-foreground">A: {card.back}</p>
+                {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
               </div>
             )}
           </div>
