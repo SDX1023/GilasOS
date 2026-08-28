@@ -25,27 +25,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
   }
 
-  const { text } = await req.json();
+  let text: string;
+  try {
+    const body = await req.json();
+    text = body.text;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
   if (!text?.trim()) {
     return NextResponse.json({ error: "No text provided" }, { status: 400 });
   }
 
   const truncatedText = text.slice(0, MAX_CHARS);
-  const key = `fc-${simpleHash(truncatedText)}-v2`;
+  const key = `fc-${simpleHash(truncatedText)}-v3`;
   const cached = cache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return NextResponse.json({ cards: cached.data });
   }
 
-  const prompt = `You are an expert flashcard generator. Your ONLY job is to create as many flashcards as possible from the study material below.
+  const prompt = `You are an expert flashcard generator. Analyze the study material below and generate flashcards.
 
-CRITICAL RULES:
-- You MUST generate a MINIMUM of 100 flashcards. More is better. Aim for 150-200+.
-- Every single question, fact, name, date, definition, concept, comparison, and detail in the material MUST become a flashcard.
-- Do NOT summarize or skip anything. Every piece of information = one flashcard.
-- If the material has 50 questions, you MUST generate 50+ flashcards (one per question at minimum, plus extras).
-- If the material has names, dates, definitions, processes — each one gets its own card.
-- Generate MORE cards, not fewer. Err on the side of too many.
+RULES:
+- Evaluate the content and generate the RIGHT number of flashcards for it — not too few, not too many.
+- Short text (a few paragraphs) = 10-20 cards. Medium text (a few pages) = 30-60 cards. Long text (10+ pages) = 80-200+ cards.
+- Every important fact, name, date, definition, concept, comparison, and detail MUST become a card.
+- Do NOT skip anything important. Do NOT pad with trivial filler.
+- Each card tests real knowledge — not just copying text.
 
 Return ONLY a valid JSON array. Each object has "front" (question) and "back" (answer). Optionally "hint".
 No markdown. No code blocks. Just raw JSON array.`;
@@ -56,42 +62,78 @@ No markdown. No code blocks. Just raw JSON array.`;
       await new Promise(r => setTimeout(r, wait));
     }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${prompt}\n\n--- STUDY MATERIAL ---\n\n${truncatedText}` }] }],
-          generationConfig: { temperature: 0.7 },
-        }),
-      }
-    );
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${prompt}\n\n--- STUDY MATERIAL ---\n\n${truncatedText}` }] }],
+            generationConfig: { temperature: 0.7 },
+          }),
+        }
+      );
+    } catch (fetchErr: any) {
+      console.error("[generate-flashcards] Fetch error:", fetchErr.message);
+      return NextResponse.json({ error: `Network error: ${fetchErr.message}` }, { status: 500 });
+    }
 
     if (res.status === 429 && attempt < 3) {
-      const err = await res.json().catch(() => ({}));
-      const retryAfter = parseRetryAfter(err.error?.message || "");
+      let retryAfter = 30;
+      try {
+        const err = await res.json();
+        retryAfter = parseRetryAfter(err.error?.message || "");
+      } catch {}
+      console.log(`[generate-flashcards] Rate limited, waiting ${retryAfter}s (attempt ${attempt + 1})`);
       await new Promise(r => setTimeout(r, retryAfter * 1000));
       continue;
     }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const retryAfter = parseRetryAfter(err.error?.message || "");
-      return NextResponse.json({ error: err.error?.message || "API error", retryAfter }, { status: 500 });
-    }
-
-    const data = await res.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      const cards = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(cards) && cards.length > 0) {
-        cache.set(key, { data: cards, ts: Date.now() });
-        return NextResponse.json({ cards });
+      let errorMsg = `Gemini API error (${res.status})`;
+      try {
+        const err = await res.json();
+        errorMsg = err.error?.message || errorMsg;
+        const retryAfter = parseRetryAfter(errorMsg);
+        return NextResponse.json({ error: errorMsg, retryAfter }, { status: 500 });
+      } catch {
+        return NextResponse.json({ error: errorMsg }, { status: 500 });
       }
     }
-    return NextResponse.json({ error: "No flashcards found in response" }, { status: 500 });
+
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      console.error("[generate-flashcards] Failed to parse response");
+      return NextResponse.json({ error: "Invalid response from Gemini" }, { status: 500 });
+    }
+
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!content) {
+      console.error("[generate-flashcards] Empty response from Gemini:", JSON.stringify(data).slice(0, 500));
+      return NextResponse.json({ error: "Empty response from Gemini" }, { status: 500 });
+    }
+
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        const cards = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(cards) && cards.length > 0) {
+          cache.set(key, { data: cards, ts: Date.now() });
+          console.log(`[generate-flashcards] Generated ${cards.length} cards`);
+          return NextResponse.json({ cards });
+        }
+      } catch (parseErr: any) {
+        console.error("[generate-flashcards] JSON parse error:", parseErr.message, "Raw:", jsonMatch[0].slice(0, 200));
+      }
+    } else {
+      console.error("[generate-flashcards] No JSON array found in response:", content.slice(0, 300));
+    }
+
+    return NextResponse.json({ error: "Failed to parse flashcards from Gemini response" }, { status: 500 });
   }
 
   return NextResponse.json({ error: "Rate limited — try again later", retryAfter: 30 }, { status: 500 });

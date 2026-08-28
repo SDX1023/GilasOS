@@ -37,14 +37,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ questions: cached.data });
   }
 
-  const prompt = `You are an expert quiz generator. Your ONLY job is to create as many quiz questions as possible from the study material below.
+  const prompt = `You are an expert quiz generator. Analyze the study material below and generate quiz questions.
 
-CRITICAL RULES:
-- You MUST generate a MINIMUM of 50 questions. More is better. Aim for 100+.
-- Every single fact, name, date, definition, concept, comparison, and detail MUST become a question.
-- Do NOT summarize or skip anything. Every piece of information = one question.
+RULES:
+- Evaluate the content and generate the RIGHT number of questions — not too few, not too many.
+- Short text = 5-15 questions. Medium text = 20-40 questions. Long text = 50-150+ questions.
+- Every important fact, name, date, definition, concept, comparison, and detail MUST become a question.
+- Do NOT skip anything important. Do NOT pad with trivial filler.
 - Mix types 50/50: multiple choice and identification.
-- If the material has 50 facts, generate 50+ questions.
 
 Return ONLY a valid JSON array. Each object:
 - MC: {"type":"mc","question":"...","options":["A","B","C","D"],"correct":0}
