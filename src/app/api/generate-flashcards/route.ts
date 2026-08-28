@@ -92,7 +92,7 @@ async function generateForChunk(
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 65536,
-            thinkingLevel: "low",
+            thinkingConfig: { thinkingLevel: "low" },
             responseMimeType: "application/json",
           },
         }),
