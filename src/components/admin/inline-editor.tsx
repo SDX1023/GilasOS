@@ -645,10 +645,9 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
           }).run();
         }} className="p-1.5 rounded hover:bg-muted text-xs font-medium" title="Draggable text box">📝 Box</button>
         <div className="w-px h-5 bg-border mx-1" />
-        <button onClick={() => { const u = prompt("Image URL:"); if (u) editor.chain().focus().setImage({ src: u, alt: "image" }).run(); }} className="p-1.5 rounded hover:bg-muted" title="Image URL">🖼</button>
-        <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} className="p-1.5 rounded hover:bg-muted" title="Upload">📁</button>
+        <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} className="p-1.5 rounded hover:bg-muted" title="Insert image">🖼</button>
         <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="p-1.5 rounded hover:bg-muted" title="Divider">—</button>
-        <div className="ml-auto text-xs text-muted-foreground">Paste or drag images</div>
+        <div className="ml-auto text-xs text-muted-foreground">Paste, drag, or click 🖼 to insert images</div>
       </div>
       <EditorContent editor={editor} />
     </div>
