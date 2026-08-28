@@ -142,9 +142,16 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
 
             const data = await res.json();
             const content = data.choices?.[0]?.message?.content ?? "";
-            const jsonMatch = content.match(/\[[\s\S]*\]/);
-            if (jsonMatch) {
-              const cards = JSON.parse(jsonMatch[0]);
+            let jsonStr = "";
+            const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (fencedMatch) {
+              jsonStr = fencedMatch[1];
+            } else {
+              const arrMatch = content.match(/\[[\s\S]*\]/);
+              if (arrMatch) jsonStr = arrMatch[0];
+            }
+            if (jsonStr) {
+              const cards = JSON.parse(jsonStr);
               if (Array.isArray(cards) && cards.length > 0) {
                 allCards.push(...cards);
                 setGeneratedCards([...allCards]);
