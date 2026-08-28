@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MAX_CHARS = 10000;
+const MAX_CHARS = 30000;
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -31,32 +31,26 @@ export async function POST(req: NextRequest) {
   }
 
   const truncatedText = text.slice(0, MAX_CHARS);
-  const key = `quiz-${simpleHash(truncatedText)}`;
+  const key = `quiz-${simpleHash(truncatedText)}-v2`;
   const cached = cache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return NextResponse.json({ questions: cached.data });
   }
 
-  const prompt = `You are an expert quiz generator. Analyze the study material below and generate quiz questions.
+  const prompt = `You are an expert quiz generator. Your ONLY job is to create as many quiz questions as possible from the study material below.
 
-IMPORTANT: You decide how many questions the material warrants. Generate as many questions as needed to thoroughly cover ALL important concepts, facts, definitions, names, dates, processes, and details. Be comprehensive — do not hold back.
+CRITICAL RULES:
+- You MUST generate a MINIMUM of 50 questions. More is better. Aim for 100+.
+- Every single fact, name, date, definition, concept, comparison, and detail MUST become a question.
+- Do NOT summarize or skip anything. Every piece of information = one question.
+- Mix types 50/50: multiple choice and identification.
+- If the material has 50 facts, generate 50+ questions.
 
-Return ONLY a valid JSON array of question objects. Mix these two types:
+Return ONLY a valid JSON array. Each object:
+- MC: {"type":"mc","question":"...","options":["A","B","C","D"],"correct":0}
+- ID: {"type":"identification","question":"...","answer":"the answer"}
 
-1. Multiple choice (type: "mc"):
-   {"type":"mc","question":"...","options":["A","B","C","D"],"correct":0}
-
-2. Identification (type: "identification"):
-   {"type":"identification","question":"...","answer":"the answer"}
-
-Rules:
-- You determine the count — cover everything important
-- Mix both types roughly 50/50
-- Test real understanding — definitions, key facts, processes, comparisons, names, dates
-- For MC: exactly 4 options, "correct" is 0-based index
-- For identification: exact expected answer
-- Vary difficulty: easy recall to harder analysis
-- No markdown, no code blocks, just raw JSON array`;
+No markdown. No code blocks. Just raw JSON array.`;
 
   for (let attempt = 0; attempt <= 3; attempt++) {
     if (attempt > 0) {

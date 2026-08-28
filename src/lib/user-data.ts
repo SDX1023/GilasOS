@@ -136,3 +136,110 @@ export async function deleteUserNote(
     .eq("module_id", moduleId)
     .eq("note_id", noteId);
 }
+
+// Quiz History
+export async function saveQuizHistory(
+  userId: string,
+  deckTitle: string,
+  totalQuestions: number,
+  correctAnswers: number,
+  wrongAnswers: number,
+  source: string
+) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("quiz_history").insert({
+    user_id: userId,
+    deck_title: deckTitle,
+    total_questions: totalQuestions,
+    correct_answers: correctAnswers,
+    wrong_answers: wrongAnswers,
+    source,
+  });
+  return !error;
+}
+
+export async function loadQuizHistory(userId: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("quiz_history")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) return [];
+  return data || [];
+}
+
+export async function deleteQuizHistory(userId: string, id: string) {
+  const supabase = getSupabase();
+  await supabase.from("quiz_history").delete().eq("id", id).eq("user_id", userId);
+}
+
+// Bookmarked Cards
+export async function loadBookmarkedCards(userId: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("bookmarked_cards")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return data || [];
+}
+
+export async function toggleBookmark(
+  userId: string,
+  deckId: string,
+  deckTitle: string,
+  cardFront: string,
+  cardBack: string,
+  cardHint: string = ""
+) {
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from("bookmarked_cards")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("deck_id", deckId)
+    .eq("card_front", cardFront)
+    .eq("card_back", cardBack)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("bookmarked_cards").delete().eq("id", existing.id);
+    return false;
+  } else {
+    await supabase.from("bookmarked_cards").insert({
+      user_id: userId,
+      deck_id: deckId,
+      deck_title: deckTitle,
+      card_front: cardFront,
+      card_back: cardBack,
+      card_hint: cardHint,
+    });
+    return true;
+  }
+}
+
+export async function isBookmarked(
+  userId: string,
+  deckId: string,
+  cardFront: string,
+  cardBack: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("bookmarked_cards")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("deck_id", deckId)
+    .eq("card_front", cardFront)
+    .eq("card_back", cardBack)
+    .maybeSingle();
+  return !!data;
+}
+
+export async function removeBookmark(userId: string, bookmarkId: string) {
+  const supabase = getSupabase();
+  await supabase.from("bookmarked_cards").delete().eq("id", bookmarkId).eq("user_id", userId);
+}

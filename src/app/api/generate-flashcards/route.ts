@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MAX_CHARS = 10000;
+const MAX_CHARS = 30000;
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -31,25 +31,24 @@ export async function POST(req: NextRequest) {
   }
 
   const truncatedText = text.slice(0, MAX_CHARS);
-  const key = `fc-${simpleHash(truncatedText)}`;
+  const key = `fc-${simpleHash(truncatedText)}-v2`;
   const cached = cache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return NextResponse.json({ cards: cached.data });
   }
 
-  const prompt = `You are an expert study flashcard generator. Analyze the study material below and generate comprehensive flashcards.
+  const prompt = `You are an expert flashcard generator. Your ONLY job is to create as many flashcards as possible from the study material below.
 
-IMPORTANT: You decide how many flashcards the material warrants. Generate as many as needed to thoroughly cover EVERY concept, definition, fact, name, date, process, and detail. Be extremely thorough.
+CRITICAL RULES:
+- You MUST generate a MINIMUM of 100 flashcards. More is better. Aim for 150-200+.
+- Every single question, fact, name, date, definition, concept, comparison, and detail in the material MUST become a flashcard.
+- Do NOT summarize or skip anything. Every piece of information = one flashcard.
+- If the material has 50 questions, you MUST generate 50+ flashcards (one per question at minimum, plus extras).
+- If the material has names, dates, definitions, processes — each one gets its own card.
+- Generate MORE cards, not fewer. Err on the side of too many.
 
-Return ONLY a valid JSON array of objects with "front" (question) and "back" (answer) fields.
-Optionally include "hint" for difficult concepts.
-
-Rules:
-- Cover everything important — definitions, key facts, processes, comparisons, names, dates
-- Mix question types: "what is", "who invented", "when did", "compare X and Y", fill-in-the-blank
-- Questions should test knowledge, not just repeat the text
-- Answers should be concise but complete
-- No markdown, no code blocks, just raw JSON array`;
+Return ONLY a valid JSON array. Each object has "front" (question) and "back" (answer). Optionally "hint".
+No markdown. No code blocks. Just raw JSON array.`;
 
   for (let attempt = 0; attempt <= 3; attempt++) {
     if (attempt > 0) {
