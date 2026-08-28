@@ -96,6 +96,7 @@ export default function FlashcardStudyClient({
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
   const [flashImage, setFlashImage] = useState<string | null>(null);
+  const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -225,6 +226,13 @@ export default function FlashcardStudyClient({
     setReviewMode(true);
   }
 
+  function showFlash(img: string) {
+    setFlashImage(img);
+    requestAnimationFrame(() => setFlashVisible(true));
+    setTimeout(() => setFlashVisible(false), 3200);
+    setTimeout(() => setFlashImage(null), 3500);
+  }
+
   function pickRandom(arr: string[]): string | null {
     if (!arr.length) return null;
     return arr[Math.floor(Math.random() * arr.length)];
@@ -232,7 +240,7 @@ export default function FlashcardStudyClient({
 
   function handleKnow() {
     const img = pickRandom(flashImages.know || []);
-    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
+    if (img) showFlash(img);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
     if (newQueue.length === 0) {
@@ -247,7 +255,7 @@ export default function FlashcardStudyClient({
 
   function handleDontKnow() {
     const img = pickRandom(flashImages.dontknow || []);
-    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
+    if (img) showFlash(img);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
@@ -255,7 +263,7 @@ export default function FlashcardStudyClient({
 
   function handleForgot() {
     const img = pickRandom(flashImages.forgot || []);
-    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
+    if (img) showFlash(img);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
@@ -300,11 +308,22 @@ export default function FlashcardStudyClient({
       {reviewMode && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
           {flashImage && (
-            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 animate-in fade-in duration-150">
+            <div
+              className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80"
+              style={{
+                opacity: flashVisible ? 1 : 0,
+                transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            >
               <img
                 src={flashImage}
                 alt=""
-                className="max-w-[80vw] max-h-[80vh] object-contain animate-in zoom-in-50 duration-200"
+                className="max-w-[80vw] max-h-[80vh] object-contain"
+                style={{
+                  transform: flashVisible ? "scale(1)" : "scale(0.85)",
+                  opacity: flashVisible ? 1 : 0,
+                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
               />
             </div>
           )}
