@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CHUNK_SIZE = 12000;
+const CHUNK_SIZE = 30000;
+const MAX_CONCURRENT = 3;
 
 function splitIntoChunks(text: string): string[] {
   const chunks: string[] = [];
@@ -45,6 +46,7 @@ async function callGemini(apiKey: string, prompt: string, chunk: string, retries
           contents: [{ parts: [{ text: `${prompt}\n\n${chunk}` }] }],
           generationConfig: { temperature: 0.7 },
         }),
+        signal: AbortSignal.timeout(60000),
       }
     );
 
@@ -83,22 +85,22 @@ Aim for 20-40 flashcards per chunk. Be thorough — every important concept shou
 Make questions clear and concise. Answers should be informative but brief.
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
-  for (let i = 0; i < chunks.length; i++) {
-    try {
-      const content = await callGemini(apiKey, systemPrompt, chunks[i]);
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        try {
-          const cards = JSON.parse(jsonMatch[0]);
-          if (Array.isArray(cards)) allCards.push(...cards);
-        } catch {}
-      }
-    } catch (err: any) {
-      return NextResponse.json(
-        { error: err.message || `Failed on chunk ${i + 1}` },
-        { status: 500 }
-      );
+  async function processChunk(chunk: string): Promise<{ front: string; back: string; hint?: string }[]> {
+    const content = await callGemini(apiKey!, systemPrompt, chunk);
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try {
+        const cards = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(cards)) return cards;
+      } catch {}
     }
+    return [];
+  }
+
+  for (let i = 0; i < chunks.length; i += MAX_CONCURRENT) {
+    const batch = chunks.slice(i, i + MAX_CONCURRENT);
+    const results = await Promise.all(batch.map(processChunk));
+    for (const cards of results) allCards.push(...cards);
   }
 
   if (allCards.length === 0) {
