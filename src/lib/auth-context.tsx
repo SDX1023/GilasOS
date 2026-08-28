@@ -11,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<{ error?: string }>;
   username: string;
 }
 
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => ({}),
   signIn: async () => ({}),
   signOut: async () => {},
+  changePassword: async () => ({}),
   username: "",
 });
 
@@ -110,8 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(false);
   }
 
+  async function changePassword(newPassword: string) {
+    const supabase = getSupabase();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
+    return {};
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut, username }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut, changePassword, username }}>
       {children}
     </AuthContext.Provider>
   );

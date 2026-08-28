@@ -6,6 +6,7 @@ import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { loadUserFlashcards, saveUserFlashcard } from "@/lib/user-data";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -116,40 +117,38 @@ export default function FlashcardStudyClient({
   }, []);
 
   useEffect(() => {
-    const customContent = loadCustomContent();
-    const customCourse = customContent.courses.find((c) => c.id === courseSlug);
-    const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-    const found = customModule?.reviewers.find((r) => {
-      const rSlug = r.id.split("/").slice(2).join("/");
-      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
-    });
-    if (found) {
-      setReviewer(found);
-      setCards(found.cards || []);
-
-      const storedLevels = localStorage.getItem(levelsKey);
-      if (storedLevels) {
-        try { setCardLevels(JSON.parse(storedLevels)); } catch {}
-      }
-
-      const stored = localStorage.getItem(sessionKey);
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          const today = new Date().toDateString();
-          if (data.date === today && data.queue && data.queue.length > 0) {
-            setQueue(data.queue);
-            setQueueIndex(data.queueIndex || 0);
-            setKnownCount(data.knownCount || 0);
-            setForgotCount(data.forgotCount || 0);
-            setDontKnowCount(data.dontKnowCount || 0);
-            setReviewMode(true);
+    async function loadData() {
+      if (user) {
+        const cloudData = await loadUserFlashcards(user.id);
+        const match = cloudData.find((d: any) =>
+          d.course_id === courseSlug && d.module_id === moduleSlug &&
+          (d.reviewer_id === reviewerSlug || d.reviewer_id.endsWith(reviewerSlug))
+        );
+        if (match) {
+          setReviewer({ id: match.reviewer_id, title: match.title, cards: match.cards });
+          setCards(match.cards || []);
+          if (match.cards && match.cards.length > 0) {
+            setMounted(true);
+            return;
           }
-        } catch {}
+        }
       }
+
+      const customContent = loadCustomContent();
+      const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+      const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+      const found = customModule?.reviewers.find((r) => {
+        const rSlug = r.id.split("/").slice(2).join("/");
+        return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+      });
+      if (found) {
+        setReviewer(found);
+        setCards(found.cards || []);
+      }
+      setMounted(true);
     }
-    setMounted(true);
-  }, [courseSlug, moduleSlug, reviewerSlug, sessionKey, levelsKey]);
+    loadData();
+  }, [courseSlug, moduleSlug, reviewerSlug, user]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -229,6 +228,12 @@ export default function FlashcardStudyClient({
     setEditHint(cards[i].hint || "");
   };
 
+  async function syncToCloud(updatedCards: any[]) {
+    if (user && reviewer) {
+      await saveUserFlashcard(user.id, courseSlug, moduleSlug, reviewerSlug, reviewer.title, updatedCards);
+    }
+  }
+
   const saveEdit = () => {
     if (editingIndex === null) return;
     const updated = [...cards];
@@ -246,6 +251,7 @@ export default function FlashcardStudyClient({
       r.cards = updated;
       saveCustomContent(store);
     }
+    syncToCloud(updated);
 
     setEditingIndex(null);
   };
@@ -271,6 +277,7 @@ export default function FlashcardStudyClient({
       r.cards = updated;
       saveCustomContent(store);
     }
+    syncToCloud(updated);
 
     setAddFront("");
     setAddBack("");
@@ -293,6 +300,7 @@ export default function FlashcardStudyClient({
       r.cards = updated;
       saveCustomContent(store);
     }
+    syncToCloud(updated);
   };
 
   function shuffleArray(arr: any[]) {
