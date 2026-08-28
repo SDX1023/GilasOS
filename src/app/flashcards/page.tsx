@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { loadCustomContent } from "@/lib/custom-content";
-import { Brain } from "lucide-react";
+import { loadCustomContent, deleteReviewer } from "@/lib/custom-content";
+import { Brain, Trash2 } from "lucide-react";
 
 export default function FlashcardsPage() {
   const [mounted, setMounted] = useState(false);
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
 
-  useEffect(() => {
+  function refresh() {
     const customContent = loadCustomContent();
     const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
     for (const course of customContent.courses) {
@@ -20,8 +21,19 @@ export default function FlashcardsPage() {
       }
     }
     setAllReviewers(reviewers);
+  }
+
+  useEffect(() => {
+    refresh();
     setMounted(true);
   }, []);
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    deleteReviewer(deleteTarget.courseId, deleteTarget.moduleId, deleteTarget.reviewerId);
+    refresh();
+    setDeleteTarget(null);
+  }
 
   if (!mounted) {
     return (
@@ -53,26 +65,62 @@ export default function FlashcardsPage() {
                 <h2 className="text-xl font-semibold mb-4">{courseId}</h2>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {courseReviewers.map(({ courseId: cid, moduleId, reviewer }) => (
-                    <Link
+                    <div
                       key={reviewer.id}
-                      href={`/flashcards/${reviewer.id}`}
-                      className="p-4 rounded-lg border bg-card hover:shadow-lg transition-all group"
+                      className="relative p-4 rounded-lg border bg-card hover:shadow-lg transition-all group"
                     >
-                      <h3 className="font-medium group-hover:text-primary transition-colors">
-                        {reviewer.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {moduleId}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {reviewer.cards?.length || 0} cards
-                      </p>
-                    </Link>
+                      <Link href={`/flashcards/${reviewer.id}`} className="block">
+                        <h3 className="font-medium group-hover:text-primary transition-colors">
+                          {reviewer.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {moduleId}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {reviewer.cards?.length || 0} cards
+                        </p>
+                      </Link>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setDeleteTarget({ courseId: cid, moduleId, reviewerId: reviewer.id, title: reviewer.title });
+                        }}
+                        className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Delete deck"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Delete Deck?</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Are you sure you want to delete &quot;{deleteTarget.title}&quot;? This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

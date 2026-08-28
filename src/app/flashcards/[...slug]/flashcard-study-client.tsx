@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
@@ -68,12 +69,9 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
   pdf.save(`${title}.pdf`);
 }
 
-export default function FlashcardStudyClient({
-  params,
-}: {
-  params: Promise<{ slug: string[] }>;
-}) {
-  const { slug } = use(params);
+export default function FlashcardStudyClient() {
+  const pathname = usePathname();
+  const slug = pathname.replace("/flashcards/", "").split("/");
 
   const courseSlug = slug[0];
   const moduleSlug = slug[1];
