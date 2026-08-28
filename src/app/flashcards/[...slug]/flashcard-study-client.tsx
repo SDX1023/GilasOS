@@ -271,7 +271,7 @@ export default function FlashcardStudyClient({
       setReviewComplete(true);
     } else {
       setQueue(newQueue);
-      setQueueIndex(Math.floor(Math.random() * newQueue.length));
+      setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
   }
@@ -279,16 +279,28 @@ export default function FlashcardStudyClient({
   function handleDontKnow() {
     showFlash("dontknow");
     setDontKnowCount((d) => d + 1);
-    const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
-    setQueueIndex(newQueueIndex);
+    const newQueue = queue.filter((_, i) => i !== queueIndex);
+    if (newQueue.length === 0) {
+      setQueue([]);
+      setReviewComplete(true);
+    } else {
+      setQueue(newQueue);
+      setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
+    }
     setReviewFlipped(false);
   }
 
   function handleForgot() {
     showFlash("forgot");
     setForgotCount((f) => f + 1);
-    const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
-    setQueueIndex(newQueueIndex);
+    const newQueue = queue.filter((_, i) => i !== queueIndex);
+    if (newQueue.length === 0) {
+      setQueue([]);
+      setReviewComplete(true);
+    } else {
+      setQueue(newQueue);
+      setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
+    }
     setReviewFlipped(false);
   }
 
@@ -352,10 +364,14 @@ export default function FlashcardStudyClient({
           )}
           <div className="flex items-center justify-between p-5 border-b">
             <div className="flex items-center gap-4">
-              <span className="text-base text-muted-foreground">
-                {reviewComplete ? "Done" : `${queue.length} remaining`}
+              <span className="text-base font-medium">
+                {reviewComplete ? "Done" : queue.length}
               </span>
-              <span className="text-sm text-green-600">{knownCount} known</span>
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-green-600">{knownCount}</span>
+                <span className="text-orange-600">{dontKnowCount}</span>
+                <span className="text-red-600">{forgotCount}</span>
+              </div>
             </div>
             <div className="flex gap-3">
               <button
