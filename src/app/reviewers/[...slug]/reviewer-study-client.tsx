@@ -93,6 +93,7 @@ export default function ReviewerStudyClient({
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewFlipped, setReviewFlipped] = useState(false);
+  const [swapped, setSwapped] = useState(false);
 
   if (!reviewer) {
     return (
@@ -168,12 +169,20 @@ export default function ReviewerStudyClient({
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <span className="text-sm text-muted-foreground">{reviewIndex + 1} / {cards.length}</span>
-            <button
-              onClick={() => setReviewMode(false)}
-              className="px-3 py-1.5 rounded-lg border text-sm hover:bg-muted"
-            >
-              Exit Review
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
+                className={`px-3 py-1.5 rounded-lg border text-sm ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              >
+                {swapped ? "Back→Front" : "Front→Back"}
+              </button>
+              <button
+                onClick={() => setReviewMode(false)}
+                className="px-3 py-1.5 rounded-lg border text-sm hover:bg-muted"
+              >
+                Exit Review
+              </button>
+            </div>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <div
@@ -181,7 +190,12 @@ export default function ReviewerStudyClient({
               className="w-full max-w-lg min-h-[250px] p-8 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
             >
               <div>
-                <p className="text-lg font-medium">{reviewFlipped ? cards[reviewIndex].back : cards[reviewIndex].front}</p>
+                <p className="text-lg font-medium">
+                  {reviewFlipped
+                    ? (swapped ? cards[reviewIndex].front : cards[reviewIndex].back)
+                    : (swapped ? cards[reviewIndex].back : cards[reviewIndex].front)
+                  }
+                </p>
                 {!reviewFlipped && cards[reviewIndex].hint && (
                   <p className="text-sm text-muted-foreground mt-4 italic">Hint: {cards[reviewIndex].hint}</p>
                 )}
