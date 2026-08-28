@@ -1,5 +1,7 @@
 "use client";
 
+import { getSupabase } from "./supabase";
+
 const STORAGE_KEY = "studyos_custom_content";
 
 export interface CustomCourse {
@@ -157,15 +159,19 @@ export function deleteNote(courseId: string, moduleId: string, noteId: string) {
 // Reviewer operations
 export function addReviewer(courseId: string, moduleId: string, reviewer: Omit<CustomReviewer, "id" | "courseId" | "moduleId">) {
   const store = loadCustomContent();
-  const course = store.courses.find((c) => c.id === courseId);
-  if (course) {
-    const mod = course.modules.find((m) => m.id === moduleId);
-    if (mod) {
-      const newReviewer: CustomReviewer = { ...reviewer, courseId, moduleId, id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` };
-      mod.reviewers.push(newReviewer);
-      saveCustomContent(store);
-    }
+  let course = store.courses.find((c) => c.id === courseId);
+  if (!course) {
+    course = { id: courseId, title: courseId, description: "", modules: [] };
+    store.courses.push(course);
   }
+  let mod = course.modules.find((m) => m.id === moduleId);
+  if (!mod) {
+    mod = { id: moduleId, courseId, title: moduleId, description: "", notes: [], reviewers: [] };
+    course.modules.push(mod);
+  }
+  const newReviewer: CustomReviewer = { ...reviewer, courseId, moduleId, id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` };
+  mod.reviewers.push(newReviewer);
+  saveCustomContent(store);
 }
 
 export function updateReviewer(courseId: string, moduleId: string, reviewerId: string, updates: Partial<CustomReviewer>) {
@@ -191,6 +197,87 @@ export function deleteReviewer(courseId: string, moduleId: string, reviewerId: s
     if (mod) {
       mod.reviewers = mod.reviewers.filter((r) => r.id !== reviewerId);
       saveCustomContent(store);
+    }
+  }
+}
+
+// ── Supabase sync ────────────────────────────────────────────────
+
+export async function loadReviewersFromSupabase(): Promise<{ courseId: string; moduleId: string; reviewer: CustomReviewer }[]> {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: reviewers } = await supabase
+    .from("reviewers")
+    .select("*, flashcards(*)")
+    .eq("user_id", user.id);
+
+  if (!reviewers) return [];
+
+  return reviewers.map((r: any) => ({
+    courseId: r.course_id,
+    moduleId: r.module_id,
+    reviewer: {
+      id: r.id,
+      courseId: r.course_id,
+      moduleId: r.module_id,
+      title: r.title,
+      cards: (r.flashcards || []).map((c: any) => ({
+        front: c.front,
+        back: c.back,
+        hint: c.hint || "",
+      })),
+    },
+  }));
+}
+
+export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: CustomReviewer) {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Upsert reviewer row
+  await supabase.from("reviewers").upsert({
+    id: reviewer.id,
+    user_id: user.id,
+    course_id: courseId,
+    module_id: moduleId,
+    title: reviewer.title,
+  }, { onConflict: "id" });
+
+  // Delete old flashcards and re-insert
+  await supabase.from("flashcards").delete().eq("reviewer_id", reviewer.id);
+
+  if (reviewer.cards.length > 0) {
+    const rows = reviewer.cards.map((card, i) => ({
+      id: `${reviewer.id}/card-${i}-${Date.now()}`,
+      reviewer_id: reviewer.id,
+      user_id: user.id,
+      front: card.front,
+      back: card.back,
+      hint: card.hint || "",
+    }));
+    await supabase.from("flashcards").insert(rows);
+  }
+}
+
+export async function deleteReviewerFromSupabase(reviewerId: string) {
+  const supabase = getSupabase();
+  await supabase.from("reviewers").delete().eq("id", reviewerId);
+}
+
+export async function migrateLocalStorageToSupabase() {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const local = loadCustomContent();
+  for (const course of local.courses) {
+    for (const mod of course.modules) {
+      for (const reviewer of mod.reviewers) {
+        await saveReviewerToSupabase(course.id, mod.id, reviewer);
+      }
     }
   }
 }

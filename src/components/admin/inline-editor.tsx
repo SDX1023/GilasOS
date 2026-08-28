@@ -4,7 +4,7 @@ import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from
 import StarterKit from "@tiptap/starter-kit";
 import { Image } from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { Trash2, Crop } from "lucide-react";
 import { Textbox } from "./textbox-extension";
 
@@ -537,6 +537,10 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const isUpdatingFromEffect = useRef(false);
+  const contentRef = useRef(content);
+  contentRef.current = content;
+
+  const initialContent = useMemo(() => markdownToHtml(content), []);
 
   const editor = useEditor({
     extensions: [
@@ -545,7 +549,7 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
       Textbox,
       Placeholder.configure({ placeholder: "Start writing..." }),
     ],
-    content: markdownToHtml(content),
+    content: initialContent,
     editorProps: { attributes: { class: "prose prose-neutral dark:prose-invert max-w-none min-h-[500px] focus:outline-none p-8" } },
     onUpdate: ({ editor }) => {
       if (isUpdatingFromEffect.current) return;

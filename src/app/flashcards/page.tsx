@@ -2,36 +2,62 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { loadCustomContent, deleteReviewer } from "@/lib/custom-content";
+import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase } from "@/lib/custom-content";
 import { Brain, Trash2 } from "lucide-react";
+import { getSupabase } from "@/lib/supabase";
 
 export default function FlashcardsPage() {
   const [mounted, setMounted] = useState(false);
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
-
-  function refresh() {
-    const customContent = loadCustomContent();
-    const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
-    for (const course of customContent.courses) {
-      for (const mod of course.modules) {
-        for (const reviewer of mod.reviewers) {
-          reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-        }
-      }
-    }
-    setAllReviewers(reviewers);
-  }
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    refresh();
-    setMounted(true);
+    (async () => {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+
+      if (user) {
+        // Logged in: load from Supabase
+        const cloudReviewers = await loadReviewersFromSupabase();
+        setAllReviewers(cloudReviewers);
+      } else {
+        // Guest: load from localStorage
+        const customContent = loadCustomContent();
+        const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+        for (const course of customContent.courses) {
+          for (const mod of course.modules) {
+            for (const reviewer of mod.reviewers) {
+              reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+            }
+          }
+        }
+        setAllReviewers(reviewers);
+      }
+      setMounted(true);
+    })();
   }, []);
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return;
-    deleteReviewer(deleteTarget.courseId, deleteTarget.moduleId, deleteTarget.reviewerId);
-    refresh();
+    if (userId) {
+      await deleteReviewerFromSupabase(deleteTarget.reviewerId);
+      const cloudReviewers = await loadReviewersFromSupabase();
+      setAllReviewers(cloudReviewers);
+    } else {
+      deleteReviewer(deleteTarget.courseId, deleteTarget.moduleId, deleteTarget.reviewerId);
+      const customContent = loadCustomContent();
+      const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+      for (const course of customContent.courses) {
+        for (const mod of course.modules) {
+          for (const reviewer of mod.reviewers) {
+            reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+          }
+        }
+      }
+      setAllReviewers(reviewers);
+    }
     setDeleteTarget(null);
   }
 

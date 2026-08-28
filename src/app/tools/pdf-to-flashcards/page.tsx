@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { FileText, Upload, Loader2, Save } from "lucide-react";
 import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/custom-content";
+import { getSupabase } from "@/lib/supabase";
 
 const PDF_COURSE_ID = "pdf-generated";
 const PDF_MODULE_ID = "pdf-cards";
@@ -62,7 +63,7 @@ export default function PdfToFlashcardsPage() {
     }
   }, [pdfText]);
 
-  const saveDeck = () => {
+  const saveDeck = async () => {
     if (!deckName.trim() || generatedCards.length === 0) return;
     setSaving(true);
     try {
@@ -71,6 +72,30 @@ export default function PdfToFlashcardsPage() {
         title: deckName,
         cards: generatedCards,
       });
+      // Also save to Supabase if logged in
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const reviewerId = `${PDF_COURSE_ID}/${PDF_MODULE_ID}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
+        await supabase.from("reviewers").upsert({
+          id: reviewerId,
+          user_id: user.id,
+          course_id: PDF_COURSE_ID,
+          module_id: PDF_MODULE_ID,
+          title: deckName,
+        }, { onConflict: "id" });
+        if (generatedCards.length > 0) {
+          const rows = generatedCards.map((card, i) => ({
+            id: `${reviewerId}/card-${i}-${Date.now()}`,
+            reviewer_id: reviewerId,
+            user_id: user.id,
+            front: card.front,
+            back: card.back,
+            hint: card.hint || "",
+          }));
+          await supabase.from("flashcards").insert(rows);
+        }
+      }
       setDeckName("");
       setGeneratedCards([]);
       setPdfText("");

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getSupabase } from "./supabase";
+import { migrateLocalStorageToSupabase } from "./custom-content";
 import { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -107,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileError) return { error: profileError.message };
       setUsername(newUsername);
       checkAdmin(data.user.id, email);
+      // Migrate any existing localStorage flashcards to this user's account
+      migrateLocalStorageToSupabase().catch(() => {});
     }
     return {};
   }
@@ -118,6 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       checkAdmin(data.user.id, data.user.email || "");
       fetchUsername(data.user.id, data.user.email || "");
+      // Migrate any existing localStorage flashcards to this user's account
+      migrateLocalStorageToSupabase().catch(() => {});
     }
     return {};
   }

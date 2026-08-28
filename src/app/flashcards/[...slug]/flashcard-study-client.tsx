@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
+import { getSupabase } from "@/lib/supabase";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { saveUserFlashcard, saveStudyStats } from "@/lib/user-data";
@@ -98,18 +99,57 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }, []);
 
   useEffect(() => {
-    const customContent = loadCustomContent();
-    const customCourse = customContent.courses.find((c) => c.id === courseSlug);
-    const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-    const found = customModule?.reviewers.find((r) => {
-      const rSlug = r.id.split("/").slice(2).join("/");
-      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
-    });
-    if (found) {
-      setReviewer(found);
-      setCards(found.cards || []);
-    }
-    setMounted(true);
+    (async () => {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Logged in: load from Supabase
+        const { data: reviewers } = await supabase
+          .from("reviewers")
+          .select("*, flashcards(*)")
+          .eq("user_id", user.id);
+
+        if (reviewers) {
+          for (const r of reviewers) {
+            const rSlug = r.id.split("/").slice(2).join("/");
+            if (rSlug === reviewerSlug || r.id.endsWith(reviewerSlug)) {
+              setReviewer({
+                id: r.id,
+                courseId: r.course_id,
+                moduleId: r.module_id,
+                title: r.title,
+                cards: (r.flashcards || []).map((c: any) => ({
+                  front: c.front,
+                  back: c.back,
+                  hint: c.hint || "",
+                })),
+              });
+              setCards((r.flashcards || []).map((c: any) => ({
+                front: c.front,
+                back: c.back,
+                hint: c.hint || "",
+              })));
+              break;
+            }
+          }
+        }
+      } else {
+        // Guest: load from localStorage
+        const customContent = loadCustomContent();
+        const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+        const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+        const found = customModule?.reviewers.find((r) => {
+          const rSlug = r.id.split("/").slice(2).join("/");
+          return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+        });
+        if (found) {
+          setReviewer(found);
+          setCards(found.cards || []);
+        }
+      }
+      setMounted(true);
+    })();
   }, [courseSlug, moduleSlug, reviewerSlug]);
 
   useEffect(() => {
@@ -298,6 +338,28 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   async function syncToCloud(updatedCards: any[]) {
     if (user && reviewer) {
       await saveUserFlashcard(user.id, courseSlug, moduleSlug, reviewerSlug, reviewer.title, updatedCards);
+      // Also save to Supabase reviewers/flashcards tables
+      const supabase = getSupabase();
+      const reviewerId = reviewer.id;
+      await supabase.from("reviewers").upsert({
+        id: reviewerId,
+        user_id: user.id,
+        course_id: courseSlug,
+        module_id: moduleSlug,
+        title: reviewer.title,
+      }, { onConflict: "id" });
+      await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId);
+      if (updatedCards.length > 0) {
+        const rows = updatedCards.map((card, i) => ({
+          id: `${reviewerId}/card-${i}-${Date.now()}`,
+          reviewer_id: reviewerId,
+          user_id: user.id,
+          front: card.front,
+          back: card.back,
+          hint: card.hint || "",
+        }));
+        await supabase.from("flashcards").insert(rows);
+      }
     }
   }
 
