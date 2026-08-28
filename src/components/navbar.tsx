@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Brain, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield } from "lucide-react";
+import { BookOpen, Brain, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from "react";
 
 const navItems = [
   { href: "/courses", label: "Subjects", icon: BookOpen },
-  { href: "/flashcards", label: "Flash Cards", icon: Brain },
+  { href: "/study", label: "Study", icon: PenTool },
   { href: "/tools/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/tools/pdf-to-flashcards", label: "PDF to Cards", icon: FileText },
   { href: "/tools/todo", label: "To-Do", icon: CheckSquare },

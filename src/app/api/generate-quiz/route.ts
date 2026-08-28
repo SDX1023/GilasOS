@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CHUNK_SIZE = 6000;
+const CHUNK_SIZE = 8000;
 
 function splitIntoChunks(text: string): string[] {
   const chunks: string[] = [];
@@ -67,26 +67,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 500 });
   }
 
-  const { text } = await req.json();
+  const { text, numQuestions = 5 } = await req.json();
   if (!text?.trim()) {
     return NextResponse.json({ error: "No text provided" }, { status: 400 });
   }
 
   const chunks = splitIntoChunks(text);
-  const allCards: { front: string; back: string; hint?: string }[] = [];
 
-  const systemPrompt = `You are an expert study flashcard generator. Given the study material below, generate comprehensive flashcards covering EVERY concept, definition, fact, name, date, process, and detail.
+  // If text is small enough, generate all questions in one call
+  // Otherwise, generate proportionally from each chunk
+  const questionsPerChunk = Math.max(2, Math.ceil(numQuestions / chunks.length));
+  const allQuestions: any[] = [];
+
+  const systemPrompt = `You are an expert quiz generator for studying. Given the study material below, generate quiz questions.
+
+Return ONLY a valid JSON array of question objects. Mix these two types:
+
+1. Multiple choice (type: "mc"):
+   {"type":"mc","question":"...","options":["A option","B option","C option","D option"],"correct":0}
+
+2. Identification (type: "identification"):
+   {"type":"identification","question":"...","answer":"the answer"}
 
 Rules:
-- Return ONLY a valid JSON array of objects
-- Each object must have "front" (the question/prompt) and "back" (the answer)
-- Optionally include "hint" for difficult concepts
-- Generate 15-30 flashcards per chunk — be THOROUGH, miss nothing important
-- Mix question types: definitions, "what is", "who invented", "when did", "compare X and Y", fill-in-the-blank style
-- Questions should test knowledge, not just repeat the text
-- Answers should be concise but complete
-- No markdown, no code blocks, just raw JSON array
-- Example: [{"front":"What is X?","back":"X is...","hint":"Think about..."}]`;
+- Generate ${questionsPerChunk} questions from this chunk
+- Mix both types — roughly 50/50 split
+- Questions should test real understanding, not trivial facts
+- For MC: exactly 4 options, "correct" is the 0-based index of the right answer
+- For identification: the "answer" should be the exact expected answer
+- Make questions clear and unambiguous
+- No markdown, no code blocks, just raw JSON array`;
 
   for (let i = 0; i < chunks.length; i++) {
     try {
@@ -94,8 +104,8 @@ Rules:
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         try {
-          const cards = JSON.parse(jsonMatch[0]);
-          if (Array.isArray(cards)) allCards.push(...cards);
+          const questions = JSON.parse(jsonMatch[0]);
+          if (Array.isArray(questions)) allQuestions.push(...questions);
         } catch {}
       }
     } catch (err: any) {
@@ -106,9 +116,12 @@ Rules:
     }
   }
 
-  if (allCards.length === 0) {
-    return NextResponse.json({ error: "No flashcards found in response" }, { status: 500 });
+  // Trim to requested number
+  const result = allQuestions.slice(0, numQuestions);
+
+  if (result.length === 0) {
+    return NextResponse.json({ error: "No questions found in response" }, { status: 500 });
   }
 
-  return NextResponse.json({ cards: allCards });
+  return NextResponse.json({ questions: result });
 }
