@@ -164,9 +164,6 @@ export function NoteEditor({
 
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
-            <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2">
-              <h1 className="text-2xl sm:text-4xl font-bold">{title || "Untitled"}</h1>
-            </div>
             <div
               className={previewClassName}
               dangerouslySetInnerHTML={{ __html: preview }}
