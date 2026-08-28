@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ error?: string }>;
+  refreshProfile: () => Promise<void>;
   username: string;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => ({}),
   signOut: async () => {},
   changePassword: async () => ({}),
+  refreshProfile: async () => {},
   username: "",
 });
 
@@ -49,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUsername(session.user.id);
+        fetchUsername(session.user.id, session.user.email || "");
         checkAdmin(session.user.id, session.user.email || "");
       }
       setLoading(false);
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchUsername(session.user.id);
+        fetchUsername(session.user.id, session.user.email || "");
         checkAdmin(session.user.id, session.user.email || "");
       } else {
         setUsername("");
@@ -71,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchUsername(userId: string) {
+  async function fetchUsername(userId: string, userEmail?: string) {
     try {
       const supabase = getSupabase();
       const { data, error } = await supabase
@@ -79,7 +81,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select("username")
         .eq("user_id", userId)
         .maybeSingle();
-      if (data) setUsername(data.username);
+      if (data) {
+        setUsername(data.username);
+      } else if (userEmail) {
+        const fallbackName = userEmail.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_");
+        const { error: insertError } = await supabase.from("user_profiles").insert({
+          user_id: userId,
+          username: fallbackName,
+          email: userEmail,
+        });
+        if (!insertError) setUsername(fallbackName);
+      }
     } catch {}
   }
 
@@ -105,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: error.message };
     if (data.user) {
       checkAdmin(data.user.id, data.user.email || "");
+      fetchUsername(data.user.id, data.user.email || "");
     }
     return {};
   }
@@ -123,8 +136,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   }
 
+  async function refreshProfile() {
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await fetchUsername(session.user.id, session.user.email || "");
+      await checkAdmin(session.user.id, session.user.email || "");
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut, changePassword, username }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, signUp, signIn, signOut, changePassword, refreshProfile, username }}>
       {children}
     </AuthContext.Provider>
   );

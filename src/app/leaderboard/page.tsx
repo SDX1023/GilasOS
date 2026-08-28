@@ -36,7 +36,9 @@ export default function LeaderboardPage() {
         }
         if (Array.isArray(statsRes)) {
           statsRes.forEach((entry: any) => {
-            entry.username = profileMap[entry.user_id] || entry.username || "Unknown";
+            if (!entry.username || entry.username === "Unknown") {
+              entry.username = profileMap[entry.user_id] || "Unknown";
+            }
           });
         }
         setLeaderboard(statsRes);

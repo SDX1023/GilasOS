@@ -7,7 +7,7 @@ import { Settings, Lock, User, Check, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
-  const { user, username, changePassword } = useAuth();
+  const { user, username, changePassword, refreshProfile } = useAuth();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -119,6 +119,7 @@ export default function SettingsPage() {
       setUsernameSuccess(true);
       setNewUsername("");
       setCooldownEnd(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      await refreshProfile();
     }
   }
 
