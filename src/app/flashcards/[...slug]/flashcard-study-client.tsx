@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
-import { ChevronRight, Download, Pencil, Check, X, Play } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -91,6 +91,10 @@ export default function FlashcardStudyClient({
   const [queueIndex, setQueueIndex] = useState(0);
   const [knownCount, setKnownCount] = useState(0);
   const [reviewComplete, setReviewComplete] = useState(false);
+  const [addingCard, setAddingCard] = useState(false);
+  const [addFront, setAddFront] = useState("");
+  const [addBack, setAddBack] = useState("");
+  const [addHint, setAddHint] = useState("");
 
   useEffect(() => {
     const customContent = loadCustomContent();
@@ -153,6 +157,47 @@ export default function FlashcardStudyClient({
 
   const cancelEdit = () => {
     setEditingIndex(null);
+  };
+
+  const addCard = () => {
+    if (!addFront.trim() || !addBack.trim()) return;
+    const newCard = { front: addFront.trim(), back: addBack.trim(), hint: addHint.trim() || undefined };
+    const updated = [...cards, newCard];
+    setCards(updated);
+
+    const store = loadCustomContent();
+    const c = store.courses.find((c) => c.id === courseSlug);
+    const m = c?.modules.find((m) => m.id === moduleSlug);
+    const r = m?.reviewers.find((r) => {
+      const rSlug = r.id.split("/").slice(2).join("/");
+      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+    });
+    if (r) {
+      r.cards = updated;
+      saveCustomContent(store);
+    }
+
+    setAddFront("");
+    setAddBack("");
+    setAddHint("");
+    setAddingCard(false);
+  };
+
+  const deleteCard = (i: number) => {
+    const updated = cards.filter((_, idx) => idx !== i);
+    setCards(updated);
+
+    const store = loadCustomContent();
+    const c = store.courses.find((c) => c.id === courseSlug);
+    const m = c?.modules.find((m) => m.id === moduleSlug);
+    const r = m?.reviewers.find((r) => {
+      const rSlug = r.id.split("/").slice(2).join("/");
+      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+    });
+    if (r) {
+      r.cards = updated;
+      saveCustomContent(store);
+    }
   };
 
   function shuffleArray(arr: any[]) {
@@ -218,6 +263,12 @@ export default function FlashcardStudyClient({
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm"
             >
               <Play className="h-4 w-4" /> Review
+            </button>
+            <button
+              onClick={() => setAddingCard(!addingCard)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm"
+            >
+              <Plus className="h-4 w-4" /> Add Card
             </button>
             <button
               onClick={() => exportFlashcardsToPdf(reviewer.title, cards)}
@@ -326,6 +377,55 @@ export default function FlashcardStudyClient({
         </div>
       )}
 
+      {addingCard && (
+        <div className="mb-6 p-4 rounded-lg border bg-card space-y-3">
+          <h3 className="font-medium">Add New Card</h3>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Question</label>
+            <textarea
+              value={addFront}
+              onChange={(e) => setAddFront(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+              rows={2}
+              placeholder="Enter the question..."
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Answer</label>
+            <textarea
+              value={addBack}
+              onChange={(e) => setAddBack(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+              rows={2}
+              placeholder="Enter the answer..."
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
+            <input
+              value={addHint}
+              onChange={(e) => setAddHint(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+              placeholder="Optional hint..."
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={addCard}
+              className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"
+            >
+              <Check className="h-3 w-3" /> Add
+            </button>
+            <button
+              onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); }}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"
+            >
+              <X className="h-3 w-3" /> Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         {cards.map((card: any, i: number) => (
           <div key={i} className="p-4 rounded-lg border bg-card">
@@ -374,12 +474,20 @@ export default function FlashcardStudyClient({
               </div>
             ) : (
               <div className="relative">
-                <button
-                  onClick={() => startEdit(i)}
-                  className="absolute top-0 right-0 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground no-print"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
+                <div className="absolute top-0 right-0 flex gap-1 no-print">
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteCard(i)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
                 <p className="font-medium pr-8">Q: {card.front}</p>
                 <p className="mt-2 text-muted-foreground">A: {card.back}</p>
                 {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
