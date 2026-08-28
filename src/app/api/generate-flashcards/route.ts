@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CHUNK_SIZE = 30000;
+const CHUNK_SIZE = 20000;
 const MAX_CONCURRENT = 1;
 
 function splitIntoChunks(text: string): string[] {
@@ -53,11 +53,14 @@ async function callGemini(apiKey: string, prompt: string, chunk: string, retries
     if (res.status === 429 && attempt < retries) continue;
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Gemini API error (${res.status})`);
+      const errText = await res.text().catch(() => "");
+      let errMsg = `Gemini API error (${res.status})`;
+      try { errMsg = JSON.parse(errText).error?.message || errMsg; } catch {}
+      throw new Error(errMsg);
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
+    if (!data) throw new Error("Empty response from Gemini");
     return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   }
   throw new Error("Rate limited — try again later");
