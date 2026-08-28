@@ -128,9 +128,9 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
           Flash Cards
           <Link
             href={`/editor/reviewer?course=${courseSlug}&module=${moduleSlug}`}
-            className="ml-auto flex items-center gap-1 text-sm text-primary hover:underline font-normal"
+            className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span>
+            <Plus className="h-3 w-3" /> New
           </Link>
         </h2>
         <div className="space-y-2">
