@@ -118,33 +118,35 @@ export default function FlashcardStudyClient({
 
   useEffect(() => {
     async function loadData() {
-      if (user) {
-        const cloudData = await loadUserFlashcards(user.id);
-        const match = cloudData.find((d: any) =>
-          d.course_id === courseSlug && d.module_id === moduleSlug &&
-          (d.reviewer_id === reviewerSlug || d.reviewer_id.endsWith(reviewerSlug))
-        );
-        if (match) {
-          setReviewer({ id: match.reviewer_id, title: match.title, cards: match.cards });
-          setCards(match.cards || []);
-          if (match.cards && match.cards.length > 0) {
+      try {
+        if (user) {
+          const cloudData = await loadUserFlashcards(user.id);
+          const match = cloudData.find((d: any) =>
+            d.course_id === courseSlug && d.module_id === moduleSlug &&
+            (d.reviewer_id === reviewerSlug || d.reviewer_id.endsWith(reviewerSlug))
+          );
+          if (match) {
+            setReviewer({ id: match.reviewer_id, title: match.title, cards: match.cards });
+            setCards(match.cards || []);
             setMounted(true);
             return;
           }
         }
-      }
+      } catch {}
 
-      const customContent = loadCustomContent();
-      const customCourse = customContent.courses.find((c) => c.id === courseSlug);
-      const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-      const found = customModule?.reviewers.find((r) => {
-        const rSlug = r.id.split("/").slice(2).join("/");
-        return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
-      });
-      if (found) {
-        setReviewer(found);
-        setCards(found.cards || []);
-      }
+      try {
+        const customContent = loadCustomContent();
+        const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+        const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+        const found = customModule?.reviewers.find((r) => {
+          const rSlug = r.id.split("/").slice(2).join("/");
+          return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+        });
+        if (found) {
+          setReviewer(found);
+          setCards(found.cards || []);
+        }
+      } catch {}
       setMounted(true);
     }
     loadData();
