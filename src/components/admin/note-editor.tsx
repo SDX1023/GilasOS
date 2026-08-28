@@ -164,9 +164,8 @@ export function NoteEditor({
 
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
-            {mode === "split" && <div className="h-[37px] border-b shrink-0" />}
             <div
-              className="p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
+              className={`${mode === "split" ? "pt-10" : ""} p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
                 prose-headings:scroll-mt-20
                 prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline
                 prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
