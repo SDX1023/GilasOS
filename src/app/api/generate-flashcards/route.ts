@@ -2,23 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CHARS = 360000;
 const CHUNK_SIZE = 45000;
-const CONCURRENCY = 3;
+const CHUNKS_PER_POLL = 3;
 const MAX_RETRIES = 4;
 const BASE_DELAY = 1500;
-const REQUEST_TIMEOUT_MS = 120000;
+const REQUEST_TIMEOUT_MS = 90000;
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
 
 type Job = {
   id: string;
-  status: "processing" | "done" | "error";
+  status: "processing" | "covering" | "done" | "error";
   cards: any[];
+  chunks: string[];
+  nextChunk: number;
   totalChunks: number;
-  processedChunks: number;
+  errors: string[];
   error?: string;
   text: string;
-  createdAt: number;
+  busy: boolean;
 };
 
 const jobs = new Map<string, Job>();
@@ -335,39 +337,6 @@ async function runPool<T, R>(
   return results;
 }
 
-async function runGeneration(apiKey: string, text: string, job: Job) {
-  try {
-    const chunks = splitIntoChunks(text, CHUNK_SIZE);
-    job.totalChunks = chunks.length;
-    console.log(`Job ${job.id}: processing ${chunks.length} chunks`);
-
-    const results = await runPool(chunks, CONCURRENCY, async (chunk, i) => {
-      const r = await generateForChunk(apiKey, chunk, i, chunks.length);
-      job.processedChunks = (job.processedChunks || 0) + 1;
-      if (r.cards.length > 0) job.cards = job.cards.concat(r.cards);
-      return r;
-    });
-
-    if (job.cards.length > 0) {
-      const coverage = await runCoveragePass(apiKey, text, job.cards);
-      if (coverage.cards.length > 0) {
-        console.log(`Job ${job.id}: coverage pass added ${coverage.cards.length} cards`);
-        job.cards = job.cards.concat(coverage.cards);
-      }
-    }
-
-    job.cards = dedupeCards(job.cards);
-    job.status = "done";
-    console.log(`Job ${job.id}: done, ${job.cards.length} unique cards`);
-
-    cache.set(`fc-${simpleHash(text)}-v10`, { data: job.cards, ts: Date.now() });
-  } catch (err: any) {
-    console.error(`Job ${job.id} failed:`, err?.message || err);
-    job.status = "error";
-    job.error = err?.message || "Generation failed";
-  }
-}
-
 export async function GET(req: NextRequest) {
   const jobId = req.nextUrl.searchParams.get("job");
   if (!jobId) {
@@ -377,13 +346,69 @@ export async function GET(req: NextRequest) {
   if (!job) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  try {
+    if (job.busy) {
+      return NextResponse.json({
+        status: job.status,
+        cards: job.cards,
+        totalCards: job.cards.length,
+        totalChunks: job.totalChunks,
+        processedChunks: Math.min(job.nextChunk, job.totalChunks),
+        error: job.errors.length ? job.errors.join("; ") : undefined,
+      });
+    }
+    job.busy = true;
+
+    if (job.status === "processing" && apiKey) {
+      const batch = job.chunks.slice(job.nextChunk, job.nextChunk + CHUNKS_PER_POLL);
+      const results = await runPool(batch, batch.length, (chunk, i) =>
+        generateForChunk(apiKey, chunk, job.nextChunk + i, job.totalChunks)
+      );
+      for (const r of results) {
+        if (r.cards.length > 0) job.cards = job.cards.concat(r.cards);
+        if (r.error) job.errors.push(r.error);
+      }
+      job.nextChunk += batch.length;
+
+      if (job.nextChunk >= job.totalChunks) {
+        job.status = "covering";
+      }
+    } else if (job.status === "covering" && apiKey) {
+      const coverage = await runCoveragePass(apiKey, job.text, job.cards);
+      if (coverage.cards.length > 0) {
+        console.log(`Coverage pass added ${coverage.cards.length} cards`);
+        job.cards = job.cards.concat(coverage.cards);
+      }
+      job.cards = dedupeCards(job.cards);
+      job.status = "done";
+      cache.set(`fc-${simpleHash(job.text)}-v10`, { data: job.cards, ts: Date.now() });
+    }
+  } catch (err: any) {
+    console.error(`Job ${job.id} error:`, err?.message || err);
+    job.status = "error";
+    job.error = err?.message || "Generation failed";
+  } finally {
+    job.busy = false;
+  }
+
+  if (job.status === "error" && job.cards.length === 0) {
+    return NextResponse.json({
+      status: "error",
+      error: job.error || job.errors.join("; ") || "Generation failed",
+      cards: [],
+    });
+  }
+
   return NextResponse.json({
     status: job.status,
-    cards: job.status === "done" ? job.cards : job.cards,
+    cards: job.cards,
     totalCards: job.cards.length,
     totalChunks: job.totalChunks,
-    processedChunks: job.processedChunks,
-    error: job.error,
+    processedChunks: Math.min(job.nextChunk, job.totalChunks),
+    error: job.errors.length ? job.errors.join("; ") : undefined,
   });
 }
 
@@ -414,25 +439,22 @@ export async function POST(req: NextRequest) {
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
       const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const job: Job = {
-        id, status: "done", cards: cached.data,
-        totalChunks: 0, processedChunks: 0, text: "", createdAt: Date.now(),
+        id, status: "done", cards: cached.data, chunks: [], nextChunk: 0,
+        totalChunks: 0, errors: [], text: "", busy: false,
       };
       jobs.set(id, job);
       return NextResponse.json({ jobId: id });
     }
 
+    const chunks = splitIntoChunks(truncatedText, CHUNK_SIZE);
     const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const job: Job = {
-      id, status: "processing", cards: [],
-      totalChunks: 0, processedChunks: 0, text: truncatedText, createdAt: Date.now(),
+      id, status: "processing", cards: [], chunks, nextChunk: 0,
+      totalChunks: chunks.length, errors: [], text: truncatedText, busy: false,
     };
     jobs.set(id, job);
 
-    runGeneration(apiKey, truncatedText, job).catch((e) => {
-      job.status = "error";
-      job.error = e?.message || "Generation failed";
-    });
-
+    console.log(`Created job ${id} with ${chunks.length} chunks`);
     return NextResponse.json({ jobId: id });
   } catch (err: any) {
     console.error("Unhandled error:", err?.message || err);

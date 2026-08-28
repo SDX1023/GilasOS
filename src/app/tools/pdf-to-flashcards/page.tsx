@@ -78,17 +78,17 @@ export default function PdfToFlashcardsPage() {
       const jobId = data.jobId;
       if (!jobId) throw new Error("No job id returned");
 
-      const poll = async (): Promise<any> => {
+      let final: any = null;
+      while (true) {
         const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(jobId)}`);
-        const d = await r.json();
+        const text = await r.text();
+        let d: any;
+        try { d = JSON.parse(text); } catch { throw new Error(text.slice(0, 300) || "Invalid server response"); }
         if (!r.ok) throw new Error(d.error || "Failed to poll job");
         if (d.status === "error") throw new Error(d.error || "Generation failed");
-        if (d.status === "done") return d;
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-        return poll();
-      };
-
-      const final = await poll();
+        if (d.status === "done") { final = d; break; }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
       setGeneratedCards(final.cards);
     } catch (error: any) {
       setLastError(error.message);
