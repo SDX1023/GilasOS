@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Brain, Timer, FileText, Sun, Moon, Heart, Trophy, CheckSquare, LogIn, LogOut, User } from "lucide-react";
+import { BookOpen, Brain, Timer, FileText, Sun, Moon, Heart, Trophy, CheckSquare, LogIn, LogOut, User, Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -89,6 +89,13 @@ export function Navbar() {
                         {user.email}
                         {isAdmin && <span className="ml-1 text-primary font-medium">Admin</span>}
                       </div>
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowMenu(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
+                      >
+                        <Settings className="h-4 w-4" /> Settings
+                      </Link>
                       <button
                         onClick={() => { signOut(); setShowMenu(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
