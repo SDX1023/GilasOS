@@ -74,16 +74,18 @@ export default function PdfToFlashcardsPage() {
       });
       // Also save to Supabase if logged in
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log("PDF save - user:", user?.id || "none", "authError:", authError);
       if (user) {
         const reviewerId = `${PDF_COURSE_ID}/${PDF_MODULE_ID}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
-        await supabase.from("reviewers").upsert({
+        const { error: revErr } = await supabase.from("reviewers").upsert({
           id: reviewerId,
           user_id: user.id,
           course_id: PDF_COURSE_ID,
           module_id: PDF_MODULE_ID,
           title: deckName,
         }, { onConflict: "id" });
+        console.log("PDF save - reviewer upsert:", revErr ? JSON.stringify(revErr) : "OK");
         if (generatedCards.length > 0) {
           const rows = generatedCards.map((card, i) => ({
             id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
@@ -93,7 +95,8 @@ export default function PdfToFlashcardsPage() {
             back: card.back,
             hint: card.hint || "",
           }));
-          await supabase.from("flashcards").insert(rows);
+          const { error: cardErr } = await supabase.from("flashcards").insert(rows);
+          console.log("PDF save - flashcards insert:", cardErr ? JSON.stringify(cardErr) : "OK");
         }
       }
       setDeckName("");
