@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveUserFlashcard } from "@/lib/user-data";
+import { saveUserFlashcard, saveStudyStats } from "@/lib/user-data";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -149,11 +149,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     if (!reviewCompleteRef.current || !userRef.current) return;
     const total = knownCount + forgotCount + dontKnowCount;
     if (total === 0) return;
-    fetch("/api/study-stats", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userRef.current.id, known: knownCount, forgot: forgotCount, dont_know: dontKnowCount, cards_total: total }),
-    }).catch(() => {});
+    saveStudyStats(userRef.current.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
   }, [reviewComplete, knownCount, forgotCount, dontKnowCount]);
 
   useEffect(() => {

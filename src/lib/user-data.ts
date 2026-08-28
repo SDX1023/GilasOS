@@ -50,6 +50,41 @@ export async function deleteUserFlashcard(
     .eq("reviewer_id", reviewerId);
 }
 
+// Study Stats
+export async function saveStudyStats(
+  userId: string,
+  known: number,
+  forgot: number,
+  dontKnow: number,
+  cardsTotal: number
+) {
+  const supabase = getSupabase();
+  const today = new Date().toDateString();
+
+  const { data: existing } = await supabase
+    .from("study_stats")
+    .select("id, known, forgot, dont_know, cards_total")
+    .eq("user_id", userId)
+    .eq("date", today)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("study_stats")
+      .update({
+        known: existing.known + known,
+        forgot: existing.forgot + forgot,
+        dont_know: existing.dont_know + dontKnow,
+        cards_total: existing.cards_total + cardsTotal,
+      })
+      .eq("id", existing.id);
+  } else {
+    await supabase
+      .from("study_stats")
+      .insert({ user_id: userId, date: today, known, forgot, dont_know: dontKnow, cards_total: cardsTotal });
+  }
+}
+
 // Notes
 export async function loadUserNotes(userId: string) {
   const supabase = getSupabase();
