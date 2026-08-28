@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase } from "@/lib/custom-content";
+import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { Brain, Trash2 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 
@@ -18,22 +18,35 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
 
-      if (user) {
-        // Logged in: load from Supabase
-        const cloudReviewers = await loadReviewersFromSupabase();
-        setAllReviewers(cloudReviewers);
-      } else {
-        // Guest: load from localStorage
-        const customContent = loadCustomContent();
-        const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
-        for (const course of customContent.courses) {
-          for (const mod of course.modules) {
-            for (const reviewer of mod.reviewers) {
-              reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-            }
+      // Always load from localStorage
+      const localReviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+      const customContent = loadCustomContent();
+      for (const course of customContent.courses) {
+        for (const mod of course.modules) {
+          for (const reviewer of mod.reviewers) {
+            localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
           }
         }
-        setAllReviewers(reviewers);
+      }
+
+      if (user) {
+        // Load from Supabase
+        const cloudReviewers = await loadReviewersFromSupabase();
+
+        // Merge: start with cloud, add any localStorage items not in cloud
+        const cloudIds = new Set(cloudReviewers.map((r) => r.reviewer.id));
+        const missingFromCloud = localReviewers.filter((r) => !cloudIds.has(r.reviewer.id));
+
+        // Sync missing items to Supabase in background
+        for (const item of missingFromCloud) {
+          saveReviewerToSupabase(item.courseId, item.moduleId, item.reviewer).catch(() => {});
+        }
+
+        // Show merged list (cloud + missing items immediately)
+        setAllReviewers([...cloudReviewers, ...missingFromCloud]);
+      } else {
+        // Guest: just show localStorage
+        setAllReviewers(localReviewers);
       }
       setMounted(true);
     })();
