@@ -184,18 +184,18 @@ export default function FlashcardStudyClient({
 
       {reviewMode && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <span className="text-sm text-muted-foreground">{reviewIndex + 1} / {cards.length}</span>
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between p-5 border-b">
+            <span className="text-base text-muted-foreground">{reviewIndex + 1} / {cards.length}</span>
+            <div className="flex gap-3">
               <button
                 onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
-                className={`px-3 py-1.5 rounded-lg border text-sm ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                className={`px-4 py-2 rounded-lg border text-base ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
               >
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
               <button
                 onClick={() => setReviewMode(false)}
-                className="px-3 py-1.5 rounded-lg border text-sm hover:bg-muted"
+                className="px-4 py-2 rounded-lg border text-base hover:bg-muted"
               >
                 Exit Review
               </button>
@@ -204,25 +204,25 @@ export default function FlashcardStudyClient({
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <div
               onClick={() => setReviewFlipped(!reviewFlipped)}
-              className="w-full max-w-lg min-h-[250px] p-8 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
+              className="w-full max-w-2xl min-h-[350px] p-12 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
             >
               <div>
-                <p className="text-lg font-medium">
+                <p className="text-2xl font-medium leading-relaxed">
                   {reviewFlipped
                     ? (swapped ? cards[reviewIndex].front : cards[reviewIndex].back)
                     : (swapped ? cards[reviewIndex].back : cards[reviewIndex].front)
                   }
                 </p>
                 {!reviewFlipped && cards[reviewIndex].hint && (
-                  <p className="text-sm text-muted-foreground mt-4 italic">Hint: {cards[reviewIndex].hint}</p>
+                  <p className="text-base text-muted-foreground mt-6 italic">Hint: {cards[reviewIndex].hint}</p>
                 )}
               </div>
             </div>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
               {!reviewFlipped ? (
                 <button
                   onClick={() => setReviewFlipped(true)}
-                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                  className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium"
                 >
                   Show Answer
                 </button>
@@ -237,7 +237,7 @@ export default function FlashcardStudyClient({
                         setReviewMode(false);
                       }
                     }}
-                    className="px-5 py-2.5 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-sm font-medium"
+                    className="px-6 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-base font-medium"
                   >
                     I Forgot
                   </button>
@@ -250,7 +250,7 @@ export default function FlashcardStudyClient({
                         setReviewMode(false);
                       }
                     }}
-                    className="px-5 py-2.5 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-sm font-medium"
+                    className="px-6 py-3 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-base font-medium"
                   >
                     I Don&apos;t Know
                   </button>
@@ -263,7 +263,7 @@ export default function FlashcardStudyClient({
                         setReviewMode(false);
                       }
                     }}
-                    className="px-5 py-2.5 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-sm font-medium"
+                    className="px-6 py-3 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-base font-medium"
                   >
                     I Know
                   </button>
