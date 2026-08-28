@@ -502,7 +502,7 @@ function QuizTab() {
                 className="w-full h-40 px-4 py-3 rounded-lg border bg-background resize-none"
               />
               {inputText && (
-                <p className="text-xs text-muted-foreground mt-1">~{Math.min(500, Math.max(5, Math.ceil(inputText.length / 200)))} questions will be generated</p>
+                <p className="text-xs text-muted-foreground mt-1">Gemini will determine the optimal number of questions</p>
               )}
             </div>
             <div className="flex items-center gap-4">
@@ -550,7 +550,7 @@ function QuizTab() {
                 {loadingContent ? (
                   <span className="text-muted-foreground">Loading content...</span>
                 ) : courseContent ? (
-                  <span className="text-green-600">Loaded {courseContent.length.toLocaleString()} characters — ~{Math.min(500, Math.max(5, Math.ceil(courseContent.length / 200)))} questions will be generated</span>
+                  <span className="text-green-600">Loaded {courseContent.length.toLocaleString()} characters — Gemini will generate the optimal number of questions</span>
                 ) : (
                   <span className="text-muted-foreground">No content found in this module</span>
                 )}

@@ -1,40 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CHUNK_SIZE = 15000;
-
-function splitIntoChunks(text: string): string[] {
-  const chunks: string[] = [];
-  const paragraphs = text.split(/\n\n+/);
-  let current = "";
-  for (const p of paragraphs) {
-    if (p.length > CHUNK_SIZE) {
-      if (current.trim()) chunks.push(current.trim());
-      const sentences = p.split(/(?<=[.!?])\s+/);
-      current = "";
-      for (const s of sentences) {
-        if ((current + " " + s).length > CHUNK_SIZE && current) {
-          chunks.push(current.trim());
-          current = s;
-        } else {
-          current = current ? current + " " + s : s;
-        }
-      }
-    } else if ((current + "\n\n" + p).length > CHUNK_SIZE && current) {
-      chunks.push(current.trim());
-      current = p;
-    } else {
-      current = current ? current + "\n\n" + p : p;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
+// Gemini 3.6 Flash can handle ~30k chars per call
+const MAX_CHARS_PER_CALL = 28000;
 
 async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 5): Promise<string> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     if (attempt > 0) {
-      const delay = attempt * 5000;
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise(r => setTimeout(r, attempt * 8000));
     }
 
     const res = await fetch(
@@ -59,7 +31,7 @@ async function callGemini(apiKey: string, prompt: string, chunk: string, retries
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   }
-  throw new Error("Rate limited — try again later");
+  throw new Error("Rate limited — try again in a minute");
 }
 
 export async function POST(req: NextRequest) {
@@ -73,34 +45,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No text provided" }, { status: 400 });
   }
 
-  const numQuestions = Math.min(500, Math.max(5, Math.ceil(text.length / 200)));
-  const chunks = splitIntoChunks(text);
+  // Use as much text as fits in one call — Gemini decides question count
+  const truncatedText = text.slice(0, MAX_CHARS_PER_CALL);
 
-  // Limit to max 8 API calls to stay within rate limits
-  // Merge small chunks, split large ones proportionally
-  const maxApiCalls = Math.min(8, chunks.length);
-  const questionsPerCall = Math.ceil(numQuestions / maxApiCalls);
+  const prompt = `You are an expert quiz generator. Analyze the study material below and generate quiz questions.
 
-  // Merge chunks if we have too many
-  let apiChunks: string[] = [];
-  if (chunks.length <= maxApiCalls) {
-    apiChunks = chunks;
-  } else {
-    const mergeFactor = Math.ceil(chunks.length / maxApiCalls);
-    for (let i = 0; i < chunks.length; i += mergeFactor) {
-      apiChunks.push(chunks.slice(i, i + mergeFactor).join("\n\n"));
-    }
-  }
-
-  const allQuestions: any[] = [];
-
-  // Add delay between calls to respect rate limits
-  for (let i = 0; i < apiChunks.length; i++) {
-    if (i > 0) {
-      await new Promise(r => setTimeout(r, 4000));
-    }
-
-    const prompt = `You are an expert quiz generator. Given the study material below, generate quiz questions.
+IMPORTANT: You decide how many questions the material warrants. Generate as many questions as needed to thoroughly cover ALL important concepts, facts, definitions, names, dates, processes, and details. Be comprehensive — do not hold back.
 
 Return ONLY a valid JSON array of question objects. Mix these two types:
 
@@ -111,7 +61,7 @@ Return ONLY a valid JSON array of question objects. Mix these two types:
    {"type":"identification","question":"...","answer":"the answer"}
 
 Rules:
-- Generate ${questionsPerCall} questions from this material
+- You determine the count — cover everything important
 - Mix both types roughly 50/50
 - Test real understanding — definitions, key facts, processes, comparisons, names, dates
 - For MC: exactly 4 options, "correct" is 0-based index
@@ -119,32 +69,17 @@ Rules:
 - Vary difficulty: easy recall to harder analysis
 - No markdown, no code blocks, just raw JSON array`;
 
-    try {
-      const content = await callGemini(apiKey, prompt, apiChunks[i]);
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        try {
-          const questions = JSON.parse(jsonMatch[0]);
-          if (Array.isArray(questions)) allQuestions.push(...questions);
-        } catch {}
+  try {
+    const content = await callGemini(apiKey, prompt, truncatedText);
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const questions = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(questions) && questions.length > 0) {
+        return NextResponse.json({ questions });
       }
-    } catch (err: any) {
-      // If we already have some questions, return them instead of failing
-      if (allQuestions.length > 0) {
-        return NextResponse.json({ questions: allQuestions.slice(0, numQuestions) });
-      }
-      return NextResponse.json(
-        { error: err.message || `Failed on chunk ${i + 1}` },
-        { status: 500 }
-      );
     }
-  }
-
-  const result = allQuestions.slice(0, numQuestions);
-
-  if (result.length === 0) {
     return NextResponse.json({ error: "No questions found in response" }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-
-  return NextResponse.json({ questions: result });
 }
