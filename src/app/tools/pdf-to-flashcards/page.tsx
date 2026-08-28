@@ -83,7 +83,7 @@ export default function PdfToFlashcardsPage() {
   const generateCards = useCallback(async () => {
     if (!pdfText.trim()) return;
 
-    let apiKey = localStorage.getItem("groq_api_key");
+    let apiKey = localStorage.getItem("groq_api_key") || process.env.NEXT_PUBLIC_GROQ_API_KEY || "";
     if (!apiKey) {
       const input = window.prompt("Enter your Groq API key (get one free at console.groq.com):");
       if (!input?.trim()) return;
@@ -124,7 +124,7 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
                 "Authorization": `Bearer ${apiKey.trim()}`,
               },
               body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "llama3-70b-8192",
                 messages: [
                   { role: "system", content: systemPrompt },
                   { role: "user", content: chunks[i] },
