@@ -95,6 +95,7 @@ export default function FlashcardStudyClient({
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
+  const [flashImage, setFlashImage] = useState<string | null>(null);
 
   useEffect(() => {
     const customContent = loadCustomContent();
@@ -220,6 +221,8 @@ export default function FlashcardStudyClient({
   }
 
   function handleKnow() {
+    setFlashImage("/flash/know.png");
+    setTimeout(() => setFlashImage(null), 600);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
     if (newQueue.length === 0) {
@@ -233,12 +236,16 @@ export default function FlashcardStudyClient({
   }
 
   function handleDontKnow() {
+    setFlashImage("/flash/dontknow.png");
+    setTimeout(() => setFlashImage(null), 600);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
   }
 
   function handleForgot() {
+    setFlashImage("/flash/forgot.png");
+    setTimeout(() => setFlashImage(null), 600);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
@@ -282,6 +289,15 @@ export default function FlashcardStudyClient({
 
       {reviewMode && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          {flashImage && (
+            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80 animate-in fade-in duration-150">
+              <img
+                src={flashImage}
+                alt=""
+                className="max-w-[80vw] max-h-[80vh] object-contain animate-in zoom-in-50 duration-200"
+              />
+            </div>
+          )}
           <div className="flex items-center justify-between p-5 border-b">
             <div className="flex items-center gap-4">
               <span className="text-base text-muted-foreground">
