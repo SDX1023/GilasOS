@@ -46,15 +46,36 @@ export default function PdfToFlashcardsPage() {
   const generateCards = useCallback(async () => {
     if (!pdfText.trim()) return;
     setIsGenerating(true);
+    setGeneratedCards([]);
     try {
       const res = await fetch("/api/generate-flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: pdfText }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate flashcards");
-      setGeneratedCards(data.cards);
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to generate flashcards");
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error("No response stream");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split("\n").filter(Boolean);
+        for (const line of lines) {
+          try {
+            const msg = JSON.parse(line);
+            if (msg.error) throw new Error(msg.error);
+            if (msg.cards?.length) setGeneratedCards(prev => [...prev, ...msg.cards]);
+            if (msg.done) break;
+          } catch {}
+        }
+      }
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {

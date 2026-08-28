@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const CHUNK_SIZE = 8000;
-const MAX_CONCURRENT = 1;
 
 function splitIntoChunks(text: string): string[] {
   const chunks: string[] = [];
@@ -34,10 +33,10 @@ function splitIntoChunks(text: string): string[] {
   return chunks;
 }
 
-async function callGroq(apiKey: string, prompt: string, chunk: string, retries = 3): Promise<string> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
+async function callGroq(apiKey: string, prompt: string, chunk: string): Promise<string> {
+  for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
+      await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
     }
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -54,10 +53,10 @@ async function callGroq(apiKey: string, prompt: string, chunk: string, retries =
         ],
         temperature: 0.7,
       }),
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(30000),
     });
 
-    if (res.status === 429 && attempt < retries) continue;
+    if (res.status === 429 && attempt < 2) continue;
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
@@ -76,46 +75,58 @@ async function callGroq(apiKey: string, prompt: string, chunk: string, retries =
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), { status: 500 });
   }
 
   const { text } = await req.json();
   if (!text?.trim()) {
-    return NextResponse.json({ error: "No text provided" }, { status: 400 });
+    return new Response(JSON.stringify({ error: "No text provided" }), { status: 400 });
   }
 
-  const chunks = splitIntoChunks(text);
-  const allCards: { front: string; back: string; hint?: string }[] = [];
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const chunks = splitIntoChunks(text);
 
-  const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
+      const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
 Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
 Optionally include a "hint" field for difficult concepts.
 Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
-Aim for 20-40 flashcards per chunk. Be thorough — every important concept should become a flashcard.
+Aim for 10-20 flashcards per chunk. Be thorough — every important concept should become a flashcard.
 Make questions clear and concise. Answers should be informative but brief.
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
-  async function processChunk(chunk: string): Promise<{ front: string; back: string; hint?: string }[]> {
-    const content = await callGroq(apiKey!, systemPrompt, chunk);
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      try {
-        const cards = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(cards)) return cards;
-      } catch {}
-    }
-    return [];
-  }
+      let totalCards = 0;
 
-  for (let i = 0; i < chunks.length; i += MAX_CONCURRENT) {
-    const batch = chunks.slice(i, i + MAX_CONCURRENT);
-    const results = await Promise.all(batch.map(processChunk));
-    for (const cards of results) allCards.push(...cards);
-  }
+      for (let i = 0; i < chunks.length; i++) {
+        try {
+          const content = await callGroq(apiKey, systemPrompt, chunks[i]);
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            try {
+              const cards = JSON.parse(jsonMatch[0]);
+              if (Array.isArray(cards) && cards.length > 0) {
+                totalCards += cards.length;
+                controller.enqueue(encoder.encode(JSON.stringify({ cards, done: false, progress: Math.round(((i + 1) / chunks.length) * 100) }) + "\n"));
+              }
+            } catch {}
+          }
+        } catch (err: any) {
+          controller.enqueue(encoder.encode(JSON.stringify({ error: err.message, done: true }) + "\n"));
+          controller.close();
+          return;
+        }
+      }
 
-  if (allCards.length === 0) {
-    return NextResponse.json({ error: "No flashcards found in response" }, { status: 500 });
-  }
+      controller.enqueue(encoder.encode(JSON.stringify({ cards: [], done: true, totalCards }) + "\n"));
+      controller.close();
+    },
+  });
 
-  return NextResponse.json({ cards: allCards });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain",
+      "Transfer-Encoding": "chunked",
+    },
+  });
 }
