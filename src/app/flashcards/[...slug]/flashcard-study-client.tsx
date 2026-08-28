@@ -104,6 +104,8 @@ export default function FlashcardStudyClient({
   const flashQueues = useRef<Record<string, string[]>>({});
   const flashIndex = useRef<Record<string, number>>({});
 
+  const sessionKey = `flash-session-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
+
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
   }, []);
@@ -119,9 +121,58 @@ export default function FlashcardStudyClient({
     if (found) {
       setReviewer(found);
       setCards(found.cards || []);
+
+      const stored = localStorage.getItem(sessionKey);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          const today = new Date().toDateString();
+          if (data.date === today && data.queue && data.queue.length > 0) {
+            setQueue(data.queue);
+            setQueueIndex(data.queueIndex || 0);
+            setKnownCount(data.knownCount || 0);
+            setForgotCount(data.forgotCount || 0);
+            setDontKnowCount(data.dontKnowCount || 0);
+            setReviewMode(true);
+          }
+        } catch {}
+      }
     }
     setMounted(true);
-  }, [courseSlug, moduleSlug, reviewerSlug]);
+  }, [courseSlug, moduleSlug, reviewerSlug, sessionKey]);
+
+  useEffect(() => {
+    if (!reviewMode || reviewComplete) return;
+    localStorage.setItem(sessionKey, JSON.stringify({
+      date: new Date().toDateString(),
+      queue,
+      queueIndex,
+      knownCount,
+      forgotCount,
+      dontKnowCount,
+    }));
+  }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, reviewMode, reviewComplete, sessionKey]);
+
+  useEffect(() => {
+    if (!reviewMode) return;
+    const checkDay = setInterval(() => {
+      const stored = localStorage.getItem(sessionKey);
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.date !== new Date().toDateString()) {
+          localStorage.removeItem(sessionKey);
+          setQueue([]);
+          setQueueIndex(0);
+          setKnownCount(0);
+          setForgotCount(0);
+          setDontKnowCount(0);
+          setReviewMode(false);
+          setReviewComplete(false);
+        }
+      }
+    }, 60000);
+    return () => clearInterval(checkDay);
+  }, [reviewMode, sessionKey]);
 
   if (!mounted) {
     return (
