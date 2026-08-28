@@ -214,14 +214,14 @@ async function generateForChunk(
     if (cards.length === 0) {
       const qaPairs = content.match(/"front"\s*:\s*"([^"]*?)"\s*,\s*"back"\s*:\s*"([^"]*?)"/g);
       if (qaPairs) {
-        cards = qaPairs.map(pair => {
+        cards = qaPairs.map((pair: string) => {
           const frontMatch = pair.match(/"front"\s*:\s*"([^"]*?)"/);
           const backMatch = pair.match(/"back"\s*:\s*"([^"]*?)"/);
           return {
             front: frontMatch ? frontMatch[1] : '',
             back: backMatch ? backMatch[1] : ''
           };
-        }).filter(card => card.front && card.back);
+        }).filter((card: { front: string; back: string }) => card.front && card.back);
       }
     }
 
