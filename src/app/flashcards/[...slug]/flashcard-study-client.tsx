@@ -453,7 +453,7 @@ export default function FlashcardStudyClient({
                   Great job! Keep up the good work.
                 </p>
                 <button
-                  onClick={() => { localStorage.removeItem(sessionKey); setReviewMode(false); }}
+                  onClick={() => setReviewMode(false)}
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium"
                 >
                   Back to Deck
@@ -531,13 +531,13 @@ export default function FlashcardStudyClient({
                 </div>
                 <div className="flex gap-3 justify-center">
                   <button
-                    onClick={() => { setShowSummary(false); startReview(); }}
+                    onClick={() => { localStorage.removeItem(sessionKey); setShowSummary(false); startReview(); }}
                     className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
                   >
                     Review Again
                   </button>
                   <button
-                    onClick={() => { localStorage.removeItem(sessionKey); setShowSummary(false); setReviewMode(false); }}
+                    onClick={() => { setShowSummary(false); setReviewMode(false); }}
                     className="px-6 py-2 rounded-lg border hover:bg-muted"
                   >
                     Back to Deck
