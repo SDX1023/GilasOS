@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
@@ -98,6 +98,8 @@ export default function FlashcardStudyClient({
   const [flashImage, setFlashImage] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
+  const flashQueues = useRef<Record<string, string[]>>({});
+  const flashIndex = useRef<Record<string, number>>({});
 
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
@@ -226,21 +228,34 @@ export default function FlashcardStudyClient({
     setReviewMode(true);
   }
 
-  function showFlash(img: string) {
+  function pickRandom(type: string): string | null {
+    const pool = flashImages[type] || [];
+    if (!pool.length) return null;
+    if (!flashQueues.current[type] || flashQueues.current[type].length === 0) {
+      flashQueues.current[type] = shuffleArray(pool);
+      flashIndex.current[type] = 0;
+    }
+    const q = flashQueues.current[type];
+    const img = q[flashIndex.current[type] % q.length];
+    flashIndex.current[type]++;
+    if (flashIndex.current[type] >= q.length) {
+      flashQueues.current[type] = shuffleArray(pool);
+      flashIndex.current[type] = 0;
+    }
+    return img;
+  }
+
+  function showFlash(type: string) {
+    const img = pickRandom(type);
+    if (!img) return;
     setFlashImage(img);
     requestAnimationFrame(() => setFlashVisible(true));
     setTimeout(() => setFlashVisible(false), 2500);
     setTimeout(() => setFlashImage(null), 2800);
   }
 
-  function pickRandom(arr: string[]): string | null {
-    if (!arr.length) return null;
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
   function handleKnow() {
-    const img = pickRandom(flashImages.know || []);
-    if (img) showFlash(img);
+    showFlash("know");
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
     if (newQueue.length === 0) {
@@ -254,16 +269,14 @@ export default function FlashcardStudyClient({
   }
 
   function handleDontKnow() {
-    const img = pickRandom(flashImages.dontknow || []);
-    if (img) showFlash(img);
+    showFlash("dontknow");
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
   }
 
   function handleForgot() {
-    const img = pickRandom(flashImages.forgot || []);
-    if (img) showFlash(img);
+    showFlash("forgot");
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
