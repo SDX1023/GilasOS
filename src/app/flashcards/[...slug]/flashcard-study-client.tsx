@@ -90,7 +90,10 @@ export default function FlashcardStudyClient({
   const [queue, setQueue] = useState<any[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [knownCount, setKnownCount] = useState(0);
+  const [forgotCount, setForgotCount] = useState(0);
+  const [dontKnowCount, setDontKnowCount] = useState(0);
   const [reviewComplete, setReviewComplete] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
@@ -219,9 +222,14 @@ export default function FlashcardStudyClient({
   }
 
   function startReview() {
+    if (reviewComplete) {
+      setKnownCount(0);
+      setForgotCount(0);
+      setDontKnowCount(0);
+    }
     setQueue(shuffleArray(cards));
     setQueueIndex(0);
-    setKnownCount(0);
+    setShowSummary(false);
     setReviewFlipped(false);
     setSwapped(false);
     setReviewComplete(false);
@@ -270,6 +278,7 @@ export default function FlashcardStudyClient({
 
   function handleDontKnow() {
     showFlash("dontknow");
+    setDontKnowCount((d) => d + 1);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
@@ -277,6 +286,7 @@ export default function FlashcardStudyClient({
 
   function handleForgot() {
     showFlash("forgot");
+    setForgotCount((f) => f + 1);
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
@@ -355,7 +365,7 @@ export default function FlashcardStudyClient({
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
               <button
-                onClick={() => setReviewMode(false)}
+                onClick={() => setShowSummary(true)}
                 className="px-4 py-2 rounded-lg border text-base hover:bg-muted"
               >
                 Exit Review
@@ -367,9 +377,11 @@ export default function FlashcardStudyClient({
               <div className="text-center">
                 <div className="text-6xl mb-6">&#127881;</div>
                 <h2 className="text-3xl font-bold mb-4">All Done!</h2>
-                <p className="text-xl text-muted-foreground mb-2">
-                  You knew all {cards.length} cards.
-                </p>
+                <div className="flex justify-center gap-8 mb-6 text-lg">
+                  <span className="text-green-600">{knownCount} known</span>
+                  <span className="text-orange-600">{dontKnowCount} don&apos;t know</span>
+                  <span className="text-red-600">{forgotCount} forgot</span>
+                </div>
                 <p className="text-muted-foreground mb-8">
                   Great job! Keep up the good work.
                 </p>
@@ -432,6 +444,41 @@ export default function FlashcardStudyClient({
               </>
             )}
           </div>
+          {showSummary && (
+            <div className="absolute inset-0 z-[70] flex items-center justify-center bg-background/95 backdrop-blur-sm">
+              <div className="text-center p-8 rounded-xl border bg-card max-w-md w-full mx-4">
+                <h2 className="text-2xl font-bold mb-6">Session Summary</h2>
+                <div className="flex justify-center gap-6 mb-8 text-lg">
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-green-600">{knownCount}</p>
+                    <p className="text-sm text-muted-foreground">Known</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-orange-600">{dontKnowCount}</p>
+                    <p className="text-sm text-muted-foreground">Don&apos;t Know</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-red-600">{forgotCount}</p>
+                    <p className="text-sm text-muted-foreground">Forgot</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => { setShowSummary(false); startReview(); }}
+                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                  >
+                    Review Again
+                  </button>
+                  <button
+                    onClick={() => { setShowSummary(false); setReviewMode(false); }}
+                    className="px-6 py-2 rounded-lg border hover:bg-muted"
+                  >
+                    Back to Deck
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
