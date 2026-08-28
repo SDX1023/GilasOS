@@ -5,7 +5,7 @@ import { TodoProvider, useTodos, Todo, Deck } from "@/components/todo/todo-conte
 import {
   Plus, Trash2, Pencil, Check, X, Calendar, CheckSquare,
   ArrowUpDown, Flag, Clock, Layers, FolderOpen, ChevronRight,
-  Circle
+  Circle, PanelLeftOpen, PanelLeftClose
 } from "lucide-react";
 
 type FilterStatus = "all" | "active" | "completed";
@@ -37,6 +37,7 @@ function TodoApp() {
   const [newDeckColor, setNewDeckColor] = useState(DECK_COLORS[0]);
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameDeckValue, setRenameDeckValue] = useState("");
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const [newTodo, setNewTodo] = useState<{ title: string; description: string; priority: "low" | "medium" | "high"; dueDate: string }>({
     title: "", description: "", priority: "medium", dueDate: "",
@@ -133,13 +134,21 @@ function TodoApp() {
   const activeDeckData = decks.find((d) => d.id === activeDeck);
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
+    <div className="flex h-[calc(100vh-3.5rem)] relative">
+      {/* Mobile overlay */}
+      {showSidebar && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setShowSidebar(false)} />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 border-r bg-card/50 flex flex-col flex-shrink-0">
-        <div className="p-4 border-b">
+      <div className={`${showSidebar ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 border-r bg-background md:bg-card/50 flex flex-col flex-shrink-0 transition-transform`}>
+        <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">
             <Layers className="h-4 w-4" /> Decks
           </h2>
+          <button onClick={() => setShowSidebar(false)} className="md:hidden p-1 hover:bg-muted rounded">
+            <X className="h-4 w-4" />
+          </button>
         </div>
         <div className="flex-1 overflow-auto p-2 space-y-0.5">
           <button
@@ -236,11 +245,15 @@ function TodoApp() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowSidebar(true)} className="md:hidden p-2 hover:bg-muted rounded-lg">
+                <PanelLeftOpen className="h-5 w-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
                 {activeDeckData ? (
                   <>
                     <Circle className="h-6 w-6" style={{ fill: activeDeckData.color, color: activeDeckData.color }} />
@@ -257,16 +270,17 @@ function TodoApp() {
                 {activeDeck ? deckCounts[activeDeck]?.completed || 0 : globalCounts.completed} completed
               </p>
             </div>
+            </div>
             <button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm sm:text-base"
             >
-              <Plus className="h-4 w-4" /> Add Task
+              <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add Task</span><span className="sm:hidden">Add</span>
             </button>
           </div>
 
           {/* Filters & Sort */}
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2 sm:gap-3">
             <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/50">
               {(["all", "active", "completed"] as FilterStatus[]).map((f) => (
                 <button
