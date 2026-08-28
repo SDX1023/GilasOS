@@ -238,13 +238,17 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   if (!user) return;
 
   // Upsert reviewer row
-  await supabase.from("reviewers").upsert({
+  const { error: revError } = await supabase.from("reviewers").upsert({
     id: reviewer.id,
     user_id: user.id,
     course_id: courseId,
     module_id: moduleId,
     title: reviewer.title,
   }, { onConflict: "id" });
+  if (revError) {
+    console.error("Failed to save reviewer to Supabase:", revError);
+    return;
+  }
 
   // Delete old flashcards and re-insert
   await supabase.from("flashcards").delete().eq("reviewer_id", reviewer.id);
@@ -258,7 +262,10 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       back: card.back,
       hint: card.hint || "",
     }));
-    await supabase.from("flashcards").insert(rows);
+    const { error: cardError } = await supabase.from("flashcards").insert(rows);
+    if (cardError) {
+      console.error("Failed to save flashcards to Supabase:", cardError);
+    }
   }
 }
 

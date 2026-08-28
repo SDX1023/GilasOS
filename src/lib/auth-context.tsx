@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsername(newUsername);
       checkAdmin(data.user.id, email);
       // Migrate any existing localStorage flashcards to this user's account
-      migrateLocalStorageToSupabase().catch(() => {});
+      migrateLocalStorageToSupabase().catch((e) => console.error("Migration failed:", e));
     }
     return {};
   }
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       checkAdmin(data.user.id, data.user.email || "");
       fetchUsername(data.user.id, data.user.email || "");
       // Migrate any existing localStorage flashcards to this user's account
-      migrateLocalStorageToSupabase().catch(() => {});
+      migrateLocalStorageToSupabase().catch((e) => console.error("Migration failed:", e));
     }
     return {};
   }

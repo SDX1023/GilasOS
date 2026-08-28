@@ -39,11 +39,7 @@ export function getSupabase(): SupabaseClient {
         delete: () => ({
           eq: () => Promise.resolve({ error: null }),
         }),
-        upsert: () => ({
-          select: () => ({
-            single: () => Promise.resolve({ data: null, error: { message: "No Supabase configured" } }),
-          }),
-        }),
+        upsert: () => Promise.resolve({ data: null, error: { message: "No Supabase configured" } }),
       }),
     } as unknown as SupabaseClient;
   }
