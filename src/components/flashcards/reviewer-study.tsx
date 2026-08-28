@@ -33,7 +33,7 @@ export function ReviewerStudy({ courseId, moduleId, reviewerId, repoReviewer }: 
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="mb-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/reviewers" className="hover:text-foreground">Flash Cards</Link>
+          <Link href="/flashcards" className="hover:text-foreground">Flash Cards</Link>
           <ChevronRight className="h-4 w-4" />
           <Link href={`/courses/${courseId}/${moduleId}`} className="hover:text-foreground">
             {moduleId}

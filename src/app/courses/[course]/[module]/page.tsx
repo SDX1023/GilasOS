@@ -137,7 +137,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
           {reviewers.map((reviewer) => (
             <Link
               key={reviewer.id}
-              href={`/reviewers/${course?.id || courseSlug}/${mod.id}/${reviewer.id}`}
+              href={`/flashcards/${course?.id || courseSlug}/${mod.id}/${reviewer.id}`}
               className="flex items-center justify-between p-3 rounded-lg border bg-card hover:shadow-md transition-all"
             >
               <span className="hover:text-primary transition-colors truncate">{reviewer.title}</span>

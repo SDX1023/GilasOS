@@ -66,7 +66,7 @@ function exportFlashcardsToPdf(title: string, cards: any[]) {
   pdf.save(`${title}.pdf`);
 }
 
-export default function ReviewerStudyClient({
+export default function FlashcardStudyClient({
   params,
 }: {
   params: Promise<{ slug: string[] }>;
@@ -115,7 +115,7 @@ export default function ReviewerStudyClient({
   if (!reviewer) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Reviewer not found.</p>
+        <p className="text-muted-foreground">Flashcard deck not found.</p>
       </div>
     );
   }
@@ -156,7 +156,7 @@ export default function ReviewerStudyClient({
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="mb-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/reviewers" className="hover:text-foreground">Flash Cards</Link>
+          <Link href="/flashcards" className="hover:text-foreground">Flash Cards</Link>
           <ChevronRight className="h-4 w-4" />
           <span>{reviewer.title}</span>
         </div>

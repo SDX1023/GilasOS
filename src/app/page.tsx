@@ -13,7 +13,7 @@ export default function Home() {
       icon: Brain,
       title: "Flashcards",
       description: "Study the various topics with flashcards!",
-      href: "/reviewers",
+      href: "/flashcards",
     },
     {
       icon: Timer,

@@ -1,19 +1,35 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent } from "@/lib/custom-content";
 import { Brain } from "lucide-react";
 
-export default function ReviewersPage() {
-  const customContent = loadCustomContent();
-  const allReviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+export default function FlashcardsPage() {
+  const [mounted, setMounted] = useState(false);
+  const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
 
-  for (const course of customContent.courses) {
-    for (const mod of course.modules) {
-      for (const reviewer of mod.reviewers) {
-        allReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+  useEffect(() => {
+    const customContent = loadCustomContent();
+    const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+    for (const course of customContent.courses) {
+      for (const mod of course.modules) {
+        for (const reviewer of mod.reviewers) {
+          reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+        }
       }
     }
+    setAllReviewers(reviewers);
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Flash Cards</h1>
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -39,7 +55,7 @@ export default function ReviewersPage() {
                   {courseReviewers.map(({ courseId: cid, moduleId, reviewer }) => (
                     <Link
                       key={reviewer.id}
-                      href={`/reviewers/${reviewer.id}`}
+                      href={`/flashcards/${reviewer.id}`}
                       className="p-4 rounded-lg border bg-card hover:shadow-lg transition-all group"
                     >
                       <h3 className="font-medium group-hover:text-primary transition-colors">
