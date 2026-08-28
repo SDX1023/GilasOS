@@ -85,9 +85,12 @@ export default function FlashcardStudyClient({
   const [editBack, setEditBack] = useState("");
   const [editHint, setEditHint] = useState("");
   const [reviewMode, setReviewMode] = useState(false);
-  const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewFlipped, setReviewFlipped] = useState(false);
   const [swapped, setSwapped] = useState(false);
+  const [queue, setQueue] = useState<any[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
+  const [knownCount, setKnownCount] = useState(0);
+  const [reviewComplete, setReviewComplete] = useState(false);
 
   useEffect(() => {
     const customContent = loadCustomContent();
@@ -152,6 +155,50 @@ export default function FlashcardStudyClient({
     setEditingIndex(null);
   };
 
+  function shuffleArray(arr: any[]) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function startReview() {
+    setQueue(shuffleArray(cards));
+    setQueueIndex(0);
+    setKnownCount(0);
+    setReviewFlipped(false);
+    setSwapped(false);
+    setReviewComplete(false);
+    setReviewMode(true);
+  }
+
+  function handleKnow() {
+    const newQueue = queue.filter((_, i) => i !== queueIndex);
+    setKnownCount((k) => k + 1);
+    if (newQueue.length === 0) {
+      setQueue([]);
+      setReviewComplete(true);
+    } else {
+      setQueue(newQueue);
+      setQueueIndex(Math.floor(Math.random() * newQueue.length));
+    }
+    setReviewFlipped(false);
+  }
+
+  function handleDontKnow() {
+    const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
+    setQueueIndex(newQueueIndex);
+    setReviewFlipped(false);
+  }
+
+  function handleForgot() {
+    const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
+    setQueueIndex(newQueueIndex);
+    setReviewFlipped(false);
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="mb-8">
@@ -167,7 +214,7 @@ export default function FlashcardStudyClient({
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => { setReviewMode(true); setReviewIndex(0); setReviewFlipped(false); }}
+              onClick={startReview}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm"
             >
               <Play className="h-4 w-4" /> Review
@@ -185,7 +232,12 @@ export default function FlashcardStudyClient({
       {reviewMode && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
           <div className="flex items-center justify-between p-5 border-b">
-            <span className="text-base text-muted-foreground">{reviewIndex + 1} / {cards.length}</span>
+            <div className="flex items-center gap-4">
+              <span className="text-base text-muted-foreground">
+                {reviewComplete ? "Done" : `${queue.length} remaining`}
+              </span>
+              <span className="text-sm text-green-600">{knownCount} known</span>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
@@ -202,74 +254,74 @@ export default function FlashcardStudyClient({
             </div>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <div
-              onClick={() => setReviewFlipped(!reviewFlipped)}
-              className="w-full max-w-2xl min-h-[350px] p-12 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
-            >
-              <div>
-                <p className="text-2xl font-medium leading-relaxed">
-                  {reviewFlipped
-                    ? (swapped ? cards[reviewIndex].front : cards[reviewIndex].back)
-                    : (swapped ? cards[reviewIndex].back : cards[reviewIndex].front)
-                  }
+            {reviewComplete ? (
+              <div className="text-center">
+                <div className="text-6xl mb-6">&#127881;</div>
+                <h2 className="text-3xl font-bold mb-4">All Done!</h2>
+                <p className="text-xl text-muted-foreground mb-2">
+                  You knew all {cards.length} cards.
                 </p>
-                {!reviewFlipped && cards[reviewIndex].hint && (
-                  <p className="text-base text-muted-foreground mt-6 italic">Hint: {cards[reviewIndex].hint}</p>
-                )}
-              </div>
-            </div>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              {!reviewFlipped ? (
+                <p className="text-muted-foreground mb-8">
+                  Great job! Keep up the good work.
+                </p>
                 <button
-                  onClick={() => setReviewFlipped(true)}
+                  onClick={() => setReviewMode(false)}
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium"
                 >
-                  Show Answer
+                  Back to Deck
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      if (reviewIndex < cards.length - 1) {
-                        setReviewIndex(reviewIndex + 1);
-                        setReviewFlipped(false);
-                      } else {
-                        setReviewMode(false);
+              </div>
+            ) : (
+              <>
+                <div
+                  onClick={() => setReviewFlipped(!reviewFlipped)}
+                  className="w-full max-w-2xl min-h-[350px] p-12 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary"
+                >
+                  <div>
+                    <p className="text-2xl font-medium leading-relaxed">
+                      {reviewFlipped
+                        ? (swapped ? queue[queueIndex].front : queue[queueIndex].back)
+                        : (swapped ? queue[queueIndex].back : queue[queueIndex].front)
                       }
-                    }}
-                    className="px-6 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-base font-medium"
-                  >
-                    I Forgot
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (reviewIndex < cards.length - 1) {
-                        setReviewIndex(reviewIndex + 1);
-                        setReviewFlipped(false);
-                      } else {
-                        setReviewMode(false);
-                      }
-                    }}
-                    className="px-6 py-3 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-base font-medium"
-                  >
-                    I Don&apos;t Know
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (reviewIndex < cards.length - 1) {
-                        setReviewIndex(reviewIndex + 1);
-                        setReviewFlipped(false);
-                      } else {
-                        setReviewMode(false);
-                      }
-                    }}
-                    className="px-6 py-3 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-base font-medium"
-                  >
-                    I Know
-                  </button>
-                </>
-              )}
-            </div>
+                    </p>
+                    {!reviewFlipped && queue[queueIndex].hint && (
+                      <p className="text-base text-muted-foreground mt-6 italic">Hint: {queue[queueIndex].hint}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-8 flex flex-wrap justify-center gap-4">
+                  {!reviewFlipped ? (
+                    <button
+                      onClick={() => setReviewFlipped(true)}
+                      className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium"
+                    >
+                      Show Answer
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleForgot}
+                        className="px-6 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-base font-medium"
+                      >
+                        I Forgot
+                      </button>
+                      <button
+                        onClick={handleDontKnow}
+                        className="px-6 py-3 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-base font-medium"
+                      >
+                        I Don&apos;t Know
+                      </button>
+                      <button
+                        onClick={handleKnow}
+                        className="px-6 py-3 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-base font-medium"
+                      >
+                        I Know
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
