@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FileText, Upload, Loader2, Save } from "lucide-react";
 import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
@@ -14,6 +14,13 @@ export default function PdfToFlashcardsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   const ensureCourseAndModule = () => {
     const custom = loadCustomContent();
@@ -54,7 +61,10 @@ export default function PdfToFlashcardsPage() {
         body: JSON.stringify({ text: pdfText }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate flashcards");
+      if (!res.ok) {
+        setCooldown(data.retryAfter || 30);
+        throw new Error(data.error || "Failed to generate flashcards");
+      }
       setGeneratedCards(data.cards);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
@@ -133,10 +143,10 @@ export default function PdfToFlashcardsPage() {
               />
               <button
                 onClick={generateCards}
-                disabled={!pdfText.trim() || isGenerating}
+                disabled={!pdfText.trim() || isGenerating || cooldown > 0}
                 className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : <><FileText className="h-4 w-4" /> Generate Flashcards</>}
+                {isGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : cooldown > 0 ? `Wait ${cooldown}s...` : <><FileText className="h-4 w-4" /> Generate Flashcards</>}
               </button>
             </div>
           </div>

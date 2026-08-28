@@ -312,7 +312,10 @@ function QuizTab() {
         body: JSON.stringify({ text: textToUse }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate quiz");
+      if (!res.ok) {
+        setCooldown(data.retryAfter || 30);
+        throw new Error(data.error || "Failed to generate quiz");
+      }
       setQuizQuestions(data.questions);
       setQuizStarted(true);
       setCurrentQ(0);
@@ -320,11 +323,7 @@ function QuizTab() {
       setShowResults(false);
       setScore(0);
     } catch (err: any) {
-      const msg = err.message || "Failed to generate quiz";
-      setLastError(msg);
-      if (msg.includes("429") || msg.includes("quota") || msg.includes("Rate limited")) {
-        setCooldown(30);
-      }
+      setLastError(err.message || "Failed to generate quiz");
     } finally {
       setIsGenerating(false);
     }
