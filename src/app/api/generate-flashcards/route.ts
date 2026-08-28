@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const CHUNK_SIZE = 20000;
+const CHUNK_SIZE = 8000;
 const MAX_CONCURRENT = 1;
 
 function splitIntoChunks(text: string): string[] {

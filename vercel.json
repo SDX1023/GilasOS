@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "src/app/api/generate-flashcards/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/extract-pdf/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
