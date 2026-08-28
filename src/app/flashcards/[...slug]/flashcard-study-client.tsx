@@ -142,7 +142,7 @@ export default function FlashcardStudyClient({
   }, [courseSlug, moduleSlug, reviewerSlug, sessionKey]);
 
   useEffect(() => {
-    if (!reviewMode || reviewComplete) return;
+    if (queue.length === 0 && knownCount === 0 && forgotCount === 0 && dontKnowCount === 0) return;
     localStorage.setItem(sessionKey, JSON.stringify({
       date: new Date().toDateString(),
       queue,
@@ -151,7 +151,7 @@ export default function FlashcardStudyClient({
       forgotCount,
       dontKnowCount,
     }));
-  }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, reviewMode, reviewComplete, sessionKey]);
+  }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, sessionKey]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -453,7 +453,7 @@ export default function FlashcardStudyClient({
                   Great job! Keep up the good work.
                 </p>
                 <button
-                  onClick={() => setReviewMode(false)}
+                  onClick={() => { localStorage.removeItem(sessionKey); setReviewMode(false); }}
                   className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium"
                 >
                   Back to Deck
@@ -537,7 +537,7 @@ export default function FlashcardStudyClient({
                     Review Again
                   </button>
                   <button
-                    onClick={() => { setShowSummary(false); setReviewMode(false); }}
+                    onClick={() => { localStorage.removeItem(sessionKey); setShowSummary(false); setReviewMode(false); }}
                     className="px-6 py-2 rounded-lg border hover:bg-muted"
                   >
                     Back to Deck
