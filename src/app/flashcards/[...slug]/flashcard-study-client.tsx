@@ -142,7 +142,7 @@ export default function FlashcardStudyClient({
   }, [courseSlug, moduleSlug, reviewerSlug, sessionKey]);
 
   useEffect(() => {
-    if (queue.length === 0 && knownCount === 0 && forgotCount === 0 && dontKnowCount === 0) return;
+    if (!reviewMode) return;
     localStorage.setItem(sessionKey, JSON.stringify({
       date: new Date().toDateString(),
       queue,
@@ -151,7 +151,7 @@ export default function FlashcardStudyClient({
       forgotCount,
       dontKnowCount,
     }));
-  }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, sessionKey]);
+  }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -273,13 +273,31 @@ export default function FlashcardStudyClient({
   }
 
   function startReview() {
-    if (reviewComplete) {
-      setKnownCount(0);
-      setForgotCount(0);
-      setDontKnowCount(0);
+    const stored = localStorage.getItem(sessionKey);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        const today = new Date().toDateString();
+        if (data.date === today && data.queue && data.queue.length > 0) {
+          setQueue(data.queue);
+          setQueueIndex(data.queueIndex || 0);
+          setKnownCount(data.knownCount || 0);
+          setForgotCount(data.forgotCount || 0);
+          setDontKnowCount(data.dontKnowCount || 0);
+          setShowSummary(false);
+          setReviewFlipped(false);
+          setSwapped(false);
+          setReviewComplete(false);
+          setReviewMode(true);
+          return;
+        }
+      } catch {}
     }
     setQueue(shuffleArray(cards));
     setQueueIndex(0);
+    setKnownCount(0);
+    setForgotCount(0);
+    setDontKnowCount(0);
     setShowSummary(false);
     setReviewFlipped(false);
     setSwapped(false);
