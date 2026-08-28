@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MAX_CHARS_PER_CALL = 28000;
+const MAX_CHARS_PER_CALL = 10000;
 
 async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 5): Promise<string> {
   for (let attempt = 0; attempt <= retries; attempt++) {

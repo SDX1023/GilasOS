@@ -216,6 +216,8 @@ function QuizTab() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [cooldown, setCooldown] = useState(0);
+  const [lastError, setLastError] = useState("");
 
   // Course/module selection
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -223,6 +225,12 @@ function QuizTab() {
   const [selectedSource, setSelectedSource] = useState<"text" | "course">("text");
   const [courseContent, setCourseContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   const selectedCourseData = courses.find((c) => c.id === selectedCourse);
   const selectedModuleData = selectedCourseData?.modules?.find((m: any) => m.id === selectedModule);
@@ -296,6 +304,7 @@ function QuizTab() {
     const textToUse = selectedSource === "course" ? courseContent : inputText;
     if (!textToUse.trim()) return;
     setIsGenerating(true);
+    setLastError("");
     try {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
@@ -311,7 +320,11 @@ function QuizTab() {
       setShowResults(false);
       setScore(0);
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      const msg = err.message || "Failed to generate quiz";
+      setLastError(msg);
+      if (msg.includes("429") || msg.includes("quota") || msg.includes("Rate limited")) {
+        setCooldown(30);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -559,12 +572,21 @@ function QuizTab() {
           </>
         )}
 
+        {lastError && (
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm">
+            <p className="text-red-600 font-medium">{lastError}</p>
+            {cooldown > 0 && (
+              <p className="text-muted-foreground mt-1">Retry in {cooldown}s — Gemini free tier allows 20 requests/minute</p>
+            )}
+          </div>
+        )}
+
         <button
           onClick={generateQuiz}
-          disabled={selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating}
+          disabled={(selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating) || cooldown > 0}
           className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
         >
-          {isGenerating ? "Generating..." : "Generate Quiz"}
+          {isGenerating ? "Generating..." : cooldown > 0 ? `Wait ${cooldown}s...` : "Generate Quiz"}
         </button>
       </div>
     </div>
