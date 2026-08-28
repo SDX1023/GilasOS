@@ -103,6 +103,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
 
+      let found = false;
+
       if (user) {
         // Logged in: load from Supabase
         const { data: reviewers } = await supabase
@@ -112,8 +114,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
         if (reviewers) {
           for (const r of reviewers) {
-            const rSlug = r.id.split("/").slice(2).join("/");
-            if (rSlug === reviewerSlug || r.id.endsWith(reviewerSlug)) {
+            // Match by full ID or by slug portion
+            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id.endsWith(`/${reviewerSlug}`)) {
               setReviewer({
                 id: r.id,
                 courseId: r.course_id,
@@ -130,24 +132,28 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                 back: c.back,
                 hint: c.hint || "",
               })));
+              found = true;
               break;
             }
           }
         }
-      } else {
-        // Guest: load from localStorage
+      }
+
+      // Fallback: load from localStorage
+      if (!found) {
         const customContent = loadCustomContent();
         const customCourse = customContent.courses.find((c) => c.id === courseSlug);
         const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-        const found = customModule?.reviewers.find((r) => {
+        const localFound = customModule?.reviewers.find((r) => {
           const rSlug = r.id.split("/").slice(2).join("/");
           return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
         });
-        if (found) {
-          setReviewer(found);
-          setCards(found.cards || []);
+        if (localFound) {
+          setReviewer(localFound);
+          setCards(localFound.cards || []);
         }
       }
+
       setMounted(true);
     })();
   }, [courseSlug, moduleSlug, reviewerSlug]);
