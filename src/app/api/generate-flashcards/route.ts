@@ -30,6 +30,37 @@ function splitIntoChunks(text: string): string[] {
   return chunks;
 }
 
+async function callGemini(apiKey: string, prompt: string, chunk: string, retries = 3): Promise<string> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, attempt * 3000));
+    }
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${prompt}\n\n${chunk}` }] }],
+          generationConfig: { temperature: 0.7 },
+        }),
+      }
+    );
+
+    if (res.status === 429 && attempt < retries) continue;
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Gemini API error (${res.status})`);
+    }
+
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  }
+  throw new Error("Rate limited — try again later");
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -44,9 +75,7 @@ export async function POST(req: NextRequest) {
   const chunks = splitIntoChunks(text);
   const allCards: { front: string; back: string; hint?: string }[] = [];
 
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
+  const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
 Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
 Optionally include a "hint" field for difficult concepts.
 Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
@@ -54,34 +83,21 @@ Aim for 20-40 flashcards per chunk. Be thorough — every important concept shou
 Make questions clear and concise. Answers should be informative but brief.
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\n${chunk}` }] }],
-          generationConfig: { temperature: 0.7 },
-        }),
+  for (let i = 0; i < chunks.length; i++) {
+    try {
+      const content = await callGemini(apiKey, systemPrompt, chunks[i]);
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          const cards = JSON.parse(jsonMatch[0]);
+          if (Array.isArray(cards)) allCards.push(...cards);
+        } catch {}
       }
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+    } catch (err: any) {
       return NextResponse.json(
-        { error: err.error?.message || `Gemini API error on chunk ${i + 1} (${res.status})` },
+        { error: err.message || `Failed on chunk ${i + 1}` },
         { status: 500 }
       );
-    }
-
-    const data = await res.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      try {
-        const cards = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(cards)) allCards.push(...cards);
-      } catch {}
     }
   }
 
