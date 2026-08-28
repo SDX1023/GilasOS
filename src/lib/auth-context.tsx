@@ -49,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkAdmin(session.user.id, session.user.email || "");
       }
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
