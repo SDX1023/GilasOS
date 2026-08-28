@@ -240,7 +240,11 @@ function QuizTab({ userId }: { userId: string | null }) {
     try {
       const res = await fetch("/api/generate-quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: textToUse }) });
       const data = await res.json();
-      if (!res.ok) { setCooldown(data.retryAfter || 30); throw new Error(data.error || "Failed to generate quiz"); }
+      if (!res.ok) {
+        const retryAfter = data.retryAfter || (res.status === 429 ? 30 : 0);
+        setCooldown(retryAfter);
+        throw new Error(data.error || "Failed to generate quiz");
+      }
       setQuizQuestions(data.questions); setQuizStarted(true); setCurrentQ(0); setAnswers({}); setShowResults(false); setScore(0);
     } catch (err: any) { setLastError(err.message || "Failed to generate quiz"); } finally { setIsGenerating(false); }
   }

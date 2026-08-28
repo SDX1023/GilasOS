@@ -15,6 +15,8 @@ export default function PdfToFlashcardsPage() {
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [lastError, setLastError] = useState("");
+  const [saveMsg, setSaveMsg] = useState("");
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -34,26 +36,26 @@ export default function PdfToFlashcardsPage() {
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || file.type !== "application/pdf") return;
-
     setIsGenerating(true);
+    setLastError("");
     try {
       const formData = new FormData();
       formData.append("file", file);
-
       const res = await fetch("/api/extract-pdf", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to extract PDF");
       setPdfText(data.text);
     } catch (err: any) {
-      alert(`Error: ${err.message}`);
+      setLastError(err.message);
     } finally {
       setIsGenerating(false);
     }
   }, []);
 
   const generateCards = useCallback(async () => {
-    if (!pdfText.trim()) return;
+    if (!pdfText.trim() || isGenerating) return;
     setIsGenerating(true);
+    setLastError("");
     try {
       const res = await fetch("/api/generate-flashcards", {
         method: "POST",
@@ -62,59 +64,46 @@ export default function PdfToFlashcardsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setCooldown(data.retryAfter || 30);
+        setCooldown(data.retryAfter || (res.status === 429 ? 30 : 0));
         throw new Error(data.error || "Failed to generate flashcards");
       }
       setGeneratedCards(data.cards);
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      setLastError(error.message);
     } finally {
       setIsGenerating(false);
     }
-  }, [pdfText]);
+  }, [pdfText, isGenerating]);
 
   const saveDeck = async () => {
     if (!deckName.trim() || generatedCards.length === 0) return;
     setSaving(true);
+    setSaveMsg("");
     try {
       ensureCourseAndModule();
-      addReviewer(PDF_COURSE_ID, PDF_MODULE_ID, {
-        title: deckName,
-        cards: generatedCards,
-      });
-      // Also save to Supabase if logged in
+      addReviewer(PDF_COURSE_ID, PDF_MODULE_ID, { title: deckName, cards: generatedCards });
       const supabase = getSupabase();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log("PDF save - user:", user?.id || "none", "authError:", authError);
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const reviewerId = `${PDF_COURSE_ID}/${PDF_MODULE_ID}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
-        const { error: revErr } = await supabase.from("reviewers").upsert({
-          id: reviewerId,
-          user_id: user.id,
-          course_id: PDF_COURSE_ID,
-          module_id: PDF_MODULE_ID,
-          title: deckName,
+        await supabase.from("reviewers").upsert({
+          id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: PDF_MODULE_ID, title: deckName,
         }, { onConflict: "id" });
-        console.log("PDF save - reviewer upsert:", revErr ? JSON.stringify(revErr) : "OK");
         if (generatedCards.length > 0) {
           const rows = generatedCards.map((card, i) => ({
             id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
-            reviewer_id: reviewerId,
-            user_id: user.id,
-            front: card.front,
-            back: card.back,
-            hint: card.hint || "",
+            reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "",
           }));
-          const { error: cardErr } = await supabase.from("flashcards").insert(rows);
-          console.log("PDF save - flashcards insert:", cardErr ? JSON.stringify(cardErr) : "OK");
+          await supabase.from("flashcards").insert(rows);
         }
       }
       setDeckName("");
       setGeneratedCards([]);
       setPdfText("");
-      alert("Deck saved! Find it in Flash Cards > PDF Generated.");
+      setSaveMsg("Deck saved!");
+      setTimeout(() => setSaveMsg(""), 3000);
     } catch (err: any) {
-      alert(`Error saving: ${err.message}`);
+      setLastError(err.message);
     } finally {
       setSaving(false);
     }
@@ -137,10 +126,24 @@ export default function PdfToFlashcardsPage() {
               </label>
               <textarea
                 value={pdfText}
-                onChange={(e) => setPdfText(e.target.value)}
+                onChange={(e) => { setPdfText(e.target.value); setLastError(""); }}
                 placeholder="Or paste text content here..."
                 className="w-full px-3 py-2 rounded-lg border bg-background h-48 resize-none"
               />
+
+              {lastError && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm">
+                  <p className="text-red-600 font-medium">{lastError}</p>
+                  {cooldown > 0 && <p className="text-muted-foreground mt-1">Wait {cooldown}s before trying again</p>}
+                </div>
+              )}
+
+              {saveMsg && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-sm">
+                  <p className="text-green-600 font-medium">{saveMsg}</p>
+                </div>
+              )}
+
               <button
                 onClick={generateCards}
                 disabled={!pdfText.trim() || isGenerating || cooldown > 0}

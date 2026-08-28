@@ -244,4 +244,8 @@ export function useTodos() {
   return ctx;
 }
 
+export function useTodosSafe() {
+  return useContext(TodoContext);
+}
+
 export type { Todo, Deck };
