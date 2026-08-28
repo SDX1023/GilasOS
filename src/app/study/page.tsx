@@ -241,7 +241,7 @@ function QuizTab({ userId }: { userId: string | null }) {
       const res = await fetch("/api/generate-quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: textToUse }) });
       const data = await res.json();
       if (!res.ok) {
-        const retryAfter = data.retryAfter || (res.status === 429 ? 30 : 0);
+        const retryAfter = data.retryAfter || (res.status === 429 ? 60 : 0);
         setCooldown(retryAfter);
         throw new Error(data.error || "Failed to generate quiz");
       }

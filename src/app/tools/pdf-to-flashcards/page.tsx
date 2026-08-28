@@ -14,12 +14,20 @@ export default function PdfToFlashcardsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const until = localStorage.getItem("flashcard-cooldown-until");
+    if (until) {
+      const remaining = Math.max(0, Math.ceil((Number(until) - Date.now()) / 1000));
+      return remaining;
+    }
+    return 0;
+  });
   const [lastError, setLastError] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
 
   useEffect(() => {
-    if (cooldown <= 0) return;
+    if (cooldown <= 0) { localStorage.removeItem("flashcard-cooldown-until"); return; }
     const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
@@ -64,7 +72,9 @@ export default function PdfToFlashcardsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setCooldown(data.retryAfter || (res.status === 429 ? 30 : 0));
+        const retryAfter = data.retryAfter || (res.status === 429 ? 60 : 0);
+        setCooldown(retryAfter);
+        if (retryAfter > 0) localStorage.setItem("flashcard-cooldown-until", String(Date.now() + retryAfter * 1000));
         throw new Error(data.error || "Failed to generate flashcards");
       }
       setGeneratedCards(data.cards);
