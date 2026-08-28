@@ -72,12 +72,24 @@ export default function PdfToFlashcardsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        const retryAfter = data.retryAfter || (res.status === 429 ? 60 : 0);
-        setCooldown(retryAfter);
-        if (retryAfter > 0) localStorage.setItem("flashcard-cooldown-until", String(Date.now() + retryAfter * 1000));
         throw new Error(data.error || "Failed to generate flashcards");
       }
-      setGeneratedCards(data.cards);
+
+      const jobId = data.jobId;
+      if (!jobId) throw new Error("No job id returned");
+
+      const poll = async (): Promise<any> => {
+        const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(jobId)}`);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Failed to poll job");
+        if (d.status === "error") throw new Error(d.error || "Generation failed");
+        if (d.status === "done") return d;
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        return poll();
+      };
+
+      const final = await poll();
+      setGeneratedCards(final.cards);
     } catch (error: any) {
       setLastError(error.message);
     } finally {

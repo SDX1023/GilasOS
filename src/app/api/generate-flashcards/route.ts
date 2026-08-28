@@ -10,6 +10,19 @@ const REQUEST_TIMEOUT_MS = 120000;
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
 
+type Job = {
+  id: string;
+  status: "processing" | "done" | "error";
+  cards: any[];
+  totalChunks: number;
+  processedChunks: number;
+  error?: string;
+  text: string;
+  createdAt: number;
+};
+
+const jobs = new Map<string, Job>();
+
 let lastRequestTime = 0;
 const MIN_INTERVAL = 3000;
 let rateLimitChain: Promise<void> = Promise.resolve();
@@ -142,16 +155,12 @@ ORIGINAL MATERIAL:
 ${text}`;
 }
 
-async function generateForChunk(
+async function callGemini(
   apiKey: string,
-  chunkText: string,
-  chunkIndex: number,
-  totalChunks: number,
-  attempt: number = 0
-): Promise<{ cards: any[]; error?: string }> {
+  prompt: string,
+  attempt: number
+): Promise<{ content: string; retry: boolean; error?: string }> {
   await waitForRateLimit();
-
-  const prompt = buildPrompt(chunkText, chunkIndex, totalChunks);
 
   try {
     const controller = new AbortController();
@@ -175,105 +184,102 @@ async function generateForChunk(
     );
 
     clearTimeout(timeout);
-
     const body = await safeJson(res);
 
     if (res.status === 429) {
       const retryAfter = parseRetryAfter(body?.error?.message || "");
       const waitTime = Math.max(retryAfter, 30 + attempt * 15);
-      console.log(`Rate limited on chunk ${chunkIndex + 1}. Waiting ${waitTime}s...`);
-
+      console.log(`Rate limited. Waiting ${waitTime}s...`);
       if (attempt < MAX_RETRIES) {
         await sleep(waitTime * 1000);
         lastRequestTime = 0;
-        return generateForChunk(apiKey, chunkText, chunkIndex, totalChunks, attempt + 1);
+        return { content: "", retry: true };
       }
-      return { cards: [], error: `Rate limited after ${MAX_RETRIES} retries` };
+      return { content: "", retry: false, error: `Rate limited after ${MAX_RETRIES} retries` };
     }
 
     if (!res.ok) {
       const errorMsg = body?.error?.message || `API error (${res.status})`;
-      console.error(`Chunk ${chunkIndex + 1} error:`, errorMsg);
-
       if (attempt < MAX_RETRIES) {
-        const waitTime = BASE_DELAY * Math.pow(2, attempt);
-        await sleep(waitTime);
-        return generateForChunk(apiKey, chunkText, chunkIndex, totalChunks, attempt + 1);
+        await sleep(BASE_DELAY * Math.pow(2, attempt));
+        return { content: "", retry: true };
       }
-      return { cards: [], error: errorMsg };
+      return { content: "", retry: false, error: errorMsg };
     }
 
     const candidate = body?.candidates?.[0];
     const content = candidate?.content?.parts?.[0]?.text ?? "";
-
-    let cards: any[] = [];
-
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          cards = parsed;
-        }
-      } catch (e) {
-        console.log(`JSON parse failed for chunk ${chunkIndex + 1}, trying alternative...`);
-      }
-    }
-
-    if (cards.length === 0) {
-      try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          cards = parsed;
-        }
-      } catch (e) {
-        // Ignore
-      }
-    }
-
-    if (cards.length === 0) {
-      const qaPairs = content.match(/"front"\s*:\s*"([^"]*?)"\s*,\s*"back"\s*:\s*"([^"]*?)"/g);
-      if (qaPairs) {
-        cards = qaPairs.map((pair: string) => {
-          const frontMatch = pair.match(/"front"\s*:\s*"([^"]*?)"/);
-          const backMatch = pair.match(/"back"\s*:\s*"([^"]*?)"/);
-          return {
-            front: frontMatch ? frontMatch[1] : '',
-            back: backMatch ? backMatch[1] : ''
-          };
-        }).filter((card: { front: string; back: string }) => card.front && card.back);
-      }
-    }
-
-    if (cards.length === 0) {
-      if (attempt < MAX_RETRIES) {
-        await sleep(BASE_DELAY * Math.pow(2, attempt));
-        return generateForChunk(apiKey, chunkText, chunkIndex, totalChunks, attempt + 1);
-      }
-      return { cards: [], error: `No valid flashcards generated from chunk ${chunkIndex + 1}` };
-    }
-
-    console.log(`Chunk ${chunkIndex + 1} generated ${cards.length} cards`);
-    return { cards };
-
+    return { content, retry: false };
   } catch (error: any) {
     if (error?.name === "AbortError") {
-      console.error(`Chunk ${chunkIndex + 1} timed out`);
       if (attempt < MAX_RETRIES) {
         await sleep(BASE_DELAY * Math.pow(2, attempt));
-        return generateForChunk(apiKey, chunkText, chunkIndex, totalChunks, attempt + 1);
+        return { content: "", retry: true };
       }
-      return { cards: [], error: `Chunk ${chunkIndex + 1} timed out` };
+      return { content: "", retry: false, error: "Request timed out" };
     }
-
-    console.error(`Chunk ${chunkIndex + 1} error:`, error?.message);
-
     if (attempt < MAX_RETRIES) {
-      const waitTime = BASE_DELAY * Math.pow(2, attempt);
-      await sleep(waitTime);
-      return generateForChunk(apiKey, chunkText, chunkIndex, totalChunks, attempt + 1);
+      await sleep(BASE_DELAY * Math.pow(2, attempt));
+      return { content: "", retry: true };
     }
-    return { cards: [], error: error?.message || `Chunk ${chunkIndex + 1} failed` };
+    return { content: "", retry: false, error: error?.message || "Request failed" };
+  }
+}
+
+async function extractCards(content: string): Promise<any[]> {
+  let cards: any[] = [];
+
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed) && parsed.length > 0) cards = parsed;
+    } catch (e) { /* ignore */ }
+  }
+
+  if (cards.length === 0) {
+    try {
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) cards = parsed;
+    } catch (e) { /* ignore */ }
+  }
+
+  if (cards.length === 0) {
+    const qaPairs = content.match(/"front"\s*:\s*"([^"]*?)"\s*,\s*"back"\s*:\s*"([^"]*?)"/g);
+    if (qaPairs) {
+      cards = qaPairs.map((pair: string) => {
+        const frontMatch = pair.match(/"front"\s*:\s*"([^"]*?)"/);
+        const backMatch = pair.match(/"back"\s*:\s*"([^"]*?)"/);
+        return {
+          front: frontMatch ? frontMatch[1] : '',
+          back: backMatch ? backMatch[1] : ''
+        };
+      }).filter((card: { front: string; back: string }) => card.front && card.back);
+    }
+  }
+
+  return cards.filter((c: any) => c && c.front && c.back);
+}
+
+async function generateForChunk(
+  apiKey: string,
+  chunkText: string,
+  chunkIndex: number,
+  totalChunks: number
+): Promise<{ cards: any[]; error?: string }> {
+  const prompt = buildPrompt(chunkText, chunkIndex, totalChunks);
+
+  for (let attempt = 0; ; attempt++) {
+    const { content, retry, error } = await callGemini(apiKey, prompt, attempt);
+    if (retry) continue;
+    if (error) return { cards: [], error };
+    const cards = await extractCards(content);
+    if (cards.length === 0) {
+      if (attempt < MAX_RETRIES) continue;
+      return { cards: [], error: `No valid flashcards from chunk ${chunkIndex + 1}` };
+    }
+    console.log(`Chunk ${chunkIndex + 1} generated ${cards.length} cards`);
+    return { cards };
   }
 }
 
@@ -281,70 +287,13 @@ async function runCoveragePass(
   apiKey: string,
   text: string,
   existingCards: any[]
-): Promise<{ cards: any[]; error?: string }> {
-  await waitForRateLimit();
-
+): Promise<{ cards: any[] }> {
   const prompt = buildCoveragePrompt(text, existingCards);
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 8192,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
-    );
-
-    clearTimeout(timeout);
-    const body = await safeJson(res);
-
-    if (res.status === 429) {
-      const retryAfter = parseRetryAfter(body?.error?.message || "");
-      const waitTime = Math.max(retryAfter, 30);
-      console.log(`Coverage pass rate limited. Waiting ${waitTime}s...`);
-      await sleep(waitTime * 1000);
-      lastRequestTime = 0;
-      return runCoveragePass(apiKey, text, existingCards);
-    }
-
-    if (!res.ok) {
-      return { cards: [] };
-    }
-
-    const candidate = body?.candidates?.[0];
-    const content = candidate?.content?.parts?.[0]?.text ?? "";
-    let cards: any[] = [];
-
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsed)) cards = parsed;
-      } catch (e) { /* ignore */ }
-    }
-    if (cards.length === 0) {
-      try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) cards = parsed;
-      } catch (e) { /* ignore */ }
-    }
-
+  for (let attempt = 0; ; attempt++) {
+    const { content, retry } = await callGemini(apiKey, prompt, attempt);
+    if (retry) continue;
+    const cards = await extractCards(content);
     return { cards };
-  } catch (error: any) {
-    console.error("Coverage pass error:", error?.message);
-    return { cards: [] };
   }
 }
 
@@ -386,6 +335,58 @@ async function runPool<T, R>(
   return results;
 }
 
+async function runGeneration(apiKey: string, text: string, job: Job) {
+  try {
+    const chunks = splitIntoChunks(text, CHUNK_SIZE);
+    job.totalChunks = chunks.length;
+    console.log(`Job ${job.id}: processing ${chunks.length} chunks`);
+
+    const results = await runPool(chunks, CONCURRENCY, async (chunk, i) => {
+      const r = await generateForChunk(apiKey, chunk, i, chunks.length);
+      job.processedChunks = (job.processedChunks || 0) + 1;
+      if (r.cards.length > 0) job.cards = job.cards.concat(r.cards);
+      return r;
+    });
+
+    if (job.cards.length > 0) {
+      const coverage = await runCoveragePass(apiKey, text, job.cards);
+      if (coverage.cards.length > 0) {
+        console.log(`Job ${job.id}: coverage pass added ${coverage.cards.length} cards`);
+        job.cards = job.cards.concat(coverage.cards);
+      }
+    }
+
+    job.cards = dedupeCards(job.cards);
+    job.status = "done";
+    console.log(`Job ${job.id}: done, ${job.cards.length} unique cards`);
+
+    cache.set(`fc-${simpleHash(text)}-v10`, { data: job.cards, ts: Date.now() });
+  } catch (err: any) {
+    console.error(`Job ${job.id} failed:`, err?.message || err);
+    job.status = "error";
+    job.error = err?.message || "Generation failed";
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const jobId = req.nextUrl.searchParams.get("job");
+  if (!jobId) {
+    return NextResponse.json({ error: "Missing job id" }, { status: 400 });
+  }
+  const job = jobs.get(jobId);
+  if (!job) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+  return NextResponse.json({
+    status: job.status,
+    cards: job.status === "done" ? job.cards : job.cards,
+    totalCards: job.cards.length,
+    totalChunks: job.totalChunks,
+    processedChunks: job.processedChunks,
+    error: job.error,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -408,67 +409,33 @@ export async function POST(req: NextRequest) {
     const cleanedText = cleanText(text);
     const truncatedText = cleanedText.slice(0, MAX_CHARS);
 
-    const key = `fc-${simpleHash(truncatedText)}-v10`;
-    const cached = cache.get(key);
+    const cacheKey = `fc-${simpleHash(truncatedText)}-v10`;
+    const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      console.log(`Cache hit for ${key}`);
-      return NextResponse.json({ cards: cached.data });
+      const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const job: Job = {
+        id, status: "done", cards: cached.data,
+        totalChunks: 0, processedChunks: 0, text: "", createdAt: Date.now(),
+      };
+      jobs.set(id, job);
+      return NextResponse.json({ jobId: id });
     }
 
-    const chunks = splitIntoChunks(truncatedText, CHUNK_SIZE);
-    console.log(`Processing ${chunks.length} chunks`);
+    const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const job: Job = {
+      id, status: "processing", cards: [],
+      totalChunks: 0, processedChunks: 0, text: truncatedText, createdAt: Date.now(),
+    };
+    jobs.set(id, job);
 
-    const results = await runPool(
-      chunks,
-      CONCURRENCY,
-      (chunk, i) => generateForChunk(apiKey, chunk, i, chunks.length)
-    );
-
-    let allCards: any[] = [];
-    const errors: string[] = [];
-    for (let i = 0; i < results.length; i++) {
-      const { cards, error } = results[i];
-      if (error) {
-        errors.push(error);
-        console.error(`Chunk ${i + 1} error:`, error);
-      }
-      if (cards.length > 0) {
-        allCards = allCards.concat(cards);
-      }
-    }
-
-    if (allCards.length > 0) {
-      const coverage = await runCoveragePass(apiKey, truncatedText, allCards);
-      if (coverage.cards.length > 0) {
-        console.log(`Coverage pass added ${coverage.cards.length} cards`);
-        allCards = allCards.concat(coverage.cards);
-      }
-    }
-
-    allCards = dedupeCards(allCards);
-    console.log(`Total unique cards: ${allCards.length}`);
-
-    if (allCards.length === 0) {
-      return NextResponse.json(
-        { error: errors[0] || "Failed to generate any flashcards" },
-        { status: 500 }
-      );
-    }
-
-    cache.set(key, { data: allCards, ts: Date.now() });
-
-    return NextResponse.json({
-      cards: allCards,
-      totalCards: allCards.length,
-      chunksProcessed: chunks.length,
-      ...(errors.length > 0 ? { warnings: errors } : {}),
+    runGeneration(apiKey, truncatedText, job).catch((e) => {
+      job.status = "error";
+      job.error = e?.message || "Generation failed";
     });
 
+    return NextResponse.json({ jobId: id });
   } catch (err: any) {
     console.error("Unhandled error:", err?.message || err);
-    return NextResponse.json(
-      { error: err?.message || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 });
   }
 }
