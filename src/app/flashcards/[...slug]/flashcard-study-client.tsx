@@ -96,6 +96,11 @@ export default function FlashcardStudyClient({
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
   const [flashImage, setFlashImage] = useState<string | null>(null);
+  const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const customContent = loadCustomContent();
@@ -220,9 +225,14 @@ export default function FlashcardStudyClient({
     setReviewMode(true);
   }
 
+  function pickRandom(arr: string[]): string | null {
+    if (!arr.length) return null;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
   function handleKnow() {
-    setFlashImage("/flash/know.png");
-    setTimeout(() => setFlashImage(null), 600);
+    const img = pickRandom(flashImages.know || []);
+    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
     if (newQueue.length === 0) {
@@ -236,16 +246,16 @@ export default function FlashcardStudyClient({
   }
 
   function handleDontKnow() {
-    setFlashImage("/flash/dontknow.png");
-    setTimeout(() => setFlashImage(null), 600);
+    const img = pickRandom(flashImages.dontknow || []);
+    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
   }
 
   function handleForgot() {
-    setFlashImage("/flash/forgot.png");
-    setTimeout(() => setFlashImage(null), 600);
+    const img = pickRandom(flashImages.forgot || []);
+    if (img) { setFlashImage(img); setTimeout(() => setFlashImage(null), 600); }
     const newQueueIndex = queueIndex >= queue.length - 1 ? 0 : queueIndex + 1;
     setQueueIndex(newQueueIndex);
     setReviewFlipped(false);
