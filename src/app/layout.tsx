@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar";
 import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
 import { FloatingTimer } from "@/components/pomodoro/floating-timer";
+import { AuthWrapper } from "@/components/auth-wrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,11 +26,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <PomodoroProvider>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <FloatingTimer />
-          </PomodoroProvider>
+          <AuthWrapper>
+            <PomodoroProvider>
+              <Navbar />
+              <main className="min-h-screen">{children}</main>
+              <FloatingTimer />
+            </PomodoroProvider>
+          </AuthWrapper>
         </ThemeProvider>
       </body>
     </html>

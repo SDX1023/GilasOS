@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
-import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -103,8 +104,12 @@ export default function FlashcardStudyClient({
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
   const flashQueues = useRef<Record<string, string[]>>({});
   const flashIndex = useRef<Record<string, number>>({});
+  const [cardLevels, setCardLevels] = useState<Record<number, number>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
 
   const sessionKey = `flash-session-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
+  const levelsKey = `flash-levels-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
 
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
@@ -121,6 +126,11 @@ export default function FlashcardStudyClient({
     if (found) {
       setReviewer(found);
       setCards(found.cards || []);
+
+      const storedLevels = localStorage.getItem(levelsKey);
+      if (storedLevels) {
+        try { setCardLevels(JSON.parse(storedLevels)); } catch {}
+      }
 
       const stored = localStorage.getItem(sessionKey);
       if (stored) {
@@ -139,7 +149,7 @@ export default function FlashcardStudyClient({
       }
     }
     setMounted(true);
-  }, [courseSlug, moduleSlug, reviewerSlug, sessionKey]);
+  }, [courseSlug, moduleSlug, reviewerSlug, sessionKey, levelsKey]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -152,6 +162,11 @@ export default function FlashcardStudyClient({
       dontKnowCount,
     }));
   }, [queue, queueIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey]);
+
+  useEffect(() => {
+    if (Object.keys(cardLevels).length === 0) return;
+    localStorage.setItem(levelsKey, JSON.stringify(cardLevels));
+  }, [cardLevels, levelsKey]);
 
   useEffect(() => {
     if (!reviewMode) return;
@@ -173,6 +188,23 @@ export default function FlashcardStudyClient({
     }, 60000);
     return () => clearInterval(checkDay);
   }, [reviewMode, sessionKey]);
+
+  useEffect(() => {
+    if (!reviewComplete || !user) return;
+    const total = knownCount + forgotCount + dontKnowCount;
+    if (total === 0) return;
+    fetch("/api/study-stats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user.id,
+        known: knownCount,
+        forgot: forgotCount,
+        dont_know: dontKnowCount,
+        cards_total: total,
+      }),
+    }).catch(() => {});
+  }, [reviewComplete, user, knownCount, forgotCount, dontKnowCount]);
 
   if (!mounted) {
     return (
@@ -272,6 +304,26 @@ export default function FlashcardStudyClient({
     return a;
   }
 
+  function buildSpacedQueue(cardList: any[]) {
+    const indexed = cardList.map((card, i) => ({ card, originalIndex: i, level: cardLevels[i] || 0 }));
+    indexed.sort((a, b) => a.level - b.level);
+    const weights = indexed.map((item) => Math.max(1, 4 - item.level));
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const result: any[] = [];
+    const remaining = [...indexed];
+    while (remaining.length > 0) {
+      let r = Math.random() * remaining.reduce((sum, item) => sum + Math.max(1, 4 - item.level), 0);
+      let picked = 0;
+      for (let i = 0; i < remaining.length; i++) {
+        r -= Math.max(1, 4 - remaining[i].level);
+        if (r <= 0) { picked = i; break; }
+      }
+      result.push(remaining[picked].card);
+      remaining.splice(picked, 1);
+    }
+    return result;
+  }
+
   function startReview() {
     const stored = localStorage.getItem(sessionKey);
     if (stored) {
@@ -293,7 +345,7 @@ export default function FlashcardStudyClient({
         }
       } catch {}
     }
-    setQueue(shuffleArray(cards));
+    setQueue(buildSpacedQueue(cards));
     setQueueIndex(0);
     setKnownCount(0);
     setForgotCount(0);
@@ -303,6 +355,19 @@ export default function FlashcardStudyClient({
     setSwapped(false);
     setReviewComplete(false);
     setReviewMode(true);
+  }
+
+  function findCardIndex(card: any): number {
+    return cards.findIndex((c) => c.front === card.front && c.back === card.back);
+  }
+
+  function updateLevel(card: any, delta: number) {
+    const idx = findCardIndex(card);
+    if (idx === -1) return;
+    setCardLevels((prev) => {
+      const current = prev[idx] || 0;
+      return { ...prev, [idx]: Math.max(0, Math.min(3, current + delta)) };
+    });
   }
 
   function pickRandom(type: string): string | null {
@@ -324,15 +389,18 @@ export default function FlashcardStudyClient({
 
   function showFlash(type: string) {
     const img = pickRandom(type);
-    if (!img) return;
-    setFlashImage(img);
-    requestAnimationFrame(() => setFlashVisible(true));
-    setTimeout(() => setFlashVisible(false), 2500);
-    setTimeout(() => setFlashImage(null), 2800);
+    if (img) {
+      setFlashImage(img);
+      requestAnimationFrame(() => setFlashVisible(true));
+      setTimeout(() => setFlashVisible(false), 2500);
+      setTimeout(() => setFlashImage(null), 2800);
+    }
   }
 
-  function handleKnow() {
+  const handleKnow = useCallback(() => {
     showFlash("know");
+    const current = queue[queueIndex];
+    updateLevel(current, 1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
     if (newQueue.length === 0) {
@@ -343,10 +411,12 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }
+  }, [queue, queueIndex, flashImages]);
 
-  function handleDontKnow() {
+  const handleDontKnow = useCallback(() => {
     showFlash("dontknow");
+    const current = queue[queueIndex];
+    updateLevel(current, -1);
     setDontKnowCount((d) => d + 1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     if (newQueue.length === 0) {
@@ -357,10 +427,12 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }
+  }, [queue, queueIndex, flashImages]);
 
-  function handleForgot() {
+  const handleForgot = useCallback(() => {
     showFlash("forgot");
+    const current = queue[queueIndex];
+    updateLevel(current, -1);
     setForgotCount((f) => f + 1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     if (newQueue.length === 0) {
@@ -371,7 +443,32 @@ export default function FlashcardStudyClient({
       setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex);
     }
     setReviewFlipped(false);
-  }
+  }, [queue, queueIndex, flashImages]);
+
+  useEffect(() => {
+    if (!reviewMode || reviewComplete) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (!reviewFlipped) {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          setReviewFlipped(true);
+        }
+      } else {
+        if (e.key === "1") { e.preventDefault(); handleForgot(); }
+        if (e.key === "2") { e.preventDefault(); handleDontKnow(); }
+        if (e.key === "3") { e.preventDefault(); handleKnow(); }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [reviewMode, reviewFlipped, reviewComplete, handleKnow, handleDontKnow, handleForgot]);
+
+  const filteredCards = cards.filter((card) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return card.front.toLowerCase().includes(q) || card.back.toLowerCase().includes(q) || (card.hint && card.hint.toLowerCase().includes(q));
+  });
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -457,6 +554,14 @@ export default function FlashcardStudyClient({
               </button>
             </div>
           </div>
+          <div className="px-5 pb-3">
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${cards.length > 0 ? ((knownCount + dontKnowCount + forgotCount) / cards.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             {reviewComplete ? (
               <div className="text-center">
@@ -495,7 +600,10 @@ export default function FlashcardStudyClient({
                     )}
                   </div>
                 </div>
-                <div className="mt-8 flex flex-wrap justify-center gap-4">
+                <div className="mt-4 text-xs text-muted-foreground">
+                  {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                </div>
+                <div className="mt-4 flex flex-wrap justify-center gap-4">
                   {!reviewFlipped ? (
                     <button
                       onClick={() => setReviewFlipped(true)}
@@ -616,75 +724,92 @@ export default function FlashcardStudyClient({
         </div>
       )}
 
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search cards..."
+          className="w-full pl-9 pr-3 py-2 rounded-lg border bg-background text-sm"
+        />
+      </div>
+
       <div className="space-y-4">
-        {cards.map((card: any, i: number) => (
-          <div key={i} className="p-4 rounded-lg border bg-card">
-            {editingIndex === i ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Question</label>
-                  <textarea
-                    value={editFront}
-                    onChange={(e) => setEditFront(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
-                    rows={2}
-                  />
+        {filteredCards.map((card: any, i: number) => {
+          const realIndex = cards.indexOf(card);
+          return (
+            <div key={realIndex} className="p-4 rounded-lg border bg-card">
+              {editingIndex === realIndex ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Question</label>
+                    <textarea
+                      value={editFront}
+                      onChange={(e) => setEditFront(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Answer</label>
+                    <textarea
+                      value={editBack}
+                      onChange={(e) => setEditBack(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
+                    <input
+                      value={editHint}
+                      onChange={(e) => setEditHint(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveEdit}
+                      className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"
+                    >
+                      <Check className="h-3 w-3" /> Save
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"
+                    >
+                      <X className="h-3 w-3" /> Cancel
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Answer</label>
-                  <textarea
-                    value={editBack}
-                    onChange={(e) => setEditBack(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none"
-                    rows={2}
-                  />
+              ) : (
+                <div className="relative pr-16">
+                  <div className="absolute top-0 right-0 flex gap-1 no-print">
+                    <button
+                      onClick={() => startEdit(realIndex)}
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteCard(realIndex)}
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="font-medium">Q: {card.front}</p>
+                  <p className="mt-2 text-muted-foreground">A: {card.back}</p>
+                  {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
-                  <input
-                    value={editHint}
-                    onChange={(e) => setEditHint(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={saveEdit}
-                    className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"
-                  >
-                    <Check className="h-3 w-3" /> Save
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"
-                  >
-                    <X className="h-3 w-3" /> Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative pr-16">
-                <div className="absolute top-0 right-0 flex gap-1 no-print">
-                  <button
-                    onClick={() => startEdit(i)}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => deleteCard(i)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                <p className="font-medium">Q: {card.front}</p>
-                <p className="mt-2 text-muted-foreground">A: {card.back}</p>
-                {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
+        {filteredCards.length === 0 && searchQuery && (
+          <p className="text-center text-muted-foreground py-8">No cards match &quot;{searchQuery}&quot;</p>
+        )}
       </div>
 
       <div className="mt-8 no-print">
