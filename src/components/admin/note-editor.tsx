@@ -135,8 +135,8 @@ export function NoteEditor({
         </div>
       </div>
 
-      {/* Title */}
-      <div className="px-4 sm:px-8 pt-4 sm:pt-8 pb-2">
+      {/* Title & Slug */}
+      <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2 border-b">
         <input
           type="text"
           value={title}
@@ -157,7 +157,7 @@ export function NoteEditor({
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 flex min-h-0">
         <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} overflow-auto`}>
             <InlineEditor content={content} onChange={setContent} />
         </div>
