@@ -19,7 +19,14 @@ export async function POST(req: NextRequest) {
         ? result.text
         : JSON.stringify(result.text);
 
-    return NextResponse.json({ text });
+    const cleaned = text
+      .replace(/<[^>]+>/g, "")
+      .replace(/&[a-z]+;/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/ ?\n ?/g, "\n")
+      .trim();
+
+    return NextResponse.json({ text: cleaned });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to extract PDF" }, { status: 500 });
   }
