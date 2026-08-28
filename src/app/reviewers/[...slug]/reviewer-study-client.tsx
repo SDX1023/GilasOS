@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { FlashcardStudy } from "@/components/flashcards/flashcard-study";
@@ -77,15 +77,9 @@ export default function ReviewerStudyClient({
   const moduleSlug = slug[1];
   const reviewerSlug = slug.slice(2).join("/");
 
-  const customContent = loadCustomContent();
-  const customCourse = customContent.courses.find((c) => c.id === courseSlug);
-  const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
-  const reviewer = customModule?.reviewers.find((r) => {
-    const rSlug = r.id.split("/").slice(2).join("/");
-    return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
-  });
-
-  const [cards, setCards] = useState(reviewer?.cards || []);
+  const [mounted, setMounted] = useState(false);
+  const [reviewer, setReviewer] = useState<any>(null);
+  const [cards, setCards] = useState<any[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
@@ -94,6 +88,29 @@ export default function ReviewerStudyClient({
   const [reviewIndex, setReviewIndex] = useState(0);
   const [reviewFlipped, setReviewFlipped] = useState(false);
   const [swapped, setSwapped] = useState(false);
+
+  useEffect(() => {
+    const customContent = loadCustomContent();
+    const customCourse = customContent.courses.find((c) => c.id === courseSlug);
+    const customModule = customCourse?.modules.find((m) => m.id === moduleSlug);
+    const found = customModule?.reviewers.find((r) => {
+      const rSlug = r.id.split("/").slice(2).join("/");
+      return rSlug === reviewerSlug || r.id.endsWith(reviewerSlug);
+    });
+    if (found) {
+      setReviewer(found);
+      setCards(found.cards || []);
+    }
+    setMounted(true);
+  }, [courseSlug, moduleSlug, reviewerSlug]);
+
+  if (!mounted) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   if (!reviewer) {
     return (
@@ -151,7 +168,7 @@ export default function ReviewerStudyClient({
           <div className="flex gap-2">
             <button
               onClick={() => { setReviewMode(true); setReviewIndex(0); setReviewFlipped(false); }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm"
             >
               <Play className="h-4 w-4" /> Review
             </button>
