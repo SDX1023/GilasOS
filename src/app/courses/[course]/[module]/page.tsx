@@ -69,7 +69,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
                 {moduleContents.map((content) => (
                   <Link
                     key={content.id}
-                    href={`/courses/${course?.id || courseSlug}/${mod.id}/content/${content.id}`}
+                    href={`/courses/${courseSlug}/${moduleSlug}/content/${content.id}`}
                     className="flex items-center justify-between p-3 rounded-lg border bg-card hover:shadow-md transition-all"
                   >
                     <span className="hover:text-primary transition-colors truncate">{content.title}</span>
@@ -110,7 +110,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
                   className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:shadow-md transition-all"
                 >
                   <Link
-                    href={`/courses/${course?.id || courseSlug}/${mod.id}/${note.slug}`}
+                    href={`/courses/${courseSlug}/${moduleSlug}/${note.slug}`}
                     className="flex-1 hover:text-primary transition-colors min-w-0 truncate"
                   >
                     {note.title}
@@ -146,7 +146,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
               {reviewers.map((reviewer) => (
                 <Link
                   key={reviewer.id}
-                  href={`/flashcards/${course?.id || courseSlug}/${mod.id}/${reviewer.id}`}
+                  href={`/flashcards/${courseSlug}/${moduleSlug}/${reviewer.id}`}
                   className="flex items-center justify-between p-3 rounded-lg border bg-card hover:shadow-md transition-all"
                 >
                   <span className="hover:text-primary transition-colors truncate">{reviewer.title}</span>
