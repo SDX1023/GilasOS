@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { getSupabase } from "@/lib/supabase";
 import { Trophy, Medal, Flame, Target, Calendar } from "lucide-react";
 
 interface LeaderboardEntry {
@@ -23,10 +24,26 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/study-stats")
-      .then((r) => r.json())
-      .then((data) => { setLeaderboard(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    async function load() {
+      try {
+        const [statsRes, profilesRes] = await Promise.all([
+          fetch("/api/study-stats").then((r) => r.json()),
+          getSupabase().from("user_profiles").select("user_id, username"),
+        ]);
+        const profileMap: Record<string, string> = {};
+        if (profilesRes.data) {
+          profilesRes.data.forEach((p: any) => { profileMap[p.user_id] = p.username; });
+        }
+        if (Array.isArray(statsRes)) {
+          statsRes.forEach((entry: any) => {
+            entry.username = profileMap[entry.user_id] || entry.username || "Unknown";
+          });
+        }
+        setLeaderboard(statsRes);
+      } catch {}
+      setLoading(false);
+    }
+    load();
   }, []);
 
   function getMedalColor(index: number) {

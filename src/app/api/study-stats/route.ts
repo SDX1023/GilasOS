@@ -50,7 +50,7 @@ export async function GET() {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const { data: profiles } = await supabase
+  const { data: profiles, error: profileError } = await supabase
     .from("user_profiles")
     .select("user_id, username");
 
