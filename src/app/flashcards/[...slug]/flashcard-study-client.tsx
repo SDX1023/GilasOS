@@ -229,8 +229,8 @@ export default function FlashcardStudyClient({
   function showFlash(img: string) {
     setFlashImage(img);
     requestAnimationFrame(() => setFlashVisible(true));
-    setTimeout(() => setFlashVisible(false), 3200);
-    setTimeout(() => setFlashImage(null), 3500);
+    setTimeout(() => setFlashVisible(false), 2500);
+    setTimeout(() => setFlashImage(null), 2800);
   }
 
   function pickRandom(arr: string[]): string | null {
