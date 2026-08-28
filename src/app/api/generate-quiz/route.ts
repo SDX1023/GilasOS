@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
 
 const MAX_CHARS = 10000;
 const cache = new Map<string, { data: any; ts: number }>();
@@ -10,8 +9,14 @@ function parseRetryAfter(message: string): number {
   return match ? Math.ceil(parseFloat(match[1])) : 30;
 }
 
-function cacheKey(text: string, type: string) {
-  return createHash("md5").update(`${type}:${text}`).digest("hex");
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
 }
 
 export async function POST(req: NextRequest) {
@@ -26,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const truncatedText = text.slice(0, MAX_CHARS);
-  const key = cacheKey(truncatedText, "quiz");
+  const key = `quiz-${simpleHash(truncatedText)}`;
   const cached = cache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
     return NextResponse.json({ questions: cached.data });
@@ -81,7 +86,7 @@ Rules:
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const retryAfter = parseRetryAfter(err.error?.message || "");
-      return NextResponse.json({ error: err.error?.message || `API error`, retryAfter }, { status: 500 });
+      return NextResponse.json({ error: err.error?.message || "API error", retryAfter }, { status: 500 });
     }
 
     const data = await res.json();
