@@ -11,7 +11,6 @@ import { Textbox } from "./textbox-extension";
 interface InlineEditorProps {
   content: string;
   onChange: (html: string) => void;
-  showToolbar?: boolean;
 }
 
 function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) => void; onClose: () => void }) {
@@ -533,7 +532,7 @@ export function docToMarkdown(editor: any): string {
   return md.trim();
 }
 
-export function InlineEditor({ content, onChange, showToolbar = true }: InlineEditorProps) {
+export function InlineEditor({ content, onChange }: InlineEditorProps) {
   const lastExternalContentRef = useRef(content);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;

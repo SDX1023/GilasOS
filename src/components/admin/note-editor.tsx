@@ -83,9 +83,23 @@ export function NoteEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
 
+  const previewClassName = [
+    mode === "split" ? "pt-10" : "",
+    "p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative",
+    "prose-headings:scroll-mt-20",
+    "prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline",
+    "prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg",
+    "prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
+    "prose-strong:text-foreground",
+    "prose-img:rounded-lg prose-img:shadow-md",
+    "prose-li:my-0.5",
+    "prose-ul:list-disc prose-ol:list-decimal",
+    "prose-table:border prose-th:border prose-td:border",
+    "prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg",
+  ].join(" ");
+
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
         <div className="flex items-center gap-2">
           <button onClick={onBack} className="p-2 hover:bg-muted rounded-lg transition-colors">
@@ -135,7 +149,6 @@ export function NoteEditor({
         </div>
       </div>
 
-      {/* Title & Slug */}
       <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2 border-b">
         <input
           type="text"
@@ -156,26 +169,15 @@ export function NoteEditor({
         </div>
       </div>
 
-      {/* Editor */}
       <div className="flex-1 flex min-h-0">
         <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} flex flex-col`}>
-            <InlineEditor content={content} onChange={setContent} />
+          <InlineEditor content={content} onChange={setContent} />
         </div>
 
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
             <div
-              className={`${mode === "split" ? "pt-10" : ""} p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
-                prose-headings:scroll-mt-20
-                prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline
-                prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
-                prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
-                prose-strong:text-foreground
-                prose-img:rounded-lg prose-img:shadow-md
-                prose-li:my-0.5
-                prose-ul:list-disc prose-ol:list-decimal
-                prose-table:border prose-th:border prose-td:border
-                prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg"
+              className={previewClassName}
               dangerouslySetInnerHTML={{ __html: preview }}
             />
           </div>
