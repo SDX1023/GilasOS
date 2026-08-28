@@ -357,7 +357,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId);
       if (updatedCards.length > 0) {
         const rows = updatedCards.map((card, i) => ({
-          id: `${reviewerId}/card-${i}-${Date.now()}`,
+          id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
           reviewer_id: reviewerId,
           user_id: user.id,
           front: card.front,

@@ -246,16 +246,18 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     title: reviewer.title,
   }, { onConflict: "id" });
   if (revError) {
-    console.error("Failed to save reviewer to Supabase:", revError);
+    console.error("Failed to save reviewer to Supabase:", JSON.stringify(revError));
     return;
   }
 
   // Delete old flashcards and re-insert
-  await supabase.from("flashcards").delete().eq("reviewer_id", reviewer.id);
+  const { error: delError } = await supabase.from("flashcards").delete().eq("reviewer_id", reviewer.id);
+  if (delError) console.error("Failed to delete old flashcards:", JSON.stringify(delError));
 
   if (reviewer.cards.length > 0) {
+    const ts = Date.now();
     const rows = reviewer.cards.map((card, i) => ({
-      id: `${reviewer.id}/card-${i}-${Date.now()}`,
+      id: `${reviewer.id.replace(/\//g, "-")}-card-${ts}-${i}`,
       reviewer_id: reviewer.id,
       user_id: user.id,
       front: card.front,
@@ -264,7 +266,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     }));
     const { error: cardError } = await supabase.from("flashcards").insert(rows);
     if (cardError) {
-      console.error("Failed to save flashcards to Supabase:", cardError);
+      console.error("Failed to save flashcards to Supabase:", JSON.stringify(cardError));
     }
   }
 }

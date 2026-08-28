@@ -86,7 +86,7 @@ export default function PdfToFlashcardsPage() {
         }, { onConflict: "id" });
         if (generatedCards.length > 0) {
           const rows = generatedCards.map((card, i) => ({
-            id: `${reviewerId}/card-${i}-${Date.now()}`,
+            id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
             reviewer_id: reviewerId,
             user_id: user.id,
             front: card.front,
