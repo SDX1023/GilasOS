@@ -158,12 +158,13 @@ export function NoteEditor({
 
       {/* Editor */}
       <div className="flex-1 flex min-h-0">
-        <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} overflow-auto`}>
+        <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} flex flex-col`}>
             <InlineEditor content={content} onChange={setContent} />
         </div>
 
         {(mode === "preview" || mode === "split") && (
           <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
+            {mode === "split" && <div className="h-[37px] border-b shrink-0" />}
             <div
               className="p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative
                 prose-headings:scroll-mt-20
