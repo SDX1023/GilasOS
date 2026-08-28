@@ -209,7 +209,6 @@ function QuizTab() {
   const { courses, loading: coursesLoading } = useCourses();
   const [inputText, setInputText] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [numQuestions, setNumQuestions] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [quizStarted, setQuizStarted] = useState(false);
@@ -301,7 +300,7 @@ function QuizTab() {
       const res = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToUse, numQuestions }),
+        body: JSON.stringify({ text: textToUse }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate quiz");
@@ -502,6 +501,9 @@ function QuizTab() {
                 placeholder="Paste your notes, textbook content, or study material here..."
                 className="w-full h-40 px-4 py-3 rounded-lg border bg-background resize-none"
               />
+              {inputText && (
+                <p className="text-xs text-muted-foreground mt-1">~{Math.min(500, Math.max(5, Math.ceil(inputText.length / 200)))} questions will be generated</p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed cursor-pointer hover:bg-muted transition-colors text-sm">
@@ -548,7 +550,7 @@ function QuizTab() {
                 {loadingContent ? (
                   <span className="text-muted-foreground">Loading content...</span>
                 ) : courseContent ? (
-                  <span className="text-green-600">Loaded {courseContent.length} characters of study material</span>
+                  <span className="text-green-600">Loaded {courseContent.length.toLocaleString()} characters — ~{Math.min(500, Math.max(5, Math.ceil(courseContent.length / 200)))} questions will be generated</span>
                 ) : (
                   <span className="text-muted-foreground">No content found in this module</span>
                 )}
@@ -556,19 +558,6 @@ function QuizTab() {
             )}
           </>
         )}
-
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium">Questions:</label>
-          <select
-            value={numQuestions}
-            onChange={(e) => setNumQuestions(Number(e.target.value))}
-            className="px-3 py-1.5 rounded-lg border bg-background text-sm"
-          >
-            {[3, 5, 7, 10, 15].map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        </div>
 
         <button
           onClick={generateQuiz}
