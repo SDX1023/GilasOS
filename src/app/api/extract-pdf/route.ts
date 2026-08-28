@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
     const cleaned = text
       .replace(/<[^>]+>/g, "")
       .replace(/&[a-z]+;/g, " ")
+      .replace(/^\s*\d+\s*$/gm, "")
+      .replace(/^(?:\d{1,3})\s+/gm, "")
       .replace(/\s+/g, " ")
       .replace(/ ?\n ?/g, "\n")
       .trim();
