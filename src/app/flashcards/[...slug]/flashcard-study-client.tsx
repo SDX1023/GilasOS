@@ -473,7 +473,7 @@ export default function FlashcardStudyClient({
                 </div>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative pr-16">
                 <div className="absolute top-0 right-0 flex gap-1 no-print">
                   <button
                     onClick={() => startEdit(i)}
@@ -488,7 +488,7 @@ export default function FlashcardStudyClient({
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="font-medium pr-8">Q: {card.front}</p>
+                <p className="font-medium">Q: {card.front}</p>
                 <p className="mt-2 text-muted-foreground">A: {card.back}</p>
                 {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
               </div>
