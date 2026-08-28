@@ -117,10 +117,16 @@ export default function FlashcardStudyClient({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadData() {
-      try {
-        if (user) {
-          const cloudData = await loadUserFlashcards(user.id);
+      if (user) {
+        try {
+          const cloudData = await Promise.race([
+            loadUserFlashcards(user.id),
+            new Promise<[]>((resolve) => setTimeout(() => resolve([]), 3000)),
+          ]);
+          if (cancelled) return;
           const match = cloudData.find((d: any) =>
             d.course_id === courseSlug && d.module_id === moduleSlug &&
             (d.reviewer_id === reviewerSlug || d.reviewer_id.endsWith(reviewerSlug))
@@ -131,8 +137,8 @@ export default function FlashcardStudyClient({
             setMounted(true);
             return;
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
       try {
         const customContent = loadCustomContent();
@@ -147,9 +153,10 @@ export default function FlashcardStudyClient({
           setCards(found.cards || []);
         }
       } catch {}
-      setMounted(true);
+      if (!cancelled) setMounted(true);
     }
     loadData();
+    return () => { cancelled = true; };
   }, [courseSlug, moduleSlug, reviewerSlug, user]);
 
   useEffect(() => {
