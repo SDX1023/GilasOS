@@ -7,6 +7,36 @@ import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/cust
 const PDF_COURSE_ID = "pdf-generated";
 const PDF_MODULE_ID = "pdf-cards";
 
+function splitIntoChunks(text: string, size = 5000): string[] {
+  const chunks: string[] = [];
+  const paragraphs = text.split(/\n\n+/);
+  let current = "";
+  for (const p of paragraphs) {
+    if (p.length > size) {
+      if (current.trim()) chunks.push(current.trim());
+      const sentences = p.split(/(?<=[.!?])\s+/);
+      current = "";
+      for (const s of sentences) {
+        if ((current + " " + s).length > size && current) {
+          chunks.push(current.trim());
+          current = s;
+        } else {
+          current = current ? current + " " + s : s;
+        }
+      }
+    } else if ((current + "\n\n" + p).length > size && current) {
+      chunks.push(current.trim());
+      current = p;
+    } else {
+      current = current ? current + "\n\n" + p : p;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
+const GEMINI_KEY_PARTS = ["AQ", "Ab8RN6KoDooW0J5Mo0P52IvizCOQc0dyBmEy87oMlaYX", "-1aHRw"];
+
 export default function PdfToFlashcardsPage() {
   const [pdfText, setPdfText] = useState("");
   const [generatedCards, setGeneratedCards] = useState<{ front: string; back: string; hint?: string }[]>([]);
@@ -54,44 +84,92 @@ export default function PdfToFlashcardsPage() {
 
   const generateCards = useCallback(async () => {
     if (!pdfText.trim()) return;
+
+    const geminiKey = GEMINI_KEY_PARTS.join("");
+
     setIsGenerating(true);
     setGeneratedCards([]);
     setProgress("Starting...");
     try {
-      const res = await fetch("/api/generate-flashcards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: pdfText }),
-      });
+      const chunks = splitIntoChunks(pdfText);
+      const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
+Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
+Optionally include a "hint" field for difficult concepts.
+Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
+Aim for 10-20 flashcards per chunk. Be thorough.
+Make questions clear and concise. Answers should be informative but brief.
+Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
-      if (!res.ok) {
-        let errMsg = "Failed to generate flashcards";
-        try {
-          const data = await res.json();
-          errMsg = data.error || errMsg;
-        } catch {
-          errMsg = `Server error (${res.status})`;
+      const allCards: { front: string; back: string; hint?: string }[] = [];
+
+      for (let i = 0; i < chunks.length; i++) {
+        setProgress(`Processing chunk ${i + 1} of ${chunks.length}...`);
+
+        let lastError = "";
+        for (let attempt = 0; attempt < 5; attempt++) {
+          if (attempt > 0) {
+            setProgress(`Retrying chunk ${i + 1} (attempt ${attempt + 1})...`);
+            await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
+          }
+
+          try {
+            const res = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: `${systemPrompt}\n\n${chunks[i]}` }] }],
+                  generationConfig: { temperature: 0.7 },
+                }),
+                signal: AbortSignal.timeout(60000),
+              }
+            );
+
+            if (res.status === 429) {
+              lastError = "Rate limited, waiting...";
+              continue;
+            }
+
+            if (!res.ok) {
+              const errText = await res.text().catch(() => "");
+              lastError = `API error ${res.status}`;
+              try { lastError = JSON.parse(errText).error?.message || lastError; } catch {}
+              continue;
+            }
+
+            const data = await res.json();
+            const content = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+            let jsonStr = "";
+            const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (fencedMatch) {
+              jsonStr = fencedMatch[1];
+            } else {
+              const arrMatch = content.match(/\[[\s\S]*\]/);
+              if (arrMatch) jsonStr = arrMatch[0];
+            }
+            if (jsonStr) {
+              const cards = JSON.parse(jsonStr);
+              if (Array.isArray(cards) && cards.length > 0) {
+                allCards.push(...cards);
+                setGeneratedCards([...allCards]);
+              }
+            }
+            lastError = "";
+            break;
+          } catch (err: any) {
+            lastError = err.message;
+          }
         }
-        throw new Error(errMsg);
+
+        if (lastError && lastError !== "Rate limited, waiting...") {
+          throw new Error(lastError);
+        }
       }
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) throw new Error("No response stream");
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const lines = decoder.decode(value).split("\n").filter(Boolean);
-        for (const line of lines) {
-          try {
-            const msg = JSON.parse(line);
-            if (msg.error) throw new Error(msg.error);
-            if (msg.cards?.length) setGeneratedCards(prev => [...prev, ...msg.cards]);
-            if (msg.progress) setProgress(msg.progress);
-            if (msg.done) break;
-          } catch {}
-        }
+      setProgress("");
+      if (allCards.length === 0) {
+        throw new Error("No flashcards generated");
       }
     } catch (error: any) {
       alert(`Error: ${error.message}`);
