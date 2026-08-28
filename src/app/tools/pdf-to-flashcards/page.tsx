@@ -119,7 +119,7 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
                 "Authorization": `Bearer ${apiKey.trim()}`,
               },
               body: JSON.stringify({
-                model: "qwen/qwen3.6-27b",
+                model: "groq/compound-mini",
                 messages: [
                   { role: "system", content: systemPrompt },
                   { role: "user", content: chunks[i] },
