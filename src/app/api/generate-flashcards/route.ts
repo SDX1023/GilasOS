@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const CHUNK_SIZE = 8000;
+const CHUNK_SIZE = 5000;
 
 function splitIntoChunks(text: string): string[] {
   const chunks: string[] = [];
@@ -33,49 +33,45 @@ function splitIntoChunks(text: string): string[] {
   return chunks;
 }
 
-async function callGroq(apiKey: string, prompt: string, chunk: string): Promise<string> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+async function callGemini(apiKey: string, prompt: string, chunk: string): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
+      await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
     }
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: prompt },
-          { role: "user", content: chunk },
-        ],
-        temperature: 0.7,
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${prompt}\n\n${chunk}` }] }],
+          generationConfig: { temperature: 0.7 },
+        }),
+        signal: AbortSignal.timeout(60000),
+      }
+    );
 
-    if (res.status === 429 && attempt < 2) continue;
+    if (res.status === 429 && attempt < 4) continue;
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      let errMsg = `Groq API error (${res.status})`;
+      let errMsg = `Gemini API error (${res.status})`;
       try { errMsg = JSON.parse(errText).error?.message || errMsg; } catch {}
       throw new Error(errMsg);
     }
 
     const data = await res.json().catch(() => null);
-    if (!data) throw new Error("Empty response from Groq");
-    return data.choices?.[0]?.message?.content ?? "";
+    if (!data) throw new Error("Empty response from Gemini");
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   }
   throw new Error("Rate limited — try again later");
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), { status: 500 });
   }
 
   const { text } = await req.json();
@@ -92,7 +88,7 @@ export async function POST(req: NextRequest) {
 Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
 Optionally include a "hint" field for difficult concepts.
 Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
-Aim for 10-20 flashcards per chunk. Be thorough — every important concept should become a flashcard.
+Aim for 10-20 flashcards per chunk. Be thorough.
 Make questions clear and concise. Answers should be informative but brief.
 Do not include any markdown formatting or code blocks, just the raw JSON array.`;
 
@@ -100,14 +96,21 @@ Do not include any markdown formatting or code blocks, just the raw JSON array.`
 
       for (let i = 0; i < chunks.length; i++) {
         try {
-          const content = await callGroq(apiKey, systemPrompt, chunks[i]);
-          const jsonMatch = content.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
+          const content = await callGemini(apiKey, systemPrompt, chunks[i]);
+          let jsonStr = "";
+          const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (fencedMatch) {
+            jsonStr = fencedMatch[1];
+          } else {
+            const arrMatch = content.match(/\[[\s\S]*\]/);
+            if (arrMatch) jsonStr = arrMatch[0];
+          }
+          if (jsonStr) {
             try {
-              const cards = JSON.parse(jsonMatch[0]);
+              const cards = JSON.parse(jsonStr);
               if (Array.isArray(cards) && cards.length > 0) {
                 totalCards += cards.length;
-                controller.enqueue(encoder.encode(JSON.stringify({ cards, done: false, progress: Math.round(((i + 1) / chunks.length) * 100) }) + "\n"));
+                controller.enqueue(encoder.encode(JSON.stringify({ cards, done: false, progress: `Chunk ${i + 1}/${chunks.length} complete` }) + "\n"));
               }
             } catch {}
           }

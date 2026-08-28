@@ -7,34 +7,6 @@ import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/cust
 const PDF_COURSE_ID = "pdf-generated";
 const PDF_MODULE_ID = "pdf-cards";
 
-function splitIntoChunks(text: string, size = 8000): string[] {
-  const chunks: string[] = [];
-  const paragraphs = text.split(/\n\n+/);
-  let current = "";
-  for (const p of paragraphs) {
-    if (p.length > size) {
-      if (current.trim()) chunks.push(current.trim());
-      const sentences = p.split(/(?<=[.!?])\s+/);
-      current = "";
-      for (const s of sentences) {
-        if ((current + " " + s).length > size && current) {
-          chunks.push(current.trim());
-          current = s;
-        } else {
-          current = current ? current + " " + s : s;
-        }
-      }
-    } else if ((current + "\n\n" + p).length > size && current) {
-      chunks.push(current.trim());
-      current = p;
-    } else {
-      current = current ? current + "\n\n" + p : p;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
-
 export default function PdfToFlashcardsPage() {
   const [pdfText, setPdfText] = useState("");
   const [generatedCards, setGeneratedCards] = useState<{ front: string; back: string; hint?: string }[]>([]);
@@ -82,96 +54,44 @@ export default function PdfToFlashcardsPage() {
 
   const generateCards = useCallback(async () => {
     if (!pdfText.trim()) return;
-
-    const keyParts = ["gsk_HxXn2ynROPDygj78", "nQr8WGdyb3FYtuHVDG", "06H76hzFsAtxm5OacC"];
-    let apiKey = localStorage.getItem("groq_api_key") || keyParts.join("");
-
     setIsGenerating(true);
     setGeneratedCards([]);
     setProgress("Starting...");
     try {
-      const chunks = splitIntoChunks(pdfText);
-      const systemPrompt = `You are a flashcard generator. Given text content, generate flashcards for studying.
-Return ONLY a JSON array of objects with "front" (question) and "back" (answer) fields.
-Optionally include a "hint" field for difficult concepts.
-Generate as many flashcards as possible to thoroughly cover ALL key concepts, facts, definitions, and details in the text.
-Aim for 10-20 flashcards per chunk. Be thorough.
-Make questions clear and concise. Answers should be informative but brief.
-Do not include any markdown formatting or code blocks, just the raw JSON array.`;
+      const res = await fetch("/api/generate-flashcards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: pdfText }),
+      });
 
-      const allCards: { front: string; back: string; hint?: string }[] = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        setProgress(`Processing chunk ${i + 1} of ${chunks.length}...`);
-
-        let lastError = "";
-        for (let attempt = 0; attempt < 3; attempt++) {
-          if (attempt > 0) {
-            setProgress(`Retrying chunk ${i + 1} (attempt ${attempt + 1})...`);
-            await new Promise(r => setTimeout(r, (attempt + 1) * 3000));
-          }
-
-          try {
-            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey.trim()}`,
-              },
-              body: JSON.stringify({
-                model: "groq/compound-mini",
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: chunks[i] },
-                ],
-                temperature: 0.7,
-              }),
-            });
-
-            if (res.status === 429) {
-              lastError = "Rate limited";
-              continue;
-            }
-
-            if (!res.ok) {
-              const errText = await res.text().catch(() => "");
-              lastError = `API error ${res.status}`;
-              try { lastError = JSON.parse(errText).error?.message || lastError; } catch {}
-              continue;
-            }
-
-            const data = await res.json();
-            const content = data.choices?.[0]?.message?.content ?? "";
-            let jsonStr = "";
-            const fencedMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-            if (fencedMatch) {
-              jsonStr = fencedMatch[1];
-            } else {
-              const arrMatch = content.match(/\[[\s\S]*\]/);
-              if (arrMatch) jsonStr = arrMatch[0];
-            }
-            if (jsonStr) {
-              const cards = JSON.parse(jsonStr);
-              if (Array.isArray(cards) && cards.length > 0) {
-                allCards.push(...cards);
-                setGeneratedCards([...allCards]);
-              }
-            }
-            lastError = "";
-            break;
-          } catch (err: any) {
-            lastError = err.message;
-          }
+      if (!res.ok) {
+        let errMsg = "Failed to generate flashcards";
+        try {
+          const data = await res.json();
+          errMsg = data.error || errMsg;
+        } catch {
+          errMsg = `Server error (${res.status})`;
         }
-
-        if (lastError && i === chunks.length - 1) {
-          throw new Error(lastError);
-        }
+        throw new Error(errMsg);
       }
 
-      setProgress("");
-      if (allCards.length === 0) {
-        throw new Error("No flashcards generated");
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error("No response stream");
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split("\n").filter(Boolean);
+        for (const line of lines) {
+          try {
+            const msg = JSON.parse(line);
+            if (msg.error) throw new Error(msg.error);
+            if (msg.cards?.length) setGeneratedCards(prev => [...prev, ...msg.cards]);
+            if (msg.progress) setProgress(msg.progress);
+            if (msg.done) break;
+          } catch {}
+        }
       }
     } catch (error: any) {
       alert(`Error: ${error.message}`);
