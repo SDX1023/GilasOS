@@ -138,19 +138,37 @@ Content:
 ${chunkText}`;
 }
 
+function findMissingHints(text: string, cards: any[]): string[] {
+  const bullets = text.split("●").map(b => b.trim()).filter(Boolean);
+  const haystack = cards.map(c => `${c.front} ${c.back}`.toLowerCase()).join(" || ");
+  const missing: string[] = [];
+  for (const b of bullets) {
+    const key = b.slice(0, 60).toLowerCase().replace(/\s+/g, " ").trim();
+    const short = key.split(" ").slice(0, 4).join(" ");
+    if (short.length < 10) continue;
+    if (!haystack.includes(short.slice(0, 20))) missing.push(b.slice(0, 120));
+  }
+  return missing.slice(0, 20);
+}
+
 function buildCoveragePrompt(text: string, existingCards: any[]): string {
   const existing = existingCards
     .map((c, i) => `${i + 1}. Q: ${c.front} | A: ${c.back}`)
     .join("\n");
+  const missing = findMissingHints(text, existingCards);
+  const missingBlock = missing.length
+    ? `\nPRIORITY: These source bullets appear uncovered and MUST get cards:\n${missing.map((m, i) => `${i + 1}. ${m}...`).join("\n")}\n`
+    : "";
 
   return `You are reviewing a flashcard set for completeness.
 
 Below is the ORIGINAL study material followed by the EXISTING flashcards.
 
 Your job: identify important topics, facts, or concepts from the material that are MISSING or under-covered in the existing cards. Generate additional flashcards to fill those gaps. Do NOT repeat what is already covered.
-
+${missingBlock}
 Rules:
 - Generate only NEW, non-duplicate flashcards (aim for 20-40 if many gaps exist, fewer if coverage is already strong).
+- Each bullet above marked PRIORITY must produce at least one card.
 - Each: {"front": "question?", "back": "answer"}.
 - Return ONLY a valid JSON array: [{"front": "...", "back": "..."}]
 
