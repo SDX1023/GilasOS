@@ -4,6 +4,8 @@ import { AuthWrapper } from "@/components/auth-wrapper";
 import { Navbar } from "@/components/navbar";
 import { Taskbar } from "@/components/taskbar";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
+import { FloatingTimer } from "@/components/pomodoro/floating-timer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,12 +23,15 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthWrapper>
-            <div className="app-shell">
-              <ScrollToTop />
-              <Navbar />
-              <main className="app-main">{children}</main>
-              <Taskbar />
-            </div>
+            <PomodoroProvider>
+              <div className="app-shell">
+                <ScrollToTop />
+                <Navbar />
+                <main className="app-main">{children}</main>
+                <Taskbar />
+              </div>
+              <FloatingTimer />
+            </PomodoroProvider>
           </AuthWrapper>
         </ThemeProvider>
       </body>

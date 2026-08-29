@@ -81,7 +81,7 @@ export function FloatingTimer() {
       style={{ left: position.x, top: position.y }}
       className={cn(
         "fixed z-50 select-none touch-none",
-        "rounded-full shadow-lg border border-white/10 backdrop-blur-md",
+        "rounded-full shadow-lg border border-black/10 backdrop-blur-md",
         modeColor,
         isDragging && "cursor-grabbing"
       )}

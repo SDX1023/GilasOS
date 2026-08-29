@@ -39,7 +39,7 @@ export function PomodoroTimer() {
             style={{
               padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500,
               border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif",
-              background: mode === m ? "var(--os-accent)" : "rgba(255,255,255,0.06)",
+              background: mode === m ? "var(--os-accent)" : "rgba(128,128,128,0.12)",
               color: mode === m ? "#fff" : "var(--os-text-dim)",
               transition: "all 0.15s",
             }}
@@ -55,7 +55,7 @@ export function PomodoroTimer() {
           <circle
             cx="140" cy="140" r="120"
             fill="transparent"
-            stroke="rgba(255,255,255,0.08)"
+            stroke="rgba(128,128,128,0.15)"
             strokeWidth="8"
           />
           <circle
@@ -87,7 +87,7 @@ export function PomodoroTimer() {
             display: "flex", alignItems: "center", gap: 8, padding: "12px 32px",
             borderRadius: 14, fontSize: 15, fontWeight: 600, border: "none",
             cursor: "pointer", fontFamily: "Inter, sans-serif",
-            background: isRunning ? "rgba(255,255,255,0.06)" : "var(--os-accent)",
+            background: isRunning ? "rgba(128,128,128,0.12)" : "var(--os-accent)",
             color: isRunning ? "var(--os-text-secondary)" : "#fff",
             transition: "all 0.15s",
           }}
@@ -98,7 +98,7 @@ export function PomodoroTimer() {
         <button
           onClick={reset}
           style={{
-            padding: 12, borderRadius: 14, background: "rgba(255,255,255,0.06)",
+            padding: 12, borderRadius: 14, background: "rgba(128,128,128,0.12)",
             border: "none", cursor: "pointer", color: "var(--os-text-dim)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
@@ -109,7 +109,7 @@ export function PomodoroTimer() {
         <button
           onClick={() => setShowSettings(!showSettings)}
           style={{
-            padding: 12, borderRadius: 14, background: "rgba(255,255,255,0.06)",
+            padding: 12, borderRadius: 14, background: "rgba(128,128,128,0.12)",
             border: "none", cursor: "pointer", color: "var(--os-text-dim)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}

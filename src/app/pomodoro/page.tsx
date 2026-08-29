@@ -1,6 +1,5 @@
 'use client';
 
-import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
 import { PomodoroTimer } from "@/components/pomodoro/timer";
 import { Timer } from "lucide-react";
 
@@ -11,9 +10,7 @@ export default function PomodoroPage() {
         <h1 className="page-title" style={{ justifyContent: "center" }}><Timer size={28} /> Pomodoro Timer</h1>
         <p className="page-subtitle">Stay focused with timed study sessions</p>
       </div>
-      <PomodoroProvider>
-        <PomodoroTimer />
-      </PomodoroProvider>
+      <PomodoroTimer />
     </div>
   );
 }
