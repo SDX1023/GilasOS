@@ -1,3 +1,6 @@
+'use client';
+
+import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
 import { PomodoroTimer } from "@/components/pomodoro/timer";
 
 export default function PomodoroPage() {
@@ -8,7 +11,9 @@ export default function PomodoroPage() {
         <p className="text-muted-foreground mt-2">Stay focused with timed study sessions</p>
       </div>
 
-      <PomodoroTimer />
+      <PomodoroProvider>
+        <PomodoroTimer />
+      </PomodoroProvider>
     </div>
   );
 }
