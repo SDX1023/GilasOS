@@ -72,12 +72,54 @@ export default function PdfToFlashcardsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        const retryAfter = data.retryAfter || (res.status === 429 ? 60 : 0);
-        setCooldown(retryAfter);
-        if (retryAfter > 0) localStorage.setItem("flashcard-cooldown-until", String(Date.now() + retryAfter * 1000));
         throw new Error(data.error || "Failed to generate flashcards");
       }
-      setGeneratedCards(data.cards);
+
+      const jobId = data.jobId;
+      if (!jobId) throw new Error("No job id returned");
+
+      let currentJobId = jobId;
+      let final: any = null;
+      let retries = 0;
+      let backoff = 0;
+      while (true) {
+        if (backoff > 0) await new Promise((res) => setTimeout(res, backoff));
+        const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(currentJobId)}`);
+        const text = await r.text();
+        let d: any;
+        try { d = JSON.parse(text); } catch {
+          if (r.status === 502 || text.includes("<!DOCTYPE")) {
+            backoff = 3000;
+            continue;
+          }
+          throw new Error(text.slice(0, 300) || "Invalid server response");
+        }
+        if (!r.ok) {
+          if (r.status === 502) {
+            backoff = 3000;
+            continue;
+          }
+          if (r.status === 404 && d.error === "Job not found" && retries < 2) {
+            retries++;
+            const nr = await fetch("/api/generate-flashcards", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: pdfText }),
+            });
+            const nd = await nr.json();
+            if (!nr.ok || !nd.jobId) throw new Error(d.error || "Job lost and restart failed");
+            currentJobId = nd.jobId;
+            backoff = 0;
+            continue;
+          }
+          throw new Error(d.error || "Failed to poll job");
+        }
+        backoff = 0;
+        if (d.status === "error") throw new Error(d.error || "Generation failed");
+        if (d.status === "done") { final = d; break; }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      setGeneratedCards(final.cards);
     } catch (error: any) {
       setLastError(error.message);
     } finally {
