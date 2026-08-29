@@ -9,7 +9,7 @@ const features = [
   { icon: Layers, title: "Flashcards", href: "/flashcards", color: "#7c3aed" },
   { icon: Timer, title: "Pomodoro", href: "/tools/pomodoro", color: "#10b981" },
   { icon: FileText, title: "PDF to Cards", href: "/tools/pdf-to-flashcards", color: "#f59e0b" },
-  { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#ec4899" },
+  { icon: CheckSquare, title: "Tasks", href: "/tools/tasks", color: "#ec4899" },
   { icon: Users, title: "Friends", href: "/friends", color: "#06b6d4" },
   { icon: Trophy, title: "Archive", href: "/archive", color: "#ef4444" },
 ];

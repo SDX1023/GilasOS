@@ -44,7 +44,7 @@ export default function Home() {
       icon: CheckSquare,
       title: "Tasks",
       description: "Organize tasks with decks",
-      href: "/tasks",
+      href: "/tools/tasks",
       color: "#c084fc",
     },
     {

@@ -12,7 +12,7 @@ const navItems = [
   { href: "/study", label: "Study", icon: PenTool },
   { href: "/tools/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/tools/pdf-to-flashcards", label: "PDF to Cards", icon: FileText },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/tools/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/archive", label: "Archive", icon: Trophy },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/shared", label: "Shared", icon: LinkIcon },

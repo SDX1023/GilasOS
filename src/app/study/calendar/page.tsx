@@ -183,7 +183,7 @@ export default function CalendarPage() {
             {syncing && <span style={{ marginLeft: 8, color: "var(--os-accent)" }}>syncing...</span>}
           </p>
         </div>
-        <Link href="/tasks" className="glass-btn glass-btn-ghost" style={{ fontSize: 13 }}>Back to Tasks</Link>
+        <Link href="/tools/tasks" className="glass-btn glass-btn-ghost" style={{ fontSize: 13 }}>Back to Tasks</Link>
       </div>
 
       <div className="grid-2" style={{ gridTemplateColumns: "2fr 1fr" }}>
