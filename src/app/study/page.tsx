@@ -5,13 +5,13 @@ import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
-import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards } from "@/lib/user-data";
-import { Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, BarChart3, Bookmark } from "lucide-react";
+import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats } from "@/lib/user-data";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark } from "lucide-react";
 
-type Tab = "quiz" | "history" | "weak";
+type Tab = "flashcards" | "quiz" | "history" | "weak";
 
 export default function StudyPage() {
-  const [tab, setTab] = useState<Tab>("quiz");
+  const [tab, setTab] = useState<Tab>("flashcards");
   const [mounted, setMounted] = useState(false);
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
@@ -87,6 +87,7 @@ export default function StudyPage() {
 
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
         {([
+          ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
           ["history", "History", History],
           ["weak", "Weak Areas", TrendingDown],
@@ -111,6 +112,9 @@ export default function StudyPage() {
         ))}
       </div>
 
+      {tab === "flashcards" && (
+        <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} />
+      )}
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "weak" && <WeakAreasTab userId={userId} />}
@@ -134,6 +138,123 @@ export default function StudyPage() {
   );
 }
 
+function FlashcardsTab({ allReviewers, userId, onDelete }: {
+  allReviewers: { courseId: string; moduleId: string; reviewer: any }[];
+  userId: string | null;
+  onDelete: (target: { courseId: string; moduleId: string; reviewerId: string; title: string }) => void;
+}) {
+  const [openCourses, setOpenCourses] = useState<Set<string>>(new Set());
+  const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+
+  const toggleCourse = (id: string) => {
+    setOpenCourses((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleModule = (id: string) => {
+    setOpenModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  if (allReviewers.length === 0) {
+    return (
+      <div className="empty-state">
+        <Brain className="empty-state-icon" />
+        <p className="text-secondary" style={{ marginBottom: "16px" }}>No flashcard decks yet.</p>
+        <Link href="/pdf-to-cards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
+          <Upload style={{ width: "16px", height: "16px" }} /> Generate from PDF
+        </Link>
+      </div>
+    );
+  }
+
+  const courseMap = new Map<string, { moduleId: string; reviewer: any; courseId: string }[]>();
+  for (const r of allReviewers) {
+    if (!courseMap.has(r.courseId)) courseMap.set(r.courseId, []);
+    courseMap.get(r.courseId)!.push(r);
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {Array.from(courseMap.entries()).map(([courseId, reviewers]) => {
+        const courseOpen = openCourses.has(courseId);
+        const modMap = new Map<string, typeof reviewers>();
+        for (const r of reviewers) {
+          if (!modMap.has(r.moduleId)) modMap.set(r.moduleId, []);
+          modMap.get(r.moduleId)!.push(r);
+        }
+        const totalCards = reviewers.reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
+        return (
+          <div key={courseId} className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
+            <button onClick={() => toggleCourse(courseId)} style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+              background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
+            }}>
+              {courseOpen ? <ChevronDown size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: 600, fontSize: 16, color: "var(--os-text-primary)" }}>{courseId}</span>
+                <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
+                  {modMap.size} modules &middot; {totalCards} cards
+                </span>
+              </div>
+            </button>
+            {courseOpen && (
+              <div style={{ borderTop: "1px solid var(--os-glass-border)", padding: "4px 0" }}>
+                {Array.from(modMap.entries()).map(([moduleId, mods]) => {
+                  const modKey = `${courseId}/${moduleId}`;
+                  const modOpen = openModules.has(modKey);
+                  const modCards = mods.reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
+                  return (
+                    <div key={modKey}>
+                      <button onClick={() => toggleModule(modKey)} style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px 10px 46px",
+                        background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
+                      }}>
+                        {modOpen ? <ChevronDown size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-secondary)" }}>{moduleId}</span>
+                          <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
+                            {mods.length} decks &middot; {modCards} cards
+                          </span>
+                        </div>
+                      </button>
+                      {modOpen && (
+                        <div style={{ padding: "0 16px 8px 62px", display: "flex", flexDirection: "column", gap: 6 }}>
+                          {mods.map(({ courseId: cid, moduleId: mid, reviewer }) => (
+                            <div key={reviewer.id} className="glass-card-link" style={{ position: "relative", padding: "10px 14px" }}>
+                              <Link href={`/flashcards/${reviewer.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</span>
+                                  <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>{reviewer.cards?.length || 0} cards</span>
+                                </div>
+                                <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
+                              </Link>
+                              <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId: mid, reviewerId: reviewer.id, title: reviewer.title }); }}
+                                style={{ position: "absolute", top: 8, right: 8, padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4 }}
+                                title="Delete deck">
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function QuizTab({ userId }: { userId: string | null }) {
   const { courses } = useCourses();
   const [inputText, setInputText] = useState("");
@@ -152,6 +273,7 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [selectedSource, setSelectedSource] = useState<"text" | "course">("text");
   const [courseContent, setCourseContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(false);
+  const [quizType, setQuizType] = useState<"mc" | "identification" | "mixed">("mc");
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -200,7 +322,7 @@ function QuizTab({ userId }: { userId: string | null }) {
     if (!textToUse.trim()) return;
     setIsGenerating(true); setLastError("");
     try {
-      const res = await fetch("/api/generate-quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: textToUse }) });
+      const res = await fetch("/api/generate-quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: textToUse, type: quizType }) });
       const data = await res.json();
       if (!res.ok) {
         const retryAfter = data.retryAfter || (res.status === 429 ? 60 : 0);
@@ -223,7 +345,9 @@ function QuizTab({ userId }: { userId: string | null }) {
       });
       setScore(s); setShowResults(true);
       if (userId) {
-        saveQuizHistory(userId, selectedSource === "course" ? (selectedCourseData?.title || selectedCourse) : (pdfFile?.name || "Custom Quiz"), quizQuestions.length, s, quizQuestions.length - s, selectedSource).catch(() => {});
+        const wrong = quizQuestions.length - s;
+        saveQuizHistory(userId, selectedSource === "course" ? (selectedCourseData?.title || selectedCourse) : (pdfFile?.name || "Custom Quiz"), quizQuestions.length, s, wrong, selectedSource).catch(() => {});
+        saveStudyStats(userId, s, 0, wrong, quizQuestions.length).catch(() => {});
       }
     }
   }
@@ -438,6 +562,20 @@ function QuizTab({ userId }: { userId: string | null }) {
             {cooldown > 0 && <p className="text-secondary" style={{ marginTop: "4px" }}>Retry in {cooldown}s</p>}
           </div>
         )}
+        <div>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Question Type</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)" }}>
+            {(["mc", "identification", "mixed"] as const).map((t) => (
+              <button key={t} onClick={() => setQuizType(t)} style={{
+                flex: 1, justifyContent: "center", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500, transition: "colors 0.2s",
+                background: quizType === t ? "var(--os-bg)" : "transparent", boxShadow: quizType === t ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+                color: quizType === t ? "var(--os-text-primary)" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
+              }}>
+                {t === "mc" ? "Multiple Choice" : t === "identification" ? "Identification" : "Mixed"}
+              </button>
+            ))}
+          </div>
+        </div>
         <button onClick={generateQuiz}
           disabled={(selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating) || cooldown > 0}
           className="glass-btn-primary"

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage own events" ON calendar_events FOR ALL USING (auth.uid() = user_id);
-CREATE INDEX idx_calendar_events_date ON calendar_events (user_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events (user_id, event_date);
 
 -- Shared decks
 CREATE TABLE IF NOT EXISTS shared_decks (
@@ -36,7 +36,7 @@ CREATE POLICY "Anyone can view shared decks" ON shared_decks FOR SELECT USING (t
 CREATE POLICY "Users can insert own shared decks" ON shared_decks FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete own shared decks" ON shared_decks FOR DELETE USING (auth.uid() = user_id);
 CREATE POLICY "Users can update own shared decks" ON shared_decks FOR UPDATE USING (auth.uid() = user_id);
-CREATE INDEX idx_shared_decks_created ON shared_decks (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shared_decks_created ON shared_decks (created_at DESC);
 
 -- Flashcard images
 ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';

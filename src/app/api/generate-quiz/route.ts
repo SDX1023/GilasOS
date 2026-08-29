@@ -95,9 +95,15 @@ if (matches && matches.length > 10) return "PARAGRAPHS";
 // ============================================================
 // QUIZ PROMPT BUILDER (Supports all formats)
 // ============================================================
-function buildQuizPrompt(chunkText: string, idx: number, total: number): string {
+function buildQuizPrompt(chunkText: string, idx: number, total: number, questionType: string): string {
   const format = detectFormat(chunkText);
   const ctx = total > 1 ? `Section ${idx + 1}/${total}.` : "";
+
+  const typeInstructions = questionType === "identification"
+    ? `Generate IDENTIFICATION (fill-in-the-blank) quiz questions. Each question has NO options — just the question and a correct answer string.`
+    : questionType === "mc"
+    ? `Generate MULTIPLE CHOICE quiz questions with 4 options each.`
+    : `Generate a MIX of MULTIPLE CHOICE (4 options) and IDENTIFICATION (fill-in-the-blank) questions. Roughly half and half.`;
 
   // ============================================
   // FORMAT 1: BULLET POINTS
@@ -109,16 +115,47 @@ function buildQuizPrompt(chunkText: string, idx: number, total: number): string 
         ? ` This section has ~${bullets} bullet points.`
         : "";
 
-    return `Generate a multiple-choice QUIZ from this study material. ${ctx}${hint}
+    if (questionType === "identification") {
+      return `Generate identification quiz questions from this study material. ${ctx}${hint}
 
-IMPORTANT: This text uses BULLET POINTS (●). Create quiz questions from the key facts.
+IMPORTANT: This text uses BULLET POINTS. Create fill-in-the-blank questions.
 
 RULES:
-- Create 1 quiz question for every 2-3 bullet points
+- Create 1 question for every 2-3 bullet points
+- Use underscores or blanks where the answer goes
+- Include the correct answer
+- Return ONLY JSON array: [{"question":"The ___ is responsible for...","type":"identification","answer":"nucleus"}]
+
+CONTENT:
+${chunkText}`;
+    }
+
+    if (questionType === "mc") {
+      return `Generate multiple-choice quiz questions from this study material. ${ctx}${hint}
+
+IMPORTANT: This text uses BULLET POINTS. Create quiz questions from the key facts.
+
+RULES:
+- Create 1 question for every 2-3 bullet points
 - Each question must have 4 options (A, B, C, D)
 - Include the correct answer
-- Questions should cover definitions, dates, people, and events
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "correct":"A"}]
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+
+CONTENT:
+${chunkText}`;
+    }
+
+    // mixed
+    return `Generate a mix of multiple-choice and identification quiz questions. ${ctx}${hint}
+
+IMPORTANT: This text uses BULLET POINTS. Create a MIX of question types.
+
+RULES:
+- Create 1 question for every 2-3 bullet points
+- Half should be multiple-choice with 4 options, half should be identification (fill-in-the-blank)
+- Return ONLY JSON array with mixed types:
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 CONTENT:
 ${chunkText}`;
@@ -128,15 +165,35 @@ ${chunkText}`;
   // FORMAT 2: Q&A PAIRS
   // ============================================
   if (format === "QA_PAIRS") {
-    return `Generate a multiple-choice QUIZ from this study material. ${ctx}
-
-IMPORTANT: This text contains Q&A pairs. Convert them into quiz questions.
+    if (questionType === "identification") {
+      return `Generate identification quiz questions from this Q&A material. ${ctx}
 
 RULES:
-- For each Q&A pair, create a quiz question using the Q as the stem
-- The correct answer should be based on the provided answer
+- Convert each Q&A pair into a fill-in-the-blank question
+- The blank should be where the answer goes
+- Return ONLY JSON array: [{"question":"The process of ___ is...","type":"identification","answer":"photosynthesis"}]
+
+CONTENT:
+${chunkText}`;
+    }
+    if (questionType === "mc") {
+      return `Generate multiple-choice quiz questions from this Q&A material. ${ctx}
+
+RULES:
+- For each Q&A pair, create a question using the Q as the stem
 - Add 3 wrong options that are plausible but incorrect
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "correct":"A"}]
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+
+CONTENT:
+${chunkText}`;
+    }
+    return `Generate a mix of MC and identification questions from this Q&A material. ${ctx}
+
+RULES:
+- Half MC with 4 options, half identification fill-in-the-blank
+- Return ONLY JSON array:
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 CONTENT:
 ${chunkText}`;
@@ -146,22 +203,47 @@ ${chunkText}`;
   // FORMAT 3: PLAIN PARAGRAPHS
   // ============================================
   if (format === "PARAGRAPHS") {
-    return `Generate a multiple-choice QUIZ from this text. ${ctx}
+    if (questionType === "identification") {
+      return `Generate identification quiz questions from this text. ${ctx}
 
-IMPORTANT: This text is in PARAGRAPH format. Extract key facts as quiz questions.
+EXTRACTION RULES:
+1. For each person: "The person who ___ was ___" (fill in name)
+2. For each event: "___ happened during ___" (fill in event)
+3. For each date: "___ happened in ___" (fill in year)
+4. For each definition: "___ is defined as ___" (fill in term)
+
+FORMAT RULES:
+- Create 1 question for every 2-3 sentences of important information
+- Return ONLY JSON array: [{"question":"The ___ is responsible for...","type":"identification","answer":"nucleus"}]
+
+TEXT:
+${chunkText}`;
+    }
+    if (questionType === "mc") {
+      return `Generate multiple-choice quiz questions from this text. ${ctx}
 
 EXTRACTION RULES:
 1. For each person: "Who is [NAME]?" with 4 options
 2. For each event: "What happened during [EVENT]?" with 4 options
 3. For each date: "When did [EVENT] happen?" with 4 options
 4. For each definition: "What is [TERM]?" with 4 options
-5. For each work: "What is [TITLE]?" with 4 options
 
 FORMAT RULES:
-- Create 1 quiz question for every 3-4 sentences of important information
+- Create 1 question for every 3-4 sentences of important information
 - Each question must have 4 options (A, B, C, D)
-- Include the correct answer
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "correct":"A"}]
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+
+TEXT:
+${chunkText}`;
+    }
+    return `Generate a mix of MC and identification questions from this text. ${ctx}
+
+RULES:
+- Half MC with 4 options, half identification fill-in-the-blank
+- Create 1 question for every 3-4 sentences of important information
+- Return ONLY JSON array:
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 TEXT:
 ${chunkText}`;
@@ -170,12 +252,33 @@ ${chunkText}`;
   // ============================================
   // FALLBACK
   // ============================================
-  return `Generate a multiple-choice QUIZ from this text. ${ctx}
+  if (questionType === "identification") {
+    return `Generate identification quiz questions from this text. ${ctx}
+
+Rules:
+- Create 5 fill-in-the-blank questions
+- Return ONLY JSON array: [{"question":"The ___ is responsible for...","type":"identification","answer":"nucleus"}]
+
+TEXT:
+${chunkText}`;
+  }
+  if (questionType === "mc") {
+    return `Generate multiple-choice quiz questions from this text. ${ctx}
 
 Rules:
 - Create 5 quiz questions with 4 options each
-- Include correct answers
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "correct":"A"}]
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+
+TEXT:
+${chunkText}`;
+  }
+  return `Generate a mix of MC and identification quiz questions from this text. ${ctx}
+
+Rules:
+- Create 5 questions, mix of MC (4 options) and identification (fill-in-the-blank)
+- Return ONLY JSON array:
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 TEXT:
 ${chunkText}`;
@@ -198,35 +301,41 @@ function tryParseJson(s: string): any[] | null {
 
 async function extractQuiz(content: string): Promise<any[]> {
   const d = tryParseJson(content);
-  if (d) return d.filter((q: any) => q?.question && q?.options && q?.correct);
+  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer)));
 
   const m = content.match(/\[[\s\S]*\]/);
   if (m) {
     const p = tryParseJson(m[0]);
-    if (p) return p.filter((q: any) => q?.question && q?.options && q?.correct);
+    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer)));
   }
 
   // Try to extract from Q&A pattern
-  const patterns = [
-    /"question"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"options"\s*:\s*\[((?:\\.|[^\]\\])*)\]\s*,\s*"correct"\s*:\s*"([^"]*)"/g,
-  ];
+  const mcPattern = /"question"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"options"\s*:\s*\[((?:\\.|[^\]\\])*)\]\s*,\s*"correct"\s*:\s*"([^"]*)"/g;
+  const idPattern = /"question"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"type"\s*:\s*"identification"\s*,\s*"answer"\s*:\s*"((?:\\.|[^"\\])*)"/g;
 
   const out: any[] = [];
-  for (const pattern of patterns) {
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(content)) !== null) {
-      try {
-        const question = match[1]?.trim() || "";
-        const optionsStr = match[2] || "";
-        const correct = match[3]?.trim() || "";
-        const options = optionsStr
-          .split(",")
-          .map((o: string) => o.trim().replace(/^"|"$/g, ""));
-        if (question && options.length === 4 && correct) {
-          out.push({ question, options, correct });
-        }
-      } catch {}
-    }
+
+  let match: RegExpExecArray | null;
+  while ((match = mcPattern.exec(content)) !== null) {
+    try {
+      const question = match[1]?.trim() || "";
+      const optionsStr = match[2] || "";
+      const correct = match[3]?.trim() || "";
+      const options = optionsStr.split(",").map((o: string) => o.trim().replace(/^"|"$/g, ""));
+      if (question && options.length === 4 && correct) {
+        out.push({ question, options, correct, type: "mc" });
+      }
+    } catch {}
+  }
+
+  while ((match = idPattern.exec(content)) !== null) {
+    try {
+      const question = match[1]?.trim() || "";
+      const answer = match[2]?.trim() || "";
+      if (question && answer) {
+        out.push({ question, type: "identification", answer });
+      }
+    } catch {}
   }
 
   return out;
@@ -307,12 +416,13 @@ async function generateQuizChunk(
   apiKey: string,
   chunk: string,
   idx: number,
-  total: number
+  total: number,
+  questionType: string
 ): Promise<{ questions: any[]; error?: string }> {
   const format = detectFormat(chunk);
-  console.log(`Chunk ${idx + 1}/${total}: Detected format: ${format}`);
+  console.log(`Chunk ${idx + 1}/${total}: Detected format: ${format}, Type: ${questionType}`);
 
-  const prompt = buildQuizPrompt(chunk, idx, total);
+  const prompt = buildQuizPrompt(chunk, idx, total, questionType);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { content, retry, error } = await callDeepSeek(
@@ -376,8 +486,11 @@ export async function POST(req: NextRequest) {
       );
 
     let text: string;
+    let questionType: string;
     try {
-      text = (await req.json()).text;
+      const body = await req.json();
+      text = body.text;
+      questionType = body.type || "mc";
     } catch {
       return NextResponse.json(
         { error: "Invalid request body" },
@@ -388,14 +501,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided" }, { status: 400 });
 
     const cleaned = cleanText(text).slice(0, MAX_CHARS);
-    const key = `quiz-${simpleHash(cleaned)}-v13`;
+    const key = `quiz-${simpleHash(cleaned)}-${questionType}-v1`;
     const cached = cache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL)
       return NextResponse.json({ questions: cached.data });
 
     const chunks = splitIntoChunks(cleaned, 30000);
     const results = await runPool(chunks, CONCURRENCY, (c, i) =>
-      generateQuizChunk(apiKey, c, i, chunks.length)
+      generateQuizChunk(apiKey, c, i, chunks.length, questionType)
     );
 
     let all: any[] = [];
