@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 const MAX_CHARS = 360000;
 const CHUNK_SIZE = 20000;
 const CHUNKS_PER_POLL = 2;
