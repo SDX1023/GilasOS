@@ -123,8 +123,9 @@ function buildPrompt(chunkText: string, chunkIndex: number, totalChunks: number)
 ${contextNote}
 
 Rules:
-- Generate as many flashcards as the content warrants. Aim for 40-60 per section, but include ALL important information.
+- Generate as many flashcards as the content warrants. Aim for 40-60 per section, but include ALL important information. It is better to generate more cards than to leave gaps.
 - Cover: definitions, key facts, names, dates, formulas, processes, causes/effects, comparisons, and core concepts.
+- For quotes, opening lines, and dialogues: include the FULL exact text in the answer and escape it properly for JSON.
 - Each flashcard: one question (front) and one answer (back).
 - Make questions specific and answers self-contained.
 - Do NOT include trivial or duplicate cards.
@@ -228,39 +229,44 @@ async function callGemini(
   }
 }
 
+function tryParseJson(s: string): any[] | null {
+  try {
+    const parsed = JSON.parse(s);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  } catch { /* ignore */ }
+  return null;
+}
+
 async function extractCards(content: string): Promise<any[]> {
-  let cards: any[] = [];
+  const direct = tryParseJson(content);
+  if (direct) return direct.filter((c: any) => c && c.front && c.back);
 
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
+    const fromMatch = tryParseJson(jsonMatch[0]);
+    if (fromMatch) return fromMatch.filter((c: any) => c && c.front && c.back);
     try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(parsed) && parsed.length > 0) cards = parsed;
-    } catch (e) { /* ignore */ }
+      const repaired = jsonMatch[0]
+        .replace(/,\s*]/g, "]")
+        .replace(/,\s*}/g, "}");
+      const fromRepaired = tryParseJson(repaired);
+      if (fromRepaired) return fromRepaired.filter((c: any) => c && c.front && c.back);
+    } catch { /* ignore */ }
   }
 
-  if (cards.length === 0) {
+  const objPattern = /"front"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"back"\s*:\s*"((?:\\.|[^"\\])*)"/g;
+  const cards: any[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = objPattern.exec(content)) !== null) {
     try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed) && parsed.length > 0) cards = parsed;
-    } catch (e) { /* ignore */ }
+      const front = JSON.parse(`"${m[1]}"`);
+      const back = JSON.parse(`"${m[2]}"`);
+      if (front && back) cards.push({ front, back });
+    } catch { /* skip */ }
   }
+  if (cards.length > 0) return cards;
 
-  if (cards.length === 0) {
-    const qaPairs = content.match(/"front"\s*:\s*"([^"]*?)"\s*,\s*"back"\s*:\s*"([^"]*?)"/g);
-    if (qaPairs) {
-      cards = qaPairs.map((pair: string) => {
-        const frontMatch = pair.match(/"front"\s*:\s*"([^"]*?)"/);
-        const backMatch = pair.match(/"back"\s*:\s*"([^"]*?)"/);
-        return {
-          front: frontMatch ? frontMatch[1] : '',
-          back: backMatch ? backMatch[1] : ''
-        };
-      }).filter((card: { front: string; back: string }) => card.front && card.back);
-    }
-  }
-
-  return cards.filter((c: any) => c && c.front && c.back);
+  return [];
 }
 
 async function generateForChunk(
