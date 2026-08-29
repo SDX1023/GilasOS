@@ -125,9 +125,9 @@ function buildPrompt(chunkText: string, chunkIndex: number, totalChunks: number)
 ${contextNote}${countHint}
 
 Rules:
-- Generate a flashcard for EVERY distinct fact, question, or bullet point in the section. Do NOT skip bullets; if you skip, information is lost.
-- Every bulleted (●) or numbered item must become at least one flashcard.
-- Cover: definitions, key facts, names, dates, formulas, processes, causes/effects, comparisons, and core concepts. A bullet with multiple facts should become multiple cards.
+- Generate a flashcard for EVERY distinct fact, question, or bullet point in the section. Do NOT skip bullets or paragraphs; if you skip, information is lost.
+- Every bulleted (●), numbered item, heading, date, name, and event must become at least one flashcard. A 13-page document should yield 130-200+ cards (roughly 10-15 per page).
+- Cover: definitions, key facts, names, dates, formulas, processes, causes/effects, comparisons, and core concepts. A bullet or paragraph with multiple facts should become multiple cards.
 - For quotes, opening lines, and dialogues: include the FULL exact text in the answer and escape it properly for JSON.
 - Each flashcard: one question (front) and one answer (back).
 - Make questions specific and answers self-contained.
