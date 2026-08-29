@@ -6,12 +6,12 @@ import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteRev
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, BarChart3, Bookmark } from "lucide-react";
+import { Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, BarChart3, Bookmark } from "lucide-react";
 
-type Tab = "flashcards" | "quiz" | "history" | "weak";
+type Tab = "quiz" | "history" | "weak";
 
 export default function StudyPage() {
-  const [tab, setTab] = useState<Tab>("flashcards");
+  const [tab, setTab] = useState<Tab>("quiz");
   const [mounted, setMounted] = useState(false);
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
@@ -87,11 +87,9 @@ export default function StudyPage() {
 
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
         {([
-          ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
           ["history", "History", History],
           ["weak", "Weak Areas", TrendingDown],
-
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
             style={{
@@ -113,9 +111,6 @@ export default function StudyPage() {
         ))}
       </div>
 
-      {tab === "flashcards" && (
-        <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} />
-      )}
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "weak" && <WeakAreasTab userId={userId} />}
@@ -135,53 +130,6 @@ export default function StudyPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function FlashcardsTab({ allReviewers, userId, onDelete }: {
-  allReviewers: { courseId: string; moduleId: string; reviewer: any }[];
-  userId: string | null;
-  onDelete: (target: { courseId: string; moduleId: string; reviewerId: string; title: string }) => void;
-}) {
-  if (allReviewers.length === 0) {
-    return (
-      <div className="empty-state">
-        <Brain className="empty-state-icon" />
-        <p className="text-secondary" style={{ marginBottom: "16px" }}>No flashcard decks yet.</p>
-        <Link href="/pdf-to-cards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
-          <Upload style={{ width: "16px", height: "16px" }} /> Generate from PDF
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {Array.from(new Set(allReviewers.map((r) => r.courseId))).map((courseId) => {
-        const courseReviewers = allReviewers.filter((r) => r.courseId === courseId);
-        return (
-          <div key={courseId}>
-            <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "var(--os-text-primary)" }}>{courseId}</h2>
-            <div className="grid-3" style={{ gap: "12px" }}>
-              {courseReviewers.map(({ courseId: cid, moduleId, reviewer }) => (
-                <div key={reviewer.id} className="glass-card" style={{ position: "relative", transition: "all 0.2s", cursor: "pointer" }}>
-                  <Link href={`/flashcards/${reviewer.id}`} style={{ display: "block", textDecoration: "none", color: "inherit" }}>
-                    <h3 style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</h3>
-                    <p className="text-secondary" style={{ fontSize: "13px", marginTop: "4px" }}>{moduleId}</p>
-                    <p className="text-secondary" style={{ fontSize: "13px", marginTop: "8px" }}>{reviewer.cards?.length || 0} cards</p>
-                  </Link>
-                  <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId, reviewerId: reviewer.id, title: reviewer.title }); }}
-                    style={{ position: "absolute", top: "12px", right: "12px", padding: "6px", borderRadius: "6px", color: "var(--os-text-secondary)", opacity: 0, transition: "all 0.2s", background: "none", border: "none", cursor: "pointer" }}
-                    title="Delete deck">
-                    <Trash2 style={{ width: "16px", height: "16px" }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

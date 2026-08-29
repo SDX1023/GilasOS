@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, PenTool, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Layers } from "lucide-react";
+import { BookOpen, PenTool, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
@@ -10,7 +10,6 @@ import { useState, useEffect, useRef } from "react";
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/study", label: "Study", icon: PenTool },
-  { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/friends", label: "Friends", icon: Users },
 ];

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   BookOpen,
-  Layers,
   Timer,
   FileText,
   CheckSquare,
@@ -18,13 +17,6 @@ export default function Home() {
       description: "Browse subjects and topics",
       href: "/subjects",
       color: "#6d28d9",
-    },
-    {
-      icon: Layers,
-      title: "Flashcards",
-      description: "Study with interactive flashcards",
-      href: "/flashcards",
-      color: "#7c3aed",
     },
     {
       icon: Timer,

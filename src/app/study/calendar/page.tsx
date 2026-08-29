@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
-import { useTodosSafe, Todo, Deck } from "@/components/todo/todo-context";
+import { TodoProvider, useTodosSafe, Todo, Deck } from "@/components/todo/todo-context";
 import { ChevronLeft, ChevronRight, Plus, X, Check, Calendar as CalendarIcon, Trash2, Link as LinkIcon, Clock } from "lucide-react";
 
 interface CalendarEvent {
@@ -31,7 +31,11 @@ const EVENT_COLORS = [
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export default function CalendarPage() {
+export default function CalendarPageWrapper() {
+  return <TodoProvider><CalendarPage /></TodoProvider>;
+}
+
+function CalendarPage() {
   const [mounted, setMounted] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -118,11 +122,13 @@ export default function CalendarPage() {
     const supabase = getSupabase();
     const { data, error } = await supabase.from("calendar_events").insert({
       user_id: userId, title: newTitle.trim(), description: newDesc.trim(),
-      event_date: selectedDate, event_time: allDay ? null : newTime, event_type: newType, linked_todo_id: linkedTodo, color: newColor,
+      event_date: selectedDate, event_time: allDay ? "" : newTime, event_type: newType, linked_todo_id: linkedTodo, color: newColor,
     }).select().single();
     if (data && !error) {
       setEvents((prev) => [...prev, data]);
       setNewTitle(""); setNewDesc(""); setNewTime(""); setLinkedTodo(""); setAllDay(false); setShowCreate(false);
+    } else {
+      alert(error?.message || "Failed to create event. Make sure the calendar_events table exists in Supabase.");
     }
   }
 
