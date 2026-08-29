@@ -20,9 +20,11 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthWrapper>
-            <Navbar />
-            {children}
-            <Taskbar />
+            <div className="app-shell">
+              <Navbar />
+              <main className="app-main">{children}</main>
+              <Taskbar />
+            </div>
           </AuthWrapper>
         </ThemeProvider>
       </body>
