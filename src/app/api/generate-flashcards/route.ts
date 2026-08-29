@@ -114,7 +114,30 @@ async function extractCards(content: string): Promise<any[]> {
   return out;
 }
 
+async function callGroq(prompt: string): Promise<{ content: string } | null> {
+  const k = process.env.GROQ_API_KEY;
+  if (!k) return null;
+  try {
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 20000);
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
+      signal: ac.signal,
+      body: JSON.stringify({ model: "qwen/qwen3-32b", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192, response_format: { type: "json_object" } }),
+    });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    const b = await safeJson(r);
+    const c = b?.choices?.[0]?.message?.content;
+    if (c) return { content: c };
+    return null;
+  } catch { return null; }
+}
+
 async function callGemini(apiKey: string, prompt: string, attempt: number): Promise<{ content: string; retry: boolean; error?: string }> {
+  const groq = await callGroq(prompt);
+  if (groq) return { content: groq.content, retry: false };
   await waitForRateLimit();
   try {
     const ac = new AbortController();
