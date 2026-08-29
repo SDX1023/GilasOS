@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { TodoProvider, useTodos, Todo, Deck } from "@/components/todo/todo-context";
 import {
   Plus, Trash2, Pencil, Check, X, Calendar, CheckSquare,
@@ -187,9 +188,14 @@ function TodoApp() {
                 </p>
               </div>
             </div>
-            <button onClick={() => setShowAddForm(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Plus size={16} /> <span>Add Task</span>
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Link href="/study/calendar" className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Calendar size={16} /> <span>Calendar</span>
+              </Link>
+              <button onClick={() => setShowAddForm(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Plus size={16} /> <span>Add Task</span>
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
