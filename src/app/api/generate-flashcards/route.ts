@@ -198,14 +198,7 @@ async function callGemini(
 
     if (res.status === 429) {
       const retryAfter = parseRetryAfter(body?.error?.message || "");
-      const waitTime = Math.max(retryAfter, 30 + attempt * 15);
-      console.log(`Rate limited. Waiting ${waitTime}s...`);
-      if (attempt < MAX_RETRIES) {
-        await sleep(waitTime * 1000);
-        lastRequestTime = 0;
-        return { content: "", retry: true };
-      }
-      return { content: "", retry: false, error: `Rate limited after ${MAX_RETRIES} retries` };
+      return { content: "", retry: false, error: `Rate limited: retry in ${retryAfter}s` };
     }
 
     if (!res.ok) {
@@ -380,14 +373,23 @@ export async function GET(req: NextRequest) {
       const results = await runPool(batch, batch.length, (chunk, i) =>
         generateForChunk(apiKey, chunk, job.nextChunk + i, job.totalChunks)
       );
+      let rateLimited = false;
       for (const r of results) {
         if (r.cards.length > 0) job.cards = job.cards.concat(r.cards);
-        if (r.error) job.errors.push(r.error);
+        if (r.error) {
+          job.errors.push(r.error);
+          if (r.error.toLowerCase().includes("rate limited")) rateLimited = true;
+        }
       }
-      job.nextChunk += batch.length;
-
-      if (job.nextChunk >= job.totalChunks) {
-        job.status = "covering";
+      if (!rateLimited) {
+        job.nextChunk += batch.length;
+        if (job.nextChunk >= job.totalChunks) {
+          job.status = "covering";
+        }
+      } else {
+        const m = job.errors[job.errors.length - 1]?.match(/retry in (\d+)/i);
+        const wait = m ? parseInt(m[1], 10) : 35;
+        job.errors[job.errors.length - 1] = `Rate limited: wait ${wait}s then retry`;
       }
     } else if (job.status === "covering" && apiKey) {
       const coverage = await runCoveragePass(apiKey, job.text, job.cards);

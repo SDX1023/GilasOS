@@ -117,7 +117,13 @@ export default function PdfToFlashcardsPage() {
         backoff = 0;
         if (d.status === "error") throw new Error(d.error || "Generation failed");
         if (d.status === "done") { final = d; break; }
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (d.error && d.error.toLowerCase().includes("rate limited")) {
+          const m = d.error.match(/wait (\d+)/i) || d.error.match(/retry in (\d+)/i);
+          const wait = m ? parseInt(m[1], 10) : 35;
+          await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
       }
       setGeneratedCards(final.cards);
     } catch (error: any) {
