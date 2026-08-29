@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
-import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer, Share2, Copy } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards } from "@/lib/user-data";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
@@ -92,6 +92,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shuffled, setShuffled] = useState(false);
   const [bookmarked, setBookmarked] = useState<Set<string>>(new Set());
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
@@ -397,6 +400,39 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     }
   }
 
+  async function handleShare() {
+    if (!user || !reviewer) return;
+    setSharing(true);
+    const supabase = getSupabase();
+    const reviewerId = reviewer.id;
+    const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", user.id).maybeSingle();
+    if (existing) {
+      const link = `${window.location.origin}/shared/${existing.id}`;
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      setSharing(false);
+      setShared(true);
+      return;
+    }
+    const { data } = await supabase.from("shared_decks").insert({
+      user_id: user.id,
+      reviewer_id: reviewerId,
+      course_id: courseSlug,
+      module_id: moduleSlug,
+      title: reviewer.title,
+      card_count: cards.length,
+    }).select().single();
+    if (data) {
+      const link = `${window.location.origin}/shared/${data.id}`;
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setSharing(false);
+    setShared(true);
+  }
+
   function saveEdit() {
     if (editingIndex === null) return;
     const updated = [...cards];
@@ -480,6 +516,11 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             <button onClick={() => exportFlashcardsToPdf(reviewer.title, cards)} className="glass-btn no-print">
               <Download style={{ width: 16, height: 16 }} /> Save PDF
             </button>
+            {user && (
+              <button onClick={handleShare} disabled={sharing} className="glass-btn" style={shared ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}>
+                {copied ? <Copy style={{ width: 16, height: 16 }} /> : <Share2 style={{ width: 16, height: 16 }} />} {copied ? "Link Copied!" : shared ? "Shared" : sharing ? "Sharing..." : "Share"}
+              </button>
+            )}
           </div>
         </div>
       </div>

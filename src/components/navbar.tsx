@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool } from "lucide-react";
+import { BookOpen, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool, Link as LinkIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/tools/todo", label: "Tasks", icon: CheckSquare },
   { href: "/archive", label: "Archive", icon: Trophy },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/shared", label: "Shared", icon: LinkIcon },
 ];
 
 export function Navbar() {
