@@ -17,6 +17,15 @@ interface ResourceLink {
 
 const LINK_TYPES = ["Google Docs", "Google Drive", "YouTube", "Website", "PDF", "Other"];
 
+const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+  "Google Docs": { bg: "rgba(66,133,244,0.12)", text: "#60a5fa" },
+  "Google Drive": { bg: "rgba(52,168,83,0.12)", text: "#4ade80" },
+  "YouTube": { bg: "rgba(255,0,0,0.12)", text: "#f87171" },
+  "Website": { bg: "rgba(139,92,246,0.12)", text: "#a78bfa" },
+  "PDF": { bg: "rgba(239,68,68,0.12)", text: "#fb923c" },
+  "Other": { bg: "rgba(255,255,255,0.08)", text: "var(--os-text-dim)" },
+};
+
 export default function CoursePage({ params }: { params: Promise<{ course: string }> }) {
   const { course: courseSlug } = use(params);
   const { course, modules, loading } = useCourseDetail(courseSlug);
@@ -186,7 +195,7 @@ export default function CoursePage({ params }: { params: Promise<{ course: strin
                       <>
                         <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 500 }}>{link.title}</td>
                         <td style={{ padding: "10px 16px" }}>
-                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: "rgba(139,92,246,0.12)", color: "#a78bfa" }}>{link.type}</span>
+                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: TYPE_COLORS[link.type]?.bg || TYPE_COLORS["Other"].bg, color: TYPE_COLORS[link.type]?.text || TYPE_COLORS["Other"].text }}>{link.type}</span>
                         </td>
                         <td style={{ padding: "10px 16px" }}>
                           <a href={link.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>

@@ -6,9 +6,9 @@ import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteRev
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, BarChart3, Bookmark } from "lucide-react";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, BarChart3, Bookmark, Trophy } from "lucide-react";
 
-type Tab = "flashcards" | "quiz" | "history" | "weak";
+type Tab = "flashcards" | "quiz" | "history" | "weak" | "competition";
 
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("flashcards");
@@ -91,20 +91,22 @@ export default function StudyPage() {
           ["quiz", "Quiz", Sparkles],
           ["history", "History", History],
           ["weak", "Weak Areas", TrendingDown],
+          ["competition", "Competition", Trophy],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center`}
             style={{
-              gap: "8px",
+              display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
               borderRadius: "6px",
+              border: "none",
+              outline: "none",
               fontSize: "13px",
               fontWeight: 500,
               whiteSpace: "nowrap",
-              transition: "colors 0.2s",
-              background: tab === key ? "var(--os-bg)" : "transparent",
-              boxShadow: tab === key ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
-              color: tab === key ? "var(--os-text-primary)" : "var(--os-text-secondary)",
+              transition: "all 0.2s",
+              background: tab === key ? "var(--os-accent)" : "transparent",
+              color: tab === key ? "#fff" : "var(--os-text-secondary)",
+              cursor: "pointer",
             }}>
             <Icon style={{ width: "16px", height: "16px" }} /> {label}
           </button>
@@ -117,6 +119,7 @@ export default function StudyPage() {
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "weak" && <WeakAreasTab userId={userId} />}
+      {tab === "competition" && <CompetitionTab userId={userId} />}
 
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
@@ -712,6 +715,99 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
       {totalCards === 0 && bookmarks.length === 0 && (
         <div className="empty-state">
           <p className="text-secondary">No study data yet. Review flashcards and take quizzes to see your weak areas.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompetitionTab({ userId }: { userId: string | null }) {
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [statsRes, profilesRes] = await Promise.all([
+          fetch("/api/study-stats").then((r) => r.json()),
+          getSupabase().from("user_profiles").select("user_id, username"),
+        ]);
+        const profileMap: Record<string, string> = {};
+        if (profilesRes.data) profilesRes.data.forEach((p: any) => { profileMap[p.user_id] = p.username; });
+        if (Array.isArray(statsRes)) {
+          statsRes.forEach((entry: any) => {
+            if (!entry.username || entry.username === "Unknown") entry.username = profileMap[entry.user_id] || "Unknown";
+          });
+          setLeaderboard(statsRes);
+          const rank = statsRes.findIndex((e: any) => e.user_id === userId);
+          if (rank >= 0) setCurrentUserRank(rank + 1);
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  function getMedalColor(index: number) {
+    if (index === 0) return "#eab308";
+    if (index === 1) return "#9ca3af";
+    if (index === 2) return "#d97706";
+    return "transparent";
+  }
+
+  if (loading) return <p className="text-secondary text-sm">Loading leaderboard...</p>;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+          <Trophy size={18} /> Leaderboard
+        </h2>
+        {currentUserRank && (
+          <span style={{ fontSize: 13, color: "var(--os-accent)", fontWeight: 500 }}>Your rank: #{currentUserRank}</span>
+        )}
+      </div>
+
+      {leaderboard.length === 0 ? (
+        <div className="empty-state">
+          <p className="text-secondary">No study data yet. Start studying to appear on the leaderboard!</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {leaderboard.slice(0, 20).map((entry, i) => (
+            <div
+              key={entry.user_id}
+              className="glass-card"
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                background: entry.user_id === userId ? "rgba(124,58,237,0.08)" : undefined,
+                border: entry.user_id === userId ? "1px solid rgba(124,58,237,0.2)" : undefined,
+              }}
+            >
+              <span style={{
+                width: 28, height: 28, borderRadius: "50%",
+                background: getMedalColor(i),
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 12, fontWeight: 700, color: i < 3 ? "#000" : "var(--os-text-dim)",
+                flexShrink: 0,
+              }}>
+                {i + 1}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--os-text-primary)" }}>{entry.username}</p>
+                <p style={{ fontSize: 11, color: "var(--os-text-dim)" }}>
+                  {entry.totalCards} cards · {entry.daysStudied} days · {Math.round(entry.accuracy)}% accuracy
+                </p>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--os-accent)" }}>{entry.score}</p>
+                <p style={{ fontSize: 10, color: "var(--os-text-dim)" }}>pts</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

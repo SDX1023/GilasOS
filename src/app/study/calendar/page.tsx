@@ -41,6 +41,7 @@ export default function CalendarPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newTime, setNewTime] = useState("");
+  const [allDay, setAllDay] = useState(false);
   const [newColor, setNewColor] = useState("#6366f1");
   const [newType, setNewType] = useState("study");
   const [linkedTodo, setLinkedTodo] = useState("");
@@ -117,11 +118,11 @@ export default function CalendarPage() {
     const supabase = getSupabase();
     const { data, error } = await supabase.from("calendar_events").insert({
       user_id: userId, title: newTitle.trim(), description: newDesc.trim(),
-      event_date: selectedDate, event_time: newTime, event_type: newType, linked_todo_id: linkedTodo, color: newColor,
+      event_date: selectedDate, event_time: allDay ? null : newTime, event_type: newType, linked_todo_id: linkedTodo, color: newColor,
     }).select().single();
     if (data && !error) {
       setEvents((prev) => [...prev, data]);
-      setNewTitle(""); setNewDesc(""); setNewTime(""); setLinkedTodo(""); setShowCreate(false);
+      setNewTitle(""); setNewDesc(""); setNewTime(""); setLinkedTodo(""); setAllDay(false); setShowCreate(false);
     }
   }
 
@@ -182,7 +183,7 @@ export default function CalendarPage() {
             {syncing && <span style={{ marginLeft: 8, color: "var(--os-accent)" }}>syncing...</span>}
           </p>
         </div>
-        <Link href="/study" className="glass-btn glass-btn-ghost" style={{ fontSize: 13 }}>Back to Study</Link>
+        <Link href="/tasks" className="glass-btn glass-btn-ghost" style={{ fontSize: 13 }}>Back to Tasks</Link>
       </div>
 
       <div className="grid-2" style={{ gridTemplateColumns: "2fr 1fr" }}>
@@ -300,7 +301,7 @@ export default function CalendarPage() {
                     {e.linked_todo_id && <LinkIcon size={12} style={{ color: "var(--os-accent)" }} />}
                   </div>
                   {e.description && <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2 }}>{e.description}</p>}
-                  {e.event_time && <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2 }}>{e.event_time}</p>}
+                  {e.event_time ? <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2 }}>{e.event_time}</p> : <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2, fontStyle: "italic" }}>All Day</p>}
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => toggleComplete(e.id)} style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: e.completed ? "#10b981" : "var(--os-text-dim)", cursor: "pointer" }}>
@@ -322,7 +323,23 @@ export default function CalendarPage() {
                 </div>
                 <input className="glass-input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Event title..." autoFocus onKeyDown={(e) => e.key === "Enter" && createEvent()} style={{ marginBottom: 8 }} />
                 <input className="glass-input" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description (optional)..." style={{ marginBottom: 8 }} />
-                <input type="time" className="glass-input" value={newTime} onChange={(e) => setNewTime(e.target.value)} style={{ marginBottom: 8 }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <button
+                    onClick={() => setAllDay(!allDay)}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer", flexShrink: 0,
+                      background: allDay ? "var(--os-accent)" : "rgba(255,255,255,0.12)", position: "relative", transition: "background 0.2s",
+                    }}
+                  >
+                    <div style={{
+                      width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 2,
+                      left: allDay ? 18 : 2, transition: "left 0.2s",
+                    }} />
+                  </button>
+                  <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>All Day</span>
+                </div>
+                {!allDay && <input type="time" className="glass-input" value={newTime} onChange={(e) => setNewTime(e.target.value)} style={{ marginBottom: 8 }} />}
+                {allDay && <input className="glass-input" value="All Day" disabled style={{ marginBottom: 8, opacity: 0.6 }} />}
                 <select className="glass-input" value={newType} onChange={(e) => setNewType(e.target.value)} style={{ marginBottom: 8 }}>
                   <option value="study">Study Session</option>
                   <option value="review">Review</option>

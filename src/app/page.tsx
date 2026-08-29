@@ -17,7 +17,7 @@ export default function Home() {
       title: "Subjects",
       description: "Browse subjects and topics",
       href: "/courses",
-      color: "#00d4ff",
+      color: "#6d28d9",
     },
     {
       icon: Layers,
@@ -31,33 +31,33 @@ export default function Home() {
       title: "Pomodoro",
       description: "Stay focused and track time",
       href: "/tools/pomodoro",
-      color: "#10b981",
+      color: "#8b5cf6",
     },
     {
       icon: FileText,
       title: "PDF to Cards",
       description: "Generate from your PDFs",
       href: "/tools/pdf-to-flashcards",
-      color: "#f59e0b",
+      color: "#a78bfa",
     },
     {
       icon: CheckSquare,
       title: "Tasks",
       description: "Organize tasks with decks",
       href: "/tools/todo",
-      color: "#ec4899",
+      color: "#c084fc",
     },
     {
       icon: Trophy,
       title: "Archive",
       description: "Competition history",
       href: "/archive",
-      color: "#ef4444",
+      color: "#ddd6fe",
     },
   ];
 
   return (
-    <>
+    <div style={{ minHeight: "100%" }}>
       {/* Background */}
       <div className="os-background">
         <div className="os-orb os-orb--1" />
@@ -124,6 +124,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, X, Play, Pause } from "lucide-react";
 
 interface Track {
@@ -22,9 +22,11 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
@@ -32,23 +34,62 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
         audio.pause();
         audio.src = "";
       }
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
     };
   }, [audio]);
 
-  const searchSpotify = async () => {
-    if (!query.trim()) { setResults([]); return; }
+  const searchSpotify = async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+
     setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
-      if (data.tracks) setResults(data.tracks);
-      else setResults([]);
-    } catch { setResults([]); }
-    setLoading(false);
+
+      if (data.error) {
+        setError(data.error);
+        setResults([]);
+      } else if (data.tracks) {
+        setResults(data.tracks);
+        if (data.tracks.length === 0) {
+          setError("No results found");
+        }
+      } else {
+        setResults([]);
+        setError("No results found");
+      }
+    } catch {
+      setError("Failed to search. Please try again.");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+    searchTimeout.current = setTimeout(() => {
+      searchSpotify(query);
+    }, 300);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") searchSpotify();
+    if (e.key === "Enter") {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+      searchSpotify(query);
+    }
   };
 
   const handleSelect = (track: Track) => {
@@ -60,6 +101,7 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
   const handlePlayPreview = (e: React.MouseEvent, track: Track) => {
     e.stopPropagation();
     if (!track.preview) return;
+
     if (audio && isPlaying) {
       audio.pause();
       setIsPlaying(false);
@@ -73,108 +115,142 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={onClose}>
-      <div style={{ background: "#1a1a2e", borderRadius: 16, border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 25px 50px rgba(0,0,0,0.5)", width: "100%", maxWidth: 480, maxHeight: "80vh", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 24 }}>🎵</span>
-            <h2 style={{ fontSize: 18, fontWeight: 600, color: "#fff" }}>What are you listening to?</h2>
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎵</span>
+            <h2 className="text-lg font-semibold text-white">What are you listening to?</h2>
           </div>
-          <button onClick={onClose} style={{ padding: 6, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.6)" }}>
-            <X size={20} />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+            <X className="w-5 h-5 text-white/60" />
           </button>
         </div>
 
-        <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ flex: 1, position: "relative" }}>
-              <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.4)" }} />
+        <div className="p-4 border-b border-white/10">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
               <input
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  handleSearch();
+                }}
                 onKeyDown={handleKeyDown}
-                placeholder="Search for a song..."
+                placeholder="Search for a song or artist..."
+                className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[#1DB954] transition-colors"
                 autoFocus
-                style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 10, paddingBottom: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", outline: "none", fontSize: 14, fontFamily: "Inter, sans-serif" }}
               />
             </div>
             <button
-              onClick={searchSpotify}
+              onClick={() => searchSpotify(query)}
               disabled={loading || !query.trim()}
-              style={{ padding: "10px 16px", background: "#1DB954", color: "#fff", border: "none", borderRadius: 12, fontWeight: 600, cursor: loading || !query.trim() ? "not-allowed" : "pointer", opacity: loading || !query.trim() ? 0.5 : 1, fontSize: 14, fontFamily: "Inter, sans-serif" }}
+              className="px-4 py-2.5 bg-[#1DB954] hover:bg-[#1ed760] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-medium transition-colors whitespace-nowrap"
             >
-              {loading ? "..." : "Search"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  Loading...
+                </span>
+              ) : (
+                "Search"
+              )}
             </button>
           </div>
         </div>
 
-        <div style={{ padding: 16, overflowY: "auto", maxHeight: 384 }}>
-          {loading && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
-              <div style={{ width: 32, height: 32, border: "2px solid #1DB954", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+        {error && results.length === 0 && !loading && (
+          <div className="p-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
+              <span className="text-3xl block mb-2">🔍</span>
+              <p className="text-red-400 font-medium">{error}</p>
+              <p className="text-white/40 text-sm mt-1">Try searching for a different song or artist</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {!loading && results.length === 0 && query && (
-            <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🔍</span>
-              <p style={{ color: "rgba(255,255,255,0.6)" }}>No results found</p>
-              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 4 }}>Try searching for a different song</p>
-            </div>
-          )}
-
-          {!loading && results.length === 0 && !query && (
-            <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>🎵</span>
-              <p style={{ color: "rgba(255,255,255,0.6)" }}>Search for a song to add to your bio</p>
-            </div>
-          )}
-
-          {results.map((track) => (
-            <div
-              key={track.id}
-              onClick={() => handleSelect(track)}
-              style={{ display: "flex", alignItems: "center", gap: 16, padding: 12, borderRadius: 12, cursor: "pointer", transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-            >
-              {track.albumArt ? (
-                <img src={track.albumArt} alt={track.album} style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover" }} />
-              ) : (
-                <div style={{ width: 48, height: 48, borderRadius: 8, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🎵</div>
-              )}
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ color: "#fff", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.name}</p>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</p>
+        {loading && (
+          <div className="p-4">
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin w-10 h-10 border-[3px] border-[#1DB954] border-t-transparent rounded-full" />
+                <p className="text-white/60 text-sm">Searching Spotify...</p>
               </div>
+            </div>
+          </div>
+        )}
 
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {track.preview && (
-                  <button
-                    onClick={(e) => handlePlayPreview(e, track)}
-                    style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}
-                  >
-                    {isPlaying && audio?.src.includes(track.preview) ? <Pause size={14} /> : <Play size={14} />}
-                  </button>
+        {!loading && results.length > 0 && (
+          <div className="p-4 overflow-y-auto max-h-96">
+            {results.map((track) => (
+              <div
+                key={track.id}
+                onClick={() => handleSelect(track)}
+                className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"
+              >
+                {track.albumArt ? (
+                  <img src={track.albumArt} alt={track.album} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center text-2xl flex-shrink-0">🎵</div>
                 )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleSelect(track); }}
-                  style={{ padding: "6px 12px", background: "#1DB954", color: "#fff", border: "none", borderRadius: 8, fontWeight: 500, cursor: "pointer", fontSize: 13, fontFamily: "Inter, sans-serif" }}
-                >
-                  Select
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
 
-        <div style={{ padding: "12px 24px", borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium truncate">{track.name}</p>
+                  <p className="text-white/60 text-sm truncate">{track.artist}</p>
+                  <p className="text-white/40 text-xs truncate">{track.album}</p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {track.preview && (
+                    <button
+                      onClick={(e) => handlePlayPreview(e, track)}
+                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    >
+                      {isPlaying && audio?.src.includes(track.preview) ? (
+                        <Pause className="w-4 h-4 text-white" />
+                      ) : (
+                        <Play className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleSelect(track); }}
+                    className="px-3 py-1.5 text-sm bg-[#1DB954] hover:bg-[#1ed760] rounded-lg text-white font-medium transition-colors"
+                  >
+                    Select
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && results.length === 0 && !error && query && (
+          <div className="p-4">
+            <div className="text-center py-12">
+              <span className="text-4xl block mb-3">🎵</span>
+              <p className="text-white/60">No results found</p>
+              <p className="text-white/40 text-sm mt-1">Try searching for a different song</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && results.length === 0 && !error && !query && (
+          <div className="p-4">
+            <div className="text-center py-12">
+              <span className="text-4xl block mb-3">🔍</span>
+              <p className="text-white/60">Search for a song to add to your bio</p>
+              <p className="text-white/40 text-sm mt-1">Type a song name or artist above</p>
+            </div>
+          </div>
+        )}
+
+        <div className="px-6 py-3 border-b border-white/10 text-xs text-white/40 text-center">
           Powered by Spotify
         </div>
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
