@@ -7,20 +7,34 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return NextResponse.json({ items: [], error: "Spotify not configured" }, { status: 200 });
+  if (!clientId || !clientSecret) {
+    console.log("[Spotify] Missing env vars");
+    return NextResponse.json({ items: [] }, { status: 200 });
+  }
 
   const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${Buffer.from(clientId + ":" + clientSecret).toString("base64")}`,
+    },
+    body: "grant_type=client_credentials",
   });
-  if (!tokenRes.ok) return NextResponse.json({ items: [], error: "Failed to authenticate" }, { status: 200 });
+  if (!tokenRes.ok) {
+    const err = await tokenRes.text();
+    console.log("[Spotify] Token failed:", tokenRes.status, err);
+    return NextResponse.json({ items: [] }, { status: 200 });
+  }
   const { access_token } = await tokenRes.json();
 
   const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=12`, {
     headers: { Authorization: `Bearer ${access_token}` },
   });
-  if (!searchRes.ok) return NextResponse.json({ items: [] }, { status: 200 });
+  if (!searchRes.ok) {
+    const err = await searchRes.text();
+    console.log("[Spotify] Search failed:", searchRes.status, err);
+    return NextResponse.json({ items: [] }, { status: 200 });
+  }
 
   const data = await searchRes.json();
   const items = (data.tracks?.items || data.albums?.items || data.playlists?.items || []).map((item: any) => ({
