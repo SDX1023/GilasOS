@@ -165,11 +165,45 @@ ORIGINAL MATERIAL:
 ${text}`;
 }
 
+async function callGroq(prompt: string, attempt: number): Promise<{ content: string; retry: boolean; error?: string } | null> {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.4,
+        max_tokens: 8192,
+        response_format: { type: "json_object" },
+      }),
+    });
+    clearTimeout(timeout);
+    const body = await safeJson(res);
+    if (res.status === 429) {
+      if (attempt < 1) { await sleep(2000); return { content: "", retry: true }; }
+      return null;
+    }
+    if (!res.ok) return null;
+    const content = body?.choices?.[0]?.message?.content ?? "";
+    if (!content) return null;
+    return { content, retry: false };
+  } catch { return null; }
+}
+
 async function callGemini(
   apiKey: string,
   prompt: string,
   attempt: number
 ): Promise<{ content: string; retry: boolean; error?: string }> {
+  const groqRes = await callGroq(prompt, attempt);
+  if (groqRes) return groqRes;
+
   await waitForRateLimit();
 
   try {
