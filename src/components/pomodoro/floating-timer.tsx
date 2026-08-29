@@ -114,7 +114,7 @@ export function FloatingTimer() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push("/tools/pomodoro");
+              router.push("/pomodoro");
             }}
             className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
             aria-label="Expand timer"

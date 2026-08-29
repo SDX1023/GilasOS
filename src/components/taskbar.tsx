@@ -1,20 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { BookOpen, Layers, Timer, FileText, CheckSquare, Trophy, Users } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#6d28d9" },
   { icon: Layers, title: "Flashcards", href: "/flashcards", color: "#7c3aed" },
-  { icon: Timer, title: "Pomodoro", href: "/tools/pomodoro", color: "#10b981" },
-  { icon: FileText, title: "PDF to Cards", href: "/tools/pdf-to-flashcards", color: "#f59e0b" },
-  { icon: CheckSquare, title: "Tasks", href: "/tools/tasks", color: "#ec4899" },
+  { icon: Timer, title: "Pomodoro", href: "/pomodoro", color: "#10b981" },
+  { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#f59e0b" },
+  { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#ec4899" },
   { icon: Users, title: "Friends", href: "/friends", color: "#06b6d4" },
   { icon: Trophy, title: "Archive", href: "/archive", color: "#ef4444" },
 ];
 
 export function Taskbar() {
+  const pathname = usePathname();
   const [time, setTime] = useState("");
 
   useEffect(() => {
@@ -32,13 +34,29 @@ export function Taskbar() {
     return () => clearInterval(interval);
   }, []);
 
+  if (pathname === "/") return null;
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
   return (
     <div className="taskbar">
-      {features.map((f) => (
-        <Link key={f.href} href={f.href} className="taskbar-item" title={f.title}>
-          <f.icon size={18} strokeWidth={1.5} />
-        </Link>
-      ))}
+      {features.map((f) => {
+        const active = isActive(f.href);
+        return (
+          <Link
+            key={f.href}
+            href={f.href}
+            className="taskbar-item"
+            title={f.title}
+            style={{
+              color: active ? "var(--os-accent)" : undefined,
+              background: active ? "rgba(var(--os-accent-rgb), 0.15)" : undefined,
+            }}
+          >
+            <f.icon size={18} strokeWidth={active ? 2 : 1.5} />
+          </Link>
+        );
+      })}
       <div className="taskbar-divider" />
       <div className="taskbar-time">{time}</div>
     </div>

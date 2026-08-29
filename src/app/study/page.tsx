@@ -149,7 +149,7 @@ function FlashcardsTab({ allReviewers, userId, onDelete }: {
       <div className="empty-state">
         <Brain className="empty-state-icon" />
         <p className="text-secondary" style={{ marginBottom: "16px" }}>No flashcard decks yet.</p>
-        <Link href="/tools/pdf-to-flashcards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
+        <Link href="/pdf-to-cards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
           <Upload style={{ width: "16px", height: "16px" }} /> Generate from PDF
         </Link>
       </div>
