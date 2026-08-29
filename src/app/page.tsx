@@ -36,36 +36,42 @@ export default function Home() {
       title: "Subjects",
       description: "Browse subjects and topics",
       href: "/courses",
+      color: "#00d4ff",
     },
     {
       icon: Layers,
       title: "Flashcards",
       description: "Study with interactive flashcards",
       href: "/flashcards",
+      color: "#7c3aed",
     },
     {
       icon: Timer,
       title: "Pomodoro",
       description: "Stay focused and track time",
       href: "/tools/pomodoro",
+      color: "#10b981",
     },
     {
       icon: FileText,
       title: "PDF to Cards",
       description: "Generate from your PDFs",
       href: "/tools/pdf-to-flashcards",
+      color: "#f59e0b",
     },
     {
       icon: CheckSquare,
       title: "Tasks",
       description: "Organize tasks with decks",
       href: "/tools/todo",
+      color: "#ec4899",
     },
     {
       icon: Trophy,
       title: "Archive",
       description: "Competition history",
       href: "/archive",
+      color: "#ef4444",
     },
   ];
 
@@ -79,19 +85,7 @@ export default function Home() {
         <div className="os-grid" />
       </div>
 
-      {/* Desktop Icons */}
-      <div className="desktop-icons">
-        {features.map((f) => (
-          <Link key={f.href} href={f.href} className="desktop-icon">
-            <div className="icon-wrapper">
-              <f.icon size={22} strokeWidth={1.5} />
-            </div>
-            <span className="label">{f.title}</span>
-          </Link>
-        ))}
-      </div>
-
-      {/* Main Window */}
+      {/* Main Window — full screen centered */}
       <div className="os-window">
         <div className="os-window-header">
           <div className="os-window-title">
@@ -128,8 +122,8 @@ export default function Home() {
           <div className="feature-grid">
             {features.map((f) => (
               <Link key={f.href} href={f.href} className="feature-card">
-                <div className="feature-icon">
-                  <f.icon size={18} strokeWidth={1.5} />
+                <div className="feature-icon" style={{ color: f.color }}>
+                  <f.icon size={20} strokeWidth={1.5} />
                 </div>
                 <div className="feature-text">
                   <span className="title">{f.title}</span>

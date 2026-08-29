@@ -8,20 +8,20 @@
 
 :root {
   --radius: 0.75rem;
-  --background: 222 47% 7%;
+  --background: 222 47% 6%;
   --foreground: 217 33% 95%;
-  --card: 222 47% 9%;
+  --card: 222 40% 13%;
   --card-foreground: 217 33% 95%;
   --primary: 198 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 222 30% 14%;
+  --secondary: 222 30% 16%;
   --secondary-foreground: 217 33% 95%;
-  --muted: 222 30% 14%;
+  --muted: 222 30% 16%;
   --muted-foreground: 215 20% 55%;
-  --accent: 222 30% 14%;
+  --accent: 222 30% 16%;
   --accent-foreground: 217 33% 95%;
-  --border: 222 25% 18%;
-  --input: 222 25% 18%;
+  --border: 222 20% 20%;
+  --input: 222 20% 20%;
   --ring: 198 100% 50%;
 
   --os-bg-primary: #0a0e17;
@@ -79,8 +79,7 @@
 
 html, body {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
 }
 
 body {
@@ -89,6 +88,10 @@ body {
   color: var(--os-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body > div {
+  min-height: 100vh;
 }
 
 /* ============================================================
@@ -265,68 +268,10 @@ body {
 }
 
 /* ============================================================
-   DESKTOP ICONS
+   DESKTOP ICONS (hidden — using taskbar only)
    ============================================================ */
 .desktop-icons {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-  z-index: 100;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.desktop-icon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 10px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--os-text-secondary);
-  width: 82px;
-  text-decoration: none;
-}
-
-.desktop-icon:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.06);
-  transform: translateY(-2px);
-}
-
-.desktop-icon .icon-wrapper {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-.desktop-icon:hover .icon-wrapper {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: scale(1.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.desktop-icon .label {
-  font-size: 10px;
-  font-weight: 500;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.55);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-  line-height: 1.2;
+  display: none;
 }
 
 /* ============================================================
@@ -337,8 +282,8 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(720px, calc(100vw - 48px));
-  max-height: calc(100vh - 140px);
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100vh - 100px);
   border-radius: 16px;
   background: rgba(12, 16, 28, 0.85);
   backdrop-filter: blur(60px) saturate(150%);
@@ -453,7 +398,7 @@ body {
 
 .hero h1 {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 48px;
+  font-size: 56px;
   font-weight: 700;
   letter-spacing: -0.03em;
   background: linear-gradient(135deg, #ffffff 0%, #00d4ff 50%, #7c3aed 100%);
@@ -462,8 +407,15 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradientShift 6s ease infinite;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.1;
+}
+
+.hero .subtitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--os-text-secondary);
+  margin-bottom: 6px;
 }
 
 .hero .tagline {
@@ -472,14 +424,14 @@ body {
   color: var(--os-text-dim);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .hero .description {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.8;
   color: var(--os-text-secondary);
-  max-width: 520px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -495,13 +447,12 @@ body {
 
 .feature-card {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 18px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
@@ -533,20 +484,38 @@ body {
   opacity: 1;
 }
 
+.feature-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .feature-card .icon {
   font-size: 24px;
-  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .feature-card .title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--os-text-primary);
   letter-spacing: -0.01em;
 }
 
 .feature-card .description {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--os-text-dim);
   line-height: 1.4;
 }
@@ -984,27 +953,6 @@ body {
     linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
 
-.light .desktop-icon:hover {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.06);
-}
-
-.light .desktop-icon .icon-wrapper {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.06);
-}
-
-.light .desktop-icon:hover .icon-wrapper {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-.light .desktop-icon .label {
-  color: rgba(0, 0, 0, 0.6);
-  text-shadow: none;
-}
-
 .light .os-window {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -1120,29 +1068,6 @@ body {
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
-  .desktop-icons {
-    top: auto;
-    bottom: 80px;
-    left: 12px;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-  }
-
-  .desktop-icon {
-    width: 60px;
-    padding: 10px 6px;
-  }
-
-  .desktop-icon .icon-wrapper {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-  }
-
-  .desktop-icon .label {
-    font-size: 9px;
-  }
-
   .taskbar {
     bottom: 10px;
     padding: 5px 8px;
@@ -1205,10 +1130,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  .desktop-icons {
-    display: none;
-  }
-
   .hero h1 {
     font-size: 28px;
   }
