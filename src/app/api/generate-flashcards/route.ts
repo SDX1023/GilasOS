@@ -30,7 +30,7 @@ type Job = {
 const jobs = new Map<string, Job>();
 
 let lastRequestTime = 0;
-const MIN_INTERVAL = 3000;
+const MIN_INTERVAL = 2000;
 let rateLimitChain: Promise<void> = Promise.resolve();
 
 function sleep(ms: number) {
