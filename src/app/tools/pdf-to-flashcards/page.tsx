@@ -64,7 +64,7 @@ export default function PdfToFlashcardsPage() {
       const res = await fetch("/api/generate-flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: pdfText }),
+        body: JSON.stringify({ text: pdfText.slice(0, 360000) }),
       });
       const text = await res.text();
       let data: any;
