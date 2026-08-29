@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 import { Trophy, Medal, Flame, Target, Calendar } from "lucide-react";
+import Link from "next/link";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -83,7 +84,7 @@ export default function LeaderboardPage() {
                 <div style={{ flexShrink: 0 }}>{getMedalIcon(i)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.username}</span>
+                    <Link href={`/profile/${entry.user_id}`} style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none", color: "var(--os-text-primary)" }}>{entry.username}</Link>
                     {isMe && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "rgba(0,212,255,0.12)", color: "var(--os-accent)" }}>You</span>}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4, fontSize: 12, color: "var(--os-text-dim)" }}>

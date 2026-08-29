@@ -123,6 +123,12 @@ export function Navbar() {
                         {user.email}
                         {isAdmin && <span style={{ marginLeft: 4, color: "var(--os-accent)", fontWeight: 500 }}>Admin</span>}
                       </div>
+                      <Link href="/profile" onClick={() => setShowMenu(false)} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+                        fontSize: 13, textDecoration: "none", color: "var(--os-text-secondary)",
+                      }}>
+                        <User size={16} /> Profile
+                      </Link>
                       <Link href="/settings" onClick={() => setShowMenu(false)} style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
                         fontSize: 13, textDecoration: "none", color: "var(--os-text-secondary)",
