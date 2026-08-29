@@ -175,7 +175,7 @@ function TodoApp() {
 
       {/* Main */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px 100px" }}>
           <div className="flex-between" style={{ marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button onClick={() => setShowSidebar(true)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)" }} className="mobile-menu-btn"><PanelLeftOpen size={20} /></button>
