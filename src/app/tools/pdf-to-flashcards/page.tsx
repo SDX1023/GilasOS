@@ -78,13 +78,29 @@ export default function PdfToFlashcardsPage() {
       const jobId = data.jobId;
       if (!jobId) throw new Error("No job id returned");
 
+      let currentJobId = jobId;
       let final: any = null;
+      let retries = 0;
       while (true) {
-        const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(jobId)}`);
+        const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(currentJobId)}`);
         const text = await r.text();
         let d: any;
         try { d = JSON.parse(text); } catch { throw new Error(text.slice(0, 300) || "Invalid server response"); }
-        if (!r.ok) throw new Error(d.error || "Failed to poll job");
+        if (!r.ok) {
+          if (r.status === 404 && d.error === "Job not found" && retries < 2) {
+            retries++;
+            const nr = await fetch("/api/generate-flashcards", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: pdfText }),
+            });
+            const nd = await nr.json();
+            if (!nr.ok || !nd.jobId) throw new Error(d.error || "Job lost and restart failed");
+            currentJobId = nd.jobId;
+            continue;
+          }
+          throw new Error(d.error || "Failed to poll job");
+        }
         if (d.status === "error") throw new Error(d.error || "Generation failed");
         if (d.status === "done") { final = d; break; }
         await new Promise((resolve) => setTimeout(resolve, 1500));
