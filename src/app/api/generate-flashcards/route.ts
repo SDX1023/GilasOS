@@ -89,7 +89,12 @@ ${chunkText}`;
 }
 
 function tryParseJson(s: string): any[] | null {
-  try { const p = JSON.parse(s); if (Array.isArray(p) && p.length) return p; } catch {}
+  try {
+    const p = JSON.parse(s);
+    if (Array.isArray(p) && p.length) return p;
+    if (p && Array.isArray((p as any).cards) && (p as any).cards.length) return (p as any).cards;
+    if (p && Array.isArray((p as any).flashcards) && (p as any).flashcards.length) return (p as any).flashcards;
+  } catch {}
   return null;
 }
 
@@ -124,7 +129,7 @@ async function callGroq(prompt: string, attempt: number): Promise<{ content: str
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
       signal: ac.signal,
-      body: JSON.stringify({ model: "groq/compound", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192, response_format: { type: "json_object" } }),
+      body: JSON.stringify({ model: "groq/compound", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192 }),
     });
     clearTimeout(t);
     const b = await safeJson(r);
