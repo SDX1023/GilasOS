@@ -4,25 +4,15 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useCourseDetail } from "@/hooks/use-db";
 import { isAdmin } from "@/lib/admin";
+import { getSupabase } from "@/lib/supabase";
 import { ChevronRight, Plus, Trash2, ExternalLink, Pencil, X, Check, Link as LinkIcon } from "lucide-react";
 
 interface ResourceLink {
   id: string;
+  course_id: string;
   title: string;
   url: string;
   type: string;
-}
-
-function loadResourceLinks(courseId: string): ResourceLink[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(`resource_links_${courseId}`);
-    return stored ? JSON.parse(stored) : [];
-  } catch { return []; }
-}
-
-function saveResourceLinks(courseId: string, links: ResourceLink[]) {
-  localStorage.setItem(`resource_links_${courseId}`, JSON.stringify(links));
 }
 
 const LINK_TYPES = ["Google Docs", "Google Drive", "YouTube", "Website", "PDF", "Other"];
@@ -40,24 +30,37 @@ export default function CoursePage({ params }: { params: Promise<{ course: strin
   const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
-    if (courseSlug) setLinks(loadResourceLinks(courseSlug));
+    if (!courseSlug) return;
     setAdmin(isAdmin());
+    (async () => {
+      const supabase = getSupabase();
+      const { data } = await supabase.from("course_resources").select("*").eq("course_id", courseSlug).order("created_at");
+      setLinks(data || []);
+    })();
   }, [courseSlug]);
 
-  const updateLinks = (updated: ResourceLink[]) => {
-    setLinks(updated);
-    saveResourceLinks(courseSlug, updated);
+  const updateLinks = async (action: "add" | "update" | "delete", link?: ResourceLink, id?: string) => {
+    const supabase = getSupabase();
+    if (action === "add" && link) {
+      const { data } = await supabase.from("course_resources").insert({ course_id: courseSlug, title: link.title, url: link.url, type: link.type }).select().single();
+      if (data) setLinks((prev) => [...prev, data]);
+    } else if (action === "update" && link && id) {
+      await supabase.from("course_resources").update({ title: link.title, url: link.url, type: link.type }).eq("id", id);
+      setLinks((prev) => prev.map((l) => l.id === id ? { ...l, title: link.title, url: link.url, type: link.type } : l));
+    } else if (action === "delete" && id) {
+      await supabase.from("course_resources").delete().eq("id", id);
+      setLinks((prev) => prev.filter((l) => l.id !== id));
+    }
   };
 
   const handleAdd = () => {
     if (!newTitle.trim() || !newUrl.trim()) return;
-    const link: ResourceLink = { id: Date.now().toString(), title: newTitle.trim(), url: newUrl.trim(), type: newType };
-    updateLinks([...links, link]);
+    updateLinks("add", { id: "", course_id: courseSlug, title: newTitle.trim(), url: newUrl.trim(), type: newType });
     setNewTitle(""); setNewUrl(""); setNewType("Google Docs"); setShowForm(false);
   };
 
   const handleDelete = (id: string) => {
-    updateLinks(links.filter((l) => l.id !== id));
+    updateLinks("delete", undefined, id);
   };
 
   const startEdit = (link: ResourceLink) => {
@@ -67,7 +70,7 @@ export default function CoursePage({ params }: { params: Promise<{ course: strin
 
   const saveEdit = () => {
     if (!editingId || !editValues.title.trim() || !editValues.url.trim()) return;
-    updateLinks(links.map((l) => l.id === editingId ? { ...l, ...editValues } : l));
+    updateLinks("update", { id: editingId, course_id: courseSlug, title: editValues.title, url: editValues.url, type: editValues.type }, editingId);
     setEditingId(null);
   };
 
