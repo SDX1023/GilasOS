@@ -88,9 +88,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           </div>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{profile.username}</h1>
-            {profile.mood_emoji && (
+            {profile.mood_text && (
               <p style={{ fontSize: 14, color: "var(--os-text-secondary)" }}>
-                {profile.mood_emoji} {profile.mood_text || ""}
+                &ldquo;{profile.mood_text}&rdquo;
               </p>
             )}
           </div>
@@ -101,15 +101,14 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       </div>
 
       {/* Music & Mood */}
-      {(profile.mood_emoji || profile.mood_text || spotifyParsed) && (
+      {(profile.mood_text || spotifyParsed) && (
         <div className="glass-panel" style={{ padding: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
             <Music size={18} /> Music & Mood
           </h2>
-          {(profile.mood_emoji || profile.mood_text) && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--os-text-secondary)", marginBottom: spotifyParsed ? 16 : 0 }}>
-              {profile.mood_emoji && <span style={{ fontSize: 28 }}>{profile.mood_emoji}</span>}
-              <span>{profile.mood_text || ""}</span>
+          {profile.mood_text && (
+            <div style={{ fontSize: 14, color: "var(--os-text-secondary)", marginBottom: spotifyParsed ? 16 : 0 }}>
+              &ldquo;{profile.mood_text}&rdquo;
             </div>
           )}
           {spotifyParsed && (

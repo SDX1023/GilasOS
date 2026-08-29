@@ -18,7 +18,28 @@ const DEFAULT_AVATARS = [
   { url: "https://cdn-icons-png.flaticon.com/512/1318/1318912.png", label: "Panda" },
 ];
 
-const MOOD_EMOJIS = ["😊", "😎", "🤓", "😴", "🔥", "💯", "🎵", "📚", "💪", "🧠", "✨", "🌟"];
+const DEFAULT_MOODS = [
+  "Bahala na si Lord",
+  "Ayoko na po",
+  "Sana all",
+  "Keri pa!",
+  "Laban lang!",
+  "Pagod na ako",
+  "Masaya today",
+  "Nakaka-zero ang life",
+  "Gipit na gipit",
+  "Kaya 'yan!",
+  "Prayer lang lagi",
+  "Study first, regrets later",
+  "Surviving, not thriving",
+  "Energy level: 1%",
+  "Todo na lang kulang",
+  "Fighting for my 1.0",
+  "Walang tulugan",
+  "Push lang, deadline pa naman",
+  "Skibidi Sila",
+  "Eme eme lang",
+];
 
 interface SpotifyTrack {
   id: string;
@@ -36,6 +57,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [moodText, setMoodText] = useState("");
   const [moodEmoji, setMoodEmoji] = useState("");
+  const [customMood, setCustomMood] = useState("");
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyInput, setSpotifyInput] = useState("");
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
@@ -217,28 +239,62 @@ export default function ProfilePage() {
           <Music size={18} /> Music & Mood
         </h2>
 
-        {/* Mood Emoji */}
+        {/* Mood Phrase */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 8 }}>
             <Smile size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> Current Mood
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {MOOD_EMOJIS.map((emoji) => (
+            {DEFAULT_MOODS.map((phrase) => (
               <button
-                key={emoji}
-                onClick={() => setMoodEmoji(moodEmoji === emoji ? "" : emoji)}
+                key={phrase}
+                onClick={() => setMoodText(moodText === phrase ? "" : phrase)}
                 style={{
-                  width: 40, height: 40, borderRadius: 10, fontSize: 20,
-                  border: moodEmoji === emoji ? "2px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.08)",
-                  background: moodEmoji === emoji ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.03)",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all 0.15s",
+                  padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                  border: moodText === phrase ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.08)",
+                  background: moodText === phrase ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)",
+                  color: moodText === phrase ? "var(--os-accent)" : "var(--os-text-secondary)",
+                  cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
                 }}
               >
-                {emoji}
+                {phrase}
               </button>
             ))}
           </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <input
+              className="glass-input"
+              value={customMood}
+              onChange={(e) => setCustomMood(e.target.value)}
+              placeholder="Or type your own mood..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && customMood.trim()) {
+                  setMoodText(customMood.trim());
+                  setCustomMood("");
+                }
+              }}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button
+              onClick={() => {
+                if (customMood.trim()) {
+                  setMoodText(customMood.trim());
+                  setCustomMood("");
+                }
+              }}
+              disabled={!customMood.trim()}
+              className="glass-btn glass-btn-primary"
+              style={{ padding: "6px 14px", fontSize: 12, opacity: customMood.trim() ? 1 : 0.5 }}
+            >
+              Set
+            </button>
+          </div>
+          {moodText && (
+            <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 8 }}>
+              Current: <span style={{ color: "var(--os-accent)", fontWeight: 500 }}>&ldquo;{moodText}&rdquo;</span>
+              <button onClick={() => setMoodText("")} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", marginLeft: 8, fontSize: 11 }}>(clear)</button>
+            </p>
+          )}
         </div>
 
         {/* Spotify */}
@@ -301,8 +357,7 @@ export default function ProfilePage() {
 
           {!spotifyInput && !showSpotifySearch && !selectedTrack && (
             <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 8 }}>
-              {moodEmoji && <span style={{ marginRight: 6 }}>{moodEmoji}</span>}
-              {moodText ? `Feeling ${moodText}` : "Search for a song to share what you're listening to"}
+              {moodText ? <>&ldquo;{moodText}&rdquo;</> : "Set your mood above, or search for a song"}
             </p>
           )}
         </div>

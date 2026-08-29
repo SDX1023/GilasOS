@@ -183,7 +183,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
               <p style={{ fontWeight: 500, color: "var(--os-text-primary)", fontSize: 14 }}>{creator.username}</p>
               {creator.bio && <p style={{ fontSize: 12, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{creator.bio}</p>}
             </div>
-            {(creator.mood_emoji || creator.mood_text) && <span style={{ fontSize: 13, color: "var(--os-text-secondary)", flexShrink: 0 }}>{creator.mood_emoji} {creator.mood_text}</span>}
+            {(creator.mood_text) && <span style={{ fontSize: 13, color: "var(--os-text-secondary)", flexShrink: 0 }}>&ldquo;{creator.mood_text}&rdquo;</span>}
           </Link>
         )}
       </div>
