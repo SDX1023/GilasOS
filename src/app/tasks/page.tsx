@@ -6,7 +6,7 @@ import { TodoProvider, useTodos, Todo, Deck } from "@/components/todo/todo-conte
 import {
   Plus, Trash2, Pencil, Check, X, Calendar, CheckSquare,
   ArrowUpDown, Flag, Clock, Layers, FolderOpen,
-  Circle, PanelLeftOpen
+  Circle, PanelLeftOpen, PanelLeftClose
 } from "lucide-react";
 
 type FilterStatus = "all" | "active" | "completed";
@@ -105,10 +105,12 @@ function TodoApp() {
 
       {/* Sidebar */}
       <div style={{
-        width: 260, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(15,21,35,0.4)", display: "flex", flexDirection: "column",
-        position: showSidebar ? "fixed" : undefined, inset: showSidebar ? 0 : undefined, zIndex: showSidebar ? 40 : undefined,
-        transform: showSidebar ? "translateX(0)" : undefined, transition: "transform 0.2s ease",
+        width: 260, flexShrink: 0, borderRight: "1px solid var(--os-glass-border)",
+        background: "var(--os-glass)", backdropFilter: "blur(20px)",
+        display: "flex", flexDirection: "column",
+        position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 40,
+        transform: showSidebar ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.2s ease",
       }}>
         <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Layers size={16} /> Decks</h2>
@@ -178,7 +180,7 @@ function TodoApp() {
         <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
           <div className="flex-between" style={{ marginBottom: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={() => setShowSidebar(true)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)" }} className="mobile-menu-btn"><PanelLeftOpen size={20} /></button>
+              <button onClick={() => setShowSidebar(!showSidebar)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)" }}>{showSidebar ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}</button>
               <div>
                 <h1 className="page-title" style={{ fontSize: 24 }}>
                   {activeDeckData ? <><Circle size={22} style={{ fill: activeDeckData.color, color: activeDeckData.color }} /> {activeDeckData.name}</> : <><CheckSquare size={24} /> Tasks</>}
