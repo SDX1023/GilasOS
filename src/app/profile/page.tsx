@@ -7,14 +7,14 @@ import { User, Music, Save, Camera, X, Smile, Search, ExternalLink, Play, Pause 
 import Link from "next/link";
 
 const DEFAULT_AVATARS = [
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818022.png", label: "Cat" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818019.png", label: "Dog" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818033.png", label: "Owl" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818039.png", label: "Penguin" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818043.png", label: "Fox" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818027.png", label: "Bear" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818030.png", label: "Rabbit" },
-  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818036.png", label: "Panda" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f431.png", label: "Cat" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f436.png", label: "Dog" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f989.png", label: "Owl" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f427.png", label: "Penguin" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f98a.png", label: "Fox" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f43b.png", label: "Bear" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f430.png", label: "Rabbit" },
+  { url: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f43c.png", label: "Panda" },
 ];
 
 const MOOD_EMOJIS = ["😊", "😎", "🤓", "😴", "🔥", "💯", "🎵", "📚", "💪", "🧠", "✨", "🌟"];
