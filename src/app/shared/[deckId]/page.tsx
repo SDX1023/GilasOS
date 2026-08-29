@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { User, Music, ArrowLeft, BookOpen, Save, Check, Download } from "lucide-react";
+import { User, ArrowLeft, BookOpen, Save, Check } from "lucide-react";
 import Link from "next/link";
 
 interface SharedDeckData {
@@ -16,7 +16,13 @@ interface SharedDeckData {
   module_id: string;
   reviewer_id: string;
   created_at: string;
-  cards_json: { front: string; back: string; hint: string }[];
+  cards_json: { front: string; back: string; hint: string }[] | null;
+}
+
+interface DeckCard {
+  front: string;
+  back: string;
+  hint: string;
 }
 
 interface CreatorProfile {
@@ -31,6 +37,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
   const { deckId } = use(params);
   const { user } = useAuth();
   const [deck, setDeck] = useState<SharedDeckData | null>(null);
+  const [cards, setCards] = useState<DeckCard[]>([]);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -39,50 +46,67 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (!user) { setLoading(false); return; }
     (async () => {
       const supabase = getSupabase();
       const { data: sharedDeck } = await supabase.from("shared_decks").select("*").eq("id", deckId).maybeSingle();
       if (!sharedDeck) { setNotFound(true); setLoading(false); return; }
+      if (sharedDeck.shared_with_user_id && sharedDeck.shared_with_user_id !== user?.id && sharedDeck.user_id !== user?.id) {
+        setNotFound(true); setLoading(false); return;
+      }
       setDeck(sharedDeck);
+
+      let loadedCards: DeckCard[] = [];
+
+      if (sharedDeck.cards_json && Array.isArray(sharedDeck.cards_json) && sharedDeck.cards_json.length > 0) {
+        loadedCards = sharedDeck.cards_json;
+      } else if (sharedDeck.reviewer_id) {
+        const { data: flashcards } = await supabase.from("flashcards").select("front, back, hint").eq("reviewer_id", sharedDeck.reviewer_id).order("sort_order");
+        if (flashcards) loadedCards = flashcards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" }));
+      }
+
+      setCards(loadedCards);
 
       const { data: profile } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji").eq("user_id", sharedDeck.user_id).maybeSingle();
       if (profile) setCreator(profile);
 
       setLoading(false);
     })();
-  }, [deckId]);
+  }, [deckId, user]);
 
   const handleSave = async () => {
     if (!user || !deck) return;
     setSaving(true);
     const supabase = getSupabase();
-    const reviewerId = `pdf/${user.id}/${deck.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")}`;
+    const slug = deck.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+    const reviewerId = `pdf/${user.id}/${slug}`;
     await supabase.from("reviewers").upsert({
-      id: reviewerId,
-      user_id: user.id,
-      course_id: "pdf",
-      module_id: user.id,
-      title: deck.title,
+      id: reviewerId, user_id: user.id, course_id: "pdf", module_id: user.id, title: deck.title,
     }, { onConflict: "id" });
-    const cards = (deck.cards_json || []).map((c: any, i: number) => ({
-      id: `${reviewerId}-card-${Date.now()}-${i}`,
-      reviewer_id: reviewerId,
-      user_id: user.id,
-      front: c.front,
-      back: c.back,
-      hint: c.hint || "",
-      sort_order: i,
-    }));
-    if (cards.length > 0) await supabase.from("flashcards").insert(cards);
+    if (cards.length > 0) {
+      const rows = cards.map((c, i) => ({
+        id: `${reviewerId}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id,
+        front: c.front, back: c.back, hint: c.hint || "", sort_order: i,
+      }));
+      await supabase.from("flashcards").insert(rows);
+    }
     setSaving(false);
     setSaved(true);
   };
 
-  const cards = deck?.cards_json || [];
-
-  if (loading) {
-    return <div className="page-container" style={{ maxWidth: 700 }}><p className="text-secondary text-sm">Loading deck...</p></div>;
+  if (!user) {
+    return (
+      <div className="page-container" style={{ maxWidth: 700 }}>
+        <div className="empty-state">
+          <div className="empty-state-icon"><BookOpen size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <p className="text-secondary text-sm">Log in to view shared decks.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary" style={{ marginTop: 12 }}>Log In</Link>
+        </div>
+      </div>
+    );
   }
+
+  if (loading) return <div className="page-container" style={{ maxWidth: 700 }}><p className="text-secondary text-sm">Loading deck...</p></div>;
 
   if (notFound || !deck) {
     return (
@@ -108,22 +132,16 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
             <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{deck.title}</h1>
             <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>{cards.length} cards</p>
           </div>
-          {user && (
-            <button onClick={handleSave} disabled={saving || saved} className="glass-btn" style={{
-              display: "flex", alignItems: "center", gap: 6,
-              ...(saved ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}),
-            }}>
-              {saved ? <Check size={14} /> : <Save size={14} />} {saving ? "Saving..." : saved ? "Saved!" : "Save to My Decks"}
-            </button>
-          )}
+          <button onClick={handleSave} disabled={saving || saved} className="glass-btn" style={{
+            display: "flex", alignItems: "center", gap: 6,
+            ...(saved ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}),
+          }}>
+            {saved ? <Check size={14} /> : <Save size={14} />} {saving ? "Saving..." : saved ? "Saved!" : "Save to My Decks"}
+          </button>
         </div>
 
         {creator && (
-          <Link href={`/profile/${deck.user_id}`} style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12,
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
-            textDecoration: "none", transition: "background 0.15s",
-          }}>
+          <Link href={`/profile/${deck.user_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", textDecoration: "none" }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {creator.avatar_url ? <img src={creator.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={18} style={{ color: "var(--os-text-dim)" }} />}
             </div>
@@ -131,26 +149,28 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
               <p style={{ fontWeight: 500, color: "var(--os-text-primary)", fontSize: 14 }}>{creator.username}</p>
               {creator.bio && <p style={{ fontSize: 12, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{creator.bio}</p>}
             </div>
-            {(creator.mood_emoji || creator.mood_text) && (
-              <span style={{ fontSize: 13, color: "var(--os-text-secondary)", flexShrink: 0 }}>{creator.mood_emoji} {creator.mood_text}</span>
-            )}
+            {(creator.mood_emoji || creator.mood_text) && <span style={{ fontSize: 13, color: "var(--os-text-secondary)", flexShrink: 0 }}>{creator.mood_emoji} {creator.mood_text}</span>}
           </Link>
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {cards.map((card, i) => (
-          <div key={i} onClick={() => setFlippedIndex(flippedIndex === i ? null : i)} className="glass-card" style={{ padding: 16, cursor: "pointer", transition: "all 0.2s" }}>
-            <p style={{ fontWeight: 500, color: "var(--os-text-primary)", marginBottom: flippedIndex === i ? 12 : 0 }}>{card.front}</p>
-            {flippedIndex === i && (
-              <div style={{ paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                <p style={{ fontSize: 13, color: "var(--os-text-secondary)", lineHeight: 1.5 }}>{card.back}</p>
-                {card.hint && <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 8, fontStyle: "italic" }}>Hint: {card.hint}</p>}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {cards.length === 0 ? (
+        <div className="empty-state"><p className="text-secondary text-sm">No cards in this deck.</p></div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {cards.map((card, i) => (
+            <div key={i} onClick={() => setFlippedIndex(flippedIndex === i ? null : i)} className="glass-card" style={{ padding: 16, cursor: "pointer" }}>
+              <p style={{ fontWeight: 500, color: "var(--os-text-primary)", marginBottom: flippedIndex === i ? 12 : 0 }}>{card.front}</p>
+              {flippedIndex === i && (
+                <div style={{ paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p style={{ fontSize: 13, color: "var(--os-text-secondary)", lineHeight: 1.5 }}>{card.back}</p>
+                  {card.hint && <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 8, fontStyle: "italic" }}>Hint: {card.hint}</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

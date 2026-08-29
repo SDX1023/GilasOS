@@ -4,7 +4,6 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q");
-  const type = req.nextUrl.searchParams.get("type") || "track";
   if (!q) return NextResponse.json({ items: [] });
 
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -23,24 +22,24 @@ export async function GET(req: NextRequest) {
     if (!tokenRes.ok) return NextResponse.json({ items: [] });
     const { access_token } = await tokenRes.json();
 
-    const params = new URLSearchParams();
-    params.append("q", q);
-    params.append("type", type);
-    params.append("limit", "20");
+    const url = new URL("https://api.spotify.com/v1/search");
+    url.searchParams.set("q", q);
+    url.searchParams.set("type", "track");
+    url.searchParams.set("limit", "20");
 
-    const searchRes = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {
+    const searchRes = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${access_token}` },
     });
     if (!searchRes.ok) return NextResponse.json({ items: [] });
 
     const data = await searchRes.json();
-    const items = (data.tracks?.items || data.albums?.items || data.playlists?.items || []).map((item: any) => ({
+    const items = (data.tracks?.items || []).map((item: any) => ({
       id: item.id,
       type: item.type,
       name: item.name,
       artist: item.artists?.map((a: any) => a.name).join(", ") || "",
       album: item.album?.name || "",
-      image: item.album?.images?.[0]?.url || item.images?.[0]?.url || "",
+      image: item.album?.images?.[0]?.url || "",
       url: item.external_urls?.spotify || "",
       duration_ms: item.duration_ms || 0,
     }));

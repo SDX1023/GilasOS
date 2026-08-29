@@ -95,6 +95,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareError, setShareError] = useState("");
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
@@ -403,9 +406,18 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   async function handleShare() {
     if (!user || !reviewer) return;
     setSharing(true);
+    setShareError("");
     const supabase = getSupabase();
+
+    let sharedWithId: string | null = null;
+    if (shareRecipient.trim()) {
+      const { data: recipient } = await supabase.from("user_profiles").select("user_id").eq("username", shareRecipient.trim()).maybeSingle();
+      if (!recipient) { setShareError("User not found"); setSharing(false); return; }
+      sharedWithId = recipient.user_id;
+    }
+
     const reviewerId = reviewer.id;
-    const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", user.id).maybeSingle();
+    const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
     if (existing) {
       const link = `${window.location.origin}/shared/${existing.id}`;
       await navigator.clipboard.writeText(link);
@@ -413,6 +425,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       setTimeout(() => setCopied(false), 2000);
       setSharing(false);
       setShared(true);
+      setShowShareModal(false);
       return;
     }
     const { data } = await supabase.from("shared_decks").insert({
@@ -423,6 +436,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       title: reviewer.title,
       card_count: cards.length,
       cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      shared_with_user_id: sharedWithId,
     }).select().single();
     if (data) {
       const link = `${window.location.origin}/shared/${data.id}`;
@@ -432,6 +446,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     }
     setSharing(false);
     setShared(true);
+    setShowShareModal(false);
   }
 
   function saveEdit() {
@@ -490,6 +505,24 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
   return (
     <div className="page-container">
+      {showShareModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowShareModal(false)}>
+          <div className="glass-panel" style={{ width: 400, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Share Deck</h3>
+            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with (username)</label>
+            <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
+            {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
+            {shared && copied && <p style={{ fontSize: 12, color: "#22c55e", marginTop: 4 }}>Link copied to clipboard!</p>}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setShowShareModal(false)} className="glass-btn glass-btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleShare} disabled={sharing || shared} className="glass-btn glass-btn-primary" style={{ flex: 1 }}>
+                {sharing ? "Sharing..." : shared ? "Shared!" : "Share"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: "2rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} className="text-sm text-secondary">
           <Link href="/flashcards" style={{ color: "inherit" }}>Flash Cards</Link>
@@ -518,8 +551,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               <Download style={{ width: 16, height: 16 }} /> Save PDF
             </button>
             {user && (
-              <button onClick={handleShare} disabled={sharing} className="glass-btn" style={shared ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}>
-                {copied ? <Copy style={{ width: 16, height: 16 }} /> : <Share2 style={{ width: 16, height: 16 }} />} {copied ? "Link Copied!" : shared ? "Shared" : sharing ? "Sharing..." : "Share"}
+              <button onClick={() => { setShowShareModal(true); setShareRecipient(""); setShareError(""); setShared(false); setCopied(false); }} className="glass-btn">
+                <Share2 style={{ width: 16, height: 16 }} /> Share
               </button>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 import { Link as LinkIcon, User, BookOpen, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
@@ -17,13 +18,15 @@ interface SharedDeck {
 }
 
 export default function SharedDecksPage() {
+  const { user } = useAuth();
   const [decks, setDecks] = useState<SharedDeck[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) { setLoading(false); return; }
     (async () => {
       const supabase = getSupabase();
-      const { data: shared } = await supabase.from("shared_decks").select("*").order("created_at", { ascending: false });
+      const { data: shared } = await supabase.from("shared_decks").select("*").or(`user_id.eq.${user.id},shared_with_user_id.eq.${user.id}`).order("created_at", { ascending: false });
       if (shared && shared.length > 0) {
         const userIds = [...new Set(shared.map((d: any) => d.user_id))];
         const { data: profiles } = await supabase.from("user_profiles").select("user_id, username, avatar_url").in("user_id", userIds);
@@ -38,7 +41,19 @@ export default function SharedDecksPage() {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="page-container" style={{ maxWidth: 640 }}>
+        <div className="empty-state">
+          <div className="empty-state-icon"><LinkIcon size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <p className="text-secondary text-sm">Log in to view shared decks.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary" style={{ marginTop: 12 }}>Log In</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container" style={{ maxWidth: 640 }}>
@@ -59,16 +74,8 @@ export default function SharedDecksPage() {
           {decks.map((deck) => (
             <Link key={deck.id} href={`/shared/${deck.id}`} style={{ textDecoration: "none" }}>
               <div className="glass-card" style={{ padding: 16, display: "flex", alignItems: "center", gap: 16, cursor: "pointer" }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-                  border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {deck.avatar_url ? (
-                    <img src={deck.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <User size={20} style={{ color: "var(--os-text-dim)" }} />
-                  )}
+                <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {deck.avatar_url ? <img src={deck.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={20} style={{ color: "var(--os-text-dim)" }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ fontWeight: 500, color: "var(--os-text-primary)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{deck.title}</h3>
