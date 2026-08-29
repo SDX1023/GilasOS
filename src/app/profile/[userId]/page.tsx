@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, ArrowLeft } from "lucide-react";
+import { User, Music, ArrowLeft, UserPlus, UserCheck, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 interface ProfileData {
   username: string;
@@ -25,9 +26,12 @@ function extractSpotifyId(url: string): { type: string; id: string } | null {
 
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
+  const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -38,6 +42,55 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       setLoading(false);
     })();
   }, [userId]);
+
+  useEffect(() => {
+    if (!user || user.id === userId) return;
+    (async () => {
+      const supabase = getSupabase();
+      const { data } = await supabase
+        .from("user_friends")
+        .select("id, status, requester_id")
+        .or(`and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`)
+        .maybeSingle();
+      if (data) setFriendship(data);
+    })();
+  }, [user, userId]);
+
+  const sendRequest = async () => {
+    if (!user) return;
+    setFriendLoading(true);
+    const supabase = getSupabase();
+    const { data } = await supabase.from("user_friends").insert({ requester_id: user.id, addressee_id: userId }).select("id, status, requester_id").single();
+    if (data) setFriendship(data);
+    setFriendLoading(false);
+  };
+
+  const cancelRequest = async () => {
+    if (!friendship) return;
+    setFriendLoading(true);
+    const supabase = getSupabase();
+    await supabase.from("user_friends").delete().eq("id", friendship.id);
+    setFriendship(null);
+    setFriendLoading(false);
+  };
+
+  const acceptRequest = async () => {
+    if (!friendship) return;
+    setFriendLoading(true);
+    const supabase = getSupabase();
+    await supabase.from("user_friends").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", friendship.id);
+    setFriendship({ ...friendship, status: "accepted" });
+    setFriendLoading(false);
+  };
+
+  const unfriend = async () => {
+    if (!friendship) return;
+    setFriendLoading(true);
+    const supabase = getSupabase();
+    await supabase.from("user_friends").delete().eq("id", friendship.id);
+    setFriendship(null);
+    setFriendLoading(false);
+  };
 
   if (loading) {
     return (
@@ -62,6 +115,45 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   }
 
   const spotifyParsed = profile.spotify_url ? extractSpotifyId(profile.spotify_url) : null;
+  const isOwnProfile = user?.id === userId;
+
+  function renderFriendButton() {
+    if (!user || isOwnProfile) return null;
+    if (friendLoading) return <Loader2 size={14} className="animate-spin" />;
+
+    if (!friendship) {
+      return (
+        <button onClick={sendRequest} className="glass-btn glass-btn-primary" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+          <UserPlus size={14} /> Add Friend
+        </button>
+      );
+    }
+
+    if (friendship.status === "pending") {
+      if (friendship.requester_id === user.id) {
+        return (
+          <button onClick={cancelRequest} className="glass-btn glass-btn-ghost" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, color: "var(--os-text-dim)" }}>
+            <Clock size={14} /> Pending
+          </button>
+        );
+      }
+      return (
+        <button onClick={acceptRequest} className="glass-btn glass-btn-primary" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+          <UserCheck size={14} /> Accept
+        </button>
+      );
+    }
+
+    if (friendship.status === "accepted") {
+      return (
+        <button onClick={unfriend} className="glass-btn glass-btn-ghost" style={{ padding: "6px 14px", fontSize: 12, color: "#ef4444", display: "flex", alignItems: "center", gap: 4 }}>
+          Unfriend
+        </button>
+      );
+    }
+
+    return null;
+  }
 
   return (
     <div className="page-container" style={{ maxWidth: 600 }}>
@@ -72,7 +164,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         <ArrowLeft size={14} /> Back to Leaderboard
       </Link>
 
-      {/* Profile Card */}
       <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{
@@ -86,10 +177,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               <User size={40} style={{ color: "var(--os-text-dim)" }} />
             )}
           </div>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{profile.username}</h1>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--os-text-primary)" }}>{profile.username}</h1>
+              {renderFriendButton()}
+            </div>
             {profile.mood_text && (
-              <p style={{ fontSize: 14, color: "var(--os-text-secondary)" }}>
+              <p style={{ fontSize: 14, color: "var(--os-text-secondary)", marginTop: 4 }}>
                 &ldquo;{profile.mood_text}&rdquo;
               </p>
             )}
@@ -100,7 +194,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         )}
       </div>
 
-      {/* Music & Mood */}
       {(profile.mood_text || spotifyParsed) && (
         <div className="glass-panel" style={{ padding: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>

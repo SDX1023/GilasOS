@@ -25,20 +25,20 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
-      if (audio) {
-        audio.pause();
-        audio.src = "";
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
       if (searchTimeout.current) {
         clearTimeout(searchTimeout.current);
       }
     };
-  }, [audio]);
+  }, []);
 
   const searchSpotify = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -74,12 +74,15 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
     }
   };
 
+  const queryRef = useRef(query);
+  queryRef.current = query;
+
   const handleSearch = () => {
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
     searchTimeout.current = setTimeout(() => {
-      searchSpotify(query);
+      searchSpotify(queryRef.current);
     }, 300);
   };
 
@@ -88,7 +91,7 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
       if (searchTimeout.current) {
         clearTimeout(searchTimeout.current);
       }
-      searchSpotify(query);
+      searchSpotify(queryRef.current);
     }
   };
 
@@ -102,16 +105,23 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
     e.stopPropagation();
     if (!track.preview) return;
 
-    if (audio && isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      const newAudio = new Audio(track.preview);
-      newAudio.play();
-      newAudio.onended = () => setIsPlaying(false);
-      setAudio(newAudio);
-      setIsPlaying(true);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      if (isPlaying) {
+        setIsPlaying(false);
+        return;
+      }
     }
+
+    const newAudio = new Audio(track.preview);
+    newAudio.play().catch(() => {});
+    newAudio.onended = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+    audioRef.current = newAudio;
+    setIsPlaying(true);
   };
 
   return (
@@ -208,7 +218,7 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
                       onClick={(e) => handlePlayPreview(e, track)}
                       className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                     >
-                      {isPlaying && audio?.src.includes(track.preview) ? (
+                      {isPlaying && audioRef.current?.src.includes(track.preview) ? (
                         <Pause className="w-4 h-4 text-white" />
                       ) : (
                         <Play className="w-4 h-4 text-white" />
