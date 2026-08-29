@@ -106,44 +106,110 @@ export default function PdfToFlashcardsPage() {
         const rows = generatedCards.map((card, i) => ({ id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "" }));
         await supabase.from("flashcards").insert(rows);
       }
-      setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!"); setTimeout(() => setSaveMsg(""), 3000);
+      setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!");
+      setTimeout(() => setSaveMsg(""), 3000);
     } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-2">PDF to Flashcards</h1>
-      <p className="text-muted-foreground mb-8">Generate flashcards from your study materials using AI</p>
-      <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
-        <div className="space-y-6">
-          <div className="p-6 rounded-xl border bg-card">
+    <div className="min-h-screen">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+            <FileText className="h-7 w-7" /> PDF to Flashcards
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Generate flashcards from your study materials using AI</p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Input Panel */}
+          <div className="p-5 rounded-2xl border bg-card backdrop-blur-sm">
             <h2 className="font-semibold mb-4">PDF Content</h2>
             <div className="space-y-4">
-              <label className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed cursor-pointer hover:bg-muted transition-colors">
-                <Upload className="h-5 w-5" /><span className="text-sm">Upload PDF</span>
+              <label className="flex items-center justify-center gap-2 px-4 py-8 rounded-xl border border-dashed cursor-pointer hover:bg-muted/50 transition-colors">
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Upload PDF</span>
                 <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
               </label>
-              <textarea value={pdfText} onChange={(e) => { setPdfText(e.target.value); setLastError(""); }} placeholder="Or paste text content here..." className="w-full px-3 py-2 rounded-lg border bg-background h-48 resize-none" />
-              {lastError && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm"><p className="text-red-600 font-medium">{lastError}</p>{cooldown > 0 && <p className="text-muted-foreground mt-1">Wait {cooldown}s before trying again</p>}</div>}
-              {saveMsg && <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-sm"><p className="text-green-600 font-medium">{saveMsg}</p></div>}
-              <button onClick={generateCards} disabled={!pdfText.trim() || isGenerating || cooldown > 0} className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
-                {isGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : cooldown > 0 ? `Wait ${cooldown}s...` : <><FileText className="h-4 w-4" /> Generate Flashcards</>}
+
+              <textarea
+                value={pdfText}
+                onChange={(e) => { setPdfText(e.target.value); setLastError(""); }}
+                placeholder="Or paste text content here..."
+                className="w-full px-4 py-3 rounded-xl border bg-background text-sm resize-none h-40"
+              />
+
+              {lastError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm">
+                  <p className="text-red-600 dark:text-red-400 font-medium">{lastError}</p>
+                  {cooldown > 0 && <p className="text-muted-foreground mt-1">Wait {cooldown}s before trying again</p>}
+                </div>
+              )}
+
+              {saveMsg && (
+                <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-sm">
+                  <p className="text-green-600 dark:text-green-400 font-medium">{saveMsg}</p>
+                </div>
+              )}
+
+              <button
+                onClick={generateCards}
+                disabled={!pdfText.trim() || isGenerating || cooldown > 0}
+                className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                {isGenerating ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                ) : cooldown > 0 ? (
+                  `Wait ${cooldown}s...`
+                ) : (
+                  <><FileText className="h-4 w-4" /> Generate Flashcards</>
+                )}
               </button>
             </div>
           </div>
-        </div>
-        <div className="space-y-6">
-          <div className="p-6 rounded-xl border bg-card">
+
+          {/* Output Panel */}
+          <div className="p-5 rounded-2xl border bg-card backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Generated Cards ({generatedCards.length})</h2>
               {generatedCards.length > 0 && (
                 <div className="flex gap-2">
-                  <input type="text" value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" className="px-3 py-1 rounded-lg border bg-background text-sm w-36" />
-                  <button onClick={saveDeck} disabled={!deckName.trim() || saving} className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50"><Save className="h-3 w-3" />{saving ? "Saving..." : "Save"}</button>
+                  <input
+                    type="text"
+                    value={deckName}
+                    onChange={(e) => setDeckName(e.target.value)}
+                    placeholder="Deck name"
+                    className="px-3 py-1.5 rounded-lg border bg-background text-sm w-32"
+                  />
+                  <button
+                    onClick={saveDeck}
+                    disabled={!deckName.trim() || saving}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                  >
+                    <Save className="h-3 w-3" />
+                    {saving ? "Saving..." : "Save"}
+                  </button>
                 </div>
               )}
             </div>
-            {generatedCards.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Generate flashcards from your PDF content</p> : <div className="space-y-3 max-h-96 overflow-y-auto">{generatedCards.map((card, i) => <div key={i} className="p-3 rounded-lg bg-muted/50"><p className="font-medium text-sm">{card.front}</p><p className="text-sm text-muted-foreground mt-1">{card.back}</p>{card.hint && <p className="text-xs text-muted-foreground mt-1 italic">Hint: {card.hint}</p>}</div>)}</div>}
+
+            {generatedCards.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">Generate flashcards from your PDF content</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[32rem] overflow-y-auto">
+                {generatedCards.map((card, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                    <p className="font-medium text-sm">{card.front}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{card.back}</p>
+                    {card.hint && <p className="text-xs text-muted-foreground mt-1 italic">Hint: {card.hint}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

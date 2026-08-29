@@ -7,6 +7,23 @@
 }
 
 :root {
+  --radius: 0.75rem;
+  --background: 222 47% 7%;
+  --foreground: 217 33% 95%;
+  --card: 222 47% 9%;
+  --card-foreground: 217 33% 95%;
+  --primary: 198 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 30% 14%;
+  --secondary-foreground: 217 33% 95%;
+  --muted: 222 30% 14%;
+  --muted-foreground: 215 20% 55%;
+  --accent: 222 30% 14%;
+  --accent-foreground: 217 33% 95%;
+  --border: 222 25% 18%;
+  --input: 222 25% 18%;
+  --ring: 198 100% 50%;
+
   --os-bg-primary: #0a0e17;
   --os-bg-secondary: #0f1520;
   --os-glass: rgba(15, 21, 35, 0.75);
@@ -23,6 +40,41 @@
   --os-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
   --os-border: rgba(255, 255, 255, 0.06);
   --os-glow: 0 0 60px rgba(0, 212, 255, 0.15);
+}
+
+.light {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 198 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 198 100% 50%;
+
+  --os-bg-primary: #f0f4f8;
+  --os-bg-secondary: #e2e8f0;
+  --os-glass: rgba(255, 255, 255, 0.7);
+  --os-glass-border: rgba(0, 0, 0, 0.08);
+  --os-glass-hover: rgba(0, 0, 0, 0.04);
+  --os-accent: #0891b2;
+  --os-accent-rgb: 8, 145, 178;
+  --os-accent-purple: #7c3aed;
+  --os-accent-green: #059669;
+  --os-accent-coral: #dc2626;
+  --os-text-primary: #0f172a;
+  --os-text-secondary: #475569;
+  --os-text-dim: #94a3b8;
+  --os-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.1);
+  --os-border: rgba(0, 0, 0, 0.08);
+  --os-glow: 0 0 60px rgba(8, 145, 178, 0.1);
 }
 
 html, body {
@@ -889,6 +941,179 @@ body {
   font-size: 12px;
   color: var(--os-text-secondary);
   margin-top: 4px;
+}
+
+/* ============================================================
+   LIGHT MODE OVERRIDES
+   ============================================================ */
+.light .os-background {
+  background: 
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(8, 145, 178, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(124, 58, 237, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 70% at 50% 50%, rgba(5, 150, 105, 0.04) 0%, transparent 60%),
+    linear-gradient(160deg, #f0f4f8 0%, #e8edf5 30%, #e2e8f0 60%, #f0f4f8 100%);
+}
+
+.light .os-background::before {
+  background: 
+    radial-gradient(400px circle at 25% 35%, rgba(8, 145, 178, 0.05) 0%, transparent 50%),
+    radial-gradient(350px circle at 75% 65%, rgba(124, 58, 237, 0.04) 0%, transparent 50%);
+}
+
+.light .os-background::after {
+  background: 
+    radial-gradient(300px circle at 60% 30%, rgba(8, 145, 178, 0.04) 0%, transparent 50%),
+    radial-gradient(250px circle at 30% 70%, rgba(220, 38, 38, 0.03) 0%, transparent 50%);
+}
+
+.light .os-orb--1 {
+  background: radial-gradient(circle, rgba(8, 145, 178, 0.08) 0%, transparent 70%);
+}
+
+.light .os-orb--2 {
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+}
+
+.light .os-orb--3 {
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.05) 0%, transparent 70%);
+}
+
+.light .os-grid {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+.light .desktop-icon:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .desktop-icon .icon-wrapper {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .desktop-icon:hover .icon-wrapper {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.light .desktop-icon .label {
+  color: rgba(0, 0, 0, 0.6);
+  text-shadow: none;
+}
+
+.light .os-window {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.03) inset,
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.light .os-window-header {
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.light .os-window-title {
+  color: var(--os-text-secondary);
+}
+
+.light .hero h1 {
+  background: linear-gradient(135deg, #0f172a 0%, #0891b2 50%, #7c3aed 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.light .feature-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .feature-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.light .status-bar {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .taskbar {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.03) inset;
+}
+
+.light .taskbar-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.light .taskbar-divider {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.light .notification {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.light .btn-secondary {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.light .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.light .upload-zone {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.light .flashcard {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .flashcard:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.light .mode-selector {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .stat-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light .stat-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* ============================================================
