@@ -49,8 +49,8 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
     if (!user) { setLoading(false); return; }
     (async () => {
       const supabase = getSupabase();
-      const { data: sharedDeck } = await supabase.from("shared_decks").select("*").eq("id", deckId).maybeSingle();
-      if (!sharedDeck) { setNotFound(true); setLoading(false); return; }
+      const { data: sharedDeck, error } = await supabase.from("shared_decks").select("*").eq("id", deckId).maybeSingle();
+      if (error || !sharedDeck) { setNotFound(true); setLoading(false); return; }
       if (sharedDeck.shared_with_user_id && sharedDeck.shared_with_user_id !== user?.id && sharedDeck.user_id !== user?.id) {
         setNotFound(true); setLoading(false); return;
       }
@@ -62,7 +62,22 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
         loadedCards = sharedDeck.cards_json;
       } else if (sharedDeck.reviewer_id) {
         const { data: flashcards } = await supabase.from("flashcards").select("front, back, hint").eq("reviewer_id", sharedDeck.reviewer_id).order("sort_order");
-        if (flashcards) loadedCards = flashcards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" }));
+        if (flashcards && flashcards.length > 0) {
+          loadedCards = flashcards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" }));
+        } else {
+          const stored = localStorage.getItem("gilasos_custom_content");
+          if (stored) {
+            try {
+              const store = JSON.parse(stored);
+              for (const c of store.courses || []) {
+                for (const m of c.modules || []) {
+                  const r = m.reviewers?.find((r: any) => r.id === sharedDeck.reviewer_id);
+                  if (r && r.cards) { loadedCards = r.cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })); break; }
+                }
+              }
+            } catch {}
+          }
+        }
       }
 
       setCards(loadedCards);

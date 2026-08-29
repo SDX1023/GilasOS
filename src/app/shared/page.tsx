@@ -26,7 +26,14 @@ export default function SharedDecksPage() {
     if (!user) { setLoading(false); return; }
     (async () => {
       const supabase = getSupabase();
-      const { data: shared } = await supabase.from("shared_decks").select("*").or(`user_id.eq.${user.id},shared_with_user_id.eq.${user.id}`).order("created_at", { ascending: false });
+      let shared: any[] | null = null;
+      const { data, error } = await supabase.from("shared_decks").select("*").or(`user_id.eq.${user.id},shared_with_user_id.eq.${user.id}`).order("created_at", { ascending: false });
+      if (error) {
+        const { data: fallback } = await supabase.from("shared_decks").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+        shared = fallback;
+      } else {
+        shared = data;
+      }
       if (shared && shared.length > 0) {
         const userIds = [...new Set(shared.map((d: any) => d.user_id))];
         const { data: profiles } = await supabase.from("user_profiles").select("user_id, username, avatar_url").in("user_id", userIds);

@@ -428,7 +428,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       setShowShareModal(false);
       return;
     }
-    const { data } = await supabase.from("shared_decks").insert({
+    const { data, error } = await supabase.from("shared_decks").insert({
       user_id: user.id,
       reviewer_id: reviewerId,
       course_id: courseSlug,
@@ -438,7 +438,23 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
       shared_with_user_id: sharedWithId,
     }).select().single();
-    if (data) {
+    if (error || !data) {
+      const { data: fallbackData } = await supabase.from("shared_decks").insert({
+        user_id: user.id,
+        reviewer_id: reviewerId,
+        course_id: courseSlug,
+        module_id: moduleSlug,
+        title: reviewer.title,
+        card_count: cards.length,
+        cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      }).select().single();
+      if (fallbackData) {
+        const link = `${window.location.origin}/shared/${fallbackData.id}`;
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } else {
       const link = `${window.location.origin}/shared/${data.id}`;
       await navigator.clipboard.writeText(link);
       setCopied(true);
