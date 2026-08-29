@@ -98,6 +98,7 @@ body {
 
 .app-main {
   flex: 1;
+  padding-bottom: 80px;
 }
 
 /* ============================================================
@@ -570,18 +571,22 @@ body {
    TASKBAR / DOCK
    ============================================================ */
 .taskbar {
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9999;
-  padding: 10px;
-  background: rgba(12, 16, 28, 0.9);
+  padding: 8px 14px;
+  background: rgba(12, 16, 28, 0.92);
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
@@ -1297,9 +1302,9 @@ button:focus-visible {
 }
 
 .light .taskbar {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.88);
   border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
     0 0 0 1px rgba(0, 0, 0, 0.03) inset;
 }
@@ -1386,7 +1391,7 @@ button:focus-visible {
 @media (max-width: 768px) {
   .taskbar {
     bottom: 10px;
-    padding: 5px 8px;
+    padding: 6px 10px;
     border-radius: 14px;
     gap: 1px;
   }
