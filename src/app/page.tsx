@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import {
   BookOpen,
   Layers,
@@ -12,24 +11,6 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  const [time, setTime] = useState("");
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTime(
-        now.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
   const features = [
     {
       icon: BookOpen,
@@ -142,17 +123,6 @@ export default function Home() {
             <div className="status-right">{features.length} applications available</div>
           </div>
         </div>
-      </div>
-
-      {/* Taskbar */}
-      <div className="taskbar">
-        {features.map((f) => (
-          <Link key={f.href} href={f.href} className="taskbar-item" title={f.title}>
-            <f.icon size={18} strokeWidth={1.5} />
-          </Link>
-        ))}
-        <div className="taskbar-divider" />
-        <div className="taskbar-time">{time}</div>
       </div>
     </>
   );

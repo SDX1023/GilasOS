@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { AuthWrapper } from "@/components/auth-wrapper";
+import { Navbar } from "@/components/navbar";
+import { Taskbar } from "@/components/taskbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +19,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
+          <AuthWrapper>
+            <Navbar />
+            {children}
+            <Taskbar />
+          </AuthWrapper>
         </ThemeProvider>
       </body>
     </html>

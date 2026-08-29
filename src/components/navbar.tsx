@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Brain, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool } from "lucide-react";
+import { BookOpen, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool } from "lucide-react";
 import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
 
@@ -26,112 +25,128 @@ export function Navbar() {
   const [showMobile, setShowMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setShowMobile(false);
-  }, [pathname]);
+  if (pathname === "/") return null;
+
+  useEffect(() => { setShowMobile(false); }, [pathname]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
     }
     if (showMenu) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showMenu]);
 
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl shrink-0">
-            <img src="/logo.png" alt="GilasOS" className="h-8 w-8 sm:h-10 sm:w-10 object-contain [html.light_&]:invert" />
-            <span className="hidden xs:inline">GilasOS</span>
+    <nav style={{
+      position: "sticky", top: 0, zIndex: 50,
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(15,21,35,0.85)", backdropFilter: "blur(20px)",
+    }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 18, textDecoration: "none", color: "var(--os-text-primary)", flexShrink: 0 }}>
+            <img src="/logo.png" alt="GilasOS" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            <span>GilasOS</span>
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }} className="nav-desktop">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  pathname === item.href || pathname.startsWith(item.href + "/")
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
+                className="nav-link"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8,
+                  fontSize: 13, fontWeight: 500, textDecoration: "none",
+                  background: isActive(item.href) ? "#8b5cf6" : "transparent",
+                  color: isActive(item.href) ? "#fff" : "var(--os-text-dim)",
+                }}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon size={16} />
                 <span>{item.label}</span>
               </Link>
             ))}
-
             {isAdmin && (
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  pathname === "/admin"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <Shield className="h-4 w-4" />
-                <span>Admin</span>
+              <Link href="/admin" className="nav-link" style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8,
+                fontSize: 13, fontWeight: 500, textDecoration: "none",
+                background: isActive("/admin") ? "#8b5cf6" : "transparent",
+                color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
+              }}>
+                <Shield size={16} /> <span>Admin</span>
               </Link>
             )}
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-1">
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-md hover:bg-muted transition-colors relative flex items-center justify-center w-9 h-9"
+              style={{
+                padding: 8, borderRadius: 8, background: "none", border: "none",
+                color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center", width: 36, height: 36,
+              }}
+              title="Toggle theme"
             >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Sun size={16} style={{ display: theme === "dark" ? "block" : "none" }} />
+              <Moon size={16} style={{ display: theme === "light" ? "block" : "none" }} />
             </button>
 
-            <div className="relative" ref={menuRef}>
+            <div style={{ position: "relative" }} ref={menuRef}>
               {user ? (
                 <>
                   <button
                     onClick={() => setShowMenu(!showMenu)}
-                    className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg border hover:bg-muted text-sm"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+                      borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)",
+                      background: "none", color: "var(--os-text-secondary)", cursor: "pointer",
+                      fontSize: 13, fontFamily: "Inter, sans-serif",
+                    }}
                   >
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline truncate max-w-[100px]">{username || user.email?.split("@")[0]}</span>
+                    <User size={16} />
+                    <span style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{username || user.email?.split("@")[0]}</span>
                   </button>
                   {showMenu && (
-                    <div className="absolute right-0 top-full mt-1 w-56 rounded-lg border bg-card shadow-lg z-50 py-1">
-                      <div className="px-3 py-2 text-xs text-muted-foreground border-b truncate">
+                    <div style={{
+                      position: "absolute", right: 0, top: "100%", marginTop: 4,
+                      width: 220, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(15,21,35,0.95)", backdropFilter: "blur(20px)",
+                      boxShadow: "0 16px 48px rgba(0,0,0,0.4)", zIndex: 50, padding: "4px 0",
+                    }}>
+                      <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--os-text-dim)", borderBottom: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {user.email}
-                        {isAdmin && <span className="ml-1 text-primary font-medium">Admin</span>}
+                        {isAdmin && <span style={{ marginLeft: 4, color: "var(--os-accent)", fontWeight: 500 }}>Admin</span>}
                       </div>
-                      <Link
-                        href="/settings"
-                        onClick={() => setShowMenu(false)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
-                      >
-                        <Settings className="h-4 w-4" /> Settings
+                      <Link href="/settings" onClick={() => setShowMenu(false)} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+                        fontSize: 13, textDecoration: "none", color: "var(--os-text-secondary)",
+                      }}>
+                        <Settings size={16} /> Settings
                       </Link>
-                      <button
-                        onClick={() => { signOut(); setShowMenu(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
-                      >
-                        <LogOut className="h-4 w-4" /> Log Out
+                      <button onClick={() => { signOut(); setShowMenu(false); }} style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
+                        fontSize: 13, background: "none", border: "none", width: "100%",
+                        color: "var(--os-text-secondary)", cursor: "pointer", textAlign: "left",
+                        fontFamily: "Inter, sans-serif",
+                      }}>
+                        <LogOut size={16} /> Log Out
                       </button>
                     </div>
                   )}
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">Log In</span>
+                <Link href="/login" style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+                  borderRadius: 8, border: "1px solid var(--os-accent)",
+                  color: "var(--os-accent)", textDecoration: "none", fontSize: 13, fontWeight: 500,
+                }}>
+                  <LogIn size={16} /> <span>Log In</span>
                 </Link>
               )}
             </div>
@@ -139,9 +154,13 @@ export function Navbar() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setShowMobile(!showMobile)}
-              className="md:hidden p-2 rounded-md hover:bg-muted transition-colors"
+              className="nav-mobile-btn"
+              style={{
+                padding: 8, borderRadius: 8, background: "none", border: "none",
+                color: "var(--os-text-dim)", cursor: "pointer", display: "none",
+              }}
             >
-              {showMobile ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {showMobile ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -149,38 +168,36 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {showMobile && (
-        <div className="md:hidden border-t bg-background">
-          <div className="container mx-auto px-4 py-3 space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  pathname === item.href || pathname.startsWith(item.href + "/")
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            ))}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  pathname === "/admin"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                <Shield className="h-5 w-5" />
-                Admin
-              </Link>
-            )}
-          </div>
+        <div style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(15,21,35,0.95)", padding: 12,
+        }}>
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="nav-link"
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none",
+                background: isActive(item.href) ? "#8b5cf6" : "transparent",
+                color: isActive(item.href) ? "#fff" : "var(--os-text-dim)",
+                marginBottom: 2,
+              }}
+            >
+              <item.icon size={18} /> {item.label}
+            </Link>
+          ))}
+          {isAdmin && (
+            <Link href="/admin" className="nav-link" style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+              borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none",
+              background: isActive("/admin") ? "#8b5cf6" : "transparent",
+              color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
+            }}>
+              <Shield size={18} /> Admin
+            </Link>
+          )}
         </div>
       )}
     </nav>
