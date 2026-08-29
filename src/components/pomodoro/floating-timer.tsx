@@ -2,12 +2,11 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Pause, Maximize2, Coffee, Brain, Timer } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Pause, Play, Maximize2 } from "lucide-react";
 import { usePomodoro } from "./pomodoro-context";
 
 export function FloatingTimer() {
-  const { timeLeft, isRunning, mode, progress, formatTime, pause } = usePomodoro();
+  const { timeLeft, isRunning, mode, progress, formatTime, pause, start } = usePomodoro();
   const router = useRouter();
 
   const [position, setPosition] = useState({ x: -1, y: -1 });
@@ -17,7 +16,7 @@ export function FloatingTimer() {
   const hasMoved = useRef(false);
 
   useEffect(() => {
-    setPosition({ x: window.innerWidth - 200, y: window.innerHeight - 80 });
+    setPosition({ x: window.innerWidth - 80, y: window.innerHeight - 80 });
   }, []);
 
   const onPointerDown = useCallback(
@@ -43,8 +42,8 @@ export function FloatingTimer() {
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasMoved.current = true;
-      const clampedX = Math.max(0, Math.min(window.innerWidth - 200, dragStart.current.posX + dx));
-      const clampedY = Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.posY + dy));
+      const clampedX = Math.max(0, Math.min(window.innerWidth - 72, dragStart.current.posX + dx));
+      const clampedY = Math.max(0, Math.min(window.innerHeight - 72, dragStart.current.posY + dy));
       setPosition({ x: clampedX, y: clampedY });
     },
     [isDragging]
@@ -56,15 +55,6 @@ export function FloatingTimer() {
 
   if (!isRunning || position.x === -1) return null;
 
-  const modeIcon =
-    mode === "work" ? (
-      <Brain className="h-3.5 w-3.5" />
-    ) : mode === "shortBreak" ? (
-      <Coffee className="h-3.5 w-3.5" />
-    ) : (
-      <Timer className="h-3.5 w-3.5" />
-    );
-
   const modeBg =
     mode === "work"
       ? "var(--os-accent)"
@@ -72,56 +62,151 @@ export function FloatingTimer() {
       ? "#10b981"
       : "#3b82f6";
 
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const timeStr = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
   return (
     <div
       ref={dragRef}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      style={{ left: position.x, top: position.y, background: modeBg }}
-      className={cn(
-        "fixed z-50 select-none touch-none text-white",
-        "rounded-full shadow-lg backdrop-blur-md",
-        isDragging && "cursor-grabbing"
-      )}
+      style={{
+        position: "fixed",
+        left: position.x,
+        top: position.y,
+        zIndex: 9999,
+        width: 64,
+        height: 64,
+        borderRadius: "50%",
+        background: modeBg,
+        color: "#fff",
+        cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none",
+        userSelect: "none",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
+        animation: "fadeIn 0.3s ease",
+      }}
     >
-      {/* Progress ring background */}
+      {/* Progress ring */}
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 64 64"
+        style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}
+      >
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="3"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          fill="none"
+          stroke="rgba(255,255,255,0.85)"
+          strokeWidth="3"
+          strokeDasharray={`${2 * Math.PI * 30}`}
+          strokeDashoffset={`${2 * Math.PI * 30 * (1 - progress / 100)}`}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.5s ease" }}
+        />
+      </svg>
+
+      {/* Time display */}
       <div
-        className="absolute inset-0 rounded-full opacity-30"
         style={{
-          background: `conic-gradient(white ${progress}%, transparent ${progress}%)`,
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: "0.02em",
         }}
-      />
-
-      <div className="relative flex items-center gap-2 pl-3 pr-1.5 py-2">
-        <span className="flex items-center gap-1.5 text-xs font-medium whitespace-nowrap">
-          {modeIcon}
-          <span className="font-mono text-sm tabular-nums">{formatTime(timeLeft)}</span>
-        </span>
-
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              pause();
-            }}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-            aria-label="Pause timer"
-          >
-            <Pause className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push("/pomodoro");
-            }}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-            aria-label="Expand timer"
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
+      >
+        {timeStr}
       </div>
+
+      {/* Buttons — show on hover */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: -36,
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          gap: 4,
+          opacity: 0,
+          transition: "opacity 0.2s ease",
+          pointerEvents: "none",
+        }}
+        className="floating-timer-btns"
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            isRunning ? pause() : start();
+          }}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: "var(--os-bg-secondary)",
+            border: "1px solid var(--os-glass-border)",
+            color: "var(--os-text-primary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}
+          title={isRunning ? "Pause" : "Resume"}
+        >
+          {isRunning ? <Pause size={12} /> : <Play size={12} />}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push("/pomodoro");
+          }}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: "var(--os-bg-secondary)",
+            border: "1px solid var(--os-glass-border)",
+            color: "var(--os-text-primary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+          }}
+          title="Open Pomodoro"
+        >
+          <Maximize2 size={12} />
+        </button>
+      </div>
+
+      <style>{`
+        .floating-timer-btns {
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        div:hover > .floating-timer-btns,
+        .floating-timer-btns:hover {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      `}</style>
     </div>
   );
 }
