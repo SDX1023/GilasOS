@@ -27,7 +27,12 @@ export async function GET(req: NextRequest) {
   }
   const { access_token } = await tokenRes.json();
 
-  const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=12`, {
+  const params = new URLSearchParams();
+  params.set("q", q);
+  params.set("type", type);
+  params.set("limit", "12");
+
+  const searchRes = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {
     headers: { Authorization: `Bearer ${access_token}` },
   });
   if (!searchRes.ok) {
