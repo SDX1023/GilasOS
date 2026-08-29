@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CHARS = 360000;
-const CHUNK_SIZE = 15000;
+const CHUNK_SIZE = 20000;
 const CHUNKS_PER_POLL = 2;
 const MAX_RETRIES = 4;
 const BASE_DELAY = 1500;
@@ -114,18 +114,20 @@ function cleanText(text: string): string {
 }
 
 function buildPrompt(chunkText: string, chunkIndex: number, totalChunks: number): string {
+  const bulletCount = (chunkText.match(/●/g) || []).length;
   const contextNote = totalChunks > 1
     ? `This is section ${chunkIndex + 1} of ${totalChunks}. Be exhaustive for THIS section; other sections are handled separately.`
     : "";
+  const countHint = bulletCount > 0 ? ` This section contains ~${bulletCount} bullet items — you MUST produce at least ${bulletCount} flashcards (one per bullet) plus cards for any sub-facts inside bullets.` : "";
 
   return `Generate a comprehensive set of flashcards from this study material.
 
-${contextNote}
+${contextNote}${countHint}
 
 Rules:
-- Generate a flashcard for EVERY distinct fact, question, or bullet point in the section. Aim for 40-60 per section and do NOT skip bullets, numbering will be lost otherwise.
-- Every numbered or bulleted item must become at least one flashcard. If the content has 50 items, make 50+ cards.
-- Cover: definitions, key facts, names, dates, formulas, processes, causes/effects, comparisons, and core concepts.
+- Generate a flashcard for EVERY distinct fact, question, or bullet point in the section. Do NOT skip bullets; if you skip, information is lost.
+- Every bulleted (●) or numbered item must become at least one flashcard.
+- Cover: definitions, key facts, names, dates, formulas, processes, causes/effects, comparisons, and core concepts. A bullet with multiple facts should become multiple cards.
 - For quotes, opening lines, and dialogues: include the FULL exact text in the answer and escape it properly for JSON.
 - Each flashcard: one question (front) and one answer (back).
 - Make questions specific and answers self-contained.
