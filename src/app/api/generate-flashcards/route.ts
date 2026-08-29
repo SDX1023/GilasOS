@@ -114,12 +114,12 @@ async function extractCards(content: string): Promise<any[]> {
   return out;
 }
 
-async function callGroq(prompt: string): Promise<{ content: string } | null> {
+async function callGroq(prompt: string, attempt: number): Promise<{ content: string; retry: boolean; error?: string }> {
   const k = process.env.GROQ_API_KEY;
-  if (!k) return null;
+  if (!k) return { content: "", retry: false, error: "GROQ_API_KEY not configured" };
   try {
     const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), 20000);
+    const t = setTimeout(() => ac.abort(), 30000);
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
@@ -127,18 +127,35 @@ async function callGroq(prompt: string): Promise<{ content: string } | null> {
       body: JSON.stringify({ model: "groq/compound", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192, response_format: { type: "json_object" } }),
     });
     clearTimeout(t);
-    if (!r.ok) return null;
     const b = await safeJson(r);
+    if (r.status === 429) {
+      const wa = parseRetryAfter(b?.error?.message || "");
+      if (attempt < MAX_RETRIES) { await sleep(wa * 1000); return { content: "", retry: true }; }
+      return { content: "", retry: false, error: `Groq rate limited: retry in ${wa}s` };
+    }
+    if (!r.ok) {
+      const msg = b?.error?.message || `Groq API error ${r.status}`;
+      if (attempt < MAX_RETRIES) { await sleep(BASE_DELAY * Math.pow(2, attempt)); return { content: "", retry: true }; }
+      return { content: "", retry: false, error: msg };
+    }
     const c = b?.choices?.[0]?.message?.content;
-    if (c) return { content: c };
-    return null;
-  } catch { return null; }
+    if (!c) {
+      if (attempt < MAX_RETRIES) return { content: "", retry: true };
+      return { content: "", retry: false, error: "Empty Groq response" };
+    }
+    return { content: c, retry: false };
+  } catch (e: any) {
+    if (e?.name === "AbortError") {
+      if (attempt < MAX_RETRIES) { await sleep(BASE_DELAY * Math.pow(2, attempt)); return { content: "", retry: true }; }
+      return { content: "", retry: false, error: "Groq request timed out" };
+    }
+    if (attempt < MAX_RETRIES) { await sleep(BASE_DELAY * Math.pow(2, attempt)); return { content: "", retry: true }; }
+    return { content: "", retry: false, error: e?.message || "Groq request failed" };
+  }
 }
 
 async function callGemini(apiKey: string, prompt: string, attempt: number): Promise<{ content: string; retry: boolean; error?: string }> {
-  const groq = await callGroq(prompt);
-  if (groq) return { content: groq.content, retry: false };
-  await waitForRateLimit();
+  return callGroq(prompt, attempt);
   try {
     const ac = new AbortController();
     const t = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS);
