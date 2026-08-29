@@ -20,7 +20,7 @@ export function BacklinksPanel({ backlinks }: BacklinksPanelProps) {
         {backlinks.map((note) => (
           <Link
             key={note.id}
-            href={`/courses/${note.courseId}/${note.moduleId}/${note.slug}`}
+            href={`/subjects/${note.courseId}/${note.moduleId}/${note.slug}`}
             className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted transition-colors group"
           >
             <ArrowLeft className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />

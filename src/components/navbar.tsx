@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
 
 const navItems = [
-  { href: "/courses", label: "Subjects", icon: BookOpen },
+  { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/study", label: "Study", icon: PenTool },
   { href: "/tools/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/tools/pdf-to-flashcards", label: "PDF to Cards", icon: FileText },
@@ -27,8 +27,6 @@ export function Navbar() {
   const [showMobile, setShowMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  if (pathname === "/") return null;
-
   useEffect(() => { setShowMobile(false); }, [pathname]);
 
   useEffect(() => {
@@ -38,6 +36,8 @@ export function Navbar() {
     if (showMenu) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showMenu]);
+
+  if (pathname === "/") return null;
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -54,7 +54,6 @@ export function Navbar() {
             <span>GilasOS</span>
           </Link>
 
-          {/* Desktop nav */}
           <div style={{ display: "flex", alignItems: "center", gap: 2 }} className="nav-desktop">
             {navItems.map((item) => (
               <Link
@@ -84,7 +83,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right side */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -159,7 +157,6 @@ export function Navbar() {
               )}
             </div>
 
-            {/* Mobile hamburger */}
             <button
               onClick={() => setShowMobile(!showMobile)}
               className="nav-mobile-btn"
@@ -174,7 +171,6 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {showMobile && (
         <div style={{
           borderTop: "1px solid rgba(255,255,255,0.06)",

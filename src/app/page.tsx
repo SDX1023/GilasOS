@@ -16,7 +16,7 @@ export default function Home() {
       icon: BookOpen,
       title: "Subjects",
       description: "Browse subjects and topics",
-      href: "/courses",
+      href: "/subjects",
       color: "#6d28d9",
     },
     {

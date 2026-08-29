@@ -48,7 +48,7 @@ function ContentEditorContent() {
           content: data.content,
         });
       }
-      router.push(`/courses/${courseId}/${moduleId}/content/${id}`);
+      router.push(`/subjects/${courseId}/${moduleId}/content/${id}`);
     } catch (error) {
       console.error("Error saving content:", error);
       alert("Error saving content");
@@ -56,7 +56,7 @@ function ContentEditorContent() {
   };
 
   const handleBack = () => {
-    router.push(`/courses/${courseId}/${moduleId}`);
+    router.push(`/subjects/${courseId}/${moduleId}`);
   };
 
   if (loading) {

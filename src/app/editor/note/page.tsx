@@ -52,7 +52,7 @@ function NoteEditorContent() {
   };
 
   const handleBack = () => {
-    router.push("/courses");
+    router.push("/subjects");
   };
 
   if (loading) {

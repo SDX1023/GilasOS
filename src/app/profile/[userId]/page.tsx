@@ -106,7 +106,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         <div className="empty-state">
           <div className="empty-state-icon"><User size={32} style={{ color: "var(--os-text-dim)" }} /></div>
           <p className="text-secondary text-sm">User not found.</p>
-          <Link href="/leaderboard" className="glass-btn glass-btn-ghost" style={{ marginTop: 12 }}>
+          <Link href="/friends" className="glass-btn glass-btn-ghost" style={{ marginTop: 12 }}>
             <ArrowLeft size={14} /> Back to Leaderboard
           </Link>
         </div>
@@ -157,7 +157,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
 
   return (
     <div className="page-container" style={{ maxWidth: 600 }}>
-      <Link href="/leaderboard" style={{
+      <Link href="/friends" style={{
         display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13,
         color: "var(--os-text-dim)", textDecoration: "none", marginBottom: 24,
       }}>

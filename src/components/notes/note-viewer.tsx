@@ -41,11 +41,11 @@ export function NoteViewer({ courseId, moduleId, slug, repoNote, repoLinksMap, r
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/courses" className="hover:text-foreground">Courses</Link>
+          <Link href="/subjects" className="hover:text-foreground">Subjects</Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseId}`} className="hover:text-foreground">{courseId}</Link>
+          <Link href={`/subjects/${courseId}`} className="hover:text-foreground">{courseId}</Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseId}/${moduleId}`} className="hover:text-foreground">{moduleId}</Link>
+          <Link href={`/subjects/${courseId}/${moduleId}`} className="hover:text-foreground">{moduleId}</Link>
           <ChevronRight className="h-4 w-4" />
           <span>{slug}</span>
         </div>

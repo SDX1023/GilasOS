@@ -86,7 +86,7 @@ function ReviewerEditorContent() {
           cards: reviewer.cards,
         });
       }
-      router.push(`/courses/${courseId}/${moduleId}`);
+      router.push(`/subjects/${courseId}/${moduleId}`);
     } catch (error) {
       console.error("Error saving reviewer:", error);
       alert("Error saving reviewer");
@@ -94,7 +94,7 @@ function ReviewerEditorContent() {
   };
 
   const handleBack = () => {
-    router.push(`/courses/${courseId}/${moduleId}`);
+    router.push(`/subjects/${courseId}/${moduleId}`);
   };
 
   if (loading) {

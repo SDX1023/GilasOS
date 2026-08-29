@@ -19,7 +19,7 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
       (match, linkText) => {
         const note = allLinksMap[linkText];
         if (note) {
-          return `[${linkText}](/courses/${note.courseId}/${note.moduleId}/${note.slug})`;
+          return `[${linkText}](/subjects/${note.courseId}/${note.moduleId}/${note.slug})`;
         }
         return `<span class="text-muted-foreground underline decoration-dashed cursor-not-allowed">${linkText}</span>`;
       }

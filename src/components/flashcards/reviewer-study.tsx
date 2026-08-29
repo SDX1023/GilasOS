@@ -35,7 +35,7 @@ export function ReviewerStudy({ courseId, moduleId, reviewerId, repoReviewer }: 
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
           <Link href="/flashcards" className="hover:text-foreground">Flash Cards</Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseId}/${moduleId}`} className="hover:text-foreground">
+          <Link href={`/subjects/${courseId}/${moduleId}`} className="hover:text-foreground">
             {moduleId}
           </Link>
         </div>
