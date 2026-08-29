@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_CHARS = 360000;
-const CHUNK_SIZE = 20000;
+const CHUNK_SIZE = 40000;
 const CHUNKS_PER_POLL = 2;
 const MAX_RETRIES = 4;
 const BASE_DELAY = 1500;
