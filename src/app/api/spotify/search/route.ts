@@ -1,38 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "";
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "";
-
-async function getToken(): Promise<string | null> {
-  if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) return null;
-  const res = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.access_token;
-}
-
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q");
   const type = req.nextUrl.searchParams.get("type") || "track";
   if (!q) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
-  const token = await getToken();
-  if (!token) return NextResponse.json({ error: "Spotify not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to environment variables." }, { status: 503 });
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return NextResponse.json({ items: [], error: "Spotify not configured" }, { status: 200 });
 
-  const params = new URLSearchParams({ q, type, limit: "12", market: "US" });
-  const res = await fetch(`https://api.spotify.com/v1/search?${params}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`,
   });
-  if (!res.ok) return NextResponse.json({ error: "Spotify API error" }, { status: 502 });
+  if (!tokenRes.ok) return NextResponse.json({ items: [], error: "Failed to authenticate" }, { status: 200 });
+  const { access_token } = await tokenRes.json();
 
-  const data = await res.json();
+  const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=${type}&limit=12`, {
+    headers: { Authorization: `Bearer ${access_token}` },
+  });
+  if (!searchRes.ok) return NextResponse.json({ items: [] }, { status: 200 });
+
+  const data = await searchRes.json();
   const items = (data.tracks?.items || data.albums?.items || data.playlists?.items || []).map((item: any) => ({
     id: item.id,
     type: item.type,
