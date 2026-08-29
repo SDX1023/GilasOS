@@ -117,7 +117,7 @@ export default function PdfToFlashcardsPage() {
         backoff = 0;
         if (d.status === "error") throw new Error(d.error || "Generation failed");
         if (d.status === "done") { final = d; break; }
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       setGeneratedCards(final.cards);
     } catch (error: any) {
