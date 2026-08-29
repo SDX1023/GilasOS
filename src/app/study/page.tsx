@@ -72,20 +72,20 @@ export default function StudyPage() {
 
   if (!mounted) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Study</h1>
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="page-container">
+        <h1 className="page-title">Study</h1>
+        <p className="text-secondary">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3">
-        <PenTool className="h-7 w-7" /> Study
+    <div className="page-container" style={{ paddingBottom: "24px" }}>
+      <h1 className="page-title">
+        <PenTool style={{ width: "28px", height: "28px" }} /> Study
       </h1>
 
-      <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/50 mb-6 w-fit overflow-x-auto">
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
         {([
           ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
@@ -93,10 +93,20 @@ export default function StudyPage() {
           ["weak", "Weak Areas", TrendingDown],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === key ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}>
-            <Icon className="h-4 w-4" /> {label}
+            className={`flex items-center`}
+            style={{
+              gap: "8px",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+              transition: "colors 0.2s",
+              background: tab === key ? "var(--os-bg)" : "transparent",
+              boxShadow: tab === key ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+              color: tab === key ? "var(--os-text-primary)" : "var(--os-text-secondary)",
+            }}>
+            <Icon style={{ width: "16px", height: "16px" }} /> {label}
           </button>
         ))}
       </div>
@@ -109,15 +119,15 @@ export default function StudyPage() {
       {tab === "weak" && <WeakAreasTab userId={userId} />}
 
       {deleteTarget && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-2">Delete Deck?</h3>
-            <p className="text-muted-foreground text-sm mb-4">
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div className="glass-card" style={{ maxWidth: "384px", width: "100%", margin: "0 16px", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "var(--os-text-primary)" }}>Delete Deck?</h3>
+            <p className="text-secondary" style={{ fontSize: "13px", marginBottom: "16px" }}>
               Are you sure you want to delete &quot;{deleteTarget.title}&quot;? This cannot be undone.
             </p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600">Delete</button>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button onClick={() => setDeleteTarget(null)} className="glass-btn" style={{ padding: "8px 16px", fontSize: "13px", fontWeight: 500 }}>Cancel</button>
+              <button onClick={handleDelete} style={{ padding: "8px 16px", borderRadius: "8px", background: "#ef4444", color: "#fff", fontSize: "13px", fontWeight: 500, border: "none", cursor: "pointer" }}>Delete</button>
             </div>
           </div>
         </div>
@@ -133,34 +143,35 @@ function FlashcardsTab({ allReviewers, userId, onDelete }: {
 }) {
   if (allReviewers.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground mb-4">No flashcard decks yet.</p>
-        <Link href="/tools/pdf-to-flashcards" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm">
-          <Upload className="h-4 w-4" /> Generate from PDF
+      <div className="empty-state">
+        <Brain className="empty-state-icon" />
+        <p className="text-secondary" style={{ marginBottom: "16px" }}>No flashcard decks yet.</p>
+        <Link href="/tools/pdf-to-flashcards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
+          <Upload style={{ width: "16px", height: "16px" }} /> Generate from PDF
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {Array.from(new Set(allReviewers.map((r) => r.courseId))).map((courseId) => {
         const courseReviewers = allReviewers.filter((r) => r.courseId === courseId);
         return (
           <div key={courseId}>
-            <h2 className="text-lg font-semibold mb-3">{courseId}</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px", color: "var(--os-text-primary)" }}>{courseId}</h2>
+            <div className="grid-3" style={{ gap: "12px" }}>
               {courseReviewers.map(({ courseId: cid, moduleId, reviewer }) => (
-                <div key={reviewer.id} className="relative p-4 rounded-lg border bg-card hover:shadow-lg transition-all group">
-                  <Link href={`/flashcards/${reviewer.id}`} className="block">
-                    <h3 className="font-medium group-hover:text-primary transition-colors">{reviewer.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{moduleId}</p>
-                    <p className="text-sm text-muted-foreground mt-2">{reviewer.cards?.length || 0} cards</p>
+                <div key={reviewer.id} className="glass-card" style={{ position: "relative", transition: "all 0.2s", cursor: "pointer" }}>
+                  <Link href={`/flashcards/${reviewer.id}`} style={{ display: "block", textDecoration: "none", color: "inherit" }}>
+                    <h3 style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</h3>
+                    <p className="text-secondary" style={{ fontSize: "13px", marginTop: "4px" }}>{moduleId}</p>
+                    <p className="text-secondary" style={{ fontSize: "13px", marginTop: "8px" }}>{reviewer.cards?.length || 0} cards</p>
                   </Link>
                   <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId, reviewerId: reviewer.id, title: reviewer.title }); }}
-                    className="absolute top-3 right-3 p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all" title="Delete deck">
-                    <Trash2 className="h-4 w-4" />
+                    style={{ position: "absolute", top: "12px", right: "12px", padding: "6px", borderRadius: "6px", color: "var(--os-text-secondary)", opacity: 0, transition: "all 0.2s", background: "none", border: "none", cursor: "pointer" }}
+                    title="Delete deck">
+                    <Trash2 style={{ width: "16px", height: "16px" }} />
                   </button>
                 </div>
               ))}
@@ -270,40 +281,46 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   if (showResults) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center py-12">
-          <Sparkles className="h-16 w-16 mx-auto text-primary mb-4" />
-          <h2 className="text-3xl font-bold mb-2">Quiz Complete!</h2>
-          <p className="text-5xl font-bold text-primary mb-4">{score}/{quizQuestions.length}</p>
-          <p className="text-muted-foreground mb-8">
+      <div style={{ maxWidth: "672px", margin: "0 auto" }}>
+        <div className="empty-state">
+          <Sparkles style={{ width: "64px", height: "64px", color: "var(--os-accent)", marginBottom: "16px" }} />
+          <h2 style={{ fontSize: "30px", fontWeight: 700, marginBottom: "8px", color: "var(--os-text-primary)" }}>Quiz Complete!</h2>
+          <p style={{ fontSize: "48px", fontWeight: 700, color: "var(--os-accent)", marginBottom: "16px" }}>{score}/{quizQuestions.length}</p>
+          <p className="text-secondary" style={{ marginBottom: "32px" }}>
             {score === quizQuestions.length ? "Perfect score!" : score >= quizQuestions.length * 0.8 ? "Great job!" : score >= quizQuestions.length * 0.5 ? "Good effort!" : "Keep studying!"}
           </p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <button onClick={restartQuiz} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">Try Again</button>
-            <Link href="/flashcards" className="px-6 py-2 border rounded-lg hover:bg-muted">Study Flashcards</Link>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={restartQuiz} className="glass-btn-primary" style={{ padding: "8px 24px" }}>Try Again</button>
+            <Link href="/flashcards" className="glass-btn" style={{ padding: "8px 24px" }}>Study Flashcards</Link>
           </div>
         </div>
-        <div className="space-y-4 mt-8">
-          <h3 className="font-semibold text-lg">Review Answers</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "32px" }}>
+          <h3 style={{ fontWeight: 600, fontSize: "18px", color: "var(--os-text-primary)" }}>Review Answers</h3>
           {quizQuestions.map((q, i) => {
             const userAnswer = answers[i] || "";
             const isCorrect = q.type === "mc" ? userAnswer === String(q.correct) : userAnswer.toLowerCase().trim() === q.answer.toLowerCase().trim();
             return (
-              <div key={i} className={`p-4 rounded-lg border ${isCorrect ? "border-green-500/50 bg-green-500/5" : "border-red-500/50 bg-red-500/5"}`}>
-                <p className="font-medium mb-2">{i + 1}. {q.question}</p>
+              <div key={i} className="glass-card" style={{
+                borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
+                background: isCorrect ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
+              }}>
+                <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. {q.question}</p>
                 {q.type === "mc" && (
-                  <div className="space-y-1 ml-4">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "16px" }}>
                     {q.options.map((opt: string, j: number) => (
-                      <p key={j} className={`text-sm ${j === Number(q.correct) ? "text-green-600 font-medium" : userAnswer === String(j) ? "text-red-600" : "text-muted-foreground"}`}>
+                      <p key={j} className="text-sm" style={{
+                        color: j === Number(q.correct) ? "#16a34a" : userAnswer === String(j) ? "#dc2626" : "var(--os-text-secondary)",
+                        fontWeight: j === Number(q.correct) ? 500 : 400,
+                      }}>
                         {String.fromCharCode(65 + j)}. {opt} {j === Number(q.correct) ? " ✓" : userAnswer === String(j) ? " ✗" : ""}
                       </p>
                     ))}
                   </div>
                 )}
                 {q.type === "identification" && (
-                  <div className="ml-4 text-sm">
-                    <p className={isCorrect ? "text-green-600" : "text-red-600"}>Your answer: {userAnswer || "(none)"}</p>
-                    {!isCorrect && <p className="text-green-600">Correct: {q.answer}</p>}
+                  <div style={{ marginLeft: "16px" }} className="text-sm">
+                    <p style={{ color: isCorrect ? "#16a34a" : "#dc2626" }}>Your answer: {userAnswer || "(none)"}</p>
+                    {!isCorrect && <p style={{ color: "#16a34a" }}>Correct: {q.answer}</p>}
                   </div>
                 )}
               </div>
@@ -317,38 +334,56 @@ function QuizTab({ userId }: { userId: string | null }) {
   if (quizStarted && quizQuestions.length > 0) {
     const q = quizQuestions[currentQ];
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <span className="text-sm text-muted-foreground">Question {currentQ + 1} of {quizQuestions.length}</span>
-          <div className="h-2 flex-1 mx-4 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${((currentQ + 1) / quizQuestions.length) * 100}%` }} />
+      <div style={{ maxWidth: "672px", margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+          <span className="text-sm text-secondary">Question {currentQ + 1} of {quizQuestions.length}</span>
+          <div style={{ height: "8px", flex: 1, marginLeft: "16px", marginRight: "16px", background: "rgba(255,255,255,0.06)", borderRadius: "9999px", overflow: "hidden" }}>
+            <div style={{ height: "100%", background: "var(--os-accent)", transition: "all 0.3s", width: `${((currentQ + 1) / quizQuestions.length) * 100}%` }} />
           </div>
         </div>
-        <div className="p-6 rounded-xl border bg-card mb-6">
-          <span className={`text-xs px-2 py-1 rounded-full mb-3 inline-block ${q.type === "mc" ? "bg-blue-500/10 text-blue-600" : "bg-purple-500/10 text-purple-600"}`}>
+        <div className="glass-panel" style={{ padding: "24px", marginBottom: "24px" }}>
+          <span style={{
+            display: "inline-block",
+            fontSize: "12px",
+            padding: "4px 8px",
+            borderRadius: "9999px",
+            marginBottom: "12px",
+            background: q.type === "mc" ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)",
+            color: q.type === "mc" ? "#2563eb" : "#9333ea",
+          }}>
             {q.type === "mc" ? "Multiple Choice" : "Identification"}
           </span>
-          <p className="text-lg font-medium mt-2">{q.question}</p>
+          <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}>{q.question}</p>
         </div>
         {q.type === "mc" ? (
-          <div className="space-y-2 mb-6">
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
             {q.options.map((opt: string, j: number) => (
               <button key={j} onClick={() => answerQuestion(String(j))}
-                className={`w-full text-left p-4 rounded-lg border transition-all ${answers[currentQ] === String(j) ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:bg-muted/50"}`}>
-                <span className="font-medium mr-3">{String.fromCharCode(65 + j)}.</span>{opt}
+                className="glass-card"
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "16px",
+                  transition: "all 0.2s",
+                  borderColor: answers[currentQ] === String(j) ? "var(--os-accent)" : "rgba(255,255,255,0.06)",
+                  background: answers[currentQ] === String(j) ? "rgba(59,130,246,0.05)" : "transparent",
+                  boxShadow: answers[currentQ] === String(j) ? "0 0 0 2px var(--os-accent)" : "none",
+                }}>
+                <span style={{ fontWeight: 500, marginRight: "12px" }}>{String.fromCharCode(65 + j)}.</span>{opt}
               </button>
             ))}
           </div>
         ) : (
-          <div className="mb-6">
+          <div style={{ marginBottom: "24px" }}>
             <input type="text" value={answers[currentQ] || ""} onChange={(e) => answerQuestion(e.target.value)}
-              placeholder="Type your answer..." className="w-full px-4 py-3 rounded-lg border bg-background text-lg" autoFocus
+              placeholder="Type your answer..." className="glass-input" style={{ width: "100%", fontSize: "18px" }} autoFocus
               onKeyDown={(e) => e.key === "Enter" && answers[currentQ] && nextQuestion()} />
           </div>
         )}
-        <div className="flex justify-end">
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button onClick={nextQuestion} disabled={!answers[currentQ]}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50">
+            className="glass-btn-primary"
+            style={{ padding: "8px 24px", opacity: answers[currentQ] ? 1 : 0.5, cursor: answers[currentQ] ? "pointer" : "not-allowed" }}>
             {currentQ === quizQuestions.length - 1 ? "Finish" : "Next"}
           </button>
         </div>
@@ -357,76 +392,105 @@ function QuizTab({ userId }: { userId: string | null }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <Sparkles className="h-12 w-12 mx-auto text-primary mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Generate a Quiz</h2>
-        <p className="text-muted-foreground">Generate multiple choice and identification questions from your study materials</p>
+    <div style={{ maxWidth: "672px", margin: "0 auto" }}>
+      <div className="empty-state" style={{ marginBottom: "32px" }}>
+        <Sparkles style={{ width: "48px", height: "48px", color: "var(--os-accent)", marginBottom: "16px" }} />
+        <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px", color: "var(--os-text-primary)" }}>Generate a Quiz</h2>
+        <p className="text-secondary">Generate multiple choice and identification questions from your study materials</p>
       </div>
-      <div className="flex items-center gap-1 border rounded-lg p-1 bg-muted/50 mb-6">
-        <button onClick={() => setSelectedSource("text")} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedSource === "text" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-          <FileText className="h-4 w-4" /> Text / PDF
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px" }}>
+        <button onClick={() => setSelectedSource("text")}
+          className="flex items-center"
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            gap: "8px",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: 500,
+            transition: "colors 0.2s",
+            background: selectedSource === "text" ? "var(--os-bg)" : "transparent",
+            boxShadow: selectedSource === "text" ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+            color: selectedSource === "text" ? "var(--os-text-primary)" : "var(--os-text-secondary)",
+          }}>
+          <FileText style={{ width: "16px", height: "16px" }} /> Text / PDF
         </button>
-        <button onClick={() => setSelectedSource("course")} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${selectedSource === "course" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-          <BookOpen className="h-4 w-4" /> From Courses
+        <button onClick={() => setSelectedSource("course")}
+          className="flex items-center"
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            gap: "8px",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: 500,
+            transition: "colors 0.2s",
+            background: selectedSource === "course" ? "var(--os-bg)" : "transparent",
+            boxShadow: selectedSource === "course" ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+            color: selectedSource === "course" ? "var(--os-text-primary)" : "var(--os-text-secondary)",
+          }}>
+          <BookOpen style={{ width: "16px", height: "16px" }} /> From Courses
         </button>
       </div>
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {selectedSource === "text" ? (
           <>
             <div>
-              <label className="block text-sm font-medium mb-2">Study Material</label>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Study Material</label>
               <textarea value={inputText} onChange={(e) => setInputText(e.target.value)}
                 placeholder="Paste your notes, textbook content, or study material here..."
-                className="w-full h-40 px-4 py-3 rounded-lg border bg-background resize-none" />
-              {inputText && <p className="text-xs text-muted-foreground mt-1">~{Math.min(500, Math.max(5, Math.ceil(inputText.length / 200)))} questions will be generated</p>}
+                className="glass-input" style={{ width: "100%", height: "160px", resize: "none" }} />
+              {inputText && <p className="text-xs text-secondary" style={{ marginTop: "4px" }}>~{Math.min(500, Math.max(5, Math.ceil(inputText.length / 200)))} questions will be generated</p>}
             </div>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Upload className="h-4 w-4" /> {pdfFile ? pdfFile.name : "Upload PDF"}
-                <input type="file" accept=".pdf" onChange={handlePdfUpload} className="hidden" />
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <label className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", cursor: "pointer", borderStyle: "dashed", fontSize: "13px" }}>
+                <Upload style={{ width: "16px", height: "16px" }} /> {pdfFile ? pdfFile.name : "Upload PDF"}
+                <input type="file" accept=".pdf" onChange={handlePdfUpload} style={{ display: "none" }} />
               </label>
-              {isGenerating && <span className="text-sm text-muted-foreground">Extracting text...</span>}
+              {isGenerating && <span className="text-sm text-secondary">Extracting text...</span>}
             </div>
           </>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid-2" style={{ gap: "12px" }}>
               <div>
-                <label className="block text-sm font-medium mb-2">Course</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Course</label>
                 <select value={selectedCourse} onChange={(e) => { setSelectedCourse(e.target.value); setSelectedModule(""); }}
-                  className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm">
+                  className="glass-input" style={{ width: "100%", padding: "10px 12px", fontSize: "13px" }}>
                   <option value="">Select course...</option>
                   {courses.map((c) => <option key={c.id} value={c.id}>{c.title || c.id}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Module</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Module</label>
                 <select value={selectedModule} onChange={(e) => setSelectedModule(e.target.value)} disabled={!selectedCourse}
-                  className="w-full px-3 py-2.5 rounded-lg border bg-background text-sm disabled:opacity-50">
+                  className="glass-input" style={{ width: "100%", padding: "10px 12px", fontSize: "13px", opacity: selectedCourse ? 1 : 0.5 }}>
                   <option value="">Select module...</option>
                   {selectedCourseData?.modules?.map((m: any) => <option key={m.id} value={m.id}>{m.title || m.id}</option>)}
                 </select>
               </div>
             </div>
             {selectedModule && (
-              <div className="p-3 rounded-lg border bg-muted/50 text-sm">
-                {loadingContent ? <span className="text-muted-foreground">Loading content...</span>
-                  : courseContent ? <span className="text-green-600">Loaded {courseContent.length.toLocaleString()} characters</span>
-                  : <span className="text-muted-foreground">No content found in this module</span>}
+              <div className="glass-card" style={{ padding: "12px", fontSize: "13px", background: "rgba(255,255,255,0.03)" }}>
+                {loadingContent ? <span className="text-secondary">Loading content...</span>
+                  : courseContent ? <span style={{ color: "#16a34a" }}>Loaded {courseContent.length.toLocaleString()} characters</span>
+                  : <span className="text-secondary">No content found in this module</span>}
               </div>
             )}
           </>
         )}
         {lastError && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm">
-            <p className="text-red-600 font-medium">{lastError}</p>
-            {cooldown > 0 && <p className="text-muted-foreground mt-1">Retry in {cooldown}s</p>}
+          <div className="glass-card" style={{ padding: "12px", background: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.3)", fontSize: "13px" }}>
+            <p style={{ color: "#dc2626", fontWeight: 500 }}>{lastError}</p>
+            {cooldown > 0 && <p className="text-secondary" style={{ marginTop: "4px" }}>Retry in {cooldown}s</p>}
           </div>
         )}
         <button onClick={generateQuiz}
           disabled={(selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating) || cooldown > 0}
-          className="w-full py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium">
+          className="glass-btn-primary"
+          style={{ width: "100%", padding: "12px", fontWeight: 500, opacity: ((selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating) || cooldown > 0) ? 0.5 : 1, cursor: ((selectedSource === "course" ? !courseContent || isGenerating : !inputText.trim() || isGenerating) || cooldown > 0) ? "not-allowed" : "pointer" }}>
           {isGenerating ? "Generating..." : cooldown > 0 ? `Wait ${cooldown}s...` : "Generate Quiz"}
         </button>
       </div>
@@ -451,48 +515,53 @@ function HistoryTab({ userId }: { userId: string | null }) {
 
   if (!userId) {
     return (
-      <div className="text-center py-12">
-        <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground mb-2">Sign in to track your quiz history</p>
-        <Link href="/login" className="text-primary hover:underline text-sm">Sign in</Link>
+      <div className="empty-state">
+        <History className="empty-state-icon" />
+        <p className="text-secondary" style={{ marginBottom: "8px" }}>Sign in to track your quiz history</p>
+        <Link href="/login" className="text-secondary" style={{ fontSize: "13px", color: "var(--os-accent)", textDecoration: "underline" }}>Sign in</Link>
       </div>
     );
   }
 
-  if (loading) return <p className="text-muted-foreground py-8 text-center">Loading...</p>;
+  if (loading) return <p className="text-secondary" style={{ padding: "32px 0", textAlign: "center" }}>Loading...</p>;
 
   if (history.length === 0) {
     return (
-      <div className="text-center py-12">
-        <History className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No quiz history yet. Take a quiz to start tracking!</p>
+      <div className="empty-state">
+        <History className="empty-state-icon" />
+        <p className="text-secondary">No quiz history yet. Take a quiz to start tracking!</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-3">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Quiz History</h2>
-        <span className="text-sm text-muted-foreground">{history.length} quizzes taken</span>
+    <div style={{ maxWidth: "672px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Quiz History</h2>
+        <span className="text-sm text-secondary">{history.length} quizzes taken</span>
       </div>
       {history.map((h) => {
         const pct = h.total_questions > 0 ? Math.round((h.correct_answers / h.total_questions) * 100) : 0;
         const date = new Date(h.created_at);
         return (
-          <div key={h.id} className="flex items-center gap-4 p-4 rounded-lg border bg-card">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{h.deck_title}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">
+          <div key={h.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)" }}>{h.deck_title}</p>
+              <p className="text-sm text-secondary" style={{ marginTop: "2px" }}>
                 {date.toLocaleDateString()} at {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
-            <div className="text-right">
-              <p className={`text-lg font-bold ${pct >= 80 ? "text-green-600" : pct >= 50 ? "text-yellow-600" : "text-red-600"}`}>{pct}%</p>
-              <p className="text-xs text-muted-foreground">{h.correct_answers}/{h.total_questions}</p>
+            <div style={{ textAlign: "right" }}>
+              <p style={{
+                fontSize: "18px",
+                fontWeight: 700,
+                color: pct >= 80 ? "#16a34a" : pct >= 50 ? "#eab308" : "#dc2626",
+              }}>{pct}%</p>
+              <p className="text-xs text-secondary">{h.correct_answers}/{h.total_questions}</p>
             </div>
-            <button onClick={() => handleDelete(h.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500">
-              <Trash2 className="h-4 w-4" />
+            <button onClick={() => handleDelete(h.id)}
+              style={{ padding: "6px", borderRadius: "8px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+              <Trash2 style={{ width: "16px", height: "16px" }} />
             </button>
           </div>
         );
@@ -525,15 +594,15 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
 
   if (!userId) {
     return (
-      <div className="text-center py-12">
-        <TrendingDown className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground mb-2">Sign in to see your weak areas</p>
-        <Link href="/login" className="text-primary hover:underline text-sm">Sign in</Link>
+      <div className="empty-state">
+        <TrendingDown className="empty-state-icon" />
+        <p className="text-secondary" style={{ marginBottom: "8px" }}>Sign in to see your weak areas</p>
+        <Link href="/login" className="text-secondary" style={{ fontSize: "13px", color: "var(--os-accent)", textDecoration: "underline" }}>Sign in</Link>
       </div>
     );
   }
 
-  if (loading) return <p className="text-muted-foreground py-8 text-center">Loading...</p>;
+  if (loading) return <p className="text-secondary" style={{ padding: "32px 0", textAlign: "center" }}>Loading...</p>;
 
   const totalForgot = studyStats.reduce((sum, s) => sum + (s.forgot || 0), 0);
   const totalDontKnow = studyStats.reduce((sum, s) => sum + (s.dont_know || 0), 0);
@@ -548,41 +617,41 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
   });
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-lg font-semibold">Weak Areas Report</h2>
+    <div style={{ maxWidth: "672px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Weak Areas Report</h2>
 
       {/* Overall Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-4 rounded-xl border bg-card text-center">
-          <p className="text-3xl font-bold text-green-600">{totalKnown}</p>
-          <p className="text-sm text-muted-foreground mt-1">Cards Known</p>
+      <div className="grid-3" style={{ gap: "12px" }}>
+        <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
+          <p style={{ fontSize: "30px", fontWeight: 700, color: "#16a34a" }}>{totalKnown}</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Cards Known</p>
         </div>
-        <div className="p-4 rounded-xl border bg-card text-center">
-          <p className="text-3xl font-bold text-orange-500">{totalDontKnow}</p>
-          <p className="text-sm text-muted-foreground mt-1">Don&apos;t Know</p>
+        <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
+          <p style={{ fontSize: "30px", fontWeight: 700, color: "#f97316" }}>{totalDontKnow}</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Don&apos;t Know</p>
         </div>
-        <div className="p-4 rounded-xl border bg-card text-center">
-          <p className="text-3xl font-bold text-red-500">{totalForgot}</p>
-          <p className="text-sm text-muted-foreground mt-1">Forgot</p>
+        <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
+          <p style={{ fontSize: "30px", fontWeight: 700, color: "#ef4444" }}>{totalForgot}</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Forgot</p>
         </div>
       </div>
 
       {/* Accuracy Ring */}
-      <div className="p-6 rounded-xl border bg-card flex items-center gap-6">
-        <div className="relative w-20 h-20 flex-shrink-0">
-          <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted/50" />
+      <div className="glass-panel" style={{ padding: "24px", display: "flex", alignItems: "center", gap: "24px" }}>
+        <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
+          <svg style={{ width: "80px", height: "80px", transform: "rotate(-90deg)" }} viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" style={{ color: "rgba(255,255,255,0.1)" }} />
             <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6"
-              className={accuracy >= 80 ? "text-green-500" : accuracy >= 50 ? "text-yellow-500" : "text-red-500"}
+              style={{ color: accuracy >= 80 ? "#22c55e" : accuracy >= 50 ? "#eab308" : "#ef4444" }}
               strokeDasharray={`${accuracy * 2.136} 213.6`} strokeLinecap="round" />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-lg font-bold">{accuracy}%</span>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--os-text-primary)" }}>{accuracy}%</span>
           </div>
         </div>
         <div>
-          <p className="font-medium">Overall Accuracy</p>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>Overall Accuracy</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "2px" }}>
             {totalCards > 0 ? `${totalCards} cards studied across ${studyStats.length} sessions` : "Start reviewing to see your accuracy"}
           </p>
         </div>
@@ -591,14 +660,14 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
       {/* Bookmarked / Struggling Cards */}
       {bookmarks.length > 0 && (
         <div>
-          <h3 className="font-medium mb-3 flex items-center gap-2">
-            <Bookmark className="h-4 w-4 text-yellow-500" /> Bookmarked Cards ({bookmarks.length})
+          <h3 className="text-sm" style={{ fontWeight: 500, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", color: "var(--os-text-primary)" }}>
+            <Bookmark style={{ width: "16px", height: "16px", color: "#eab308" }} /> Bookmarked Cards ({bookmarks.length})
           </h3>
-          <div className="space-y-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {Object.entries(deckStats).map(([deck, stats]) => (
-              <div key={deck} className="p-3 rounded-lg border bg-card">
-                <p className="font-medium text-sm">{deck}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stats.dontKnow} cards bookmarked for review</p>
+              <div key={deck} className="glass-card" style={{ padding: "12px" }}>
+                <p className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{deck}</p>
+                <p className="text-xs text-secondary" style={{ marginTop: "4px" }}>{stats.dontKnow} cards bookmarked for review</p>
               </div>
             ))}
           </div>
@@ -608,41 +677,41 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
       {/* Study Trend */}
       {studyStats.length > 0 && (
         <div>
-          <h3 className="font-medium mb-3 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" /> Recent Sessions
+          <h3 className="text-sm" style={{ fontWeight: 500, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", color: "var(--os-text-primary)" }}>
+            <BarChart3 style={{ width: "16px", height: "16px" }} /> Recent Sessions
           </h3>
-          <div className="space-y-1.5">
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {studyStats.slice(0, 14).map((s, i) => {
               const total = (s.known || 0) + (s.forgot || 0) + (s.dont_know || 0);
               const pct = total > 0 ? Math.round(((s.known || 0) / total) * 100) : 0;
               return (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground w-20 text-right text-xs">{s.date?.split(" ").slice(1, 3).join(" ") || ""}</span>
-                  <div className="flex-1 h-5 bg-muted/50 rounded-full overflow-hidden flex">
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }} className="text-sm">
+                  <span className="text-xs text-secondary" style={{ width: "80px", textAlign: "right" }}>{s.date?.split(" ").slice(1, 3).join(" ") || ""}</span>
+                  <div style={{ flex: 1, height: "20px", background: "rgba(255,255,255,0.03)", borderRadius: "9999px", overflow: "hidden", display: "flex" }}>
                     {total > 0 && (
                       <>
-                        <div className="h-full bg-green-500/80" style={{ width: `${(s.known || 0) / total * 100}%` }} />
-                        <div className="h-full bg-orange-500/80" style={{ width: `${(s.dont_know || 0) / total * 100}%` }} />
-                        <div className="h-full bg-red-500/80" style={{ width: `${(s.forgot || 0) / total * 100}%` }} />
+                        <div style={{ height: "100%", background: "rgba(34,197,94,0.8)", width: `${(s.known || 0) / total * 100}%` }} />
+                        <div style={{ height: "100%", background: "rgba(249,115,22,0.8)", width: `${(s.dont_know || 0) / total * 100}%` }} />
+                        <div style={{ height: "100%", background: "rgba(239,68,68,0.8)", width: `${(s.forgot || 0) / total * 100}%` }} />
                       </>
                     )}
                   </div>
-                  <span className="w-10 text-xs font-medium">{pct}%</span>
+                  <span className="text-xs" style={{ width: "40px", fontWeight: 500, color: "var(--os-text-primary)" }}>{pct}%</span>
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500/80 inline-block" /> Known</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-500/80 inline-block" /> Don&apos;t Know</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block" /> Forgot</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "12px" }} className="text-xs text-secondary">
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(34,197,94,0.8)", display: "inline-block" }} /> Known</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(249,115,22,0.8)", display: "inline-block" }} /> Don&apos;t Know</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(239,68,68,0.8)", display: "inline-block" }} /> Forgot</span>
           </div>
         </div>
       )}
 
       {totalCards === 0 && bookmarks.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">No study data yet. Review flashcards and take quizzes to see your weak areas.</p>
+        <div className="empty-state">
+          <p className="text-secondary">No study data yet. Review flashcards and take quizzes to see your weak areas.</p>
         </div>
       )}
     </div>

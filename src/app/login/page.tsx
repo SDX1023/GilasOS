@@ -15,55 +15,33 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     const result = await signIn(email, password);
     setLoading(false);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      router.push("/");
-    }
+    if (result.error) setError(result.error);
+    else router.push("/");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8">Log In</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-xl border bg-card">
-          {error && <p className="text-sm text-red-600 bg-red-500/10 p-3 rounded-lg">{error}</p>}
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        <h1 className="page-title" style={{ textAlign: "center", marginBottom: 32, justifyContent: "center" }}>Log In</h1>
+        <form onSubmit={handleSubmit} className="glass-panel" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          {error && <p style={{ fontSize: 13, color: "#ef4444", padding: 12, borderRadius: 10, background: "rgba(239,68,68,0.1)" }}>{error}</p>}
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-              placeholder="you@email.com"
-            />
+            <label style={{ fontSize: 13, color: "var(--os-text-secondary)", marginBottom: 4, display: "block" }}>Email</label>
+            <input className="glass-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@email.com" />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-              placeholder="••••••••"
-            />
+            <label style={{ fontSize: 13, color: "var(--os-text-secondary)", marginBottom: 4, display: "block" }}>Password</label>
+            <input className="glass-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 font-medium"
-          >
+          <button type="submit" disabled={loading} className="glass-btn glass-btn-primary" style={{ width: "100%", opacity: loading ? 0.5 : 1 }}>
             {loading ? "Logging in..." : "Log In"}
           </button>
-          <p className="text-center text-sm text-muted-foreground">
+          <p style={{ textAlign: "center", fontSize: 13, color: "var(--os-text-dim)" }}>
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+            <Link href="/signup" style={{ color: "var(--os-accent)", textDecoration: "none" }}>Sign up</Link>
           </p>
         </form>
       </div>

@@ -241,10 +241,10 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }
 
   if (!mounted) {
-    return <div className="container mx-auto px-4 py-8 max-w-2xl"><p className="text-muted-foreground">Loading...</p></div>;
+    return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
   }
   if (!reviewer) {
-    return <div className="container mx-auto px-4 py-8"><p className="text-muted-foreground">Flashcard deck not found.</p></div>;
+    return <div className="page-container"><p className="text-secondary">Flashcard deck not found.</p></div>;
   }
 
   function shuffleArray(arr: any[]) {
@@ -452,126 +452,132 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/flashcards" className="hover:text-foreground">Flash Cards</Link>
-          <ChevronRight className="h-4 w-4" />
+    <div className="page-container">
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} className="text-sm text-secondary">
+          <Link href="/flashcards" style={{ color: "inherit" }}>Flash Cards</Link>
+          <ChevronRight style={{ width: 16, height: 16 }} />
           <span>{reviewer.title}</span>
         </div>
-        <div className="flex items-center justify-between">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <h1 className="text-3xl font-bold">{reviewer.title}</h1>
-            <p className="text-muted-foreground mt-2">{cards.length} cards</p>
+            <h1 style={{ fontSize: "1.875rem", fontWeight: 700 }}>{reviewer.title}</h1>
+            <p className="text-secondary" style={{ marginTop: "0.5rem" }}>{cards.length} cards</p>
           </div>
-          <div className="flex gap-2">
+          <div style={{ display: "flex", gap: "0.5rem" }}>
             <button onClick={() => setShuffled(!shuffled)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-sm ${shuffled ? "bg-primary/10 text-primary border-primary/30" : "hover:bg-muted"}`}>
-              <Shuffle className="h-4 w-4" /> {shuffled ? "Shuffled" : "Shuffle"}
+              className="glass-btn"
+              style={shuffled ? { background: "rgba(0,212,255,0.1)", color: "var(--os-accent)", borderColor: "rgba(0,212,255,0.3)" } : {}}
+            >
+              <Shuffle style={{ width: 16, height: 16 }} /> {shuffled ? "Shuffled" : "Shuffle"}
             </button>
-            <button onClick={startReview} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary text-primary hover:bg-primary/10 text-sm">
-              <Play className="h-4 w-4" /> Review
+            <button onClick={startReview} className="glass-btn" style={{ color: "var(--os-accent)", borderColor: "var(--os-accent)" }}>
+              <Play style={{ width: 16, height: 16 }} /> Review
             </button>
-            <button onClick={() => setAddingCard(!addingCard)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm">
-              <Plus className="h-4 w-4" /> Add Card
+            <button onClick={() => setAddingCard(!addingCard)} className="glass-btn">
+              <Plus style={{ width: 16, height: 16 }} /> Add Card
             </button>
-            <button onClick={() => exportFlashcardsToPdf(reviewer.title, cards)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print">
-              <Download className="h-4 w-4" /> Save PDF
+            <button onClick={() => exportFlashcardsToPdf(reviewer.title, cards)} className="glass-btn no-print">
+              <Download style={{ width: 16, height: 16 }} /> Save PDF
             </button>
           </div>
         </div>
       </div>
 
       {reviewMode && (
-        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "rgba(15,21,35,0.6)" }}>
           {flashImage && (
-            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/80"
-              style={{ opacity: flashVisible ? 1 : 0, transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}>
-              <img src={flashImage} alt="" className="max-w-[80vw] max-h-[80vh] object-contain"
-                style={{ transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+            <div style={{ position: "absolute", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", opacity: flashVisible ? 1 : 0, transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+              <img src={flashImage} alt="" style={{ maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain", transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
             </div>
           )}
-          <div className="flex items-center justify-between p-5 border-b">
-            <div className="flex items-center gap-4">
-              <span className="text-base font-medium">{reviewComplete ? "Done" : queue.length}</span>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-green-600">{knownCount}</span>
-                <span className="text-orange-600">{dontKnowCount}</span>
-                <span className="text-red-600">{forgotCount}</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem", borderBottom: "1px solid var(--os-border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <span style={{ fontSize: "1rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="text-sm">
+                <span style={{ color: "#22c55e" }}>{knownCount}</span>
+                <span style={{ color: "#f97316" }}>{dontKnowCount}</span>
+                <span style={{ color: "#ef4444" }}>{forgotCount}</span>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap justify-end">
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {pomodoro && (
                 <button onClick={() => { if (!pomodoro.isRunning) pomodoro.start(); }}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm ${pomodoro.isRunning ? "bg-green-500/10 text-green-600 border-green-500/30" : "hover:bg-muted"}`}>
-                  <Timer className="h-4 w-4" />
+                  className="glass-btn"
+                  style={pomodoro.isRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}
+                >
+                  <Timer style={{ width: 16, height: 16 }} />
                   {pomodoro.isRunning ? pomodoro.formatTime(pomodoro.timeLeft) : "Start Timer"}
                 </button>
               )}
               {!reviewComplete && queue[queueIndex] && (
                 <button onClick={() => handleToggleBookmark(queue[queueIndex])}
-                  className={`p-2 rounded-lg border text-sm ${bookmarked.has(`${reviewer?.id || ""}:::${queue[queueIndex]?.front}`) ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" : "hover:bg-muted"}`}>
-                  <Bookmark className="h-4 w-4" />
+                  className="glass-btn"
+                  style={bookmarked.has(`${reviewer?.id || ""}:::${queue[queueIndex]?.front}`) ? { background: "rgba(234,179,8,0.1)", color: "#eab308", borderColor: "rgba(234,179,8,0.3)" } : {}}
+                >
+                  <Bookmark style={{ width: 16, height: 16 }} />
                 </button>
               )}
               <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
-                className={`px-3 py-2 rounded-lg border text-sm ${swapped ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
+                className="glass-btn"
+                style={swapped ? { background: "var(--os-accent)", color: "#fff" } : {}}
+              >
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
-              <button onClick={exitReview} className="px-3 py-2 rounded-lg border text-sm hover:bg-muted">
+              <button onClick={exitReview} className="glass-btn">
                 Exit
               </button>
             </div>
           </div>
-          <div className="px-5 pb-3">
-            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{ width: `${cards.length > 0 ? ((knownCount + dontKnowCount + forgotCount) / cards.length) * 100 : 0}%` }} />
+          <div style={{ padding: "0 1.25rem 0.75rem" }}>
+            <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 9999, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: "var(--os-accent)", borderRadius: 9999, transition: "all 0.3s", width: `${cards.length > 0 ? ((knownCount + dontKnowCount + forgotCount) / cards.length) * 100 : 0}%` }} />
             </div>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
             {reviewComplete ? (
-              <div className="text-center">
-                <div className="text-6xl mb-6">&#127881;</div>
-                <h2 className="text-3xl font-bold mb-4">All Done!</h2>
-                <div className="flex justify-center gap-8 mb-6 text-lg">
-                  <span className="text-green-600">{knownCount} known</span>
-                  <span className="text-orange-600">{dontKnowCount} don&apos;t know</span>
-                  <span className="text-red-600">{forgotCount} forgot</span>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "3.75rem", marginBottom: "1.5rem" }}>&#127881;</div>
+                <h2 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "1rem" }}>All Done!</h2>
+                <div style={{ display: "flex", justifyContent: "center", gap: "2rem", marginBottom: "1.5rem", fontSize: "1.125rem" }}>
+                  <span style={{ color: "#22c55e" }}>{knownCount} known</span>
+                  <span style={{ color: "#f97316" }}>{dontKnowCount} don&apos;t know</span>
+                  <span style={{ color: "#ef4444" }}>{forgotCount} forgot</span>
                 </div>
-                <p className="text-muted-foreground mb-8">Great job! Keep up the good work.</p>
-                <button onClick={exitReview} className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium">
+                <p className="text-secondary" style={{ marginBottom: "2rem" }}>Great job! Keep up the good work.</p>
+                <button onClick={exitReview} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>
                   Back to Deck
                 </button>
               </div>
             ) : (
               <>
                 <div onClick={() => setReviewFlipped(!reviewFlipped)}
-                  className="w-full max-w-2xl min-h-[350px] p-12 rounded-xl border-2 bg-card cursor-pointer select-none flex items-center justify-center text-center transition-all hover:border-primary">
+                  className="glass-card"
+                  style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s" }}>
                   <div>
-                    <p className="text-2xl font-medium leading-relaxed">
+                    <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75 }}>
                       {reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)}
                     </p>
-                    {!reviewFlipped && queue[queueIndex].hint && <p className="text-base text-muted-foreground mt-6 italic">Hint: {queue[queueIndex].hint}</p>}
+                    {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic" }} className="text-secondary">Hint: {queue[queueIndex].hint}</p>}
                   </div>
                 </div>
-                <div className="mt-4 text-xs text-muted-foreground">
+                <div className="text-xs text-secondary" style={{ marginTop: "1rem" }}>
                   {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                 </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-4">
+                <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
                   {!reviewFlipped ? (
-                    <button onClick={() => setReviewFlipped(true)} className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-lg font-medium">
+                    <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>
                       Show Answer
                     </button>
                   ) : (
                     <>
-                      <button id="btn-forgot" onClick={handleForgot} className="px-6 py-3 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 text-base font-medium">
+                      <button id="btn-forgot" onClick={handleForgot} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: "1rem", fontWeight: 500 }}>
                         I Forgot
                       </button>
-                      <button id="btn-dontknow" onClick={handleDontKnow} className="px-6 py-3 rounded-lg bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 text-base font-medium">
+                      <button id="btn-dontknow" onClick={handleDontKnow} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(249,115,22,0.1)", color: "#f97316", fontSize: "1rem", fontWeight: 500 }}>
                         I Don&apos;t Know
                       </button>
-                      <button id="btn-know" onClick={handleKnow} className="px-6 py-3 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 text-base font-medium">
+                      <button id="btn-know" onClick={handleKnow} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: "1rem", fontWeight: 500 }}>
                         I Know
                       </button>
                     </>
@@ -581,19 +587,19 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             )}
           </div>
           {showSummary && (
-            <div className="absolute inset-0 z-[70] flex items-center justify-center bg-background/95 backdrop-blur-sm">
-              <div className="text-center p-8 rounded-xl border bg-card max-w-md w-full mx-4">
-                <h2 className="text-2xl font-bold mb-6">Session Summary</h2>
-                <div className="flex justify-center gap-6 mb-8 text-lg">
-                  <div className="text-center"><p className="text-3xl font-bold text-green-600">{knownCount}</p><p className="text-sm text-muted-foreground">Known</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-orange-600">{dontKnowCount}</p><p className="text-sm text-muted-foreground">Don&apos;t Know</p></div>
-                  <div className="text-center"><p className="text-3xl font-bold text-red-600">{forgotCount}</p><p className="text-sm text-muted-foreground">Forgot</p></div>
+            <div style={{ position: "absolute", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,21,35,0.95)", backdropFilter: "blur(4px)" }}>
+              <div className="glass-card" style={{ textAlign: "center", padding: "2rem", maxWidth: 448, width: "100%", margin: "0 1rem" }}>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>Session Summary</h2>
+                <div style={{ display: "flex", justifyContent: "center", gap: "1.5rem", marginBottom: "2rem", fontSize: "1.125rem" }}>
+                  <div style={{ textAlign: "center" }}><p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#22c55e" }}>{knownCount}</p><p className="text-sm text-secondary">Known</p></div>
+                  <div style={{ textAlign: "center" }}><p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#f97316" }}>{dontKnowCount}</p><p className="text-sm text-secondary">Don&apos;t Know</p></div>
+                  <div style={{ textAlign: "center" }}><p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#ef4444" }}>{forgotCount}</p><p className="text-sm text-secondary">Forgot</p></div>
                 </div>
-                <div className="flex gap-3 justify-center">
+                <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
                   <button onClick={() => { saveProgressIfNeeded(); localStorage.removeItem(sessionKey); setShowSummary(false); startReview(); }}
-                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">Review Again</button>
-                  <button                     onClick={exitReview}
-                    className="px-6 py-2 rounded-lg border hover:bg-muted">Back to Deck</button>
+                    className="glass-btn-primary" style={{ padding: "0.5rem 1.5rem" }}>Review Again</button>
+                  <button onClick={exitReview}
+                    className="glass-btn" style={{ padding: "0.5rem 1.5rem" }}>Back to Deck</button>
                 </div>
               </div>
             </div>
@@ -602,67 +608,68 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       )}
 
       {addingCard && (
-        <div className="mb-6 p-4 rounded-lg border bg-card space-y-3">
-          <h3 className="font-medium">Add New Card</h3>
-          <div><label className="text-xs text-muted-foreground mb-1 block">Question</label>
-            <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none" rows={2} placeholder="Enter the question..." /></div>
-          <div><label className="text-xs text-muted-foreground mb-1 block">Answer</label>
-            <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none" rows={2} placeholder="Enter the answer..." /></div>
-          <div><label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
-            <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" placeholder="Optional hint..." /></div>
-          <div className="flex gap-2">
-            <button onClick={addCard} className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"><Check className="h-3 w-3" /> Add</button>
-            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); }} className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"><X className="h-3 w-3" /> Cancel</button>
+        <div className="glass-card" style={{ marginBottom: "1.5rem", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <h3 style={{ fontWeight: 500 }}>Add New Card</h3>
+          <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+            <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the question..." /></div>
+          <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
+            <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the answer..." /></div>
+          <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
+            <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." /></div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button onClick={addCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check style={{ width: 12, height: 12 }} /> Add</button>
+            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search cards..." className="w-full pl-9 pr-3 py-2 rounded-lg border bg-background text-sm" />
+      <div style={{ position: "relative", marginBottom: "1rem" }}>
+        <Search style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", width: 16, height: 16 }} className="text-secondary" />
+        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search cards..." className="glass-input" style={{ width: "100%", paddingLeft: "2.25rem" }} />
       </div>
 
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {filteredCards.map((card: any, i: number) => {
           const realIndex = cards.indexOf(card);
           return (
-            <div key={realIndex} className="p-4 rounded-lg border bg-card">
+            <div key={realIndex} className="glass-card">
               {editingIndex === realIndex ? (
-                <div className="space-y-3">
-                  <div><label className="text-xs text-muted-foreground mb-1 block">Question</label>
-                    <textarea value={editFront} onChange={(e) => setEditFront(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none" rows={2} /></div>
-                  <div><label className="text-xs text-muted-foreground mb-1 block">Answer</label>
-                    <textarea value={editBack} onChange={(e) => setEditBack(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none" rows={2} /></div>
-                  <div><label className="text-xs text-muted-foreground mb-1 block">Hint (optional)</label>
-                    <input value={editHint} onChange={(e) => setEditHint(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-background text-sm" /></div>
-                  <div className="flex gap-2">
-                    <button onClick={saveEdit} className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm"><Check className="h-3 w-3" /> Save</button>
-                    <button onClick={() => setEditingIndex(null)} className="flex items-center gap-1 px-3 py-1 rounded-lg border text-sm hover:bg-muted"><X className="h-3 w-3" /> Cancel</button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                    <textarea value={editFront} onChange={(e) => setEditFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} /></div>
+                  <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
+                    <textarea value={editBack} onChange={(e) => setEditBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} /></div>
+                  <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
+                    <input value={editHint} onChange={(e) => setEditHint(e.target.value)} className="glass-input" style={{ width: "100%" }} /></div>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button onClick={saveEdit} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check style={{ width: 12, height: 12 }} /> Save</button>
+                    <button onClick={() => setEditingIndex(null)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
                   </div>
                 </div>
               ) : (
-                <div className="relative pr-16">
-                  <div className="absolute top-0 right-0 flex gap-1 no-print">
+                <div style={{ position: "relative", paddingRight: "4rem" }}>
+                  <div style={{ position: "absolute", top: 0, right: 0, display: "flex", gap: "0.25rem" }} className="no-print">
                     {user && (
                       <button onClick={() => handleToggleBookmark(card)}
-                        className={`p-1.5 rounded-lg ${bookmarked.has(`${reviewer?.id || ""}:::${card.front}`) ? "text-yellow-500" : "hover:bg-muted text-muted-foreground hover:text-yellow-500"}`}>
-                        <Bookmark className="h-4 w-4" fill={bookmarked.has(`${reviewer?.id || ""}:::${card.front}`) ? "currentColor" : "none"} />
+                        className="glass-btn-ghost"
+                        style={{ padding: "0.375rem", borderRadius: "0.5rem" }}>
+                        <Bookmark style={{ width: 16, height: 16 }} fill={bookmarked.has(`${reviewer?.id || ""}:::${card.front}`) ? "currentColor" : "none"} />
                       </button>
                     )}
                     <button onClick={() => { setEditingIndex(realIndex); setEditFront(card.front); setEditBack(card.back); setEditHint(card.hint || ""); }}
-                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
+                      className="glass-btn-ghost" style={{ padding: "0.375rem", borderRadius: "0.5rem" }}><Pencil style={{ width: 16, height: 16 }} /></button>
                     <button onClick={() => deleteCard(realIndex)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                      className="glass-btn-ghost" style={{ padding: "0.375rem", borderRadius: "0.5rem" }}><Trash2 style={{ width: 16, height: 16 }} /></button>
                   </div>
-                  <p className="font-medium">Q: {card.front}</p>
-                  <p className="mt-2 text-muted-foreground">A: {card.back}</p>
-                  {card.hint && <p className="mt-1 text-sm italic text-muted-foreground/70">Hint: {card.hint}</p>}
+                  <p style={{ fontWeight: 500 }}>Q: {card.front}</p>
+                  <p style={{ marginTop: "0.5rem" }} className="text-secondary">A: {card.back}</p>
+                  {card.hint && <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", fontStyle: "italic" }} className="text-secondary">Hint: {card.hint}</p>}
                 </div>
               )}
             </div>
           );
         })}
-        {filteredCards.length === 0 && searchQuery && <p className="text-center text-muted-foreground py-8">No cards match &quot;{searchQuery}&quot;</p>}
+        {filteredCards.length === 0 && searchQuery && <p style={{ textAlign: "center" }} className="text-secondary">No cards match &quot;{searchQuery}&quot;</p>}
       </div>
     </div>
   );

@@ -11,44 +11,41 @@ export default function CoursePage({ params }: { params: Promise<{ course: strin
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="page-container">
+        <p className="text-secondary">Loading...</p>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Course not found.</p>
+      <div className="page-container">
+        <p className="text-secondary">Course not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <Link href="/courses" className="text-sm text-muted-foreground hover:text-foreground">
-          Courses
-        </Link>
-        <h1 className="text-3xl font-bold mt-2">{course.title}</h1>
-        <p className="text-muted-foreground mt-2">{course.description}</p>
+    <div className="page-container">
+      <div style={{ marginBottom: 32 }}>
+        <Link href="/courses" style={{ fontSize: 13, color: "var(--os-text-dim)", textDecoration: "none" }}>Courses</Link>
+        <h1 className="page-title" style={{ marginTop: 8 }}>{course.title}</h1>
+        <p className="text-secondary">{course.description}</p>
       </div>
 
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {modules.map((mod) => (
           <Link
             key={mod.id}
             href={`/courses/${course.id}/${mod.id}`}
-            className="flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-md transition-all group"
+            className="glass-card-link"
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
           >
-            <div>
-              <h2 className="font-semibold group-hover:text-primary transition-colors">
-                {mod.title}
-              </h2>
-              <p className="text-sm text-muted-foreground">{mod.description}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--os-text-primary)", marginBottom: 4 }}>{mod.title}</h2>
+              <p className="text-secondary text-sm">{mod.description}</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <ChevronRight size={20} style={{ color: "var(--os-text-dim)", flexShrink: 0, marginLeft: 12 }} />
           </Link>
         ))}
       </div>

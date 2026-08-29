@@ -99,16 +99,16 @@ function ReviewerEditorContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p className="text-secondary animate-pulse">Loading...</p>
       </div>
     );
   }
 
   if (!courseId || !moduleId) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Missing course or module ID</p>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p className="text-secondary">Missing course or module ID</p>
       </div>
     );
   }
@@ -129,8 +129,8 @@ function ReviewerEditorContent() {
 export default function ReviewerEditorPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p className="text-secondary animate-pulse">Loading...</p>
       </div>
     }>
       <ReviewerEditorContent />

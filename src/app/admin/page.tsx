@@ -10,39 +10,32 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-md">
-        <p className="text-muted-foreground text-center">Loading...</p>
+      <div className="page-container">
+        <p className="text-secondary" style={{ textAlign: "center" }}>Loading...</p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-md">
-        <div className="text-center mb-8">
-          <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-3xl font-bold">Admin Access</h1>
-          <p className="text-muted-foreground mt-2">You need to log in to access the admin panel</p>
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Shield size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Admin Access</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>You need to log in to access the admin panel</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
         </div>
-        <Link
-          href="/login"
-          className="block w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-center font-medium"
-        >
-          Log In
-        </Link>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-md">
-        <div className="text-center">
-          <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-3xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground mt-2">
-            Your account ({user.email}) does not have admin permissions.
-          </p>
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Shield size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Access Denied</h2>
+          <p className="text-secondary text-sm">Your account ({user.email}) does not have admin permissions.</p>
         </div>
       </div>
     );

@@ -12,9 +12,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
   const { course, module: mod, notes, moduleContents, loading } = useModuleDetail(courseSlug, moduleSlug);
   const [admin, setAdmin] = useState(false);
 
-  useEffect(() => {
-    setAdmin(isAdmin());
-  }, []);
+  useEffect(() => { setAdmin(isAdmin()); }, []);
 
   const customContent = loadCustomContent();
   const customCourse = customContent.courses.find((c) => c.id === courseSlug);
@@ -22,142 +20,96 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
   const reviewers = customModule?.reviewers || [];
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
   }
 
   if (!mod) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Module not found.</p>
-      </div>
-    );
+    return <div className="page-container"><p className="text-secondary">Module not found.</p></div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/courses" className="hover:text-foreground">Courses</Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseSlug}`} className="hover:text-foreground">{courseSlug}</Link>
-          <ChevronRight className="h-4 w-4" />
+    <div className="page-container">
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-dim)", marginBottom: 8 }}>
+          <Link href="/courses" style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>Courses</Link>
+          <ChevronRight size={14} />
+          <Link href={`/courses/${courseSlug}`} style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>{courseSlug}</Link>
+          <ChevronRight size={14} />
         </div>
-        <h1 className="text-3xl font-bold">{mod.title}</h1>
-        <p className="text-muted-foreground mt-2">{mod.description}</p>
+        <h1 className="page-title">{mod.title}</h1>
+        <p className="text-secondary">{mod.description}</p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div style={{ display: "flex", gap: 32 }}>
         {/* Left: Content (admin only) */}
-        <div className="flex-1 min-w-0">
+        <div style={{ flex: 1, minWidth: 0 }}>
           {admin && (
             <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Content
-                <Link
-                  href={`/editor/content?course=${courseSlug}&module=${moduleSlug}`}
-                  className="ml-auto flex items-center gap-1 text-sm text-primary hover:underline font-normal"
-                >
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span>
+              <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <BookOpen size={20} /> Content
+                <Link href={`/editor/content?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--os-accent)", textDecoration: "none" }}>
+                  <Plus size={14} /> <span>New</span>
                 </Link>
               </h2>
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {moduleContents.map((content) => (
-                  <Link
-                    key={content.id}
-                    href={`/courses/${courseSlug}/${moduleSlug}/content/${content.id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:shadow-md transition-all"
-                  >
-                    <span className="hover:text-primary transition-colors truncate">{content.title}</span>
+                  <Link key={content.id} href={`/courses/${courseSlug}/${moduleSlug}/content/${content.id}`} className="glass-card-link" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content.title}</span>
                   </Link>
                 ))}
-                {moduleContents.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No content yet.</p>
-                )}
+                {moduleContents.length === 0 && <p className="text-secondary text-sm">No content yet.</p>}
               </div>
             </div>
           )}
           {!admin && (
-            <div className="text-center py-12 text-muted-foreground">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Select a note or content from the sidebar to view it.</p>
+            <div className="empty-state">
+              <BookOpen size={32} style={{ color: "var(--os-text-dim)", marginBottom: 12, opacity: 0.5 }} />
+              <p className="text-secondary text-sm">Select a note or content from the sidebar to view it.</p>
             </div>
           )}
         </div>
 
         {/* Right: Notes + Flashcards */}
-        <div className="w-full lg:w-80 shrink-0 space-y-6">
+        <div style={{ width: 320, flexShrink: 0, display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Notes */}
           <div>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Notes
-              <Link
-                href={`/editor/note?course=${courseSlug}&module=${moduleSlug}`}
-                className="ml-auto flex items-center gap-1 text-sm text-primary hover:underline font-normal"
-              >
-                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span>
+            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <FileText size={20} /> Notes
+              <Link href={`/editor/note?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--os-accent)", textDecoration: "none" }}>
+                <Plus size={14} /> <span>New</span>
               </Link>
             </h2>
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {notes.map((note) => (
-                <div
-                  key={note.id}
-                  className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:shadow-md transition-all"
-                >
-                  <Link
-                    href={`/courses/${courseSlug}/${moduleSlug}/${note.slug}`}
-                    className="flex-1 hover:text-primary transition-colors min-w-0 truncate"
-                  >
+                <div key={note.id} className="glass-card" style={{ padding: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Link href={`/courses/${courseSlug}/${moduleSlug}/${note.slug}`} style={{ flex: 1, color: "var(--os-text-primary)", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {note.title}
                   </Link>
-                  <Link
-                    href={`/editor/note?course=${courseSlug}&module=${moduleSlug}&slug=${note.slug}`}
-                    className="p-1.5 rounded hover:bg-muted shrink-0"
-                    title="Edit"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
+                  <Link href={`/editor/note?course=${courseSlug}&module=${moduleSlug}&slug=${note.slug}`} style={{ padding: 6, borderRadius: 6, flexShrink: 0, color: "var(--os-text-dim)" }} title="Edit">
+                    <Pencil size={14} />
                   </Link>
                 </div>
               ))}
-              {notes.length === 0 && (
-                <p className="text-sm text-muted-foreground">No notes yet.</p>
-              )}
+              {notes.length === 0 && <p className="text-secondary text-sm">No notes yet.</p>}
             </div>
           </div>
 
           {/* Flash Cards */}
           <div>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Brain className="h-5 w-5" />
-              Flash Cards
-              <Link
-                href={`/editor/reviewer?course=${courseSlug}&module=${moduleSlug}`}
-                className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Plus className="h-3 w-3" /> New
+            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <Brain size={20} /> Flash Cards
+              <Link href={`/editor/reviewer?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-text-dim)", textDecoration: "none" }}>
+                <Plus size={12} /> New
               </Link>
             </h2>
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {reviewers.map((reviewer) => (
-                <Link
-                  key={reviewer.id}
-                  href={`/flashcards/${courseSlug}/${moduleSlug}/${reviewer.id}`}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:shadow-md transition-all"
-                >
-                  <span className="hover:text-primary transition-colors truncate">{reviewer.title}</span>
-                  <span className="text-sm text-muted-foreground shrink-0 ml-2">
-                    {reviewer.cards?.length || 0} cards
-                  </span>
+                <Link key={reviewer.id} href={`/flashcards/${courseSlug}/${moduleSlug}/${reviewer.id}`} className="glass-card-link" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reviewer.title}</span>
+                  <span className="text-sm text-dim" style={{ flexShrink: 0, marginLeft: 8 }}>{reviewer.cards?.length || 0} cards</span>
                 </Link>
               ))}
-              {reviewers.length === 0 && (
-                <p className="text-sm text-muted-foreground">No flash cards yet.</p>
-              )}
+              {reviewers.length === 0 && <p className="text-secondary text-sm">No flash cards yet.</p>}
             </div>
           </div>
         </div>

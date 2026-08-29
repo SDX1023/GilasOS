@@ -24,83 +24,77 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
+    (async () => {
       try {
         const [statsRes, profilesRes] = await Promise.all([
           fetch("/api/study-stats").then((r) => r.json()),
           getSupabase().from("user_profiles").select("user_id, username"),
         ]);
         const profileMap: Record<string, string> = {};
-        if (profilesRes.data) {
-          profilesRes.data.forEach((p: any) => { profileMap[p.user_id] = p.username; });
-        }
+        if (profilesRes.data) profilesRes.data.forEach((p: any) => { profileMap[p.user_id] = p.username; });
         if (Array.isArray(statsRes)) {
           statsRes.forEach((entry: any) => {
-            if (!entry.username || entry.username === "Unknown") {
-              entry.username = profileMap[entry.user_id] || "Unknown";
-            }
+            if (!entry.username || entry.username === "Unknown") entry.username = profileMap[entry.user_id] || "Unknown";
           });
         }
         setLeaderboard(statsRes);
       } catch {}
       setLoading(false);
-    }
-    load();
+    })();
   }, []);
 
   function getMedalColor(index: number) {
-    if (index === 0) return "text-yellow-500";
-    if (index === 1) return "text-gray-400";
-    if (index === 2) return "text-amber-600";
-    return "text-muted-foreground";
+    if (index === 0) return "#eab308";
+    if (index === 1) return "#9ca3af";
+    if (index === 2) return "#d97706";
+    return "var(--os-text-dim)";
   }
 
   function getMedalIcon(index: number) {
-    if (index < 3) return <Medal className={`h-5 w-5 ${getMedalColor(index)}`} />;
-    return <span className="text-sm text-muted-foreground w-5 text-center">{index + 1}</span>;
+    if (index < 3) return <Medal size={20} style={{ color: getMedalColor(index) }} />;
+    return <span style={{ fontSize: 13, color: "var(--os-text-dim)", width: 20, textAlign: "center" }}>{index + 1}</span>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Trophy className="h-8 w-8 text-yellow-500" />
-          Leaderboard
+    <div className="page-container" style={{ maxWidth: 640 }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 className="page-title">
+          <Trophy size={28} style={{ color: "#eab308" }} /> Leaderboard
         </h1>
-        <p className="text-muted-foreground mt-2">Top performers ranked by study score</p>
+        <p className="page-subtitle">Top performers ranked by study score</p>
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading leaderboard...</p>
+        <p className="text-secondary">Loading leaderboard...</p>
       ) : leaderboard.length === 0 ? (
-        <div className="text-center py-12">
-          <Trophy className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-          <p className="text-muted-foreground">No one has studied yet. Be the first!</p>
+        <div className="empty-state">
+          <div className="empty-state-icon"><Trophy size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <p className="text-secondary text-sm">No one has studied yet. Be the first!</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {leaderboard.map((entry, i) => {
             const isMe = user?.id === entry.user_id;
             return (
-              <div
-                key={entry.user_id}
-                className={`p-4 rounded-xl border bg-card flex items-center gap-4 ${isMe ? "ring-2 ring-primary" : ""}`}
-              >
-                <div className="flex-shrink-0">{getMedalIcon(i)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{entry.username}</span>
-                    {isMe && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">You</span>}
+              <div key={entry.user_id} className="glass-card" style={{
+                padding: 16, display: "flex", alignItems: "center", gap: 16,
+                border: isMe ? "1px solid var(--os-accent)" : undefined,
+              }}>
+                <div style={{ flexShrink: 0 }}>{getMedalIcon(i)}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.username}</span>
+                    {isMe && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: "rgba(0,212,255,0.12)", color: "var(--os-accent)" }}>You</span>}
                   </div>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Target className="h-3 w-3" /> {entry.accuracy}% accuracy</span>
-                    <span className="flex items-center gap-1"><Flame className="h-3 w-3" /> {entry.streak} day streak</span>
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {entry.daysStudied} days</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4, fontSize: 12, color: "var(--os-text-dim)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Target size={12} /> {entry.accuracy}% accuracy</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Flame size={12} /> {entry.streak} day streak</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Calendar size={12} /> {entry.daysStudied} days</span>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold">{entry.score}</p>
-                  <p className="text-xs text-muted-foreground">pts</p>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ fontSize: 18, fontWeight: 700 }}>{entry.score}</p>
+                  <p style={{ fontSize: 11, color: "var(--os-text-dim)" }}>pts</p>
                 </div>
               </div>
             );

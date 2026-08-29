@@ -5,28 +5,24 @@ import { TodoProvider, useTodos, Todo, Deck } from "@/components/todo/todo-conte
 import {
   Plus, Trash2, Pencil, Check, X, Calendar, CheckSquare,
   ArrowUpDown, Flag, Clock, Layers, FolderOpen,
-  Circle, PanelLeftOpen, Link as LinkIcon
+  Circle, PanelLeftOpen
 } from "lucide-react";
 
 type FilterStatus = "all" | "active" | "completed";
 type SortBy = "created" | "dueDate" | "priority";
 
 const PRIORITY_CONFIG = {
-  low: { label: "Low", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  medium: { label: "Medium", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400" },
-  high: { label: "High", color: "bg-red-500/10 text-red-600 dark:text-red-400" },
+  low: { label: "Low", color: "#3b82f6" },
+  medium: { label: "Medium", color: "#f59e0b" },
+  high: { label: "High", color: "#ef4444" },
 };
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
-const DECK_COLORS = [
-  "#6366f1", "#8b5cf6", "#ec4899", "#ef4444", "#f59e0b",
-  "#10b981", "#06b6d4", "#3b82f6", "#f97316", "#64748b",
-];
+const DECK_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#ef4444", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#f97316", "#64748b"];
 
 function TodoApp() {
   const { todos, decks, addTodo, updateTodo, deleteTodo, toggleTodo, addDeck, renameDeck, deleteDeck } = useTodos();
-
   const [activeDeck, setActiveDeck] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [sortBy, setSortBy] = useState<SortBy>("created");
@@ -38,20 +34,14 @@ function TodoApp() {
   const [renamingDeckId, setRenamingDeckId] = useState<string | null>(null);
   const [renameDeckValue, setRenameDeckValue] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
-
-  const [newTodo, setNewTodo] = useState<{ title: string; description: string; priority: "low" | "medium" | "high"; dueDate: string }>({
-    title: "", description: "", priority: "medium", dueDate: "",
-  });
-  const [editValues, setEditValues] = useState<{ title: string; description: string; priority: "low" | "medium" | "high"; dueDate: string }>({
-    title: "", description: "", priority: "medium", dueDate: "",
-  });
+  const [newTodo, setNewTodo] = useState({ title: "", description: "", priority: "medium" as "low" | "medium" | "high", dueDate: "" });
+  const [editValues, setEditValues] = useState({ title: "", description: "", priority: "medium" as "low" | "medium" | "high", dueDate: "" });
 
   const filtered = useMemo(() => {
     let result = todos;
     if (activeDeck) result = result.filter((t) => t.deck === activeDeck);
     if (filter === "active") result = result.filter((t) => !t.completed);
     if (filter === "completed") result = result.filter((t) => t.completed);
-
     return [...result].sort((a, b) => {
       if (sortBy === "priority") return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
       if (sortBy === "dueDate") {
@@ -67,14 +57,7 @@ function TodoApp() {
   const deckCounts = useMemo(() => {
     const counts: Record<string, { total: number; active: number; completed: number }> = {};
     decks.forEach((d) => { counts[d.id] = { total: 0, active: 0, completed: 0 }; });
-    todos.forEach((t) => {
-      const d = counts[t.deck];
-      if (d) {
-        d.total++;
-        if (t.completed) d.completed++;
-        else d.active++;
-      }
-    });
+    todos.forEach((t) => { const d = counts[t.deck]; if (d) { d.total++; if (t.completed) d.completed++; else d.active++; } });
     return counts;
   }, [todos, decks]);
 
@@ -105,202 +88,123 @@ function TodoApp() {
   const handleAddDeck = () => {
     if (!newDeckName.trim()) return;
     addDeck(newDeckName.trim(), newDeckColor);
-    setNewDeckName("");
-    setNewDeckColor(DECK_COLORS[0]);
-    setShowNewDeck(false);
+    setNewDeckName(""); setNewDeckColor(DECK_COLORS[0]); setShowNewDeck(false);
   };
 
-  const startRenameDeck = (deck: Deck) => {
-    setRenamingDeckId(deck.id);
-    setRenameDeckValue(deck.name);
-  };
+  const startRenameDeck = (deck: Deck) => { setRenamingDeckId(deck.id); setRenameDeckValue(deck.name); };
+  const saveRenameDeck = () => { if (!renamingDeckId || !renameDeckValue.trim()) return; renameDeck(renamingDeckId, renameDeckValue.trim()); setRenamingDeckId(null); };
 
-  const saveRenameDeck = () => {
-    if (!renamingDeckId || !renameDeckValue.trim()) return;
-    renameDeck(renamingDeckId, renameDeckValue.trim());
-    setRenamingDeckId(null);
-  };
-
-  const isOverdue = (dueDate: string) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date(new Date().toDateString());
-  };
-
-  const formatDate = (d: string) => {
-    if (!d) return null;
-    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
-
+  const isOverdue = (dueDate: string) => dueDate ? new Date(dueDate) < new Date(new Date().toDateString()) : false;
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
   const activeDeckData = decks.find((d) => d.id === activeDeck);
 
   return (
-    <div className="flex h-screen relative">
-      {/* Mobile overlay */}
-      {showSidebar && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden" onClick={() => setShowSidebar(false)} />
-      )}
+    <div style={{ display: "flex", height: "100vh" }}>
+      {showSidebar && <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 30 }} onClick={() => setShowSidebar(false)} />}
 
       {/* Sidebar */}
-      <div className={`${showSidebar ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 border-r bg-background md:bg-card/30 backdrop-blur-sm flex flex-col flex-shrink-0 transition-transform`}>
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2 text-sm">
-            <Layers className="h-4 w-4" /> Decks
-          </h2>
-          <button onClick={() => setShowSidebar(false)} className="md:hidden p-1 hover:bg-muted rounded-lg transition-colors">
-            <X className="h-4 w-4" />
-          </button>
+      <div style={{
+        width: 260, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(15,21,35,0.4)", display: "flex", flexDirection: "column",
+        position: showSidebar ? "fixed" : undefined, inset: showSidebar ? 0 : undefined, zIndex: showSidebar ? 40 : undefined,
+        transform: showSidebar ? "translateX(0)" : undefined, transition: "transform 0.2s ease",
+      }}>
+        <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Layers size={16} /> Decks</h2>
         </div>
-        <div className="flex-1 overflow-auto p-2 space-y-0.5">
-          <button
-            onClick={() => setActiveDeck(null)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-colors ${
-              activeDeck === null ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <FolderOpen className="h-4 w-4 flex-shrink-0" />
-            <span className="flex-1 truncate">All Tasks</span>
-            <span className="text-xs opacity-70">{globalCounts.all}</span>
+        <div style={{ flex: 1, overflow: "auto", padding: 8 }}>
+          <button onClick={() => setActiveDeck(null)} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
+            background: activeDeck === null ? "var(--os-accent)" : "transparent", color: activeDeck === null ? "#fff" : "var(--os-text-secondary)",
+            border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", fontFamily: "Inter, sans-serif",
+          }}>
+            <FolderOpen size={16} /> <span style={{ flex: 1 }}>All Tasks</span>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>{globalCounts.all}</span>
           </button>
-
           {decks.map((deck) => (
             <div key={deck.id}>
               {renamingDeckId === deck.id ? (
-                <div className="flex items-center gap-1 px-2 py-1">
-                  <input
-                    value={renameDeckValue}
-                    onChange={(e) => setRenameDeckValue(e.target.value)}
-                    className="flex-1 px-2 py-1.5 rounded-lg border bg-background text-sm"
-                    autoFocus
-                    onKeyDown={(e) => { if (e.key === "Enter") saveRenameDeck(); if (e.key === "Escape") setRenamingDeckId(null); }}
-                    onBlur={saveRenameDeck}
-                  />
+                <div style={{ padding: "4px 8px" }}>
+                  <input className="glass-input" value={renameDeckValue} onChange={(e) => setRenameDeckValue(e.target.value)} autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") saveRenameDeck(); if (e.key === "Escape") setRenamingDeckId(null); }} onBlur={saveRenameDeck} style={{ fontSize: 13 }} />
                 </div>
               ) : (
-                <button
-                  onClick={() => setActiveDeck(deck.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left transition-colors group ${
-                    activeDeck === deck.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Circle className="h-3 w-3 flex-shrink-0" style={{ fill: deck.color, color: deck.color }} />
-                  <span className="flex-1 truncate">{deck.name}</span>
-                  <span className="text-xs opacity-70">{deckCounts[deck.id]?.active || 0}</span>
+                <button onClick={() => setActiveDeck(deck.id)} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
+                  background: activeDeck === deck.id ? "var(--os-accent)" : "transparent", color: activeDeck === deck.id ? "#fff" : "var(--os-text-secondary)",
+                  border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", fontFamily: "Inter, sans-serif",
+                }}>
+                  <Circle size={10} style={{ fill: deck.color, color: deck.color, flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{deck.name}</span>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>{deckCounts[deck.id]?.active || 0}</span>
                   {deck.id !== "general" && (
-                    <div className={`flex gap-0.5 ${activeDeck === deck.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); startRenameDeck(deck); }}
-                        className="p-0.5 hover:bg-background/20 rounded"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteDeck(deck.id); }}
-                        className="p-0.5 hover:bg-background/20 rounded text-red-400"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                    <div style={{ display: "flex", gap: 2 }}>
+                      <button onClick={(e) => { e.stopPropagation(); startRenameDeck(deck); }} style={{ background: "none", border: "none", padding: 4, color: "inherit", cursor: "pointer" }}><Pencil size={12} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteDeck(deck.id); }} style={{ background: "none", border: "none", padding: 4, color: "#ef4444", cursor: "pointer" }}><Trash2 size={12} /></button>
                     </div>
                   )}
                 </button>
               )}
             </div>
           ))}
-
           {showNewDeck ? (
-            <div className="px-2 py-1 space-y-2">
-              <input
-                value={newDeckName}
-                onChange={(e) => setNewDeckName(e.target.value)}
-                placeholder="Deck name"
-                className="w-full px-2 py-1.5 rounded-lg border bg-background text-sm"
-                autoFocus
-                onKeyDown={(e) => { if (e.key === "Enter") handleAddDeck(); if (e.key === "Escape") setShowNewDeck(false); }}
-              />
-              <div className="flex gap-1 flex-wrap">
+            <div style={{ padding: "8px", marginTop: 4 }}>
+              <input className="glass-input" value={newDeckName} onChange={(e) => setNewDeckName(e.target.value)} placeholder="Deck name" autoFocus style={{ fontSize: 13, marginBottom: 8 }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddDeck(); if (e.key === "Escape") setShowNewDeck(false); }} />
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
                 {DECK_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setNewDeckColor(c)}
-                    className={`w-5 h-5 rounded-full border-2 transition-transform ${newDeckColor === c ? "border-foreground scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: c }}
-                  />
+                  <button key={c} onClick={() => setNewDeckColor(c)} style={{
+                    width: 20, height: 20, borderRadius: "50%", border: newDeckColor === c ? "2px solid #fff" : "2px solid transparent",
+                    background: c, cursor: "pointer",
+                  }} />
                 ))}
               </div>
-              <div className="flex gap-1">
-                <button onClick={handleAddDeck} className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-xs font-medium">Create</button>
-                <button onClick={() => setShowNewDeck(false)} className="px-3 py-1 bg-muted rounded-lg text-xs">Cancel</button>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={handleAddDeck} className="glass-btn glass-btn-primary" style={{ padding: "6px 14px", fontSize: 12 }}>Create</button>
+                <button onClick={() => setShowNewDeck(false)} className="glass-btn glass-btn-ghost" style={{ padding: "6px 14px", fontSize: 12 }}>Cancel</button>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowNewDeck(true)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Deck</span>
+            <button onClick={() => setShowNewDeck(true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", fontSize: 13, fontFamily: "Inter, sans-serif" }}>
+              <Plus size={16} /> New Deck
             </button>
           )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowSidebar(true)} className="md:hidden p-2 hover:bg-muted rounded-xl transition-colors">
-                <PanelLeftOpen className="h-5 w-5" />
-              </button>
+      {/* Main */}
+      <div style={{ flex: 1, overflow: "auto" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
+          <div className="flex-between" style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => setShowSidebar(true)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)" }} className="mobile-menu-btn"><PanelLeftOpen size={20} /></button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
-                  {activeDeckData ? (
-                    <>
-                      <Circle className="h-6 w-6" style={{ fill: activeDeckData.color, color: activeDeckData.color }} />
-                      {activeDeckData.name}
-                    </>
-                  ) : (
-                    <>
-                      <CheckSquare className="h-7 w-7" /> Tasks
-                    </>
-                  )}
+                <h1 className="page-title" style={{ fontSize: 24 }}>
+                  {activeDeckData ? <><Circle size={22} style={{ fill: activeDeckData.color, color: activeDeckData.color }} /> {activeDeckData.name}</> : <><CheckSquare size={24} /> Tasks</>}
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {activeDeck ? deckCounts[activeDeck]?.active || 0 : globalCounts.active} active, {" "}
-                  {activeDeck ? deckCounts[activeDeck]?.completed || 0 : globalCounts.completed} completed
+                <p className="text-secondary text-sm" style={{ marginTop: 2 }}>
+                  {activeDeck ? deckCounts[activeDeck]?.active || 0 : globalCounts.active} active, {activeDeck ? deckCounts[activeDeck]?.completed || 0 : globalCounts.completed} completed
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add Task</span>
+            <button onClick={() => setShowAddForm(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Plus size={16} /> <span>Add Task</span>
             </button>
           </div>
 
-          {/* Filters & Sort */}
-          <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-            <div className="flex items-center gap-1 border rounded-xl p-1 bg-muted/30">
+          {/* Filters */}
+          <div className="flex-between" style={{ marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
               {(["all", "active", "completed"] as FilterStatus[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    filter === f ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
+                <button key={f} onClick={() => setFilter(f)} style={{
+                  padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                  background: filter === f ? "rgba(255,255,255,0.08)" : "transparent", color: filter === f ? "var(--os-text-primary)" : "var(--os-text-dim)",
+                }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>
               ))}
             </div>
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="px-3 py-1.5 rounded-xl border bg-background text-sm"
-              >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <ArrowUpDown size={14} style={{ color: "var(--os-text-dim)" }} />
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="glass-input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}>
                 <option value="created">Date Created</option>
                 <option value="dueDate">Due Date</option>
                 <option value="priority">Priority</option>
@@ -310,174 +214,80 @@ function TodoApp() {
 
           {/* Add Form */}
           {showAddForm && (
-            <div className="mb-6 p-5 rounded-2xl border bg-card backdrop-blur-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">New Task</h3>
-                <button onClick={() => setShowAddForm(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
+            <div className="glass-panel" style={{ marginBottom: 20 }}>
+              <div className="flex-between" style={{ marginBottom: 12 }}>
+                <h3 style={{ fontWeight: 600 }}>New Task</h3>
+                <button onClick={() => setShowAddForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)" }}><X size={18} /></button>
               </div>
-              <input
-                type="text"
-                value={newTodo.title}
-                onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                placeholder="Task title"
-                className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm"
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              />
-              <textarea
-                value={newTodo.description}
-                onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
-                placeholder="Description (optional)"
-                className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm resize-none h-20"
-              />
-              <div className="flex gap-3 items-center flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Flag className="h-4 w-4 text-muted-foreground" />
-                  <select
-                    value={newTodo.priority}
-                    onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value as "low" | "medium" | "high" })}
-                    className="px-2 py-1.5 rounded-xl border bg-background text-sm"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+              <input className="glass-input" value={newTodo.title} onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })} placeholder="Task title" autoFocus onKeyDown={(e) => e.key === "Enter" && handleAdd()} style={{ marginBottom: 10 }} />
+              <textarea className="glass-input" value={newTodo.description} onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })} placeholder="Description (optional)" style={{ height: 80, resize: "none", marginBottom: 10 }} />
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Flag size={14} style={{ color: "var(--os-text-dim)" }} />
+                  <select value={newTodo.priority} onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value as any })} className="glass-input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}>
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="date"
-                    value={newTodo.dueDate}
-                    onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
-                    className="px-2 py-1.5 rounded-xl border bg-background text-sm"
-                  />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Calendar size={14} style={{ color: "var(--os-text-dim)" }} />
+                  <input type="date" value={newTodo.dueDate} onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })} className="glass-input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} />
                 </div>
-                {activeDeck && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Circle className="h-2.5 w-2.5" style={{ fill: activeDeckData?.color, color: activeDeckData?.color }} />
-                    {activeDeckData?.name}
-                  </span>
-                )}
               </div>
-              <div className="flex gap-2">
-                <button onClick={handleAdd} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
-                  Add Task
-                </button>
-                <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-muted rounded-xl text-sm hover:bg-muted/80 transition-colors">
-                  Cancel
-                </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={handleAdd} className="glass-btn glass-btn-primary">Add Task</button>
+                <button onClick={() => setShowAddForm(false)} className="glass-btn glass-btn-ghost">Cancel</button>
               </div>
             </div>
           )}
 
-          {/* Task List */}
+          {/* Tasks */}
           {filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-                <CheckSquare className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-lg font-semibold mb-1">
-                {filter === "all" ? "No tasks yet" : `No ${filter} tasks`}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {filter === "all" ? "Add your first task above!" : "Try a different filter."}
-              </p>
+            <div className="empty-state">
+              <div className="empty-state-icon"><CheckSquare size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+              <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{filter === "all" ? "No tasks yet" : `No ${filter} tasks`}</h2>
+              <p className="text-secondary text-sm">{filter === "all" ? "Add your first task above!" : "Try a different filter."}</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {filtered.map((todo) => {
                 const todoDeck = decks.find((d) => d.id === todo.deck);
                 return (
-                  <div
-                    key={todo.id}
-                    className={`group p-4 rounded-2xl border bg-card hover:bg-muted/30 transition-all duration-200 ${
-                      todo.completed ? "opacity-60" : ""
-                    }`}
-                  >
+                  <div key={todo.id} className="glass-card" style={{ padding: 16, opacity: todo.completed ? 0.5 : 1 }}>
                     {editingId === todo.id ? (
-                      <div className="space-y-3">
-                        <input
-                          type="text"
-                          value={editValues.title}
-                          onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm font-medium"
-                          autoFocus
-                          onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                        />
-                        <textarea
-                          value={editValues.description}
-                          onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
-                          placeholder="Description (optional)"
-                          className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm resize-none h-16"
-                        />
-                        <div className="flex gap-3 items-center flex-wrap">
-                          <select
-                            value={editValues.priority}
-                            onChange={(e) => setEditValues({ ...editValues, priority: e.target.value as "low" | "medium" | "high" })}
-                            className="px-2 py-1.5 rounded-xl border bg-background text-sm"
-                          >
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <input className="glass-input" value={editValues.title} onChange={(e) => setEditValues({ ...editValues, title: e.target.value })} autoFocus onKeyDown={(e) => e.key === "Enter" && saveEdit()} />
+                        <textarea className="glass-input" value={editValues.description} onChange={(e) => setEditValues({ ...editValues, description: e.target.value })} placeholder="Description" style={{ height: 60, resize: "none" }} />
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <select value={editValues.priority} onChange={(e) => setEditValues({ ...editValues, priority: e.target.value as any })} className="glass-input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}>
+                            <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
                           </select>
-                          <input
-                            type="date"
-                            value={editValues.dueDate}
-                            onChange={(e) => setEditValues({ ...editValues, dueDate: e.target.value })}
-                            className="px-2 py-1.5 rounded-xl border bg-background text-sm"
-                          />
-                          <div className="flex gap-1 ml-auto">
-                            <button onClick={saveEdit} className="p-1.5 hover:bg-green-500/10 rounded-lg text-green-600"><Check className="h-4 w-4" /></button>
-                            <button onClick={() => setEditingId(null)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-600"><X className="h-4 w-4" /></button>
+                          <input type="date" value={editValues.dueDate} onChange={(e) => setEditValues({ ...editValues, dueDate: e.target.value })} className="glass-input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} />
+                          <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                            <button onClick={saveEdit} style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={16} /></button>
+                            <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><X size={16} /></button>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-3">
-                        <button
-                          onClick={() => toggleTodo(todo.id)}
-                          className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
-                            todo.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30 hover:border-primary"
-                          }`}
-                        >
-                          {todo.completed && <Check className="h-3 w-3" />}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`font-medium ${todo.completed ? "line-through text-muted-foreground" : ""}`}>
-                              {todo.title}
-                            </span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-md ${PRIORITY_CONFIG[todo.priority].color}`}>
-                              {PRIORITY_CONFIG[todo.priority].label}
-                            </span>
-                            {!activeDeck && todoDeck && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Circle className="h-2 w-2" style={{ fill: todoDeck.color, color: todoDeck.color }} />
-                                {todoDeck.name}
-                              </span>
-                            )}
-                            {todo.dueDate && (
-                              <span className={`text-xs flex items-center gap-1 ${
-                                isOverdue(todo.dueDate) && !todo.completed ? "text-red-500" : "text-muted-foreground"
-                              }`}>
-                                <Clock className="h-3 w-3" />
-                                {formatDate(todo.dueDate)}
-                              </span>
-                            )}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                        <button onClick={() => toggleTodo(todo.id)} style={{
+                          marginTop: 2, width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                          border: `2px solid ${todo.completed ? "var(--os-accent)" : "rgba(255,255,255,0.15)"}`,
+                          background: todo.completed ? "var(--os-accent)" : "transparent",
+                          color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>{todo.completed && <Check size={12} />}</button>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 500, textDecoration: todo.completed ? "line-through" : "none", color: todo.completed ? "var(--os-text-dim)" : "var(--os-text-primary)" }}>{todo.title}</span>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: `${PRIORITY_CONFIG[todo.priority].color}15`, color: PRIORITY_CONFIG[todo.priority].color }}>{PRIORITY_CONFIG[todo.priority].label}</span>
+                            {!activeDeck && todoDeck && <span className="text-xs text-dim" style={{ display: "flex", alignItems: "center", gap: 4 }}><Circle size={8} style={{ fill: todoDeck.color, color: todoDeck.color }} /> {todoDeck.name}</span>}
+                            {todo.dueDate && <span className="text-xs" style={{ color: isOverdue(todo.dueDate) && !todo.completed ? "#ef4444" : "var(--os-text-dim)", display: "flex", alignItems: "center", gap: 4 }}><Clock size={12} /> {formatDate(todo.dueDate)}</span>}
                           </div>
-                          {todo.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{todo.description}</p>
-                          )}
+                          {todo.description && <p className="text-secondary text-sm" style={{ marginTop: 4 }}>{todo.description}</p>}
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => startEdit(todo)} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => deleteTodo(todo.id)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                        <div style={{ display: "flex", gap: 4, opacity: 0.4, transition: "opacity 0.2s" }}>
+                          <button onClick={() => startEdit(todo)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", padding: 4 }}><Pencil size={14} /></button>
+                          <button onClick={() => deleteTodo(todo.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4 }}><Trash2 size={14} /></button>
                         </div>
                       </div>
                     )}
@@ -493,9 +303,5 @@ function TodoApp() {
 }
 
 export default function TodoPage() {
-  return (
-    <TodoProvider>
-      <TodoApp />
-    </TodoProvider>
-  );
+  return <TodoProvider><TodoApp /></TodoProvider>;
 }

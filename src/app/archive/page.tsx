@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Pencil, Check, X, Trophy, Calendar, ExternalLink } from "lucide-react";
+import { Trophy, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink } from "lucide-react";
 
 interface ArchiveEntry {
   id: string;
@@ -16,9 +16,7 @@ function loadEntries(): ArchiveEntry[] {
   try {
     const stored = localStorage.getItem("archive_entries");
     return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function saveEntries(entries: ArchiveEntry[]) {
@@ -41,18 +39,14 @@ export default function ArchivePage() {
 
   const handleAdminLogin = () => {
     const password = prompt("Enter admin password:");
-    if (password === "SDX102310") {
-      sessionStorage.setItem("archive_admin", "SDX102310");
-      setIsAdmin(true);
-    }
+    if (password === "SDX102310") { sessionStorage.setItem("archive_admin", "SDX102310"); setIsAdmin(true); }
   };
 
   const addEntry = () => {
     if (!newEntry.competition.trim()) return;
     const entry: ArchiveEntry = { id: Date.now().toString(), ...newEntry };
     const updated = [...entries, entry];
-    setEntries(updated);
-    saveEntries(updated);
+    setEntries(updated); saveEntries(updated);
     setNewEntry({ competition: "", competitionUrl: "", type: "", date: "" });
     setShowAddForm(false);
   };
@@ -60,8 +54,7 @@ export default function ArchivePage() {
   const deleteEntry = (id: string) => {
     if (!confirm("Delete this entry?")) return;
     const updated = entries.filter((e) => e.id !== id);
-    setEntries(updated);
-    saveEntries(updated);
+    setEntries(updated); saveEntries(updated);
   };
 
   const startEdit = (entry: ArchiveEntry) => {
@@ -71,193 +64,108 @@ export default function ArchivePage() {
 
   const saveEdit = (id: string) => {
     const updated = entries.map((e) => (e.id === id ? { ...e, ...editValues } : e));
-    setEntries(updated);
-    saveEntries(updated);
-    setEditingId(null);
+    setEntries(updated); saveEntries(updated); setEditingId(null);
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
-              <Trophy className="h-7 w-7" /> Archive
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">Competition history and records</p>
-          </div>
-          {isAdmin ? (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" /> Add Entry
-            </button>
-          ) : (
-            <button
-              onClick={handleAdminLogin}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-card hover:bg-muted text-sm text-muted-foreground transition-colors"
-            >
-              <Pencil className="h-3.5 w-3.5" /> Admin
-            </button>
-          )}
+    <div className="page-container">
+      <div className="flex-between" style={{ marginBottom: 32 }}>
+        <div>
+          <h1 className="page-title"><Trophy size={28} /> Archive</h1>
+          <p className="page-subtitle">Competition history and records</p>
         </div>
-
-        {/* Add Form */}
-        {showAddForm && (
-          <div className="mb-6 p-5 rounded-2xl border bg-card backdrop-blur-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">New Entry</h3>
-              <button onClick={() => setShowAddForm(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <input
-                type="text"
-                value={newEntry.competition}
-                onChange={(e) => setNewEntry({ ...newEntry, competition: e.target.value })}
-                placeholder="Competition"
-                className="px-3 py-2 rounded-xl border bg-background text-sm"
-                autoFocus
-              />
-              <input
-                type="url"
-                value={newEntry.competitionUrl}
-                onChange={(e) => setNewEntry({ ...newEntry, competitionUrl: e.target.value })}
-                placeholder="Link (optional)"
-                className="px-3 py-2 rounded-xl border bg-background text-sm"
-              />
-              <input
-                type="text"
-                value={newEntry.type}
-                onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value })}
-                placeholder="Type"
-                className="px-3 py-2 rounded-xl border bg-background text-sm"
-              />
-              <input
-                type="date"
-                value={newEntry.date}
-                onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                className="px-3 py-2 rounded-xl border bg-background text-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={addEntry} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
-                Add
-              </button>
-              <button onClick={() => setShowAddForm(false)} className="px-4 py-2 bg-muted rounded-xl text-sm hover:bg-muted/80 transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Entries */}
-        {entries.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <Trophy className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-lg font-semibold mb-1">No archive entries yet</h2>
-            <p className="text-sm text-muted-foreground">Competition records will appear here.</p>
-          </div>
+        {isAdmin ? (
+          <button onClick={() => setShowAddForm(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Plus size={16} /> Add Entry
+          </button>
         ) : (
-          <div className="rounded-2xl border bg-card overflow-hidden backdrop-blur-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Competition</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
-                    {isAdmin && <th className="w-20 px-5 py-3"></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry) => (
-                    <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                      {editingId === entry.id ? (
-                        <>
-                          <td className="px-5 py-3">
-                            <input
-                              type="text"
-                              value={editValues.competition}
-                              onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })}
-                              className="w-full px-2 py-1 rounded-lg border bg-background text-sm"
-                            />
-                          </td>
-                          <td className="px-5 py-3">
-                            <input
-                              type="url"
-                              value={editValues.competitionUrl}
-                              onChange={(e) => setEditValues({ ...editValues, competitionUrl: e.target.value })}
-                              placeholder="Link"
-                              className="w-full px-2 py-1 rounded-lg border bg-background text-sm"
-                            />
-                          </td>
-                          <td className="px-5 py-3">
-                            <input
-                              type="text"
-                              value={editValues.type}
-                              onChange={(e) => setEditValues({ ...editValues, type: e.target.value })}
-                              className="w-full px-2 py-1 rounded-lg border bg-background text-sm"
-                            />
-                          </td>
-                          <td className="px-5 py-3">
-                            <input
-                              type="date"
-                              value={editValues.date}
-                              onChange={(e) => setEditValues({ ...editValues, date: e.target.value })}
-                              className="w-full px-2 py-1 rounded-lg border bg-background text-sm"
-                            />
-                          </td>
-                          <td className="px-5 py-3">
-                            <div className="flex gap-1">
-                              <button onClick={() => saveEdit(entry.id)} className="p-1 hover:bg-muted rounded-lg text-green-600"><Check className="h-4 w-4" /></button>
-                              <button onClick={() => setEditingId(null)} className="p-1 hover:bg-muted rounded-lg text-red-600"><X className="h-4 w-4" /></button>
-                            </div>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-5 py-3 text-sm font-medium">
-                            {entry.competitionUrl ? (
-                              <a href={entry.competitionUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                                {entry.competition} <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
-                              entry.competition
-                            )}
-                          </td>
-                          <td className="px-5 py-3 text-sm text-muted-foreground">{entry.type}</td>
-                          <td className="px-5 py-3 text-sm text-muted-foreground flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {entry.date || "—"}
-                          </td>
-                          {isAdmin && (
-                            <td className="px-5 py-3">
-                              <div className="flex gap-1">
-                                <button onClick={() => startEdit(entry)} className="p-1 hover:bg-muted rounded-lg text-muted-foreground">
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </button>
-                                <button onClick={() => deleteEntry(entry.id)} className="p-1 hover:bg-muted rounded-lg text-red-500">
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <button onClick={handleAdminLogin} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Pencil size={14} /> Admin
+          </button>
         )}
       </div>
+
+      {showAddForm && (
+        <div className="glass-panel" style={{ marginBottom: 24 }}>
+          <div className="flex-between" style={{ marginBottom: 16 }}>
+            <h3 style={{ fontWeight: 600 }}>New Entry</h3>
+            <button onClick={() => setShowAddForm(false)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={18} /></button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
+            <input className="glass-input" value={newEntry.competition} onChange={(e) => setNewEntry({ ...newEntry, competition: e.target.value })} placeholder="Competition" autoFocus />
+            <input className="glass-input" value={newEntry.competitionUrl} onChange={(e) => setNewEntry({ ...newEntry, competitionUrl: e.target.value })} placeholder="Link (optional)" />
+            <input className="glass-input" value={newEntry.type} onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value })} placeholder="Type" />
+            <input className="glass-input" type="date" value={newEntry.date} onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={addEntry} className="glass-btn glass-btn-primary">Add</button>
+            <button onClick={() => setShowAddForm(false)} className="glass-btn glass-btn-ghost">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {entries.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon"><Trophy size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No archive entries yet</h2>
+          <p className="text-secondary text-sm">Competition records will appear here.</p>
+        </div>
+      ) : (
+        <div className="glass-panel" style={{ padding: 0, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
+                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
+                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</th>
+                {isAdmin && <th style={{ width: 80 }}></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  {editingId === entry.id ? (
+                    <>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competitionUrl} onChange={(e) => setEditValues({ ...editValues, competitionUrl: e.target.value })} placeholder="Link" /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.type} onChange={(e) => setEditValues({ ...editValues, type: e.target.value })} /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="date" value={editValues.date} onChange={(e) => setEditValues({ ...editValues, date: e.target.value })} /></td>
+                      <td style={{ padding: "10px 20px" }}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button onClick={() => saveEdit(entry.id)} style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={16} /></button>
+                          <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><X size={16} /></button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500 }}>
+                        {entry.competitionUrl ? (
+                          <a href={entry.competitionUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                            {entry.competition} <ExternalLink size={12} />
+                          </a>
+                        ) : entry.competition}
+                      </td>
+                      <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)" }}>{entry.type}</td>
+                      <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <Calendar size={14} /> {entry.date || "—"}
+                      </td>
+                      {isAdmin && (
+                        <td style={{ padding: "14px 20px" }}>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button onClick={() => startEdit(entry)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={14} /></button>
+                            <button onClick={() => deleteEntry(entry.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
+                          </div>
+                        </td>
+                      )}
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

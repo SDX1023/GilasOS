@@ -11,8 +11,8 @@ export default function NotePage({ params }: { params: Promise<{ course: string;
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="page-container">
+        <p className="text-secondary">Loading...</p>
       </div>
     );
   }

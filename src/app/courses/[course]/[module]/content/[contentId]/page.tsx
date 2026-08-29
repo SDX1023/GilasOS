@@ -18,54 +18,38 @@ export default function ContentViewerPage({
   const contentRef = useRef<HTMLDivElement>(null);
   const [admin, setAdmin] = useState(false);
 
-  useEffect(() => {
-    setAdmin(isAdmin());
-  }, []);
+  useEffect(() => { setAdmin(isAdmin()); }, []);
 
   const content = contents.find((c) => c.id === contentId);
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
   }
 
   if (!content || !admin) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground">Content not found.</p>
-      </div>
-    );
+    return <div className="page-container"><p className="text-secondary">Content not found.</p></div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-          <Link href="/courses" className="hover:text-foreground">Courses</Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseSlug}`} className="hover:text-foreground">{courseSlug}</Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link href={`/courses/${courseSlug}/${moduleSlug}`} className="hover:text-foreground">{moduleSlug}</Link>
-          <ChevronRight className="h-4 w-4" />
+    <div className="page-container" style={{ maxWidth: 800 }}>
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-dim)", marginBottom: 8 }}>
+          <Link href="/courses" style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>Courses</Link>
+          <ChevronRight size={14} />
+          <Link href={`/courses/${courseSlug}`} style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>{courseSlug}</Link>
+          <ChevronRight size={14} />
+          <Link href={`/courses/${courseSlug}/${moduleSlug}`} style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>{moduleSlug}</Link>
+          <ChevronRight size={14} />
           <span>{content.title}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">{content.title}</h1>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/editor/content?course=${courseSlug}&module=${moduleSlug}&id=${content.id}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print"
-            >
-              <Pencil className="h-4 w-4" /> Edit
+        <div className="flex-between">
+          <h1 className="page-title">{content.title}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href={`/editor/content?course=${courseSlug}&module=${moduleSlug}&id=${content.id}`} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+              <Pencil size={14} /> Edit
             </Link>
-            <button
-              onClick={() => contentRef.current && exportToPdf(contentRef.current, content.title)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-muted text-sm no-print"
-            >
-              <Download className="h-4 w-4" /> Save PDF
+            <button onClick={() => contentRef.current && exportToPdf(contentRef.current, content.title)} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+              <Download size={14} /> Save PDF
             </button>
           </div>
         </div>
