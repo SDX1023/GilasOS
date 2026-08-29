@@ -125,22 +125,45 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#1a1a2e] rounded-2xl border border-white/10 shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎵</span>
-            <h2 className="text-lg font-semibold text-white">What are you listening to?</h2>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 10000,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      <div style={{
+        background: "var(--os-bg-secondary)", borderRadius: 16,
+        border: "1px solid var(--os-glass-border)", boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+        width: "100%", maxWidth: 480, maxHeight: "80vh", overflow: "hidden",
+      }}>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 24px", borderBottom: "1px solid var(--os-glass-border)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 24 }}>&#127925;</span>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--os-text-primary)", margin: 0 }}>
+              What are you listening to?
+            </h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-            <X className="w-5 h-5 text-white/60" />
+          <button onClick={onClose} style={{
+            padding: 6, borderRadius: 8, background: "none", border: "none",
+            cursor: "pointer", color: "var(--os-text-secondary)", display: "flex",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-4 border-b border-white/10">
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+        <div style={{ padding: 16, borderBottom: "1px solid var(--os-glass-border)" }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ flex: 1, position: "relative" }}>
+              <Search size={16} style={{
+                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                color: "var(--os-text-dim)",
+              }} />
               <input
                 type="text"
                 value={query}
@@ -150,18 +173,31 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Search for a song or artist..."
-                className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-[#1DB954] transition-colors"
                 autoFocus
+                style={{
+                  width: "100%", padding: "10px 12px 10px 36px",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid var(--os-glass-border)",
+                  borderRadius: 10, color: "var(--os-text-primary)", fontSize: 14,
+                  outline: "none", boxSizing: "border-box",
+                }}
               />
             </div>
             <button
               onClick={() => searchSpotify(query)}
               disabled={loading || !query.trim()}
-              className="px-4 py-2.5 bg-[#1DB954] hover:bg-[#1ed760] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-medium transition-colors whitespace-nowrap"
+              style={{
+                padding: "10px 16px", background: "#1DB954", border: "none", borderRadius: 10,
+                color: "#fff", fontWeight: 500, fontSize: 13, cursor: loading || !query.trim() ? "not-allowed" : "pointer",
+                opacity: loading || !query.trim() ? 0.5 : 1, whiteSpace: "nowrap",
+                fontFamily: "Inter, sans-serif",
+              }}
             >
               {loading ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    width: 16, height: 16, border: "2px solid #fff", borderTopColor: "transparent",
+                    borderRadius: "50%", animation: "spin 0.6s linear infinite", display: "inline-block",
+                  }} />
                   Loading...
                 </span>
               ) : (
@@ -172,62 +208,100 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
         </div>
 
         {error && results.length === 0 && !loading && (
-          <div className="p-4">
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
-              <span className="text-3xl block mb-2">🔍</span>
-              <p className="text-red-400 font-medium">{error}</p>
-              <p className="text-white/40 text-sm mt-1">Try searching for a different song or artist</p>
+          <div style={{ padding: 16 }}>
+            <div style={{
+              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: 12, padding: 16, textAlign: "center",
+            }}>
+              <span style={{ fontSize: 32, display: "block", marginBottom: 8 }}>&#128269;</span>
+              <p style={{ color: "#f87171", fontWeight: 500, margin: 0 }}>{error}</p>
+              <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 4 }}>
+                Try searching for a different song or artist
+              </p>
             </div>
           </div>
         )}
 
         {loading && (
-          <div className="p-4">
-            <div className="flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-4">
-                <div className="animate-spin w-10 h-10 border-[3px] border-[#1DB954] border-t-transparent rounded-full" />
-                <p className="text-white/60 text-sm">Searching Spotify...</p>
+          <div style={{ padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                <div style={{
+                  width: 40, height: 40, border: "3px solid #1DB954", borderTopColor: "transparent",
+                  borderRadius: "50%", animation: "spin 0.6s linear infinite",
+                }} />
+                <p style={{ color: "var(--os-text-secondary)", fontSize: 13, margin: 0 }}>
+                  Searching Spotify...
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {!loading && results.length > 0 && (
-          <div className="p-4 overflow-y-auto max-h-96">
+          <div style={{ padding: 16, overflowY: "auto", maxHeight: 384 }}>
             {results.map((track) => (
               <div
                 key={track.id}
                 onClick={() => handleSelect(track)}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition-colors group"
+                style={{
+                  display: "flex", alignItems: "center", gap: 16, padding: 12,
+                  borderRadius: 12, cursor: "pointer", transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--os-glass-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {track.albumArt ? (
-                  <img src={track.albumArt} alt={track.album} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                  <img src={track.albumArt} alt={track.album} style={{
+                    width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0,
+                  }} />
                 ) : (
-                  <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center text-2xl flex-shrink-0">🎵</div>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 8, background: "rgba(255,255,255,0.1)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 24, flexShrink: 0,
+                  }}>&#127925;</div>
                 )}
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium truncate">{track.name}</p>
-                  <p className="text-white/60 text-sm truncate">{track.artist}</p>
-                  <p className="text-white/40 text-xs truncate">{track.album}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    color: "var(--os-text-primary)", fontWeight: 500,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0,
+                  }}>{track.name}</p>
+                  <p style={{
+                    color: "var(--os-text-secondary)", fontSize: 13,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0",
+                  }}>{track.artist}</p>
+                  <p style={{
+                    color: "var(--os-text-dim)", fontSize: 12,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0",
+                  }}>{track.album}</p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   {track.preview && (
                     <button
                       onClick={(e) => handlePlayPreview(e, track)}
-                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      style={{
+                        padding: 8, borderRadius: "50%", background: "rgba(255,255,255,0.1)",
+                        border: "none", cursor: "pointer", display: "flex", alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
                       {isPlaying && audioRef.current?.src.includes(track.preview) ? (
-                        <Pause className="w-4 h-4 text-white" />
+                        <Pause size={16} color="var(--os-text-primary)" />
                       ) : (
-                        <Play className="w-4 h-4 text-white" />
+                        <Play size={16} color="var(--os-text-primary)" />
                       )}
                     </button>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleSelect(track); }}
-                    className="px-3 py-1.5 text-sm bg-[#1DB954] hover:bg-[#1ed760] rounded-lg text-white font-medium transition-colors"
+                    style={{
+                      padding: "6px 12px", fontSize: 13, background: "#1DB954",
+                      border: "none", borderRadius: 8, color: "#fff", fontWeight: 500,
+                      cursor: "pointer", fontFamily: "Inter, sans-serif",
+                    }}
                   >
                     Select
                   </button>
@@ -238,26 +312,35 @@ export function SpotifySearch({ onSelect, onClose }: SpotifySearchProps) {
         )}
 
         {!loading && results.length === 0 && !error && query && (
-          <div className="p-4">
-            <div className="text-center py-12">
-              <span className="text-4xl block mb-3">🎵</span>
-              <p className="text-white/60">No results found</p>
-              <p className="text-white/40 text-sm mt-1">Try searching for a different song</p>
+          <div style={{ padding: 16 }}>
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>&#127925;</span>
+              <p style={{ color: "var(--os-text-secondary)", margin: 0 }}>No results found</p>
+              <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 4 }}>
+                Try searching for a different song
+              </p>
             </div>
           </div>
         )}
 
         {!loading && results.length === 0 && !error && !query && (
-          <div className="p-4">
-            <div className="text-center py-12">
-              <span className="text-4xl block mb-3">🔍</span>
-              <p className="text-white/60">Search for a song to add to your bio</p>
-              <p className="text-white/40 text-sm mt-1">Type a song name or artist above</p>
+          <div style={{ padding: 16 }}>
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>&#128269;</span>
+              <p style={{ color: "var(--os-text-secondary)", margin: 0 }}>
+                Search for a song to add to your bio
+              </p>
+              <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 4 }}>
+                Type a song name or artist above
+              </p>
             </div>
           </div>
         )}
 
-        <div className="px-6 py-3 border-b border-white/10 text-xs text-white/40 text-center">
+        <div style={{
+          padding: "12px 24px", borderTop: "1px solid var(--os-glass-border)",
+          fontSize: 12, color: "var(--os-text-dim)", textAlign: "center",
+        }}>
           Powered by Spotify
         </div>
       </div>

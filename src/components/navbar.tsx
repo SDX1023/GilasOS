@@ -25,13 +25,16 @@ const toolItems = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { user, username, isAdmin, signOut } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [showMobile, setShowMobile] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => { setShowMobile(false); setShowTools(false); }, [pathname]);
 
@@ -52,8 +55,8 @@ export function Navbar() {
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 50,
-      borderBottom: "1px solid rgba(255,255,255,0.06)",
-      background: "rgba(15,21,35,0.85)", backdropFilter: "blur(20px)",
+      borderBottom: "1px solid var(--os-glass-border)",
+      background: "var(--os-glass)", backdropFilter: "blur(20px)",
     }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
@@ -136,7 +139,7 @@ export function Navbar() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme((resolvedTheme || theme) === "dark" ? "light" : "dark")}
               style={{
                 padding: 6, borderRadius: 8, background: "none", border: "none",
                 color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
@@ -144,8 +147,14 @@ export function Navbar() {
               }}
               title="Toggle theme"
             >
-              <Sun size={15} style={{ display: theme === "dark" ? "block" : "none" }} />
-              <Moon size={15} style={{ display: theme === "light" ? "block" : "none" }} />
+              {mounted ? (
+                <>
+                  <Sun size={15} style={{ display: (resolvedTheme || theme) === "dark" ? "block" : "none" }} />
+                  <Moon size={15} style={{ display: (resolvedTheme || theme) === "light" ? "block" : "none" }} />
+                </>
+              ) : (
+                <Sun size={15} />
+              )}
             </button>
 
             <div style={{ position: "relative" }} ref={menuRef}>
@@ -272,6 +281,26 @@ export function Navbar() {
               <Shield size={18} /> Admin
             </Link>
           )}
+          <button
+            onClick={() => setTheme((resolvedTheme || theme) === "dark" ? "light" : "dark")}
+            style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+              borderRadius: 10, fontSize: 14, fontWeight: 500,
+              background: "transparent", border: "none", width: "100%",
+              color: "var(--os-text-dim)", cursor: "pointer", textAlign: "left",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            {mounted ? (
+              <>
+                <Sun size={18} style={{ display: (resolvedTheme || theme) === "dark" ? "block" : "none" }} />
+                <Moon size={18} style={{ display: (resolvedTheme || theme) === "light" ? "block" : "none" }} />
+              </>
+            ) : (
+              <Sun size={18} />
+            )}
+            {(resolvedTheme || theme) === "dark" ? "Light Mode" : "Dark Mode"}
+          </button>
         </div>
       )}
     </nav>

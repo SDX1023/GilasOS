@@ -149,6 +149,12 @@ body {
   50% { transform: translateY(-8px); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+}
+
 @keyframes pulseGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(var(--os-accent-rgb), 0.2); }
   50% { box-shadow: 0 0 40px rgba(var(--os-accent-rgb), 0.4); }
