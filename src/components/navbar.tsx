@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Timer, FileText, Sun, Moon, Trophy, CheckSquare, LogIn, LogOut, User, Settings, Menu, X, Shield, PenTool, Link as LinkIcon, Users } from "lucide-react";
+import { BookOpen, PenTool, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
@@ -10,12 +10,6 @@ import { useState, useEffect, useRef } from "react";
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/study", label: "Study", icon: PenTool },
-  { href: "/tools/pomodoro", label: "Pomodoro", icon: Timer },
-  { href: "/tools/pdf-to-flashcards", label: "PDF to Cards", icon: FileText },
-  { href: "/tools/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/archive", label: "Archive", icon: Trophy },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/shared", label: "Shared", icon: LinkIcon },
   { href: "/friends", label: "Friends", icon: Users },
 ];
 
@@ -48,53 +42,56 @@ export function Navbar() {
       background: "rgba(15,21,35,0.85)", backdropFilter: "blur(20px)",
     }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 18, textDecoration: "none", color: "var(--os-text-primary)", flexShrink: 0 }}>
-            <img src="/logo.png" alt="GilasOS" style={{ height: 32, width: 32, objectFit: "contain" }} />
-            <span>GilasOS</span>
-          </Link>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 2 }} className="nav-desktop">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="nav-link"
-                style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8,
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
+          {/* Left: Logo + Nav */}
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 16, textDecoration: "none", color: "var(--os-text-primary)", flexShrink: 0 }}>
+              <img src="/logo.png" alt="GilasOS" style={{ height: 28, width: 28, objectFit: "contain" }} />
+              <span>GilasOS</span>
+            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }} className="nav-desktop">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="nav-link"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
+                    fontSize: 13, fontWeight: 500, textDecoration: "none",
+                    background: isActive(item.href) ? "#8b5cf6" : "transparent",
+                    color: isActive(item.href) ? "#fff" : "var(--os-text-dim)",
+                  }}
+                >
+                  <item.icon size={15} />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+              {isAdmin && (
+                <Link href="/admin" className="nav-link" style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                   fontSize: 13, fontWeight: 500, textDecoration: "none",
-                  background: isActive(item.href) ? "#8b5cf6" : "transparent",
-                  color: isActive(item.href) ? "#fff" : "var(--os-text-dim)",
-                }}
-              >
-                <item.icon size={16} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-            {isAdmin && (
-              <Link href="/admin" className="nav-link" style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8,
-                fontSize: 13, fontWeight: 500, textDecoration: "none",
-                background: isActive("/admin") ? "#8b5cf6" : "transparent",
-                color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
-              }}>
-                <Shield size={16} /> <span>Admin</span>
-              </Link>
-            )}
+                  background: isActive("/admin") ? "#8b5cf6" : "transparent",
+                  color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
+                }}>
+                  <Shield size={15} /> <span>Admin</span>
+                </Link>
+              )}
+            </div>
           </div>
 
+          {/* Right: Theme + User */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               style={{
-                padding: 8, borderRadius: 8, background: "none", border: "none",
+                padding: 6, borderRadius: 8, background: "none", border: "none",
                 color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
-                alignItems: "center", justifyContent: "center", width: 36, height: 36,
+                alignItems: "center", justifyContent: "center", width: 32, height: 32,
               }}
               title="Toggle theme"
             >
-              <Sun size={16} style={{ display: theme === "dark" ? "block" : "none" }} />
-              <Moon size={16} style={{ display: theme === "light" ? "block" : "none" }} />
+              <Sun size={15} style={{ display: theme === "dark" ? "block" : "none" }} />
+              <Moon size={15} style={{ display: theme === "light" ? "block" : "none" }} />
             </button>
 
             <div style={{ position: "relative" }} ref={menuRef}>
@@ -103,19 +100,19 @@ export function Navbar() {
                   <button
                     onClick={() => setShowMenu(!showMenu)}
                     style={{
-                      display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+                      display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
                       borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)",
                       background: "none", color: "var(--os-text-secondary)", cursor: "pointer",
                       fontSize: 13, fontFamily: "Inter, sans-serif",
                     }}
                   >
-                    <User size={16} />
-                    <span style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{username || user.email?.split("@")[0]}</span>
+                    <User size={15} />
+                    <span style={{ maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{username || user.email?.split("@")[0]}</span>
                   </button>
                   {showMenu && (
                     <div style={{
                       position: "absolute", right: 0, top: "100%", marginTop: 4,
-                      width: 220, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)",
+                      width: 200, borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)",
                       background: "rgba(15,21,35,0.95)", backdropFilter: "blur(20px)",
                       boxShadow: "0 16px 48px rgba(0,0,0,0.4)", zIndex: 50, padding: "4px 0",
                     }}>
@@ -127,13 +124,13 @@ export function Navbar() {
                         display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
                         fontSize: 13, textDecoration: "none", color: "var(--os-text-secondary)",
                       }}>
-                        <User size={16} /> Profile
+                        <User size={15} /> Profile
                       </Link>
                       <Link href="/settings" onClick={() => setShowMenu(false)} style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
                         fontSize: 13, textDecoration: "none", color: "var(--os-text-secondary)",
                       }}>
-                        <Settings size={16} /> Settings
+                        <Settings size={15} /> Settings
                       </Link>
                       <button onClick={() => { signOut(); setShowMenu(false); }} style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "8px 12px",
@@ -141,18 +138,18 @@ export function Navbar() {
                         color: "var(--os-text-secondary)", cursor: "pointer", textAlign: "left",
                         fontFamily: "Inter, sans-serif",
                       }}>
-                        <LogOut size={16} /> Log Out
+                        <LogOut size={15} /> Log Out
                       </button>
                     </div>
                   )}
                 </>
               ) : (
                 <Link href="/login" style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px",
                   borderRadius: 8, border: "1px solid var(--os-accent)",
                   color: "var(--os-accent)", textDecoration: "none", fontSize: 13, fontWeight: 500,
                 }}>
-                  <LogIn size={16} /> <span>Log In</span>
+                  <LogIn size={15} /> <span>Log In</span>
                 </Link>
               )}
             </div>
@@ -161,11 +158,11 @@ export function Navbar() {
               onClick={() => setShowMobile(!showMobile)}
               className="nav-mobile-btn"
               style={{
-                padding: 8, borderRadius: 8, background: "none", border: "none",
+                padding: 6, borderRadius: 8, background: "none", border: "none",
                 color: "var(--os-text-dim)", cursor: "pointer", display: "none",
               }}
             >
-              {showMobile ? <X size={20} /> : <Menu size={20} />}
+              {showMobile ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
