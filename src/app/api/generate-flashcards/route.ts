@@ -6,7 +6,7 @@ export const maxDuration = 60;
 
 const MAX_CHARS = 360000;
 const CHUNK_SIZE = 20000;
-const CHUNKS_PER_POLL = 2;
+const CHUNKS_PER_POLL = 1;
 const MAX_RETRIES = 4;
 const BASE_DELAY = 1500;
 const REQUEST_TIMEOUT_MS = 90000;
