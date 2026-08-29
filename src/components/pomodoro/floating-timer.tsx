@@ -65,12 +65,12 @@ export function FloatingTimer() {
       <Timer className="h-3.5 w-3.5" />
     );
 
-  const modeColor =
+  const modeBg =
     mode === "work"
-      ? "bg-primary/90 text-primary-foreground"
+      ? "var(--os-accent)"
       : mode === "shortBreak"
-      ? "bg-green-500/90 text-white"
-      : "bg-blue-500/90 text-white";
+      ? "#10b981"
+      : "#3b82f6";
 
   return (
     <div
@@ -78,11 +78,10 @@ export function FloatingTimer() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      style={{ left: position.x, top: position.y }}
+      style={{ left: position.x, top: position.y, background: modeBg }}
       className={cn(
-        "fixed z-50 select-none touch-none",
-        "rounded-full shadow-lg border border-black/10 backdrop-blur-md",
-        modeColor,
+        "fixed z-50 select-none touch-none text-white",
+        "rounded-full shadow-lg backdrop-blur-md",
         isDragging && "cursor-grabbing"
       )}
     >
