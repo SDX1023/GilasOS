@@ -6,6 +6,7 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS avatar_url text default '';
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS bio text default '';
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS mood_text text default '';
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS mood_emoji text default '';
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS spotify_url text default '';
 
 -- Create storage bucket for avatars
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;

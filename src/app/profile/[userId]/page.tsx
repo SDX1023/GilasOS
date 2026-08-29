@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, ArrowLeft, Smile } from "lucide-react";
+import { User, Music, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 interface ProfileData {
@@ -12,6 +12,15 @@ interface ProfileData {
   bio: string;
   mood_text: string;
   mood_emoji: string;
+  spotify_url: string;
+}
+
+function extractSpotifyId(url: string): { type: string; id: string } | null {
+  const match = url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+  if (match) return { type: match[1], id: match[2] };
+  const raw = url.match(/^([a-zA-Z0-9]{22})$/);
+  if (raw) return { type: "track", id: raw[1] };
+  return null;
 }
 
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
@@ -23,12 +32,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   useEffect(() => {
     (async () => {
       const supabase = getSupabase();
-      const { data } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji").eq("user_id", userId).maybeSingle();
-      if (data) {
-        setProfile(data);
-      } else {
-        setNotFound(true);
-      }
+      const { data } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
+      if (data) setProfile(data);
+      else setNotFound(true);
       setLoading(false);
     })();
   }, [userId]);
@@ -55,6 +61,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
     );
   }
 
+  const spotifyParsed = profile.spotify_url ? extractSpotifyId(profile.spotify_url) : null;
+
   return (
     <div className="page-container" style={{ maxWidth: 600 }}>
       <Link href="/leaderboard" style={{
@@ -66,7 +74,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
 
       {/* Profile Card */}
       <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: profile.bio ? 16 : 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{
             width: 96, height: 96, borderRadius: "50%", overflow: "hidden",
             border: "2px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)",
@@ -82,26 +90,39 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{profile.username}</h1>
             {profile.mood_emoji && (
               <p style={{ fontSize: 14, color: "var(--os-text-secondary)" }}>
-                {profile.mood_emoji} {profile.mood_text || "No mood set"}
+                {profile.mood_emoji} {profile.mood_text || ""}
               </p>
             )}
           </div>
         </div>
         {profile.bio && (
-          <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>{profile.bio}</p>
+          <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>{profile.bio}</p>
         )}
       </div>
 
       {/* Music & Mood */}
-      {(profile.mood_emoji || profile.mood_text) && (
+      {(profile.mood_emoji || profile.mood_text || spotifyParsed) && (
         <div className="glass-panel" style={{ padding: 24 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
             <Music size={18} /> Music & Mood
           </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--os-text-secondary)" }}>
-            {profile.mood_emoji && <span style={{ fontSize: 28 }}>{profile.mood_emoji}</span>}
-            <span>{profile.mood_text || "No mood set"}</span>
-          </div>
+          {(profile.mood_emoji || profile.mood_text) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: "var(--os-text-secondary)", marginBottom: spotifyParsed ? 16 : 0 }}>
+              {profile.mood_emoji && <span style={{ fontSize: 28 }}>{profile.mood_emoji}</span>}
+              <span>{profile.mood_text || ""}</span>
+            </div>
+          )}
+          {spotifyParsed && (
+            <iframe
+              src={`https://open.spotify.com/embed/${spotifyParsed.type}/${spotifyParsed.id}?utm_source=generator&theme=0`}
+              width="100%"
+              height={spotifyParsed.type === "track" ? 80 : 152}
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              style={{ borderRadius: 12 }}
+            />
+          )}
         </div>
       )}
     </div>

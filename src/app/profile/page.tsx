@@ -3,21 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, Save, Camera, X, Smile } from "lucide-react";
+import { User, Music, Save, Camera, X, Smile, Search, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 const DEFAULT_AVATARS = [
-  "https://cdn-icons-png.flaticon.com/512/1154/1154460.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154454.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154462.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154446.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154452.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154443.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154456.png",
-  "https://cdn-icons-png.flaticon.com/512/1154/1154447.png",
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140048.png", label: "Cat" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140051.png", label: "Dog" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140037.png", label: "Owl" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140044.png", label: "Penguin" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140049.png", label: "Fox" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140042.png", label: "Bear" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140047.png", label: "Rabbit" },
+  { url: "https://cdn-icons-png.flaticon.com/512/4140/4140055.png", label: "Panda" },
 ];
 
 const MOOD_EMOJIS = ["😊", "😎", "🤓", "😴", "🔥", "💯", "🎵", "📚", "💪", "🧠", "✨", "🌟"];
+
+function extractSpotifyId(url: string): { type: string; id: string } | null {
+  const match = url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+  if (match) return { type: match[1], id: match[2] };
+  const raw = url.match(/^([a-zA-Z0-9]{22})$/);
+  if (raw) return { type: "track", id: raw[1] };
+  return null;
+}
 
 export default function ProfilePage() {
   const { user, username, refreshProfile } = useAuth();
@@ -25,6 +33,10 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [moodText, setMoodText] = useState("");
   const [moodEmoji, setMoodEmoji] = useState("");
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [spotifyInput, setSpotifyInput] = useState("");
+  const [spotifyPreview, setSpotifyPreview] = useState<{ title: string; image: string } | null>(null);
+  const [spotifyError, setSpotifyError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -35,22 +47,42 @@ export default function ProfilePage() {
     if (!user) return;
     (async () => {
       const supabase = getSupabase();
-      const { data } = await supabase.from("user_profiles").select("avatar_url, bio, mood_text, mood_emoji").eq("user_id", user.id).maybeSingle();
+      const { data } = await supabase.from("user_profiles").select("avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", user.id).maybeSingle();
       if (data) {
         setAvatarUrl(data.avatar_url || "");
         setBio(data.bio || "");
         setMoodText(data.mood_text || "");
         setMoodEmoji(data.mood_emoji || "");
+        setSpotifyUrl(data.spotify_url || "");
+        setSpotifyInput(data.spotify_url || "");
       }
       setLoading(false);
     })();
   }, [user]);
 
+  useEffect(() => {
+    if (!spotifyInput.trim()) { setSpotifyPreview(null); setSpotifyError(""); return; }
+    const parsed = extractSpotifyId(spotifyInput.trim());
+    if (!parsed) { setSpotifyPreview(null); setSpotifyError("Paste a Spotify track/album/playlist link"); return; }
+    setSpotifyError("");
+    fetch(`https://open.spotify.com/oembed?url=https://open.spotify.com/${parsed.type}/${parsed.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.thumbnail_url) setSpotifyPreview({ title: data.title || "Spotify Track", image: data.thumbnail_url });
+        else setSpotifyError("Could not find that track");
+      })
+      .catch(() => setSpotifyError("Could not fetch track info"));
+  }, [spotifyInput]);
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
     const supabase = getSupabase();
-    await supabase.from("user_profiles").update({ avatar_url: avatarUrl, bio, mood_text: moodText, mood_emoji: moodEmoji }).eq("user_id", user.id);
+    await supabase.from("user_profiles").update({
+      avatar_url: avatarUrl, bio, mood_text: moodText, mood_emoji: moodEmoji,
+      spotify_url: spotifyInput.trim() || "",
+    }).eq("user_id", user.id);
+    setSpotifyUrl(spotifyInput.trim() || "");
     await refreshProfile();
     setSaving(false);
     setSaved(true);
@@ -60,21 +92,18 @@ export default function ProfilePage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      const supabase = getSupabase();
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file);
-      if (!error) {
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        setAvatarUrl(data.publicUrl);
-        setShowAvatarPicker(false);
-      }
-    };
-    reader.readAsDataURL(file);
+    const supabase = getSupabase();
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file);
+    if (!error) {
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(data.publicUrl);
+      setShowAvatarPicker(false);
+    }
   };
+
+  const parsedSpotify = spotifyInput.trim() ? extractSpotifyId(spotifyInput.trim()) : null;
 
   if (!user) {
     return (
@@ -138,17 +167,18 @@ export default function ProfilePage() {
               <button onClick={() => setShowAvatarPicker(false)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={14} /></button>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-              {DEFAULT_AVATARS.map((url) => (
+              {DEFAULT_AVATARS.map((av) => (
                 <button
-                  key={url}
-                  onClick={() => { setAvatarUrl(url); setShowAvatarPicker(false); }}
+                  key={av.url}
+                  onClick={() => { setAvatarUrl(av.url); setShowAvatarPicker(false); }}
+                  title={av.label}
                   style={{
                     width: 56, height: 56, borderRadius: "50%", overflow: "hidden", cursor: "pointer",
-                    border: avatarUrl === url ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)",
+                    border: avatarUrl === av.url ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)",
                     background: "rgba(255,255,255,0.05)", padding: 0,
                   }}
                 >
-                  <img src={url} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={av.url} alt={av.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </button>
               ))}
             </div>
@@ -209,22 +239,54 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Spotify / Music */}
+        {/* Spotify */}
         <div>
           <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>
             <Music size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> What are you listening to?
           </label>
-          <input
-            className="glass-input"
-            value={moodText}
-            onChange={(e) => setMoodText(e.target.value)}
-            placeholder="e.g. Lo-fi beats to study to..."
-            maxLength={100}
-          />
-          <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 4 }}>
-            {moodEmoji && <span style={{ marginRight: 6 }}>{moodEmoji}</span>}
-            {moodText ? `Feeling ${moodText}` : "Set your mood and music above"}
-          </p>
+          <div style={{ position: "relative" }}>
+            <input
+              className="glass-input"
+              value={spotifyInput}
+              onChange={(e) => setSpotifyInput(e.target.value)}
+              placeholder="Paste a Spotify link (track, album, playlist)..."
+              style={{ paddingRight: 36 }}
+            />
+            {spotifyInput && (
+              <button
+                onClick={() => { setSpotifyInput(""); setSpotifyPreview(null); }}
+                style={{
+                  position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", padding: 4,
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          {spotifyError && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>{spotifyError}</p>}
+
+          {/* Spotify Embed Preview */}
+          {parsedSpotify && (
+            <div style={{ marginTop: 12 }}>
+              <iframe
+                src={`https://open.spotify.com/embed/${parsedSpotify.type}/${parsedSpotify.id}?utm_source=generator&theme=0`}
+                width="100%"
+                height={parsedSpotify.type === "track" ? 80 : 152}
+                frameBorder="0"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                style={{ borderRadius: 12 }}
+              />
+            </div>
+          )}
+
+          {!spotifyInput && (
+            <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 8 }}>
+              {moodEmoji && <span style={{ marginRight: 6 }}>{moodEmoji}</span>}
+              {moodText ? `Feeling ${moodText}` : "Paste a Spotify link to show what you're listening to"}
+            </p>
+          )}
         </div>
       </div>
     </div>
