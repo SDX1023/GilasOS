@@ -422,6 +422,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       module_id: moduleSlug,
       title: reviewer.title,
       card_count: cards.length,
+      cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
     }).select().single();
     if (data) {
       const link = `${window.location.origin}/shared/${data.id}`;
