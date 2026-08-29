@@ -124,7 +124,7 @@ async function callGroq(prompt: string): Promise<{ content: string } | null> {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
       signal: ac.signal,
-      body: JSON.stringify({ model: "openai/gpt-oss-20b", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192, response_format: { type: "json_object" } }),
+      body: JSON.stringify({ model: "groq/compound", messages: [{ role: "user", content: prompt }], temperature: 0.4, max_tokens: 8192, response_format: { type: "json_object" } }),
     });
     clearTimeout(t);
     if (!r.ok) return null;
