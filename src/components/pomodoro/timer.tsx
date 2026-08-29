@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Play, Pause, RotateCcw, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { usePomodoro, type TimerMode } from "./pomodoro-context";
 
 export function PomodoroTimer() {
@@ -30,155 +29,145 @@ export function PomodoroTimer() {
     m === "work" ? "Focus" : m === "shortBreak" ? "Short Break" : "Long Break";
 
   return (
-    <div className="flex flex-col items-center gap-8">
-      <div className="flex gap-2">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+      {/* Mode Tabs */}
+      <div style={{ display: "flex", gap: 8 }}>
         {(["work", "shortBreak", "longBreak"] as const).map((m) => (
           <button
             key={m}
             onClick={() => switchMode(m)}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              mode === m ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
-            )}
+            style={{
+              padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+              border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif",
+              background: mode === m ? "var(--os-accent)" : "rgba(255,255,255,0.06)",
+              color: mode === m ? "#fff" : "var(--os-text-dim)",
+              transition: "all 0.15s",
+            }}
           >
             {modeLabel(m)}
           </button>
         ))}
       </div>
 
-      <div className="relative">
-        <svg width="280" height="280" className="-rotate-90">
+      {/* Timer Circle */}
+      <div style={{ position: "relative" }}>
+        <svg width="280" height="280" style={{ transform: "rotate(-90deg)" }}>
           <circle
-            cx="140"
-            cy="140"
-            r="120"
+            cx="140" cy="140" r="120"
             fill="transparent"
-            stroke="currentColor"
+            stroke="rgba(255,255,255,0.08)"
             strokeWidth="8"
-            className="text-muted"
           />
           <circle
-            cx="140"
-            cy="140"
-            r="120"
+            cx="140" cy="140" r="120"
             fill="transparent"
-            stroke="currentColor"
+            stroke={mode === "work" ? "var(--os-accent)" : "#10b981"}
             strokeWidth="8"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
-            className={cn(
-              "transition-all duration-1000",
-              mode === "work" ? "text-primary" : "text-green-500"
-            )}
+            style={{ transition: "stroke-dashoffset 1s linear" }}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-5xl font-mono font-bold">{formatTime(timeLeft)}</span>
+        <div style={{
+          position: "absolute", inset: 0, display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ fontSize: 48, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
+            {formatTime(timeLeft)}
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      {/* Controls */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <button
           onClick={start}
-          className={cn(
-            "flex items-center gap-2 px-8 py-3 rounded-xl font-medium transition-colors",
-            isRunning
-              ? "bg-muted hover:bg-muted/80"
-              : "bg-primary text-primary-foreground hover:bg-primary/90"
-          )}
+          style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "12px 32px",
+            borderRadius: 14, fontSize: 15, fontWeight: 600, border: "none",
+            cursor: "pointer", fontFamily: "Inter, sans-serif",
+            background: isRunning ? "rgba(255,255,255,0.06)" : "var(--os-accent)",
+            color: isRunning ? "var(--os-text-secondary)" : "#fff",
+            transition: "all 0.15s",
+          }}
         >
-          {isRunning ? (
-            <>
-              <Pause className="h-5 w-5" />
-              Pause
-            </>
-          ) : (
-            <>
-              <Play className="h-5 w-5" />
-              Start
-            </>
-          )}
+          {isRunning ? <><Pause size={20} /> Pause</> : <><Play size={20} /> Start</>}
         </button>
 
         <button
           onClick={reset}
-          className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+          style={{
+            padding: 12, borderRadius: 14, background: "rgba(255,255,255,0.06)",
+            border: "none", cursor: "pointer", color: "var(--os-text-dim)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
         >
-          <RotateCcw className="h-5 w-5" />
+          <RotateCcw size={20} />
         </button>
 
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+          style={{
+            padding: 12, borderRadius: 14, background: "rgba(255,255,255,0.06)",
+            border: "none", cursor: "pointer", color: "var(--os-text-dim)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
         >
-          <Settings className="h-5 w-5" />
+          <Settings size={20} />
         </button>
       </div>
 
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
+      {/* Session Info */}
+      <div style={{ textAlign: "center" }}>
+        <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>
           Session {sessions + 1} of {settings.sessionsBeforeLongBreak}
         </p>
       </div>
 
+      {/* Settings Panel */}
       {showSettings && (
-        <div className="w-full max-w-sm p-4 rounded-xl border bg-card space-y-4">
-          <h3 className="font-semibold">Settings</h3>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="glass-panel" style={{ width: "100%", maxWidth: 400, padding: 20 }}>
+          <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Settings</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <label className="text-sm text-muted-foreground">Focus (min)</label>
+              <label style={{ fontSize: 13, color: "var(--os-text-dim)", display: "block", marginBottom: 4 }}>Focus (min)</label>
               <input
                 type="number"
                 value={settings.workDuration}
-                onChange={(e) =>
-                  updateSettings({ ...settings, workDuration: Number(e.target.value) })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border bg-background"
-                min={1}
-                max={120}
+                onChange={(e) => updateSettings({ ...settings, workDuration: Number(e.target.value) })}
+                className="glass-input"
+                min={1} max={120}
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Short Break (min)</label>
+              <label style={{ fontSize: 13, color: "var(--os-text-dim)", display: "block", marginBottom: 4 }}>Short Break (min)</label>
               <input
                 type="number"
                 value={settings.shortBreakDuration}
-                onChange={(e) =>
-                  updateSettings({ ...settings, shortBreakDuration: Number(e.target.value) })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border bg-background"
-                min={1}
-                max={30}
+                onChange={(e) => updateSettings({ ...settings, shortBreakDuration: Number(e.target.value) })}
+                className="glass-input"
+                min={1} max={30}
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Long Break (min)</label>
+              <label style={{ fontSize: 13, color: "var(--os-text-dim)", display: "block", marginBottom: 4 }}>Long Break (min)</label>
               <input
                 type="number"
                 value={settings.longBreakDuration}
-                onChange={(e) =>
-                  updateSettings({ ...settings, longBreakDuration: Number(e.target.value) })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border bg-background"
-                min={1}
-                max={60}
+                onChange={(e) => updateSettings({ ...settings, longBreakDuration: Number(e.target.value) })}
+                className="glass-input"
+                min={1} max={60}
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Sessions</label>
+              <label style={{ fontSize: 13, color: "var(--os-text-dim)", display: "block", marginBottom: 4 }}>Sessions</label>
               <input
                 type="number"
                 value={settings.sessionsBeforeLongBreak}
-                onChange={(e) =>
-                  updateSettings({
-                    ...settings,
-                    sessionsBeforeLongBreak: Number(e.target.value),
-                  })
-                }
-                className="w-full mt-1 px-3 py-2 rounded-lg border bg-background"
-                min={1}
-                max={10}
+                onChange={(e) => updateSettings({ ...settings, sessionsBeforeLongBreak: Number(e.target.value) })}
+                className="glass-input"
+                min={1} max={10}
               />
             </div>
           </div>

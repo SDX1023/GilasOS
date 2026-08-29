@@ -160,60 +160,62 @@ export function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="page-container" style={{ textAlign: "center", paddingTop: 64, paddingBottom: 64 }}>
+        <div className="animate-pulse" style={{ color: "var(--os-text-secondary)" }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="page-container">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage your courses, notes, modules, and flash cards</p>
+          <h1 style={{ fontSize: 30, fontWeight: 700 }}>Admin Dashboard</h1>
+          <p style={{ color: "var(--os-text-secondary)", marginTop: 4 }}>Manage your courses, notes, modules, and flash cards</p>
         </div>
         <button
           onClick={() => setShowCourseForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          className="glass-btn glass-btn-primary"
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10 }}
         >
-          <Plus className="h-4 w-4" />
+          <Plus style={{ width: 16, height: 16 }} />
           New Course
         </button>
       </div>
 
       {showCourseForm && (
-        <div className="mb-6 p-4 rounded-xl border bg-card space-y-3">
-          <h3 className="font-semibold">New Course</h3>
+        <div className="glass-card" style={{ marginBottom: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          <h3 style={{ fontWeight: 600 }}>New Course</h3>
           <input
             type="text"
             value={courseName}
             onChange={(e) => setCourseName(e.target.value)}
             placeholder="Course name"
-            className="w-full px-3 py-2 rounded-lg border bg-background"
+            className="glass-input"
             autoFocus
           />
           <textarea
             value={courseDesc}
             onChange={(e) => setCourseDesc(e.target.value)}
             placeholder="Description (optional)"
-            className="w-full px-3 py-2 rounded-lg border bg-background h-20 resize-none"
+            className="glass-input"
+            style={{ height: 80, resize: "none" }}
           />
-          <div className="flex gap-2">
-            <button onClick={handleAddCourse} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm">
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={handleAddCourse} className="glass-btn glass-btn-primary" style={{ padding: "10px 16px", borderRadius: 10, fontSize: 13 }}>
               Create
             </button>
-            <button onClick={() => setShowCourseForm(false)} className="px-4 py-2 bg-muted rounded-lg text-sm">
+            <button onClick={() => setShowCourseForm(false)} className="glass-btn glass-btn-ghost" style={{ padding: "10px 16px", borderRadius: 10, fontSize: 13 }}>
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {courses.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            No courses yet. Click "New Course" to get started.
+          <div style={{ textAlign: "center", padding: "48px 0", color: "var(--os-text-secondary)" }}>
+            No courses yet. Click &quot;New Course&quot; to get started.
           </div>
         )}
 
@@ -222,61 +224,67 @@ export function AdminDashboard() {
           const isExpanded = expandedCourse === course.id;
 
           return (
-            <div key={course.id} className="rounded-xl border bg-card">
-              <div className="flex items-center justify-between p-4">
+            <div key={course.id} className="glass-card" style={{ padding: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 16 }}>
                 <button
                   onClick={() => setExpandedCourse(isExpanded ? null : course.id)}
-                  className="flex items-center gap-2 flex-1 text-left min-w-0"
+                  style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, textAlign: "left", minWidth: 0, background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}
                 >
-                  {isExpanded ? <ChevronDown className="h-5 w-5 shrink-0" /> : <ChevronRight className="h-5 w-5 shrink-0" />}
-                  <BookOpen className="h-5 w-5 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{course.title}</p>
-                    {course.description && <p className="text-sm text-muted-foreground truncate">{course.description}</p>}
+                  {isExpanded ? <ChevronDown style={{ width: 20, height: 20, flexShrink: 0 }} /> : <ChevronRight style={{ width: 20, height: 20, flexShrink: 0 }} />}
+                  <BookOpen style={{ width: 20, height: 20, color: "var(--os-accent)", flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{course.title}</p>
+                    {course.description && <p style={{ fontSize: 13, color: "var(--os-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{course.description}</p>}
                   </div>
                 </button>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <span className="text-xs text-muted-foreground hidden sm:inline">{modules.length} modules</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 8 }}>
+                  <span className="text-xs text-dim" style={{ display: "none" }}>{modules.length} modules</span>
                   <button
                     onClick={() => setShowModuleForm(course.id)}
-                    className="p-1 hover:bg-muted rounded"
+                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                     title="Add module"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus style={{ width: 16, height: 16 }} />
                   </button>
                   <button
                     onClick={async () => { await deleteCourse(course.id); refresh(); }}
-                    className="p-1 hover:bg-muted rounded text-red-500"
+                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                     title="Delete course"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 style={{ width: 16, height: 16 }} />
                   </button>
                 </div>
               </div>
 
               {isExpanded && (
-                <div className="border-t p-4 space-y-3">
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                   {showModuleForm === course.id && (
-                    <div className="p-3 rounded-lg bg-muted/50 space-y-2 mb-3">
+                    <div style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                       <input
                         type="text"
                         value={moduleName}
                         onChange={(e) => setModuleName(e.target.value)}
                         placeholder="Module name"
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                        className="glass-input"
+                        style={{ fontSize: 13 }}
                         autoFocus
                       />
                       <textarea
                         value={moduleDesc}
                         onChange={(e) => setModuleDesc(e.target.value)}
                         placeholder="Description"
-                        className="w-full px-3 py-2 rounded-lg border bg-background text-sm h-16 resize-none"
+                        className="glass-input"
+                        style={{ fontSize: 13, height: 64, resize: "none" }}
                       />
-                      <div className="flex gap-2">
-                        <button onClick={() => handleAddModule(course.id)} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => handleAddModule(course.id)} className="glass-btn glass-btn-primary" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13 }}>
                           Create
                         </button>
-                        <button onClick={() => setShowModuleForm(null)} className="px-3 py-1 bg-muted rounded text-sm">
+                        <button onClick={() => setShowModuleForm(null)} className="glass-btn glass-btn-ghost" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13 }}>
                           Cancel
                         </button>
                       </div>
@@ -290,156 +298,111 @@ export function AdminDashboard() {
                     const isModExpanded = expandedModule === mod.id;
 
                     return (
-                      <div key={mod.id} className="rounded-lg border">
-                        <div className="flex items-center justify-between p-3 bg-muted/30">
+                      <div key={mod.id} style={{ borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, background: "rgba(255,255,255,0.06)" }}>
                           <button
                             onClick={() => setExpandedModule(isModExpanded ? null : mod.id)}
-                            className="flex items-center gap-2 flex-1 text-left min-w-0"
+                            style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, textAlign: "left", minWidth: 0, background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}
                           >
-                            {isModExpanded ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-                            <span className="font-medium text-sm truncate">{mod.title}</span>
-                            <span className="text-xs text-muted-foreground hidden sm:inline">
+                            {isModExpanded ? <ChevronDown style={{ width: 16, height: 16, flexShrink: 0 }} /> : <ChevronRight style={{ width: 16, height: 16, flexShrink: 0 }} />}
+                            <span style={{ fontWeight: 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mod.title}</span>
+                            <span className="text-xs text-dim" style={{ display: "none" }}>
                               {notes.length} notes, {contents.length} content, {reviewers.length} reviewers
                             </span>
                           </button>
                           <button
                             onClick={async () => { await deleteModule(mod.id); refresh(); }}
-                            className="p-1 hover:bg-muted rounded text-red-500 shrink-0"
+                            style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "#ef4444", flexShrink: 0 }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 style={{ width: 12, height: 12 }} />
                           </button>
                         </div>
 
                         {isModExpanded && (
-                          <div className="p-3 space-y-3">
+                          <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 12 }}>
                             {/* Notes Section */}
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase">Notes</p>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--os-text-secondary)", textTransform: "uppercase" }}>Notes</p>
                               <Link
                                 href={`/editor/note?course=${course.id}&module=${mod.id}`}
-                                className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-accent)", textDecoration: "underline" }}
                               >
-                                <Plus className="h-3 w-3" /> New Note
+                                <Plus style={{ width: 12, height: 12 }} /> New Note
                               </Link>
                             </div>
 
                             {notes.map((note) => (
-                              <div key={note.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/50 group">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
-                                  <span className="text-sm truncate">{note.title}</span>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0 ml-2">
-                                  <Link
-                                    href={`/editor/note?course=${course.id}&module=${mod.id}&slug=${note.slug}`}
-                                    className="p-1 hover:bg-muted rounded"
-                                    title="Edit"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Link>
-                                  <button
-                                    onClick={async () => { await deleteNote(note.id); refresh(); }}
-                                    className="p-1 hover:bg-muted rounded text-red-500"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              </div>
+                              <NoteRow
+                                key={note.id}
+                                note={note}
+                                courseId={course.id}
+                                moduleId={mod.id}
+                                onDelete={async () => { await deleteNote(note.id); refresh(); }}
+                              />
                             ))}
 
                             {/* Standardized Content Section */}
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase">Module Content</p>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--os-text-secondary)", textTransform: "uppercase" }}>Module Content</p>
                               <button
                                 onClick={() => setShowContentForm(showContentForm === mod.id ? null : mod.id)}
-                                className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-accent)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0 }}
                               >
-                                <Plus className="h-3 w-3" /> New Content
+                                <Plus style={{ width: 12, height: 12 }} /> New Content
                               </button>
                             </div>
 
                             {showContentForm === mod.id && (
-                              <div className="flex gap-2 mb-2">
+                              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                                 <input
                                   type="text"
                                   value={contentName}
                                   onChange={(e) => setContentName(e.target.value)}
                                   placeholder="Content title"
-                                  className="flex-1 px-3 py-1 rounded-lg border bg-background text-sm"
+                                  className="glass-input"
+                                  style={{ flex: 1, fontSize: 13, padding: "6px 12px" }}
                                   autoFocus
                                 />
-                                <button onClick={() => handleAddContent(course.id, mod.id)} className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm">
+                                <button onClick={() => handleAddContent(course.id, mod.id)} className="glass-btn glass-btn-primary" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13 }}>
                                   Create
                                 </button>
-                                <button onClick={() => { setShowContentForm(null); setContentName(""); }} className="px-3 py-1 bg-muted rounded text-sm">
+                                <button onClick={() => { setShowContentForm(null); setContentName(""); }} className="glass-btn glass-btn-ghost" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 13 }}>
                                   Cancel
                                 </button>
                               </div>
                             )}
 
                             {contents.map((content) => (
-                              <div key={content.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/50 group">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-                                  <span className="text-sm truncate">{content.title}</span>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0 ml-2">
-                                  <Link
-                                    href={`/editor/content?course=${course.id}&module=${mod.id}&id=${content.id}`}
-                                    className="p-1 hover:bg-muted rounded"
-                                    title="Edit"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Link>
-                                  <button
-                                    onClick={async () => { await deleteModuleContent(content.id); refresh(); }}
-                                    className="p-1 hover:bg-muted rounded text-red-500"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              </div>
+                              <ContentRow
+                                key={content.id}
+                                content={content}
+                                courseId={course.id}
+                                moduleId={mod.id}
+                                onDelete={async () => { await deleteModuleContent(content.id); refresh(); }}
+                              />
                             ))}
 
                             {/* Reviewers Section */}
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase">Flash Cards</p>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--os-text-secondary)", textTransform: "uppercase" }}>Flash Cards</p>
                               <Link
                                 href={`/editor/reviewer?course=${course.id}&module=${mod.id}`}
-                                className="flex items-center gap-1 text-xs text-primary hover:underline"
+                                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-accent)", textDecoration: "underline" }}
                               >
-                                <Plus className="h-3 w-3" /> New Reviewer
+                                <Plus style={{ width: 12, height: 12 }} /> New Reviewer
                               </Link>
                             </div>
 
                             {reviewers.map((reviewer) => (
-                              <div key={reviewer.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/50 group">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <Brain className="h-3 w-3 text-muted-foreground shrink-0" />
-                                  <span className="text-sm truncate">{reviewer.title}</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    ({reviewer.cards?.length || 0} cards)
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0 ml-2">
-                                  <Link
-                                    href={`/editor/reviewer?course=${course.id}&module=${mod.id}&id=${reviewer.id}`}
-                                    className="p-1 hover:bg-muted rounded"
-                                    title="Edit"
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Link>
-                                  <button
-                                    onClick={() => handleDeleteReviewer(course.id, mod.id, reviewer.id)}
-                                    className="p-1 hover:bg-muted rounded text-red-500"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              </div>
+                              <ReviewerRow
+                                key={reviewer.id}
+                                reviewer={reviewer}
+                                courseId={course.id}
+                                moduleId={mod.id}
+                                onDelete={() => handleDeleteReviewer(course.id, mod.id, reviewer.id)}
+                              />
                             ))}
                           </div>
                         )}
@@ -451,6 +414,117 @@ export function AdminDashboard() {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function NoteRow({ note, courseId, moduleId, onDelete }: { note: Note; courseId: string; moduleId: string; onDelete: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: hovered ? "rgba(255,255,255,0.03)" : "transparent", transition: "background 0.15s" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <FileText style={{ width: 12, height: 12, color: "var(--os-text-secondary)", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{note.title}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: hovered ? 1 : 0, flexShrink: 0, marginLeft: 8, transition: "opacity 0.15s" }}>
+        <Link
+          href={`/editor/note?course=${courseId}&module=${moduleId}&slug=${note.slug}`}
+          style={{ padding: 4, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "inherit", textDecoration: "none" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Edit"
+        >
+          <ExternalLink style={{ width: 12, height: 12 }} />
+        </Link>
+        <button
+          onClick={onDelete}
+          style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Delete"
+        >
+          <Trash2 style={{ width: 12, height: 12 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ContentRow({ content, courseId, moduleId, onDelete }: { content: ContentItem; courseId: string; moduleId: string; onDelete: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: hovered ? "rgba(255,255,255,0.03)" : "transparent", transition: "background 0.15s" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <BookOpen style={{ width: 12, height: 12, color: "var(--os-text-secondary)", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content.title}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: hovered ? 1 : 0, flexShrink: 0, marginLeft: 8, transition: "opacity 0.15s" }}>
+        <Link
+          href={`/editor/content?course=${courseId}&module=${moduleId}&id=${content.id}`}
+          style={{ padding: 4, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "inherit", textDecoration: "none" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Edit"
+        >
+          <ExternalLink style={{ width: 12, height: 12 }} />
+        </Link>
+        <button
+          onClick={onDelete}
+          style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Delete"
+        >
+          <Trash2 style={{ width: 12, height: 12 }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewerRow({ reviewer, courseId, moduleId, onDelete }: { reviewer: Reviewer; courseId: string; moduleId: string; onDelete: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: hovered ? "rgba(255,255,255,0.03)" : "transparent", transition: "background 0.15s" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <Brain style={{ width: 12, height: 12, color: "var(--os-text-secondary)", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reviewer.title}</span>
+        <span className="text-xs text-dim">
+          ({reviewer.cards?.length || 0} cards)
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: hovered ? 1 : 0, flexShrink: 0, marginLeft: 8, transition: "opacity 0.15s" }}>
+        <Link
+          href={`/editor/reviewer?course=${courseId}&module=${moduleId}&id=${reviewer.id}`}
+          style={{ padding: 4, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "inherit", textDecoration: "none" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Edit"
+        >
+          <ExternalLink style={{ width: 12, height: 12 }} />
+        </Link>
+        <button
+          onClick={onDelete}
+          style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+          title="Delete"
+        >
+          <Trash2 style={{ width: 12, height: 12 }} />
+        </button>
       </div>
     </div>
   );

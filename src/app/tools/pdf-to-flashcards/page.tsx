@@ -106,10 +106,10 @@ export default function PdfToFlashcardsPage() {
         {/* Input */}
         <div className="glass-panel">
           <h2 style={{ fontWeight: 600, marginBottom: 16 }}>PDF Content</h2>
-          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: "pointer", marginBottom: 16 }}>
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: "pointer", marginBottom: 16, position: "relative" }}>
             <Upload size={20} style={{ color: "var(--os-text-dim)" }} />
             <span className="text-secondary text-sm">Upload PDF</span>
-            <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
+            <input type="file" accept=".pdf" onChange={handleFileUpload} style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: "pointer" }} />
           </label>
           <textarea
             value={pdfText}
