@@ -7,14 +7,14 @@ import { User, Music, Save, Camera, X, Smile, Search, ExternalLink, Play, Pause 
 import Link from "next/link";
 
 const DEFAULT_AVATARS = [
-  { url: "https://em-content.zobj.net/source/apple/391/cat_1f431.png", label: "Cat" },
-  { url: "https://em-content.zobj.net/source/apple/391/dog_1f436.png", label: "Dog" },
-  { url: "https://em-content.zobj.net/source/apple/391/owl_1f989.png", label: "Owl" },
-  { url: "https://em-content.zobj.net/source/apple/391/penguin_1f427.png", label: "Penguin" },
-  { url: "https://em-content.zobj.net/source/apple/391/fox_1f98a.png", label: "Fox" },
-  { url: "https://em-content.zobj.net/source/apple/391/bear_1f43b.png", label: "Bear" },
-  { url: "https://em-content.zobj.net/source/apple/391/rabbit_1f430.png", label: "Rabbit" },
-  { url: "https://em-content.zobj.net/source/apple/391/panda_1f43c.png", label: "Panda" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818022.png", label: "Cat" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818019.png", label: "Dog" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818033.png", label: "Owl" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818039.png", label: "Penguin" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818043.png", label: "Fox" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818027.png", label: "Bear" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818030.png", label: "Rabbit" },
+  { url: "https://cdn-icons-png.flaticon.com/512/1818/1818036.png", label: "Panda" },
 ];
 
 const MOOD_EMOJIS = ["😊", "😎", "🤓", "😴", "🔥", "💯", "🎵", "📚", "💪", "🧠", "✨", "🌟"];
@@ -46,6 +46,7 @@ export default function ProfilePage() {
   const [spotifyInput, setSpotifyInput] = useState("");
   const [spotifySearch, setSpotifySearch] = useState("");
   const [spotifyResults, setSpotifyResults] = useState<SpotifyTrack[]>([]);
+  const [spotifyError, setSpotifyError] = useState("");
   const [searching, setSearching] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,15 +75,17 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    if (!showSpotifySearch || !spotifySearch.trim()) { setSpotifyResults([]); return; }
+    if (!showSpotifySearch || !spotifySearch.trim()) { setSpotifyResults([]); setSpotifyError(""); return; }
     clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(async () => {
       setSearching(true);
+      setSpotifyError("");
       try {
         const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(spotifySearch.trim())}&type=track`);
         const data = await res.json();
-        setSpotifyResults(data.items || []);
-      } catch { setSpotifyResults([]); }
+        if (!res.ok) { setSpotifyError(data.error || "Search failed"); setSpotifyResults([]); }
+        else { setSpotifyResults(data.items || []); }
+      } catch { setSpotifyError("Search unavailable"); setSpotifyResults([]); }
       setSearching(false);
     }, 400);
     return () => clearTimeout(searchTimeout.current);
@@ -348,8 +351,11 @@ export default function ProfilePage() {
                   ))}
                 </div>
               )}
-              {spotifySearch && !searching && spotifyResults.length === 0 && (
-                <p style={{ fontSize: 12, color: "var(--os-text-dim)", padding: "8px 0" }}>No results found</p>
+              {spotifyError && (
+                <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{spotifyError}</p>
+              )}
+              {spotifySearch && !searching && spotifyResults.length === 0 && !spotifyError && (
+                <p style={{ fontSize: 12, color: "var(--os-text-dim)", padding: "8px 0" }}>No results found. Try pasting a Spotify link instead.</p>
               )}
             </div>
           )}

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (!q) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
   const token = await getToken();
-  if (!token) return NextResponse.json({ error: "Spotify not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env.local" }, { status: 503 });
+  if (!token) return NextResponse.json({ error: "Spotify not configured. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to environment variables." }, { status: 503 });
 
   const params = new URLSearchParams({ q, type, limit: "12", market: "US" });
   const res = await fetch(`https://api.spotify.com/v1/search?${params}`, {
