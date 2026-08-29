@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { User, ArrowLeft, BookOpen, Save, Check } from "lucide-react";
+import { User, ArrowLeft, BookOpen, Save, Check, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface SharedDeckData {
@@ -44,6 +44,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
   const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -109,6 +110,14 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
     setSaved(true);
   };
 
+  const handleDelete = async () => {
+    if (!user || !deck || deck.user_id !== user.id || !confirm("Delete this shared deck?")) return;
+    setDeleting(true);
+    const supabase = getSupabase();
+    await supabase.from("shared_decks").delete().eq("id", deck.id).eq("user_id", user.id);
+    window.location.href = "/shared";
+  };
+
   if (!user) {
     return (
       <div className="page-container" style={{ maxWidth: 700 }}>
@@ -147,12 +156,22 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
             <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{deck.title}</h1>
             <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>{cards.length} cards</p>
           </div>
-          <button onClick={handleSave} disabled={saving || saved} className="glass-btn" style={{
-            display: "flex", alignItems: "center", gap: 6,
-            ...(saved ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}),
-          }}>
-            {saved ? <Check size={14} /> : <Save size={14} />} {saving ? "Saving..." : saved ? "Saved!" : "Save to My Decks"}
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {user && user.id === deck.user_id && (
+              <button onClick={handleDelete} disabled={deleting} className="glass-btn" style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(239,68,68,0.1)", color: "#ef4444", borderColor: "rgba(239,68,68,0.2)",
+              }}>
+                <Trash2 size={14} /> {deleting ? "Deleting..." : "Delete"}
+              </button>
+            )}
+            <button onClick={handleSave} disabled={saving || saved} className="glass-btn" style={{
+              display: "flex", alignItems: "center", gap: 6,
+              ...(saved ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}),
+            }}>
+              {saved ? <Check size={14} /> : <Save size={14} />} {saving ? "Saving..." : saved ? "Saved!" : "Save to My Decks"}
+            </button>
+          </div>
         </div>
 
         {creator && (

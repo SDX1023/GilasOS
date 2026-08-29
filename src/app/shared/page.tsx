@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { Link as LinkIcon, User, BookOpen, ChevronRight } from "lucide-react";
+import { Link as LinkIcon, User, BookOpen, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface SharedDeck {
@@ -21,6 +21,16 @@ export default function SharedDecksPage() {
   const { user } = useAuth();
   const [decks, setDecks] = useState<SharedDeck[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (deckId: string) => {
+    if (!user || !confirm("Delete this shared deck?")) return;
+    setDeleting(deckId);
+    const supabase = getSupabase();
+    await supabase.from("shared_decks").delete().eq("id", deckId).eq("user_id", user.id);
+    setDecks((prev) => prev.filter((d) => d.id !== deckId));
+    setDeleting(null);
+  };
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -92,6 +102,16 @@ export default function SharedDecksPage() {
                   </div>
                 </div>
                 <ChevronRight size={16} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
+                {user && user.id === deck.user_id && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(deck.id); }}
+                    disabled={deleting === deck.id}
+                    style={{ padding: 6, borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", cursor: deleting === deck.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: deleting === deck.id ? 0.5 : 1 }}
+                    title="Delete shared deck"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </Link>
           ))}

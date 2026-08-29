@@ -1,38 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get("q");
-  if (!q) return NextResponse.json({ items: [] });
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const query = searchParams.get("q");
 
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return NextResponse.json({ items: [], error: "no credentials" });
+    if (!query) {
+      return NextResponse.json({ error: "No search query provided" }, { status: 400 });
+    }
 
-  const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "grant_type=client_credentials&client_id=" + encodeURIComponent(clientId) + "&client_secret=" + encodeURIComponent(clientSecret),
-  });
-  if (!tokenRes.ok) return NextResponse.json({ items: [], error: "token failed" });
-  const tokenData = await tokenRes.json();
+    const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
+      },
+      body: "grant_type=client_credentials",
+    });
 
-  const searchRes = await fetch("https://api.spotify.com/v1/search?q=" + encodeURIComponent(q) + "&type=track&limit=20", {
-    headers: { Authorization: "Bearer " + tokenData.access_token },
-  });
-  if (!searchRes.ok) {
-    const err = await searchRes.text();
-    return NextResponse.json({ items: [], error: err });
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenData.access_token) {
+      return NextResponse.json({ error: "Failed to get Spotify access token" }, { status: 500 });
+    }
+
+    const searchResponse = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,
+      { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
+    );
+
+    const data = await searchResponse.json();
+
+    if (!data.tracks || data.tracks.items.length === 0) {
+      return NextResponse.json({ tracks: [], message: "No results found" });
+    }
+
+    const tracks = data.tracks.items.map((track: any) => ({
+      id: track.id,
+      name: track.name,
+      artist: track.artists.map((a: any) => a.name).join(", "),
+      album: track.album.name,
+      albumArt: track.album.images[0]?.url || null,
+      url: track.external_urls.spotify,
+      preview: track.preview_url,
+    }));
+
+    return NextResponse.json({ tracks });
+  } catch (error) {
+    console.error("Spotify search error:", error);
+    return NextResponse.json({ error: "Failed to search Spotify" }, { status: 500 });
   }
-
-  const data = await searchRes.json();
-  const items = (data.tracks?.items || []).map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    artist: item.artists?.map((a: any) => a.name).join(", ") || "",
-    image: item.album?.images?.[0]?.url || "",
-    url: item.external_urls?.spotify || "",
-    duration_ms: item.duration_ms || 0,
-  }));
-
-  return NextResponse.json({ items });
 }

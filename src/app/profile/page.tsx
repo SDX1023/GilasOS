@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, Save, Camera, X, Smile, Search, ExternalLink, Play, Pause } from "lucide-react";
+import { User, Music, Save, Camera, X, Smile, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { SpotifySearch } from "@/components/spotify-search";
 
 const DEFAULT_AVATARS = [
   { url: "https://cdn-icons-png.flaticon.com/512/1318/1318913.png", label: "Cat" },
@@ -21,19 +22,12 @@ const MOOD_EMOJIS = ["😊", "😎", "🤓", "😴", "🔥", "💯", "🎵", "�
 
 interface SpotifyTrack {
   id: string;
-  type: string;
   name: string;
   artist: string;
   album: string;
-  image: string;
+  albumArt: string | null;
   url: string;
-  duration_ms: number;
-}
-
-function formatDuration(ms: number): string {
-  const min = Math.floor(ms / 60000);
-  const sec = Math.floor((ms % 60000) / 1000);
-  return `${min}:${sec.toString().padStart(2, "0")}`;
+  preview: string | null;
 }
 
 export default function ProfilePage() {
@@ -44,9 +38,6 @@ export default function ProfilePage() {
   const [moodEmoji, setMoodEmoji] = useState("");
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyInput, setSpotifyInput] = useState("");
-  const [spotifySearch, setSpotifySearch] = useState("");
-  const [spotifyResults, setSpotifyResults] = useState<SpotifyTrack[]>([]);
-  const [searching, setSearching] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,7 +45,6 @@ export default function ProfilePage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showSpotifySearch, setShowSpotifySearch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!user) return;
@@ -73,27 +63,10 @@ export default function ProfilePage() {
     })();
   }, [user]);
 
-  useEffect(() => {
-    if (!showSpotifySearch || !spotifySearch.trim()) { setSpotifyResults([]); return; }
-    clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(spotifySearch.trim())}&type=track`);
-        const data = await res.json();
-        setSpotifyResults(data.items || []);
-      } catch { setSpotifyResults([]); }
-      setSearching(false);
-    }, 400);
-    return () => clearTimeout(searchTimeout.current);
-  }, [spotifySearch, showSpotifySearch]);
-
   const selectTrack = (track: SpotifyTrack) => {
     setSelectedTrack(track);
     setSpotifyInput(track.url);
     setShowSpotifySearch(false);
-    setSpotifySearch("");
-    setSpotifyResults([]);
   };
 
   const handleSave = async () => {
@@ -280,78 +253,35 @@ export default function ProfilePage() {
               display: "flex", alignItems: "center", gap: 12, padding: 10, borderRadius: 10,
               background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 10,
             }}>
-              {selectedTrack.image && <img src={selectedTrack.image} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover" }} />}
+              {selectedTrack.albumArt && <img src={selectedTrack.albumArt} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover" }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 13, fontWeight: 500, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedTrack.name}</p>
                 <p style={{ fontSize: 11, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedTrack.artist}</p>
               </div>
-              <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{formatDuration(selectedTrack.duration_ms)}</span>
               <button onClick={() => { setSelectedTrack(null); setSpotifyInput(""); }} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", padding: 4 }}><X size={14} /></button>
             </div>
           )}
 
-          {/* Search Button / Input */}
+          {/* Search Button */}
           {!showSpotifySearch && !selectedTrack && (
             <button
               onClick={() => setShowSpotifySearch(true)}
               className="glass-btn glass-btn-ghost"
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-start", color: "var(--os-text-dim)" }}
             >
-              <Search size={14} /> Search for a song on Spotify...
+              Search for a song on Spotify...
             </button>
           )}
 
+          {/* Spotify Search Modal */}
           {showSpotifySearch && (
-            <div style={{ position: "relative" }}>
-              <div style={{ position: "relative" }}>
-                <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--os-text-dim)" }} />
-                <input
-                  className="glass-input"
-                  value={spotifySearch}
-                  onChange={(e) => setSpotifySearch(e.target.value)}
-                  placeholder="Search songs, artists, albums..."
-                  autoFocus
-                  style={{ paddingLeft: 32, paddingRight: 32 }}
-                />
-                <button
-                  onClick={() => { setShowSpotifySearch(false); setSpotifySearch(""); setSpotifyResults([]); }}
-                  style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", padding: 4 }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              {/* Search Results */}
-              {searching && <p style={{ fontSize: 12, color: "var(--os-text-dim)", padding: "8px 0" }}>Searching...</p>}
-              {spotifyResults.length > 0 && (
-                <div style={{
-                  maxHeight: 300, overflowY: "auto", marginTop: 6, borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.06)", background: "rgba(15,21,35,0.95)",
-                }}>
-                  {spotifyResults.map((track) => (
-                    <button
-                      key={track.id}
-                      onClick={() => selectTrack(track)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 12px",
-                        background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.04)",
-                        cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
-                      }}
-                    >
-                      {track.image && <img src={track.image} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.name}</p>
-                        <p style={{ fontSize: 11, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}{track.album ? ` - ${track.album}` : ""}</p>
-                      </div>
-                      <span style={{ fontSize: 11, color: "var(--os-text-dim)", flexShrink: 0 }}>{formatDuration(track.duration_ms)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {spotifySearch && !searching && spotifyResults.length === 0 && (
-                <p style={{ fontSize: 12, color: "var(--os-text-dim)", padding: "8px 0" }}>No results found</p>
-              )}
-            </div>
+            <SpotifySearch
+              onSelect={(track) => {
+                setSelectedTrack({ id: track.id, name: track.name, artist: track.artist, album: track.album, albumArt: track.albumArt, url: track.url, preview: track.preview });
+                setSpotifyInput(track.url);
+              }}
+              onClose={() => setShowSpotifySearch(false)}
+            />
           )}
 
           {/* Spotify Embed */}
