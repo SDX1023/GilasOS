@@ -14,28 +14,24 @@ export default function PdfToFlashcardsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [deckName, setDeckName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [lastError, setLastError] = useState("");
+  const [saveMsg, setSaveMsg] = useState("");
   const [cooldown, setCooldown] = useState(() => {
     if (typeof window === "undefined") return 0;
     const until = localStorage.getItem("flashcard-cooldown-until");
-    if (until) {
-      const remaining = Math.max(0, Math.ceil((Number(until) - Date.now()) / 1000));
-      return remaining;
-    }
+    if (until) return Math.max(0, Math.ceil((Number(until) - Date.now()) / 1000));
     return 0;
   });
-  const [lastError, setLastError] = useState("");
-  const [saveMsg, setSaveMsg] = useState("");
 
   useEffect(() => {
     if (cooldown <= 0) { localStorage.removeItem("flashcard-cooldown-until"); return; }
-    const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    return () => clearTimeout(t);
   }, [cooldown]);
 
   const ensureCourseAndModule = () => {
     const custom = loadCustomContent();
-    const existingCourse = custom.courses.find((c) => c.id === PDF_COURSE_ID);
-    if (!existingCourse) {
+    if (!custom.courses.find((c) => c.id === PDF_COURSE_ID)) {
       addCourse({ id: PDF_COURSE_ID, title: "PDF Generated", description: "Flashcards generated from PDFs" });
       addModule(PDF_COURSE_ID, { id: PDF_MODULE_ID, courseId: PDF_COURSE_ID, title: "My Decks", description: "Auto-saved from PDF to Flashcards" });
     }
@@ -61,7 +57,7 @@ export default function PdfToFlashcardsPage() {
   }, []);
 
   const generateCards = useCallback(async () => {
-    if (!pdfText.trim() || isGenerating) return;
+    if (!pdfText.trim() || isGenerating || cooldown > 0) return;
     setIsGenerating(true);
     setLastError("");
     try {
@@ -70,68 +66,30 @@ export default function PdfToFlashcardsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: pdfText }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { throw new Error(text.slice(0, 400) || "Invalid server response"); }
       if (!res.ok) {
+        const retryAfter = data.retryAfter || (res.status === 429 ? 35 : 0);
+        if (retryAfter > 0) {
+          setCooldown(retryAfter);
+          localStorage.setItem("flashcard-cooldown-until", String(Date.now() + retryAfter * 1000));
+        }
         throw new Error(data.error || "Failed to generate flashcards");
       }
-
-      const jobId = data.jobId;
-      if (!jobId) throw new Error("No job id returned");
-
-      let currentJobId = jobId;
-      let final: any = null;
-      let retries = 0;
-      let backoff = 0;
-      while (true) {
-        if (backoff > 0) await new Promise((res) => setTimeout(res, backoff));
-        const r = await fetch(`/api/generate-flashcards?job=${encodeURIComponent(currentJobId)}`);
-        const text = await r.text();
-        let d: any;
-        try { d = JSON.parse(text); } catch {
-          if (r.status === 502 || text.includes("<!DOCTYPE")) {
-            backoff = 3000;
-            continue;
-          }
-          throw new Error(text.slice(0, 300) || "Invalid server response");
-        }
-        if (!r.ok) {
-          if (r.status === 502) {
-            backoff = 3000;
-            continue;
-          }
-          if (r.status === 404 && d.error === "Job not found" && retries < 2) {
-            retries++;
-            const nr = await fetch("/api/generate-flashcards", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: pdfText }),
-            });
-            const nd = await nr.json();
-            if (!nr.ok || !nd.jobId) throw new Error(d.error || "Job lost and restart failed");
-            currentJobId = nd.jobId;
-            backoff = 0;
-            continue;
-          }
-          throw new Error(d.error || "Failed to poll job");
-        }
-        backoff = 0;
-        if (d.status === "error") throw new Error(d.error || "Generation failed");
-        if (d.status === "done") { final = d; break; }
-        if (d.error && d.error.toLowerCase().includes("rate limited")) {
-          const m = d.error.match(/wait (\d+)/i) || d.error.match(/retry in (\d+)/i);
-          const wait = m ? parseInt(m[1], 10) : 35;
-          await new Promise((resolve) => setTimeout(resolve, wait * 1000));
-        } else {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-      }
-      setGeneratedCards(final.cards);
+      if (!data.cards || data.cards.length === 0) throw new Error("No flashcards generated — try again");
+      setGeneratedCards(data.cards);
     } catch (error: any) {
-      setLastError(error.message);
+      const msg = error.message || "Failed";
+      if (msg.toLowerCase().includes("<!doctype") || msg.toLowerCase().includes("bad gateway")) {
+        setLastError("Server busy — try again in 30s");
+      } else {
+        setLastError(msg);
+      }
     } finally {
       setIsGenerating(false);
     }
-  }, [pdfText, isGenerating]);
+  }, [pdfText, isGenerating, cooldown]);
 
   const saveDeck = async () => {
     if (!deckName.trim() || generatedCards.length === 0) return;
@@ -144,113 +102,48 @@ export default function PdfToFlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const reviewerId = `${PDF_COURSE_ID}/${PDF_MODULE_ID}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
-        await supabase.from("reviewers").upsert({
-          id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: PDF_MODULE_ID, title: deckName,
-        }, { onConflict: "id" });
-        if (generatedCards.length > 0) {
-          const rows = generatedCards.map((card, i) => ({
-            id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
-            reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "",
-          }));
-          await supabase.from("flashcards").insert(rows);
-        }
+        await supabase.from("reviewers").upsert({ id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: PDF_MODULE_ID, title: deckName }, { onConflict: "id" });
+        const rows = generatedCards.map((card, i) => ({ id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "" }));
+        await supabase.from("flashcards").insert(rows);
       }
-      setDeckName("");
-      setGeneratedCards([]);
-      setPdfText("");
-      setSaveMsg("Deck saved!");
-      setTimeout(() => setSaveMsg(""), 3000);
-    } catch (err: any) {
-      setLastError(err.message);
-    } finally {
-      setSaving(false);
-    }
+      setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!"); setTimeout(() => setSaveMsg(""), 3000);
+    } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-2xl sm:text-3xl font-bold mb-2">PDF to Flashcards</h1>
       <p className="text-muted-foreground mb-8">Generate flashcards from your study materials using AI</p>
-
       <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
         <div className="space-y-6">
           <div className="p-6 rounded-xl border bg-card">
             <h2 className="font-semibold mb-4">PDF Content</h2>
             <div className="space-y-4">
               <label className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed cursor-pointer hover:bg-muted transition-colors">
-                <Upload className="h-5 w-5" />
-                <span className="text-sm">Upload PDF</span>
+                <Upload className="h-5 w-5" /><span className="text-sm">Upload PDF</span>
                 <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
               </label>
-              <textarea
-                value={pdfText}
-                onChange={(e) => { setPdfText(e.target.value); setLastError(""); }}
-                placeholder="Or paste text content here..."
-                className="w-full px-3 py-2 rounded-lg border bg-background h-48 resize-none"
-              />
-
-              {lastError && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm">
-                  <p className="text-red-600 font-medium">{lastError}</p>
-                  {cooldown > 0 && <p className="text-muted-foreground mt-1">Wait {cooldown}s before trying again</p>}
-                </div>
-              )}
-
-              {saveMsg && (
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-sm">
-                  <p className="text-green-600 font-medium">{saveMsg}</p>
-                </div>
-              )}
-
-              <button
-                onClick={generateCards}
-                disabled={!pdfText.trim() || isGenerating || cooldown > 0}
-                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
+              <textarea value={pdfText} onChange={(e) => { setPdfText(e.target.value); setLastError(""); }} placeholder="Or paste text content here..." className="w-full px-3 py-2 rounded-lg border bg-background h-48 resize-none" />
+              {lastError && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm"><p className="text-red-600 font-medium">{lastError}</p>{cooldown > 0 && <p className="text-muted-foreground mt-1">Wait {cooldown}s before trying again</p>}</div>}
+              {saveMsg && <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-sm"><p className="text-green-600 font-medium">{saveMsg}</p></div>}
+              <button onClick={generateCards} disabled={!pdfText.trim() || isGenerating || cooldown > 0} className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
                 {isGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : cooldown > 0 ? `Wait ${cooldown}s...` : <><FileText className="h-4 w-4" /> Generate Flashcards</>}
               </button>
             </div>
           </div>
         </div>
-
         <div className="space-y-6">
           <div className="p-6 rounded-xl border bg-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Generated Cards ({generatedCards.length})</h2>
               {generatedCards.length > 0 && (
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={deckName}
-                    onChange={(e) => setDeckName(e.target.value)}
-                    placeholder="Deck name"
-                    className="px-3 py-1 rounded-lg border bg-background text-sm w-36"
-                  />
-                  <button
-                    onClick={saveDeck}
-                    disabled={!deckName.trim() || saving}
-                    className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50"
-                  >
-                    <Save className="h-3 w-3" />
-                    {saving ? "Saving..." : "Save"}
-                  </button>
+                  <input type="text" value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" className="px-3 py-1 rounded-lg border bg-background text-sm w-36" />
+                  <button onClick={saveDeck} disabled={!deckName.trim() || saving} className="flex items-center gap-1 px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50"><Save className="h-3 w-3" />{saving ? "Saving..." : "Save"}</button>
                 </div>
               )}
             </div>
-
-            {generatedCards.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Generate flashcards from your PDF content</p>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {generatedCards.map((card, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-muted/50">
-                    <p className="font-medium text-sm">{card.front}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{card.back}</p>
-                    {card.hint && <p className="text-xs text-muted-foreground mt-1 italic">Hint: {card.hint}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
+            {generatedCards.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Generate flashcards from your PDF content</p> : <div className="space-y-3 max-h-96 overflow-y-auto">{generatedCards.map((card, i) => <div key={i} className="p-3 rounded-lg bg-muted/50"><p className="font-medium text-sm">{card.front}</p><p className="text-sm text-muted-foreground mt-1">{card.back}</p>{card.hint && <p className="text-xs text-muted-foreground mt-1 italic">Hint: {card.hint}</p>}</div>)}</div>}
           </div>
         </div>
       </div>
