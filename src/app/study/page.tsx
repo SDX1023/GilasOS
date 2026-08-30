@@ -109,7 +109,7 @@ export default function StudyPage() {
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
-              borderRadius: "6px",
+              borderRadius: "14px",
               border: "none",
               outline: "none",
               fontSize: "13px",
@@ -119,6 +119,9 @@ export default function StudyPage() {
               color: tab === key ? "#fff" : "var(--os-text-secondary)",
               cursor: "pointer",
               boxShadow: "none",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              WebkitTapHighlightColor: "transparent",
             }}>
             <Icon style={{ width: "16px", height: "16px" }} /> {label}
           </button>
@@ -595,15 +598,15 @@ function QuizTab({ userId }: { userId: string | null }) {
             Show Answers
           </label>
           <div style={{ flex: 1 }} />
-          <button onClick={handleStartQuiz} className="glass-btn glass-btn-primary" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <button onClick={handleStartQuiz} onMouseDown={(e) => e.preventDefault()} className="glass-btn glass-btn-primary" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
             <Play size={14} /> Start Quiz
           </button>
           {userId && (
-            <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+            <button onClick={handleSaveQuiz} onMouseDown={(e) => e.preventDefault()} className="glass-btn" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
               <Save size={14} /> Save Quiz
             </button>
           )}
-          <button onClick={() => { setShowPreview(false); setQuizQuestions([]); }} className="glass-btn" style={{ padding: "8px 20px", fontSize: 13 }}>
+          <button onClick={() => { setShowPreview(false); setQuizQuestions([]); }} onMouseDown={(e) => e.preventDefault()} className="glass-btn" style={{ padding: "8px 20px", fontSize: 13 }}>
             Back
           </button>
         </div>
