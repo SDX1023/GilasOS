@@ -126,23 +126,22 @@ function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-card rounded-xl p-6 max-w-[650px] w-full mx-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-semibold mb-4">Crop Image</h3>
-        <div className="flex justify-center">
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={onClose}>
+      <div style={{ background: "var(--os-bg-secondary)", borderRadius: 12, padding: 24, maxWidth: 650, width: "100%", margin: "0 16px" }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 16, color: "var(--os-text-primary)" }}>Crop Image</h3>
+        <div style={{ display: "flex", justifyContent: "center" }}>
           <canvas
             ref={canvasRef}
-            className="rounded-lg"
-            style={{ cursor: action === "move" ? "move" : action ? "nwse-resize" : "default", maxWidth: "100%" }}
+            style={{ borderRadius: 10, cursor: action === "move" ? "move" : action ? "nwse-resize" : "default", maxWidth: "100%" }}
             onMouseDown={md}
             onMouseMove={mm}
             onMouseUp={() => setAction(null)}
             onMouseLeave={() => setAction(null)}
           />
         </div>
-        <div className="flex gap-2 mt-4 justify-end">
-          <button onClick={onClose} className="px-4 py-2 bg-muted rounded-lg text-sm">Cancel</button>
-          <button onClick={apply} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm">Apply Crop</button>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", background: "rgba(255,255,255,0.06)", borderRadius: 8, fontSize: 13, border: "none", cursor: "pointer", color: "var(--os-text-secondary)", fontFamily: "Inter, sans-serif" }}>Cancel</button>
+          <button onClick={apply} style={{ padding: "8px 16px", background: "var(--os-accent)", color: "#fff", borderRadius: 8, fontSize: 13, border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Apply Crop</button>
         </div>
       </div>
     </div>
@@ -265,12 +264,12 @@ function ImageNodeView(props: any) {
   return (
     <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: hasPos ? "block" : "inline-block", minHeight: hasPos ? 40 : undefined }}>
       {isSelected && (
-        <div className="image-toolbar" style={hasPos ? { position: "absolute", top: -36, left: "50%", transform: "translateX(-50%)", zIndex: 20 } : undefined}>
-          <div onMouseDown={handleDragStart} className="image-toolbar-btn cursor-move" title="Drag to move">⠿</div>
+        <div className="image-toolbar" style={hasPos ? { position: "absolute", top: -36, left: "50%", transform: "translateX(-50%)", zIndex: 20 } : { position: "relative", marginBottom: 4 }}>
+          <div onMouseDown={handleDragStart} className="image-toolbar-btn" style={{ cursor: "move" }} title="Drag to move">⠿</div>
           <div className="image-toolbar-divider" />
-          <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+          <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
-          <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop className="h-3.5 w-3.5" /></button>
+          <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
         </div>
       )}
       <div
@@ -545,12 +544,12 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      CustomImage.configure({ inline: false, allowBase64: true, HTMLAttributes: { class: "max-w-full max-h-96 rounded-lg shadow-md my-4 cursor-pointer" } }),
+      CustomImage.configure({ inline: false, allowBase64: true, HTMLAttributes: { class: "tiptap-image" } }),
       Textbox,
       Placeholder.configure({ placeholder: "Start writing..." }),
     ],
     content: initialContent,
-    editorProps: { attributes: { class: "prose prose-neutral dark:prose-invert max-w-none min-h-[500px] focus:outline-none p-8" } },
+    editorProps: { attributes: { class: "ProseMirror" } },
     onUpdate: ({ editor }) => {
       if (isUpdatingFromEffect.current) return;
       const md = docToMarkdown(editor);
