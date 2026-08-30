@@ -573,12 +573,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           <ChevronRight style={{ width: 16, height: 16 }} />
           <span>{reviewer.title}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h1 style={{ fontSize: "1.875rem", fontWeight: 700 }}>{reviewer.title}</h1>
+        <div className="flashcard-header">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1 style={{ fontSize: "1.875rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reviewer.title}</h1>
             <p className="text-secondary" style={{ marginTop: "0.5rem" }}>{cards.length} cards</p>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="flashcard-actions">
             <button onClick={() => setShuffled(!shuffled)}
               className="glass-btn"
               style={shuffled ? { background: "rgba(0,212,255,0.1)", color: "var(--os-accent)", borderColor: "rgba(0,212,255,0.3)" } : {}}
@@ -766,8 +766,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   </div>
                 </div>
               ) : (
-                <div style={{ position: "relative", paddingRight: "4rem" }}>
-                  <div style={{ position: "absolute", top: 0, right: 0, display: "flex", gap: "0.25rem" }} className="no-print">
+                <div className="flashcard-card-content">
+                  <div className="flashcard-card-actions no-print">
                     {user && (
                       <button onClick={() => handleToggleBookmark(card)}
                         className="glass-btn-ghost"
@@ -780,8 +780,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                     <button onClick={() => deleteCard(realIndex)}
                       className="glass-btn-ghost" style={{ padding: "0.375rem", borderRadius: "0.5rem" }}><Trash2 style={{ width: 16, height: 16 }} /></button>
                   </div>
-                  <p style={{ fontWeight: 500 }}>Q: {card.front}</p>
-                  <p style={{ marginTop: "0.5rem" }} className="text-secondary">A: {card.back}</p>
+                  <p style={{ fontWeight: 500, wordBreak: "break-word" }}>Q: {card.front}</p>
+                  <p style={{ marginTop: "0.5rem", wordBreak: "break-word" }} className="text-secondary">A: {card.back}</p>
                   {card.hint && <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", fontStyle: "italic" }} className="text-secondary">Hint: {card.hint}</p>}
                 </div>
               )}

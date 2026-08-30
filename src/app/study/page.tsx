@@ -93,6 +93,7 @@ export default function StudyPage() {
           ["weak", "Weak Areas", TrendingDown],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
+            onMouseUp={(e) => (e.currentTarget as HTMLButtonElement).blur()}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
