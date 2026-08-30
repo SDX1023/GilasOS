@@ -92,7 +92,7 @@ export default function StudyPage() {
           ["history", "History", History],
           ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
-          <button key={key} onClick={() => setTab(key)}
+          <button key={key} onClick={() => setTab(key)} onBlur={(e) => e.currentTarget.blur()}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
@@ -689,6 +689,30 @@ function QuizTab({ userId }: { userId: string | null }) {
         <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px", color: "var(--os-text-primary)" }}>Generate a Quiz</h2>
         <p className="text-secondary">Generate multiple choice and identification questions from your study materials</p>
       </div>
+
+      {savedQuizzes.length > 0 && (
+        <div style={{ marginBottom: "24px" }}>
+          <h3 style={{ fontSize: "14px", fontWeight: 500, color: "var(--os-text-primary)", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <Save style={{ width: "16px", height: "16px" }} /> Saved Quizzes ({savedQuizzes.length})
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {savedQuizzes.map((q) => (
+              <div key={q.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 500, fontSize: "13px", color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.title}</p>
+                  <p className="text-xs text-secondary" style={{ marginTop: 2 }}>{q.questions?.length || 0} questions</p>
+                </div>
+                <button onClick={() => handleLoadSaved(q)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
+                  <Play style={{ width: 12, height: 12, marginRight: 4 }} /> Load
+                </button>
+                <button onClick={() => handleDeleteSaved(q.id)} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px" }}>
         <button onClick={() => setSelectedSource("text")}
           className="flex items-center"
