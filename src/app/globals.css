@@ -1925,3 +1925,347 @@ button:focus {
 .btn-action-primary:hover {
   opacity: 0.9;
 }
+
+/* ============================================================
+   FIX: Content spacing (prevent taskbar overlap)
+   ============================================================ */
+.main-content {
+  padding-bottom: 100px; /* Space for taskbar */
+  min-height: 100vh;
+}
+
+/* ============================================================
+   FIX: Module cards - proper styling
+   ============================================================ */
+.module-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: grab;
+  text-decoration: none;
+  color: var(--os-text-primary);
+}
+
+.module-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.module-card .color-bar {
+  width: 4px;
+  height: 48px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.module-card .icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.module-card .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.module-card .info .name {
+  font-weight: 600;
+  color: var(--os-text-primary);
+  font-size: 15px;
+}
+
+.module-card .info .type-badge {
+  font-size: 10px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--os-text-secondary);
+  margin-left: 8px;
+}
+
+.module-card .info .description {
+  font-size: 13px;
+  color: var(--os-text-secondary);
+  margin-top: 2px;
+}
+
+.module-card .info .stats {
+  font-size: 12px;
+  color: var(--os-text-dim);
+  margin-top: 4px;
+  display: flex;
+  gap: 12px;
+}
+
+.module-card .drag-handle {
+  color: var(--os-text-dim);
+  cursor: grab;
+  transition: color 0.2s ease;
+  padding: 4px;
+}
+
+.module-card .drag-handle:hover {
+  color: var(--os-text-primary);
+}
+
+.module-card .arrow {
+  color: var(--os-text-dim);
+  transition: color 0.2s ease;
+}
+
+.module-card:hover .arrow {
+  color: var(--os-text-secondary);
+}
+
+/* Drag and drop states */
+.module-card.dragging {
+  opacity: 0.4;
+}
+
+.module-card.drag-over {
+  border-color: var(--os-accent);
+  background: rgba(0, 212, 255, 0.06);
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.08);
+}
+
+.module-card.drag-over .drop-indicator {
+  display: block;
+}
+
+.drop-indicator {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--os-accent);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* ============================================================
+   FIX: Module grid
+   ============================================================ */
+.module-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ============================================================
+   FIX: Empty state
+   ============================================================ */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+}
+
+.empty-state .icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.empty-state h3 {
+  color: var(--os-text-secondary);
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.empty-state p {
+  color: var(--os-text-dim);
+  font-size: 14px;
+}
+
+/* ============================================================
+   FIX: Stats bar
+   ============================================================ */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  color: var(--os-text-dim);
+  flex-wrap: wrap;
+}
+
+.stats-bar .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ============================================================
+   FIX: Search bar
+   ============================================================ */
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px 16px 10px 40px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  color: var(--os-text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-bar input:focus {
+  border-color: var(--os-accent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-bar input::placeholder {
+  color: var(--os-text-dim);
+}
+
+.search-bar .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--os-text-dim);
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+/* ============================================================
+   FIX: Module header
+   ============================================================ */
+.module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.module-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--os-text-primary);
+}
+
+.module-header .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ============================================================
+   FIX: Buttons
+   ============================================================ */
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--os-accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+  background: #00b8d4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+}
+
+/* ============================================================
+   FIX: Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  .module-card {
+    padding: 12px 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .module-card .info .name {
+    font-size: 14px;
+  }
+
+  .module-card .info .description {
+    font-size: 12px;
+  }
+
+  .module-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .module-header .actions {
+    justify-content: stretch;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .stats-bar {
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .main-content {
+    padding-bottom: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .module-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .module-card .icon-wrapper {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  .module-card .info .name {
+    font-size: 13px;
+  }
+
+  .module-card .info .type-badge {
+    font-size: 9px;
+    padding: 1px 8px;
+  }
+
+  .module-card .info .stats {
+    font-size: 11px;
+    gap: 8px;
+  }
+}
