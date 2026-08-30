@@ -322,7 +322,7 @@ function CalendarPage() {
 
             {/* Create Form */}
             {showCreate && selectedDate && (
-              <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ marginTop: 12, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
                 <div className="flex-between" style={{ marginBottom: 12 }}>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>New Event</span>
                   <button onClick={() => setShowCreate(false)} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={14} /></button>

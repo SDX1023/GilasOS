@@ -170,7 +170,7 @@ export default function PixelPet() {
         </div>
 
         {/* Stage + XP Bar */}
-        <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)" }}>
               {stage.emoji} {stage.name}
@@ -204,7 +204,7 @@ export default function PixelPet() {
         </div>
 
         {/* Mood */}
-        <div style={{ padding: "12px 14px", marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ padding: "12px 14px", marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.35)" }}>
           <p style={{ fontSize: 11, color: "var(--os-text-secondary)", textAlign: "center" }}>
             {pet.mood === "happy" ? "Feeling great!" : pet.mood === "sad" ? "Needs attention..." : "Just vibing~"}
           </p>
@@ -374,7 +374,7 @@ function CooldownBtn({ icon, label, sublabel, onClick, color, cooldown, maxCoold
     <button onClick={onClick} disabled={!ready} style={{
       display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
       background: ready ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
-      border: "1px solid " + (ready ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)"),
+      border: "1px solid " + (ready ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.03)"),
       cursor: ready ? "pointer" : "not-allowed",
       transition: "all 0.15s", textAlign: "left", width: "100%",
       opacity: ready ? 1 : 0.5, position: "relative", overflow: "hidden",
@@ -399,7 +399,7 @@ function ActionBtn({ icon, label, sublabel, onClick, color }: { icon: React.Reac
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
-      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)",
       cursor: "pointer", transition: "all 0.15s", textAlign: "left", width: "100%",
     }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}

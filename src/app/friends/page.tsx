@@ -255,7 +255,7 @@ export default function FriendsPage() {
       </h1>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)", marginBottom: 20 }}>
         {([
           { id: "notes" as Tab, label: "Notes", count: notes.length },
           { id: "friends" as Tab, label: "Friends", count: friends.length },

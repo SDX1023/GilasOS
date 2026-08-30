@@ -174,7 +174,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
         </div>
 
         {creator && (
-          <Link href={`/profile/${deck.user_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", textDecoration: "none" }}>
+          <Link href={`/profile/${deck.user_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)", textDecoration: "none" }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {creator.avatar_url ? <img src={creator.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={18} style={{ color: "var(--os-text-dim)" }} />}
             </div>
@@ -203,7 +203,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
             <div key={i} onClick={() => setFlippedIndex(flippedIndex === i ? null : i)} className="glass-card" style={{ padding: 16, cursor: "pointer" }}>
               <p style={{ fontWeight: 500, color: "var(--os-text-primary)", marginBottom: flippedIndex === i ? 12 : 0 }}>{card.front}</p>
               {flippedIndex === i && (
-                <div style={{ paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.35)" }}>
                   <p style={{ fontSize: 13, color: "var(--os-text-secondary)", lineHeight: 1.5 }}>{card.back}</p>
                   {card.hint && <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 8, fontStyle: "italic" }}>Hint: {card.hint}</p>}
                 </div>

@@ -194,7 +194,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
         const b = Math.round(50 + 200 * gradPct);
         ctx.fillStyle = `rgb(${r},${g},${b})`;
       } else {
-        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
       }
       ctx.beginPath();
       ctx.moveTo(x + gap / 2 + 1.5, y);

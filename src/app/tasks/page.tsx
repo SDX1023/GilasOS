@@ -112,7 +112,7 @@ function TodoApp() {
         transform: showSidebar ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.2s ease",
       }}>
-        <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: 16, borderBottom: "1px solid rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2 style={{ fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}><Layers size={16} /> Decks</h2>
         </div>
         <div style={{ flex: 1, overflow: "auto", padding: 8 }}>
@@ -202,7 +202,7 @@ function TodoApp() {
 
           {/* Filters */}
           <div className="flex-between" style={{ marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
               {(["all", "active", "completed"] as FilterStatus[]).map((f) => (
                 <button key={f} onClick={() => setFilter(f)} style={{
                   padding: "6px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif",

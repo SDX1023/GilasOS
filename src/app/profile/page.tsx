@@ -320,7 +320,7 @@ export default function ProfilePage() {
 
         {/* Avatar Picker */}
         {showAvatarPicker && (
-          <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }}>
+          <div style={{ padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)", marginBottom: 20 }}>
             <div className="flex-between" style={{ marginBottom: 12 }}>
               <span style={{ fontSize: 13, fontWeight: 500 }}>Choose Avatar</span>
               <button onClick={() => setShowAvatarPicker(false)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={14} /></button>
@@ -459,7 +459,7 @@ export default function ProfilePage() {
           {selectedTrack && !showSpotifySearch && (
             <div style={{
               display: "flex", alignItems: "center", gap: 12, padding: 10, borderRadius: 10,
-              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 10,
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)", marginBottom: 10,
             }}>
               {selectedTrack.albumArt && <img src={selectedTrack.albumArt} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover" }} />}
               <div style={{ flex: 1, minWidth: 0 }}>

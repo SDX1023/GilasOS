@@ -175,7 +175,7 @@ export function Navbar() {
                       background: "rgba(15,21,35,0.95)", backdropFilter: "blur(20px)",
                       boxShadow: "0 16px 48px rgba(0,0,0,0.4)", zIndex: 50, padding: "4px 0",
                     }}>
-                      <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--os-text-dim)", borderBottom: "1px solid rgba(255,255,255,0.06)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--os-text-dim)", borderBottom: "1px solid rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {user.email}
                         {isAdmin && <span style={{ marginLeft: 4, color: "var(--os-accent)", fontWeight: 500 }}>Admin</span>}
                       </div>
@@ -229,7 +229,7 @@ export function Navbar() {
 
       {showMobile && (
         <div style={{
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid rgba(255,255,255,0.35)",
           background: "rgba(15,21,35,0.95)", padding: 12,
         }}>
           {navItems.map((item) => (
@@ -250,7 +250,7 @@ export function Navbar() {
               <item.icon size={18} /> {item.label}
             </Link>
           ))}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 8, paddingTop: 8 }}>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.35)", marginTop: 8, paddingTop: 8 }}>
             <p style={{ fontSize: 11, color: "var(--os-text-dim)", padding: "4px 12px", marginBottom: 4 }}>TOOLS</p>
             {toolItems.map((item) => (
               <Link

@@ -85,7 +85,7 @@ export default function StudyPage() {
         <PenTool style={{ width: "28px", height: "28px" }} /> Study
       </h1>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
         {([
           ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
@@ -632,7 +632,7 @@ function QuizTab({ userId }: { userId: string | null }) {
               const isCorrectOpt = String(j) === correctIdx;
               const showFeedback = answered;
               let bg = "transparent";
-              let border = "rgba(255,255,255,0.06)";
+              let border = "rgba(255,255,255,0.35)";
               let shadow = "none";
               let txtColor = "var(--os-text-primary)";
 
@@ -721,7 +721,7 @@ function QuizTab({ userId }: { userId: string | null }) {
           </div>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px" }}>
         <button onClick={() => setSelectedSource("text")}
           className="flex items-center"
           style={{
@@ -812,7 +812,7 @@ function QuizTab({ userId }: { userId: string | null }) {
         )}
         <div>
           <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Question Type</label>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)" }}>
             {(["mc", "identification", "mixed"] as const).map((t) => (
               <button key={t} onClick={() => setQuizType(t)} style={{
                 flex: 1, justifyContent: "center", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500, transition: "colors 0.2s",

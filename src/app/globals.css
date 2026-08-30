@@ -1084,14 +1084,14 @@ body {
   background: rgba(15, 21, 35, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 16px;
   padding: 24px;
 }
 
 .glass-card {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
   transition: all 0.2s ease;
@@ -1099,14 +1099,14 @@ body {
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card-link {
   display: block;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
   text-decoration: none;
@@ -1116,7 +1116,7 @@ body {
 
 .glass-card-link:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
@@ -1125,7 +1125,7 @@ body {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(0, 0, 0, 0.2);
   color: var(--os-text-primary);
   font-size: 14px;
@@ -1194,7 +1194,7 @@ a:active {
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
   padding: 10px 20px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   font-size: 14px;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
@@ -1204,6 +1204,7 @@ a:active {
 .glass-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--os-text-primary);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .glass-btn:focus,

@@ -216,7 +216,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           )}
         </div>
         {profile.bio && (
-          <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>{profile.bio}</p>
+          <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.35)" }}>{profile.bio}</p>
         )}
       </div>
 

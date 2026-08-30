@@ -261,7 +261,7 @@ export function AdminDashboard() {
               </div>
 
               {isExpanded && (
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.35)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                   {showModuleForm === course.id && (
                     <div style={{ padding: 12, borderRadius: 10, background: "rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                       <input
@@ -298,7 +298,7 @@ export function AdminDashboard() {
                     const isModExpanded = expandedModule === mod.id;
 
                     return (
-                      <div key={mod.id} style={{ borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div key={mod.id} style={{ borderRadius: 10, border: "1px solid rgba(255,255,255,0.35)" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: 12, background: "rgba(255,255,255,0.06)" }}>
                           <button
                             onClick={() => setExpandedModule(isModExpanded ? null : mod.id)}
@@ -344,7 +344,7 @@ export function AdminDashboard() {
                             ))}
 
                             {/* Standardized Content Section */}
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.35)" }}>
                               <p style={{ fontSize: 12, fontWeight: 600, color: "var(--os-text-secondary)", textTransform: "uppercase" }}>Module Content</p>
                               <button
                                 onClick={() => setShowContentForm(showContentForm === mod.id ? null : mod.id)}
@@ -385,7 +385,7 @@ export function AdminDashboard() {
                             ))}
 
                             {/* Reviewers Section */}
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.35)" }}>
                               <p style={{ fontSize: 12, fontWeight: 600, color: "var(--os-text-secondary)", textTransform: "uppercase" }}>Flash Cards</p>
                               <Link
                                 href={`/editor/reviewer?course=${course.id}&module=${mod.id}`}
