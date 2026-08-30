@@ -5,7 +5,7 @@ import { GROWTH_STAGE_NAMES } from "./pet-context";
 import { getSpriteUrl, PET_BGS } from "./pet-sprites";
 import { ChevronRight, ChevronLeft, Utensils, Moon, Gamepad2, Palette, Upload, X, Sparkles } from "lucide-react";
 
-const ALL_PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl", "olaf"];
+const ALL_PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl", "olaf", "minion"];
 
 function getGrowthScale(xp: number, stageOverride?: string | null): number {
   const name = stageOverride || (xp < 500 ? "Baby" : xp < 1000 ? "Toddler" : xp < 1500 ? "Teen" : "Adult");

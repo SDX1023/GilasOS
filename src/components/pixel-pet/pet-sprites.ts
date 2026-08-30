@@ -20,58 +20,48 @@ export const PET_BGS: Record<string, { sky: string; grass: string; name: string;
 // VS Pets style: round egg-shaped body, tiny dot eyes, small blush, stubby legs, 1px outline
 // viewBox 24x24, display 128x128
 
-// Olaf (Snoopy's brother) — blue hat, droopy black ears, sleepy half-lidded eyes, tongue out, sitting with paw pads
+// Olaf (Snoopy's brother) — sitting pose, droopy ears, sleepy eyes, tongue out, blue hat
 const OLAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
-  <rect x="7" y="0" width="10" height="1" fill="#2563eb"/>
-  <rect x="6" y="1" width="12" height="2" fill="#3b82f6"/>
-  <rect x="5" y="2" width="1" height="1" fill="#1d4ed8"/><rect x="18" y="2" width="1" height="1" fill="#1d4ed8"/>
-  <rect x="5" y="3" width="14" height="2" fill="#2563eb"/>
-  <rect x="10" y="1" width="4" height="2" fill="#1d4ed8"/>
-  <rect x="11" y="0" width="2" height="1" fill="#1d4ed8"/>
-  <rect x="11" y="0" width="1" height="1" fill="#111"/><rect x="12" y="0" width="1" height="1" fill="#111"/>
-  <rect x="12" y="1" width="1" height="1" fill="#111"/>
-  <rect x="11" y="2" width="1" height="1" fill="#111"/><rect x="13" y="1" width="1" height="1" fill="#111"/>
-  <rect x="10" y="2" width="1" height="1" fill="#111"/><rect x="14" y="2" width="1" height="1" fill="#111"/>
-  <rect x="12" y="3" width="1" height="1" fill="#111"/>
-  <rect x="2" y="4" width="3" height="8" fill="#111"/><rect x="19" y="4" width="3" height="8" fill="#111"/>
-  <rect x="3" y="5" width="1" height="6" fill="#222"/><rect x="20" y="5" width="1" height="6" fill="#222"/>
-  <rect x="4" y="5" width="16" height="12" fill="#f8fafc"/>
-  <rect x="5" y="5" width="14" height="1" fill="#e2e8f0"/>
-  <rect x="5" y="7" width="5" height="3" fill="#111"/><rect x="14" y="7" width="5" height="3" fill="#111"/>
-  <rect x="6" y="7" width="3" height="2" fill="#f8fafc"/><rect x="15" y="7" width="3" height="2" fill="#f8fafc"/>
-  <rect x="6" y="8" width="1" height="1" fill="#94a3b8"/><rect x="17" y="8" width="1" height="1" fill="#94a3b8"/>
-  <rect x="11" y="9" width="2" height="2" fill="#111"/>
-  <rect x="11" y="11" width="2" height="1" fill="#f472b6"/>
-  <rect x="7" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="15" y="10" width="2" height="2" fill="#f9a8d4"/>
-  <rect x="4" y="15" width="16" height="4" fill="#f8fafc"/>
-  <rect x="5" y="15" width="14" height="1" fill="#e2e8f0"/>
-  <rect x="3" y="19" width="6" height="4" fill="#f8fafc"/><rect x="15" y="19" width="6" height="4" fill="#f8fafc"/>
-  <rect x="4" y="19" width="4" height="1" fill="#e2e8f0"/><rect x="16" y="19" width="4" height="1" fill="#e2e8f0"/>
-  <rect x="3" y="23" width="2" height="1" fill="#111"/><rect x="7" y="23" width="2" height="1" fill="#111"/>
-  <rect x="15" y="23" width="2" height="1" fill="#111"/><rect x="19" y="23" width="2" height="1" fill="#111"/>
-  <rect x="5" y="20" width="2" height="1" fill="#111"/><rect x="17" y="20" width="2" height="1" fill="#111"/>
+  <rect x="8" y="0" width="8" height="1" fill="#1d4ed8"/>
+  <rect x="7" y="1" width="10" height="2" fill="#3b82f6"/>
+  <rect x="6" y="2" width="12" height="1" fill="#2563eb"/>
+  <rect x="6" y="3" width="12" height="1" fill="#1d4ed8"/>
+  <rect x="2" y="3" width="3" height="8" fill="#111"/><rect x="19" y="3" width="3" height="8" fill="#111"/>
+  <rect x="3" y="4" width="1" height="6" fill="#222"/><rect x="20" y="4" width="1" height="6" fill="#222"/>
+  <rect x="5" y="4" width="14" height="10" fill="#f8fafc"/>
+  <rect x="6" y="4" width="12" height="1" fill="#e2e8f0"/>
+  <rect x="6" y="6" width="4" height="3" fill="#475569"/><rect x="14" y="6" width="4" height="3" fill="#475569"/>
+  <rect x="7" y="6" width="2" height="2" fill="#94a3b8"/><rect x="15" y="6" width="2" height="2" fill="#94a3b8"/>
+  <rect x="11" y="8" width="2" height="2" fill="#111"/>
+  <rect x="11" y="10" width="2" height="1" fill="#f472b6"/>
+  <rect x="6" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="16" y="10" width="2" height="2" fill="#f9a8d4"/>
+  <rect x="5" y="14" width="14" height="3" fill="#f8fafc"/>
+  <rect x="6" y="14" width="12" height="1" fill="#e2e8f0"/>
+  <rect x="4" y="17" width="6" height="4" fill="#f8fafc"/><rect x="14" y="17" width="6" height="4" fill="#f8fafc"/>
+  <rect x="5" y="17" width="4" height="1" fill="#e2e8f0"/><rect x="15" y="17" width="4" height="1" fill="#e2e8f0"/>
+  <rect x="4" y="21" width="2" height="1" fill="#111"/><rect x="8" y="21" width="2" height="1" fill="#111"/>
+  <rect x="14" y="21" width="2" height="1" fill="#111"/><rect x="18" y="21" width="2" height="1" fill="#111"/>
+  <rect x="5" y="18" width="2" height="1" fill="#111"/><rect x="17" y="18" width="2" height="1" fill="#111"/>
 </svg>`;
 
 const OLAF_SVG_SLEEP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
-  <rect x="7" y="0" width="10" height="1" fill="#2563eb"/>
-  <rect x="6" y="1" width="12" height="2" fill="#3b82f6"/>
-  <rect x="5" y="2" width="1" height="1" fill="#1d4ed8"/><rect x="18" y="2" width="1" height="1" fill="#1d4ed8"/>
-  <rect x="5" y="3" width="14" height="2" fill="#2563eb"/>
-  <rect x="10" y="1" width="4" height="2" fill="#1d4ed8"/>
-  <rect x="11" y="0" width="2" height="1" fill="#1d4ed8"/>
-  <rect x="2" y="4" width="3" height="8" fill="#111"/><rect x="19" y="4" width="3" height="8" fill="#111"/>
-  <rect x="3" y="5" width="1" height="6" fill="#222"/><rect x="20" y="5" width="1" height="6" fill="#222"/>
-  <rect x="4" y="5" width="16" height="12" fill="#f8fafc"/>
-  <rect x="5" y="5" width="14" height="1" fill="#e2e8f0"/>
-  <rect x="5" y="7" width="5" height="3" fill="#475569"/><rect x="14" y="7" width="5" height="3" fill="#475569"/>
-  <rect x="6" y="7" width="3" height="2" fill="#94a3b8"/><rect x="15" y="7" width="3" height="2" fill="#94a3b8"/>
-  <rect x="11" y="9" width="2" height="2" fill="#111"/>
-  <rect x="11" y="11" width="2" height="1" fill="#f472b6"/>
-  <rect x="7" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="15" y="10" width="2" height="2" fill="#f9a8d4"/>
-  <rect x="4" y="15" width="16" height="4" fill="#f8fafc"/>
-  <rect x="3" y="19" width="6" height="4" fill="#f8fafc"/><rect x="15" y="19" width="6" height="4" fill="#f8fafc"/>
-  <rect x="3" y="23" width="2" height="1" fill="#111"/><rect x="7" y="23" width="2" height="1" fill="#111"/>
-  <rect x="15" y="23" width="2" height="1" fill="#111"/><rect x="19" y="23" width="2" height="1" fill="#111"/>
+  <rect x="8" y="0" width="8" height="1" fill="#1d4ed8"/>
+  <rect x="7" y="1" width="10" height="2" fill="#3b82f6"/>
+  <rect x="6" y="2" width="12" height="1" fill="#2563eb"/>
+  <rect x="6" y="3" width="12" height="1" fill="#1d4ed8"/>
+  <rect x="2" y="3" width="3" height="8" fill="#111"/><rect x="19" y="3" width="3" height="8" fill="#111"/>
+  <rect x="3" y="4" width="1" height="6" fill="#222"/><rect x="20" y="4" width="1" height="6" fill="#222"/>
+  <rect x="5" y="4" width="14" height="10" fill="#f8fafc"/>
+  <rect x="6" y="4" width="12" height="1" fill="#e2e8f0"/>
+  <rect x="6" y="6" width="4" height="3" fill="#475569"/><rect x="14" y="6" width="4" height="3" fill="#475569"/>
+  <rect x="7" y="7" width="2" height="1" fill="#94a3b8"/><rect x="15" y="7" width="2" height="1" fill="#94a3b8"/>
+  <rect x="11" y="8" width="2" height="2" fill="#111"/>
+  <rect x="11" y="10" width="2" height="1" fill="#f472b6"/>
+  <rect x="6" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="16" y="10" width="2" height="2" fill="#f9a8d4"/>
+  <rect x="5" y="14" width="14" height="3" fill="#f8fafc"/>
+  <rect x="4" y="17" width="6" height="4" fill="#f8fafc"/><rect x="14" y="17" width="6" height="4" fill="#f8fafc"/>
+  <rect x="4" y="21" width="2" height="1" fill="#111"/><rect x="8" y="21" width="2" height="1" fill="#111"/>
+  <rect x="14" y="21" width="2" height="1" fill="#111"/><rect x="18" y="21" width="2" height="1" fill="#111"/>
 </svg>`;
 
 export const PET_SPRITES: Record<string, (c: string) => string> = {
@@ -135,6 +125,33 @@ export const PET_SPRITES: Record<string, (c: string) => string> = {
     <rect x="21" y="10" width="3" height="3" fill="${d}"/>
     <rect x="22" y="9" width="2" height="4" fill="${c}"/>
     <rect x="23" y="10" width="1" height="2" fill="#fff"/>
+  </svg>`;
+  },
+  minion: (c) => {
+    const d = darken(c);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
+    <rect x="7" y="0" width="10" height="1" fill="#facc15"/>
+    <rect x="6" y="1" width="12" height="2" fill="#facc15"/>
+    <rect x="5" y="2" width="2" height="1" fill="#a1a1aa"/><rect x="17" y="2" width="2" height="1" fill="#a1a1aa"/>
+    <rect x="5" y="3" width="14" height="2" fill="#facc15"/>
+    <rect x="4" y="4" width="16" height="4" fill="#a1a1aa"/>
+    <rect x="5" y="4" width="14" height="3" fill="#d4d4d8"/>
+    <rect x="5" y="5" width="4" height="3" fill="#fff"/><rect x="15" y="5" width="4" height="3" fill="#fff"/>
+    <rect x="6" y="5" width="2" height="2" fill="#451a03"/><rect x="16" y="5" width="2" height="2" fill="#451a03"/>
+    <rect x="7" y="6" width="1" height="1" fill="#fff"/><rect x="17" y="6" width="1" height="1" fill="#fff"/>
+    <rect x="4" y="8" width="16" height="1" fill="#a1a1aa"/>
+    <rect x="5" y="9" width="14" height="2" fill="#facc15"/>
+    <rect x="9" y="10" width="6" height="1" fill="#111"/>
+    <rect x="5" y="11" width="14" height="2" fill="#facc15"/>
+    <rect x="5" y="13" width="14" height="2" fill="#1d4ed8"/>
+    <rect x="6" y="13" width="12" height="1" fill="#2563eb"/>
+    <rect x="4" y="13" width="1" height="4" fill="#facc15"/><rect x="19" y="13" width="1" height="4" fill="#facc15"/>
+    <rect x="5" y="15" width="14" height="4" fill="#1d4ed8"/>
+    <rect x="6" y="15" width="12" height="1" fill="#2563eb"/>
+    <rect x="9" y="16" width="6" height="3" fill="#111"/>
+    <rect x="5" y="19" width="5" height="2" fill="#111"/><rect x="14" y="19" width="5" height="2" fill="#111"/>
+    <rect x="6" y="20" width="3" height="2" fill="#374151"/><rect x="15" y="20" width="3" height="2" fill="#374151"/>
+    <rect x="6" y="22" width="3" height="1" fill="#1d4ed8"/><rect x="15" y="22" width="3" height="1" fill="#1d4ed8"/>
   </svg>`;
   },
   bunny: (c) => {
@@ -407,42 +424,34 @@ const PROFILE_FOX = (c: string) => {
 };
 
 const PROFILE_OLAF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
-  <rect x="7" y="0" width="10" height="1" fill="#2563eb"/>
-  <rect x="6" y="1" width="12" height="2" fill="#3b82f6"/>
-  <rect x="5" y="2" width="1" height="1" fill="#1d4ed8"/><rect x="18" y="2" width="1" height="1" fill="#1d4ed8"/>
-  <rect x="5" y="3" width="14" height="2" fill="#2563eb"/>
-  <rect x="10" y="1" width="4" height="2" fill="#1d4ed8"/>
-  <rect x="11" y="0" width="2" height="1" fill="#1d4ed8"/>
-  <rect x="11" y="0" width="1" height="1" fill="#111"/><rect x="12" y="0" width="1" height="1" fill="#111"/>
-  <rect x="12" y="1" width="1" height="1" fill="#111"/>
-  <rect x="11" y="2" width="1" height="1" fill="#111"/><rect x="13" y="1" width="1" height="1" fill="#111"/>
-  <rect x="10" y="2" width="1" height="1" fill="#111"/><rect x="14" y="2" width="1" height="1" fill="#111"/>
-  <rect x="12" y="3" width="1" height="1" fill="#111"/>
-  <rect x="2" y="4" width="3" height="8" fill="#111"/><rect x="19" y="4" width="3" height="8" fill="#111"/>
-  <rect x="3" y="5" width="1" height="6" fill="#222"/><rect x="20" y="5" width="1" height="6" fill="#222"/>
-  <rect x="4" y="5" width="16" height="12" fill="#f8fafc"/>
-  <rect x="5" y="5" width="14" height="1" fill="#e2e8f0"/>
-  <rect x="5" y="7" width="5" height="3" fill="#111"/><rect x="14" y="7" width="5" height="3" fill="#111"/>
-  <rect x="6" y="7" width="3" height="2" fill="#f8fafc"/><rect x="15" y="7" width="3" height="2" fill="#f8fafc"/>
-  <rect x="6" y="8" width="1" height="1" fill="#94a3b8"/><rect x="17" y="8" width="1" height="1" fill="#94a3b8"/>
-  <rect x="11" y="9" width="2" height="2" fill="#111"/>
-  <rect x="11" y="11" width="2" height="1" fill="#f472b6"/>
-  <rect x="7" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="15" y="10" width="2" height="2" fill="#f9a8d4"/>
-  <rect x="4" y="15" width="16" height="4" fill="#f8fafc"/>
-  <rect x="5" y="15" width="14" height="1" fill="#e2e8f0"/>
-  <rect x="3" y="19" width="6" height="4" fill="#f8fafc"/><rect x="15" y="19" width="6" height="4" fill="#f8fafc"/>
-  <rect x="4" y="19" width="4" height="1" fill="#e2e8f0"/><rect x="16" y="19" width="4" height="1" fill="#e2e8f0"/>
-  <rect x="3" y="23" width="2" height="1" fill="#111"/><rect x="7" y="23" width="2" height="1" fill="#111"/>
-  <rect x="15" y="23" width="2" height="1" fill="#111"/><rect x="19" y="23" width="2" height="1" fill="#111"/>
-  <rect x="5" y="20" width="2" height="1" fill="#111"/><rect x="17" y="20" width="2" height="1" fill="#111"/>
-  <rect x="18" y="12" width="5" height="10" fill="#d4d4d8"/>
-  <rect x="19" y="12" width="3" height="1" fill="#a1a1aa"/>
-  <rect x="19" y="21" width="3" height="1" fill="#a1a1aa"/>
-  <rect x="18" y="12" width="1" height="10" fill="#a1a1aa"/>
-  <rect x="22" y="12" width="1" height="10" fill="#a1a1aa"/>
-  <rect x="19" y="14" width="3" height="6" fill="#fef3c7"/>
-  <rect x="20" y="15" width="1" height="4" fill="#fbbf24"/>
-  <rect x="19" y="16" width="3" height="2" fill="#f59e0b"/>
+  <rect x="8" y="0" width="8" height="1" fill="#1d4ed8"/>
+  <rect x="7" y="1" width="10" height="2" fill="#3b82f6"/>
+  <rect x="6" y="2" width="12" height="1" fill="#2563eb"/>
+  <rect x="6" y="3" width="12" height="1" fill="#1d4ed8"/>
+  <rect x="2" y="3" width="3" height="8" fill="#111"/><rect x="19" y="3" width="3" height="8" fill="#111"/>
+  <rect x="3" y="4" width="1" height="6" fill="#222"/><rect x="20" y="4" width="1" height="6" fill="#222"/>
+  <rect x="5" y="4" width="14" height="10" fill="#f8fafc"/>
+  <rect x="6" y="4" width="12" height="1" fill="#e2e8f0"/>
+  <rect x="6" y="6" width="4" height="3" fill="#475569"/><rect x="14" y="6" width="4" height="3" fill="#475569"/>
+  <rect x="7" y="6" width="2" height="2" fill="#94a3b8"/><rect x="15" y="6" width="2" height="2" fill="#94a3b8"/>
+  <rect x="11" y="8" width="2" height="2" fill="#111"/>
+  <rect x="11" y="10" width="2" height="1" fill="#f472b6"/>
+  <rect x="6" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="16" y="10" width="2" height="2" fill="#f9a8d4"/>
+  <rect x="5" y="14" width="14" height="3" fill="#f8fafc"/>
+  <rect x="6" y="14" width="12" height="1" fill="#e2e8f0"/>
+  <rect x="4" y="17" width="6" height="4" fill="#f8fafc"/><rect x="14" y="17" width="6" height="4" fill="#f8fafc"/>
+  <rect x="5" y="17" width="4" height="1" fill="#e2e8f0"/><rect x="15" y="17" width="4" height="1" fill="#e2e8f0"/>
+  <rect x="4" y="21" width="2" height="1" fill="#111"/><rect x="8" y="21" width="2" height="1" fill="#111"/>
+  <rect x="14" y="21" width="2" height="1" fill="#111"/><rect x="18" y="21" width="2" height="1" fill="#111"/>
+  <rect x="5" y="18" width="2" height="1" fill="#111"/><rect x="17" y="18" width="2" height="1" fill="#111"/>
+  <rect x="18" y="10" width="5" height="10" fill="#d4d4d8"/>
+  <rect x="19" y="10" width="3" height="1" fill="#a1a1aa"/>
+  <rect x="19" y="19" width="3" height="1" fill="#a1a1aa"/>
+  <rect x="18" y="10" width="1" height="10" fill="#a1a1aa"/>
+  <rect x="22" y="10" width="1" height="10" fill="#a1a1aa"/>
+  <rect x="19" y="12" width="3" height="6" fill="#fef3c7"/>
+  <rect x="20" y="13" width="1" height="4" fill="#fbbf24"/>
+  <rect x="19" y="14" width="3" height="2" fill="#f59e0b"/>
 </svg>`;
 
 export const PROFILE_SPRITES: Record<string, (c: string) => string> = {
