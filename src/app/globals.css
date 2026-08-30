@@ -36,6 +36,16 @@ button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav
   user-select: text;
 }
 
+button:active {
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+*:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 :root {
   --radius: 0.75rem;
   --background: 222 47% 6%;
