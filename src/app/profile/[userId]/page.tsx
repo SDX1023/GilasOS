@@ -48,22 +48,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   useEffect(() => {
     (async () => {
       const supabase = getSupabase();
-      let profileData: ProfileData | null = null;
-
-      const { data, error } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
-
-      if (error) {
-        // Fallback: try selecting just username (in case some columns don't exist)
-        const { data: fallback } = await supabase.from("user_profiles").select("username, avatar_url").eq("user_id", userId).maybeSingle();
-        if (fallback) {
-          profileData = { username: fallback.username || "User", avatar_url: fallback.avatar_url || "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" };
-        }
-      } else if (data) {
-        profileData = data;
+      const { data, error } = await supabase.from("user_profiles").select("*").eq("user_id", userId).maybeSingle();
+      if (error) console.error("Profile query error:", error.message, error);
+      if (data) {
+        setProfile({
+          username: data.username || "User",
+          avatar_url: data.avatar_url || "",
+          bio: data.bio || "",
+          mood_text: data.mood_text || "",
+          mood_emoji: data.mood_emoji || "",
+          spotify_url: data.spotify_url || "",
+        });
+      } else {
+        setProfile({ username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
       }
-
-      setProfile(profileData || { username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
-
       const { data: petData } = await supabase.from("user_pets").select("name, pet_type, color, sprite_url, bg, xp, level, mood").eq("user_id", userId).maybeSingle();
       if (petData) setUserPet(petData);
       setLoading(false);
