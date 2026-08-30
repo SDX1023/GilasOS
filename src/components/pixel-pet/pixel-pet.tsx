@@ -242,7 +242,7 @@ export default function PixelPet() {
               <div>
                 <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Color</label>
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                  {["#f59e0b","#ef4444","#3b82f6","#10b981","#8b5cf6","#ec4899","#6b7280","#f97316"].map((c) => (
+                  {["#f97316","#dc2626","#2563eb","#059669","#7c3aed","#d946ef","#71717a","#eab308"].map((c) => (
                     <button key={c} onClick={() => changePetColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: pet.color === c ? "2px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
                   ))}
                 </div>
@@ -337,7 +337,7 @@ function AdoptModal({ onClose, availableTypes }: { onClose: () => void; availabl
         </div>
         <input value={name} onChange={(e) => setName(e.target.value)} className="glass-input" style={{ width: "100%", padding: "8px 10px", fontSize: 13, textAlign: "center" }} placeholder="Name your pet..." />
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
-          {["#f59e0b","#ef4444","#3b82f6","#10b981","#8b5cf6","#ec4899","#6b7280","#f97316"].map((c) => (
+          {["#f97316","#dc2626","#2563eb","#059669","#7c3aed","#d946ef","#71717a","#eab308"].map((c) => (
             <button key={c} onClick={() => setColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: color === c ? "2px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
           ))}
         </div>
