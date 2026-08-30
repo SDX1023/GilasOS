@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
-import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
+import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
 import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon } from "lucide-react";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
@@ -294,6 +294,15 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [editAnswer, setEditAnswer] = useState("");
   const [savedQuizzes, setSavedQuizzes] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareQuizId, setShareQuizId] = useState<string | null>(null);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shareError, setShareError] = useState("");
+  const [shareQuizType, setShareQuizType] = useState<"mc" | "identification" | "mixed">("mixed");
   const quizStartRef = useRef<number>(0);
 
   useEffect(() => {
@@ -306,6 +315,22 @@ function QuizTab({ userId }: { userId: string | null }) {
     if (!userId) { setLoadingSaved(false); return; }
     loadSavedQuizzes(userId).then((data) => { setSavedQuizzes(data); setLoadingSaved(false); });
   }, [userId]);
+
+  useEffect(() => {
+    if (!showShareModal || !userId) return;
+    (async () => {
+      const supabase = getSupabase();
+      const { data: allFriendships } = await supabase
+        .from("user_friends").select("*")
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+        .eq("status", "accepted");
+      if (!allFriendships) return;
+      const otherIds = allFriendships.map((f: any) => f.requester_id === userId ? f.addressee_id : f.requester_id);
+      if (otherIds.length === 0) return;
+      const { data: profiles } = await supabase.from("user_profiles").select("user_id, username").in("user_id", otherIds);
+      if (profiles) setFriends(profiles);
+    })();
+  }, [showShareModal, userId]);
 
   const selectedCourseData = courses.find((c) => c.id === selectedCourse);
 
@@ -419,12 +444,35 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   function handleStartQuiz() { setShowPreview(false); setQuizStarted(true); quizStartRef.current = Date.now(); }
 
-  async function handleShareQuiz(id: string) {
-    const code = await shareQuiz(userId!, id);
-    if (code) {
-      const url = `${window.location.origin}/study?shared-quiz=${code}`;
-      navigator.clipboard.writeText(url).then(() => alert("Share link copied!")).catch(() => prompt("Copy this link:", url));
+  function handleShareQuiz(id: string) {
+    setShareQuizId(id);
+    setShareRecipient("");
+    setShareError("");
+    setShared(false);
+    setCopied(false);
+    setShowShareModal(true);
+  }
+
+  async function handleShareSubmit() {
+    if (!shareQuizId || !userId) return;
+    setSharing(true);
+    setShareError("");
+    let recipientUserId = "";
+    if (shareRecipient.trim()) {
+      const supabase = getSupabase();
+      const { data: recipient } = await supabase.from("user_profiles").select("user_id").eq("username", shareRecipient.trim()).maybeSingle();
+      if (!recipient) { setShareError("User not found"); setSharing(false); return; }
+      recipientUserId = recipient.user_id;
     }
+    const code = await shareQuiz(userId, shareQuizId, recipientUserId || undefined);
+    if (code) {
+      const url = `${window.location.origin}/shared-quiz/${code}`;
+      navigator.clipboard.writeText(url).then(() => setCopied(true)).catch(() => {});
+      setShared(true);
+    } else {
+      setShareError("Failed to share quiz");
+    }
+    setSharing(false);
   }
 
   async function handleDeleteSaved(id: string) {

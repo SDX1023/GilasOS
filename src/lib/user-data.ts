@@ -326,12 +326,14 @@ export async function deleteSavedQuiz(userId: string, id: string) {
   await supabase.from("saved_quizzes").delete().eq("id", id).eq("user_id", userId);
 }
 
-export async function shareQuiz(userId: string, id: string): Promise<string | null> {
+export async function shareQuiz(userId: string, id: string, recipientUserId?: string): Promise<string | null> {
   const supabase = getSupabase();
   const code = Math.random().toString(36).substring(2, 10);
+  const update: Record<string, any> = { shared: true, share_code: code };
+  if (recipientUserId) update.shared_with_user_id = recipientUserId;
   const { error } = await supabase
     .from("saved_quizzes")
-    .update({ shared: true, share_code: code })
+    .update(update)
     .eq("id", id)
     .eq("user_id", userId);
   if (error) return null;
@@ -344,10 +346,19 @@ export async function loadSharedQuiz(code: string): Promise<any | null> {
     .from("saved_quizzes")
     .select("*")
     .eq("share_code", code)
-    .eq("shared", true)
     .maybeSingle();
   if (error || !data) return null;
   return data;
+}
+
+export async function loadSharedQuizzesForUser(userId: string): Promise<any[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("saved_quizzes")
+    .select("*")
+    .or(`shared_with_user_id.eq.${userId},and(shared.eq.true,user_id.neq.${userId})`)
+    .order("created_at", { ascending: false });
+  return data || [];
 }
 
 // Friend Notes
