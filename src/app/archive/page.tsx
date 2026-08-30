@@ -95,7 +95,7 @@ export default function ArchivePage() {
             <input className="glass-input" value={newEntry.competition} onChange={(e) => setNewEntry({ ...newEntry, competition: e.target.value })} placeholder="Competition" autoFocus />
             <input className="glass-input" value={newEntry.competitionUrl} onChange={(e) => setNewEntry({ ...newEntry, competitionUrl: e.target.value })} placeholder="Link (optional)" />
             <input className="glass-input" value={newEntry.type} onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value })} placeholder="Type" />
-            <input className="glass-input" type="date" value={newEntry.date} onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })} />
+            <input className="glass-input" type="number" min="2000" max="2099" value={newEntry.date} onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })} placeholder="Year" />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={addEntry} className="glass-btn glass-btn-primary">Add</button>
@@ -117,7 +117,7 @@ export default function ArchivePage() {
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
                 <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</th>
-                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</th>
+                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Year</th>
                 {isAdmin && <th style={{ width: 80 }}></th>}
               </tr>
             </thead>
@@ -129,7 +129,7 @@ export default function ArchivePage() {
                       <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} /></td>
                       <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competitionUrl} onChange={(e) => setEditValues({ ...editValues, competitionUrl: e.target.value })} placeholder="Link" /></td>
                       <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.type} onChange={(e) => setEditValues({ ...editValues, type: e.target.value })} /></td>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="date" value={editValues.date} onChange={(e) => setEditValues({ ...editValues, date: e.target.value })} /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="number" min="2000" max="2099" value={editValues.date} onChange={(e) => setEditValues({ ...editValues, date: e.target.value })} placeholder="Year" /></td>
                       <td style={{ padding: "10px 20px" }}>
                         <div style={{ display: "flex", gap: 4 }}>
                           <button onClick={() => saveEdit(entry.id)} style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={16} /></button>

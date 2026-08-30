@@ -58,7 +58,7 @@ export function ReviewerEditor({
   }, [title, cards, reviewerId, courseId, moduleId, onSave]);
 
   const addCard = () => {
-    setCards([...cards, { front: "", back: "", hint: "" }]);
+    setCards([...cards, { front: "", back: "", hint: "", card_type: "standard" }]);
     setExpandedCard(cards.length);
   };
 
@@ -185,6 +185,9 @@ export function ReviewerEditor({
                   {card.front || <span style={{ color: "var(--os-text-dim)", fontStyle: "italic" }}>Empty card</span>}
                 </span>
                 <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>#{index + 1}</span>
+                {(card.card_type || "standard") === "identification" && (
+                  <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(34,197,94,0.12)", color: "#22c55e", fontWeight: 500 }}>Type-in</span>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -211,6 +214,30 @@ export function ReviewerEditor({
               {/* Card Content */}
               {expandedCard === index && (
                 <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--os-glass-border)", display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
+                  {/* Card Type Selector */}
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+                      Card Type
+                    </label>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {(["standard", "identification"] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => updateCard(index, "card_type", type)}
+                          style={{
+                            padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                            border: (card.card_type || "standard") === type ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)",
+                            background: (card.card_type || "standard") === type ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)",
+                            color: (card.card_type || "standard") === type ? "var(--os-accent)" : "var(--os-text-secondary)",
+                            fontFamily: "Inter, sans-serif",
+                          }}
+                        >
+                          {type === "standard" ? "Flip Card" : "Type Answer"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
                       Front (Question)

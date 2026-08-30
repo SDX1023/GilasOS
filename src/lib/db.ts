@@ -336,6 +336,7 @@ export async function createFlashcard(card: {
   front: string;
   back: string;
   hint?: string;
+  card_type?: string;
   sort_order?: number;
 }) {
   const supabase = getSupabase();

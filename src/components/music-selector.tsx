@@ -45,7 +45,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const dragStartX = useRef(0);
-  const dragStartSel = 0;
+  const dragStartSel = useRef(0);
 
   const maxStart = Math.max(0, TRACK_DURATION - clipDuration);
 
@@ -138,7 +138,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     dragStartX.current = clientX;
     const selEl = waveformContainerRef.current?.querySelector("[data-sel]") as HTMLElement;
-    dragStartSel = selEl ? parseFloat(selEl.style.left) / 100 * maxStart : selectionStart;
+    dragStartSel.current = selEl ? parseFloat(selEl.style.left) / 100 * maxStart : selectionStart;
   }, [maxStart, selectionStart]);
 
   useEffect(() => {
@@ -149,7 +149,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
       const dx = clientX - dragStartX.current;
       const dSeconds = (dx / rect.width) * TRACK_DURATION;
-      const newStart = Math.max(0, Math.min(maxStart, dragStartSel + dSeconds));
+      const newStart = Math.max(0, Math.min(maxStart, dragStartSel.current + dSeconds));
       setSelectionStart(Math.round(newStart * 10) / 10);
     };
     const onUp = () => { isDraggingRef.current = false; };
@@ -197,7 +197,16 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
         ctx.fillStyle = "rgba(255,255,255,0.18)";
       }
       ctx.beginPath();
-      ctx.roundRect(x + gap / 2, y, barW - gap, bh, 1.5);
+      ctx.moveTo(x + gap / 2 + 1.5, y);
+      ctx.lineTo(x + barW - gap / 2 - 1.5, y);
+      ctx.quadraticCurveTo(x + barW - gap / 2, y, x + barW - gap / 2, y + 1.5);
+      ctx.lineTo(x + barW - gap / 2, y + bh - 1.5);
+      ctx.quadraticCurveTo(x + barW - gap / 2, y + bh, x + barW - gap / 2 - 1.5, y + bh);
+      ctx.lineTo(x + gap / 2 + 1.5, y + bh);
+      ctx.quadraticCurveTo(x + gap / 2, y + bh, x + gap / 2, y + bh - 1.5);
+      ctx.lineTo(x + gap / 2, y + 1.5);
+      ctx.quadraticCurveTo(x + gap / 2, y, x + gap / 2 + 1.5, y);
+      ctx.closePath();
       ctx.fill();
     }
   }, [selectedTrack, selectionStart, clipDuration]);
