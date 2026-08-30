@@ -719,6 +719,7 @@ body {
    NAVBAR
    ============================================================ */
 .nav-link {
+  color: var(--os-text-dim) !important;
   transition: color 0.15s ease, box-shadow 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
