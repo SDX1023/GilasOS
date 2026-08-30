@@ -737,6 +737,54 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   return (
     <div style={{ maxWidth: "672px", margin: "0 auto" }}>
+      {showShareModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowShareModal(false)}>
+          <div className="glass-panel" style={{ width: 400, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Share Quiz</h3>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Study mode for recipient</label>
+              <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
+                {(["mc", "identification", "mixed"] as const).map((t) => (
+                  <button key={t} onClick={() => setShareQuizType(t)} style={{
+                    flex: 1, padding: "6px 10px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.15s",
+                    background: shareQuizType === t ? "var(--os-accent)" : "transparent",
+                    color: shareQuizType === t ? "#fff" : "var(--os-text-secondary)",
+                    border: shareQuizType === t ? "1px solid var(--os-accent)" : "1px solid transparent",
+                  }}>
+                    {t === "mc" ? "Multiple Choice" : t === "identification" ? "Identification" : "Mixed"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {friends.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with a friend</label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {friends.map((f) => (
+                    <button key={f.user_id} onClick={() => setShareRecipient(shareRecipient === f.username ? "" : f.username)} style={{
+                      padding: "4px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      background: shareRecipient === f.username ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                      border: shareRecipient === f.username ? "1px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.35)",
+                      color: shareRecipient === f.username ? "#fff" : "var(--os-text-secondary)",
+                    }}>{f.username}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Or enter username manually</label>
+            <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
+            {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
+            {shared && copied && <p style={{ fontSize: 12, color: "#22c55e", marginTop: 4 }}>Link copied to clipboard!</p>}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setShowShareModal(false)} className="glass-btn glass-btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleShareSubmit} disabled={sharing || shared} className="glass-btn glass-btn-primary" style={{ flex: 1 }}>
+                {sharing ? "Sharing..." : shared ? "Shared!" : "Share"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="empty-state" style={{ marginBottom: "32px" }}>
         <Sparkles style={{ width: "48px", height: "48px", color: "var(--os-accent)", marginBottom: "16px" }} />
         <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px", color: "var(--os-text-primary)" }}>Generate a Quiz</h2>
