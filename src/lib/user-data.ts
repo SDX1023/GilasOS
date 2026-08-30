@@ -359,9 +359,9 @@ export interface FriendNote {
   song_artist: string | null;
   song_url: string | null;
   song_album_art: string | null;
+  song_preview: string | null;
   expires_at: string;
   created_at: string;
-  // Joined from profile
   username?: string;
   avatar_url?: string | null;
 }
@@ -369,7 +369,7 @@ export interface FriendNote {
 export async function postFriendNote(
   userId: string,
   content: string,
-  song?: { name: string; artist: string; url: string; album_art: string }
+  song?: { name: string; artist: string; url: string; album_art: string; preview: string | null }
 ): Promise<boolean> {
   const supabase = getSupabase();
   const { error } = await supabase.from("friend_notes").insert({
@@ -379,6 +379,7 @@ export async function postFriendNote(
     song_artist: song?.artist || null,
     song_url: song?.url || null,
     song_album_art: song?.album_art || null,
+    song_preview: song?.preview || null,
   });
   return !error;
 }
@@ -420,7 +421,7 @@ export async function updateFriendNote(
   userId: string,
   noteId: string,
   content: string,
-  song?: { name: string; artist: string; url: string; album_art: string } | null
+  song?: { name: string; artist: string; url: string; album_art: string; preview: string | null } | null
 ): Promise<boolean> {
   const supabase = getSupabase();
   const update: Record<string, any> = {
@@ -429,6 +430,7 @@ export async function updateFriendNote(
     song_artist: song?.artist || null,
     song_url: song?.url || null,
     song_album_art: song?.album_art || null,
+    song_preview: song?.preview || null,
   };
   const { error } = await supabase
     .from("friend_notes")
@@ -470,25 +472,41 @@ export async function toggleReaction(
   }
 }
 
-export async function loadReactions(noteIds: string[], userId: string): Promise<Record<string, { emoji: string; count: number; myReaction: boolean }[]>> {
-  if (noteIds.length === 0) return {};
+export async function loadReactions(noteIds: string[], userId: string): Promise<{
+  reactions: Record<string, { emoji: string; count: number; myReaction: boolean; users: string[] }[]>;
+  usernames: Record<string, string>;
+}> {
+  if (noteIds.length === 0) return { reactions: {}, usernames: {} };
   const supabase = getSupabase();
   const { data: reactions } = await supabase
     .from("note_reactions")
     .select("*")
     .in("note_id", noteIds);
-  if (!reactions || reactions.length === 0) return {};
+  if (!reactions || reactions.length === 0) return { reactions: {}, usernames: {} };
 
-  const grouped: Record<string, { emoji: string; count: number; myReaction: boolean }[]> = {};
+  const userIds = [...new Set(reactions.map((r) => r.user_id))];
+  const { data: profiles } = await supabase
+    .from("user_profiles")
+    .select("user_id, username")
+    .in("user_id", userIds);
+
+  const usernameMap: Record<string, string> = {};
+  if (profiles) {
+    profiles.forEach((p) => { usernameMap[p.user_id] = p.username || "Unknown"; });
+  }
+
+  const grouped: Record<string, { emoji: string; count: number; myReaction: boolean; users: string[] }[]> = {};
   for (const r of reactions) {
     if (!grouped[r.note_id]) grouped[r.note_id] = [];
     const existing = grouped[r.note_id].find((e) => e.emoji === r.emoji);
+    const name = usernameMap[r.user_id] || "Unknown";
     if (existing) {
       existing.count++;
+      existing.users.push(name);
       if (r.user_id === userId) existing.myReaction = true;
     } else {
-      grouped[r.note_id].push({ emoji: r.emoji, count: 1, myReaction: r.user_id === userId });
+      grouped[r.note_id].push({ emoji: r.emoji, count: 1, myReaction: r.user_id === userId, users: [name] });
     }
   }
-  return grouped;
+  return { reactions: grouped, usernames: usernameMap };
 }

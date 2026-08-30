@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 import { Search, UserPlus, UserCheck, UserX, X, Check, Loader2, Users, Clock, Link as LinkIcon, MessageCircle, Music, Trash2, Edit3, Send } from "lucide-react";
@@ -40,9 +40,12 @@ export default function FriendsPage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [showSpotify, setShowSpotify] = useState(false);
-  const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; album_art: string } | null>(null);
+  const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; album_art: string; preview: string | null } | null>(null);
   const [reactions, setReactions] = useState<Record<string, { emoji: string; count: number; myReaction: boolean }[]>>({});
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
+  const [playingNoteId, setPlayingNoteId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const supabase = getSupabase();
 
@@ -95,7 +98,7 @@ export default function FriendsPage() {
     setNotesLoading(false);
     const noteIds = data.map((n) => n.id);
     if (noteIds.length > 0) {
-      const r = await loadReactions(noteIds, user.id);
+      const { reactions: r } = await loadReactions(noteIds, user.id);
       setReactions(r);
     }
   }, [user]);
@@ -138,7 +141,7 @@ export default function FriendsPage() {
     await toggleReaction(user.id, noteId, emoji);
     setShowReactionPicker(null);
     const noteIds = notes.map((n) => n.id);
-    const r = await loadReactions(noteIds, user.id);
+    const { reactions: r } = await loadReactions(noteIds, user.id);
     setReactions(r);
   };
 
@@ -217,6 +220,22 @@ export default function FriendsPage() {
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const togglePlay = (noteId: string, previewUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      if (playingNoteId === noteId) {
+        setPlayingNoteId(null);
+        audioRef.current = null;
+        return;
+      }
+    }
+    const audio = new Audio(previewUrl);
+    audio.onended = () => { setPlayingNoteId(null); audioRef.current = null; };
+    audio.play().catch(() => {});
+    audioRef.current = audio;
+    setPlayingNoteId(noteId);
   };
 
   if (loading) {
@@ -390,43 +409,75 @@ export default function FriendsPage() {
                     )}
 
                     {note.song_name && (
-                      <a
-                        href={note.song_url || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "flex", alignItems: "center", gap: 10, marginTop: 10, padding: "8px 12px",
-                          borderRadius: 8, background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.2)",
-                          textDecoration: "none",
-                        }}
-                      >
-                        {note.song_album_art && (
-                          <img src={note.song_album_art} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover" }} />
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 10, marginTop: 10, padding: "8px 12px",
+                        borderRadius: 8, background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.2)",
+                      }}>
+                        {note.song_preview && (
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(note.id, note.song_preview!); }}
+                            style={{
+                              width: 32, height: 32, borderRadius: 16, flexShrink: 0,
+                              background: playingNoteId === note.id ? "#1ed760" : "rgba(30,215,96,0.2)",
+                              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                              transition: "all 0.2s",
+                            }}
+                          >
+                            {playingNoteId === note.id ? (
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="#fff"><rect x="1" y="1" width="3.5" height="10" rx="1"/><rect x="7.5" y="1" width="3.5" height="10" rx="1"/></svg>
+                            ) : (
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="#1ed760"><polygon points="2,0 12,6 2,12"/></svg>
+                            )}
+                          </button>
                         )}
-                        <div>
-                          <p style={{ fontSize: 12, fontWeight: 500, color: "#1ed760", margin: 0 }}>{note.song_name}</p>
-                          <p style={{ fontSize: 11, color: "var(--os-text-dim)", margin: 0 }}>{note.song_artist}</p>
-                        </div>
-                        <Music size={14} style={{ color: "#1ed760", marginLeft: "auto" }} />
-                      </a>
+                        <a
+                          href={note.song_url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0, textDecoration: "none" }}
+                        >
+                          {note.song_album_art && (
+                            <img src={note.song_album_art} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: 500, color: "#1ed760", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{note.song_name}</p>
+                            <p style={{ fontSize: 11, color: "var(--os-text-dim)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{note.song_artist}</p>
+                          </div>
+                        </a>
+                        <Music size={14} style={{ color: "#1ed760", flexShrink: 0 }} />
+                      </div>
                     )}
 
                     {/* Reactions */}
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                       {noteReactions.map((r) => (
-                        <button
-                          key={r.emoji}
-                          onClick={() => handleReaction(note.id, r.emoji)}
-                          style={{
-                            padding: "2px 8px", borderRadius: 12, fontSize: 13, cursor: "pointer",
-                            background: r.myReaction ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.05)",
-                            border: r.myReaction ? "1px solid rgba(109,40,217,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                            display: "flex", alignItems: "center", gap: 4, fontFamily: "Inter, sans-serif",
-                          }}
-                        >
-                          <span>{r.emoji}</span>
-                          {r.count > 0 && <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{r.count}</span>}
-                        </button>
+                        <div key={r.emoji} style={{ position: "relative" }}
+                          onMouseEnter={() => setHoveredReaction(`${note.id}-${r.emoji}`)}
+                          onMouseLeave={() => setHoveredReaction(null)}>
+                          <button
+                            onClick={() => handleReaction(note.id, r.emoji)}
+                            style={{
+                              padding: "2px 8px", borderRadius: 12, fontSize: 13, cursor: "pointer",
+                              background: r.myReaction ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.05)",
+                              border: r.myReaction ? "1px solid rgba(109,40,217,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                              display: "flex", alignItems: "center", gap: 4, fontFamily: "Inter, sans-serif",
+                            }}
+                          >
+                            <span>{r.emoji}</span>
+                            {r.count > 0 && <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{r.count}</span>}
+                          </button>
+                          {hoveredReaction === `${note.id}-${r.emoji}` && r.users.length > 0 && (
+                            <div style={{
+                              position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)",
+                              marginBottom: 6, padding: "4px 8px", borderRadius: 6,
+                              background: "var(--os-bg-secondary)", border: "1px solid var(--os-glass-border)",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.3)", whiteSpace: "nowrap",
+                              fontSize: 11, color: "var(--os-text-secondary)", zIndex: 30,
+                            }}>
+                              {r.users.join(", ")}
+                            </div>
+                          )}
+                        </div>
                       ))}
                       <div style={{ position: "relative" }}>
                         <button
@@ -659,7 +710,7 @@ export default function FriendsPage() {
       {showSpotify && (
         <SpotifySearch
           onSelect={(track) => {
-            setAttachedSong({ name: track.name, artist: track.artist, url: track.url, album_art: track.albumArt || "" });
+            setAttachedSong({ name: track.name, artist: track.artist, url: track.url, album_art: track.albumArt || "", preview: track.preview || null });
             setShowSpotify(false);
           }}
           onClose={() => setShowSpotify(false)}

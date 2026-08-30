@@ -83,90 +83,95 @@ export function NoteEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
 
-  const previewClassName = [
-    "p-4 sm:p-8 max-w-4xl mx-auto prose prose-neutral dark:prose-invert relative",
-    "prose-headings:scroll-mt-20",
-    "prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline",
-    "prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg",
-    "prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
-    "prose-strong:text-foreground",
-    "prose-img:rounded-lg prose-img:shadow-md",
-    "prose-li:my-0.5",
-    "prose-ul:list-disc prose-ol:list-decimal",
-    "prose-table:border prose-th:border prose-td:border",
-    "prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg",
-  ].join(" ");
+  const modeBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: 6, borderRadius: 6, background: active ? "rgba(255,255,255,0.08)" : "transparent",
+    border: "none", cursor: "pointer", color: "var(--os-text-secondary)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  });
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="p-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft className="h-4 w-4" />
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid var(--os-glass-border)", background: "var(--os-bg-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={onBack} style={{ padding: 6, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ArrowLeft size={16} />
           </button>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="hidden sm:inline">{courseId}</span>
-            <span className="hidden sm:inline">/</span>
-            <span className="hidden sm:inline">{moduleId}</span>
-            {slug && (
-              <>
-                <span className="hidden sm:inline">/</span>
-                <span>{slug}</span>
-              </>
-            )}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--os-text-dim)" }}>
+            <span>{courseId}</span>
+            <span>/</span>
+            <span>{moduleId}</span>
+            {slug && (<><span>/</span><span>{slug}</span></>)}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {lastSaved && (
-            <span className="text-xs text-muted-foreground">Saved {lastSaved.toLocaleTimeString()}</span>
+            <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Saved {lastSaved.toLocaleTimeString()}</span>
           )}
 
-          <div className="flex items-center border rounded-lg">
-            <button onClick={() => setMode("edit")} className={`p-2 ${mode === "edit" ? "bg-muted" : ""}`} title="Edit">
-              <Edit3 className="h-4 w-4" />
+          <div style={{ display: "flex", alignItems: "center", gap: 2, padding: 2, borderRadius: 8, border: "1px solid var(--os-glass-border)" }}>
+            <button onClick={() => setMode("edit")} style={modeBtnStyle(mode === "edit")} title="Edit">
+              <Edit3 size={14} />
             </button>
-            <button onClick={() => setMode("split")} className={`p-2 ${mode === "split" ? "bg-muted" : ""}`} title="Split view">
-              <div className="flex gap-0.5">
-                <div className="w-1.5 h-4 border rounded-sm" />
-                <div className="w-1.5 h-4 border rounded-sm" />
+            <button onClick={() => setMode("split")} style={modeBtnStyle(mode === "split")} title="Split view">
+              <div style={{ display: "flex", gap: 2 }}>
+                <div style={{ width: 6, height: 16, border: "1px solid var(--os-text-dim)", borderRadius: 2 }} />
+                <div style={{ width: 6, height: 16, border: "1px solid var(--os-text-dim)", borderRadius: 2 }} />
               </div>
             </button>
-            <button onClick={() => setMode("preview")} className={`p-2 ${mode === "preview" ? "bg-muted" : ""}`} title="Preview">
-              <Eye className="h-4 w-4" />
+            <button onClick={() => setMode("preview")} style={modeBtnStyle(mode === "preview")} title="Preview">
+              <Eye size={14} />
             </button>
           </div>
 
           <button
             onClick={handleSave}
             disabled={!title.trim() || isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+              background: "var(--os-accent)", opacity: (!title.trim() || isSaving) ? 0.5 : 1,
+              border: "none", borderRadius: 8, color: "#fff", fontSize: 13, fontWeight: 500,
+              cursor: (!title.trim() || isSaving) ? "not-allowed" : "pointer",
+              fontFamily: "Inter, sans-serif",
+            }}
           >
-            <Save className="h-4 w-4" />
+            <Save size={14} />
             {isSaving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0">
-        <div className={`${mode === "split" ? "w-1/2 border-r" : mode === "edit" ? "w-full" : "hidden"} flex flex-col overflow-auto`}>
-          <div className="px-4 sm:px-8 pt-4 sm:pt-6 pb-2">
+      {/* Content */}
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        {/* Editor */}
+        <div style={{
+          width: mode === "split" ? "50%" : mode === "edit" ? "100%" : 0,
+          display: mode === "preview" ? "none" : "flex", flexDirection: "column",
+          overflow: "auto", borderRight: mode === "split" ? "1px solid var(--os-glass-border)" : undefined,
+        }}>
+          <div style={{ padding: "16px 16px 8px" }}>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Untitled"
-              className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
+              style={{
+                width: "100%", fontSize: 28, fontWeight: 700, background: "transparent",
+                border: "none", outline: "none", color: "var(--os-text-primary)",
+                fontFamily: "Inter, sans-serif",
+              }}
             />
           </div>
           <InlineEditor content={content} onChange={setContent} />
         </div>
 
+        {/* Preview */}
         {(mode === "preview" || mode === "split") && (
-          <div className={`${mode === "split" ? "w-1/2" : "w-full"} overflow-auto`}>
-            <div className="h-[120px]" />
+          <div style={{ width: mode === "split" ? "50%" : "100%", overflow: "auto" }}>
+            <div style={{ height: 100 }} />
             <div
-              className={previewClassName}
+              style={{ padding: "16px 32px", maxWidth: 800, margin: "0 auto", color: "var(--os-text-secondary)", lineHeight: 1.7 }}
               dangerouslySetInnerHTML={{ __html: preview }}
             />
           </div>

@@ -1137,8 +1137,13 @@ button:active {
 }
 
 a:focus-visible {
-  outline: 2px solid var(--os-accent);
-  outline-offset: 2px;
+  outline: none;
+}
+
+a:focus,
+a:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .glass-btn {
