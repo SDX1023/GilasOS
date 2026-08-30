@@ -56,13 +56,14 @@ const PET_SPRITES: Record<string, (c: string) => string> = {
     <rect x="5" y="13" width="2" height="2" fill="${c}"/><rect x="9" y="13" width="2" height="2" fill="${c}"/>
   </svg>`,
   owl: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="2" y="0" width="3" height="3" fill="${c}"/><rect x="11" y="0" width="3" height="3" fill="${c}"/>
-    <rect x="2" y="3" width="12" height="9" fill="${c}"/>
-    <rect x="3" y="4" width="4" height="4" fill="#fff"/><rect x="9" y="4" width="4" height="4" fill="#fff"/>
-    <rect x="5" y="5" width="1" height="2" fill="#111"/><rect x="10" y="5" width="1" height="2" fill="#111"/>
-    <rect x="7" y="7" width="2" height="2" fill="${c === '#f59e0b' ? '#f97316' : c}"/>
-    <rect x="2" y="12" width="5" height="3" fill="${c}"/><rect x="9" y="12" width="5" height="3" fill="${c}"/>
-    <rect x="5" y="13" width="2" height="2" fill="#f97316"/><rect x="9" y="13" width="2" height="2" fill="#f97316"/>
+    <rect x="3" y="0" width="2" height="2" fill="${c}"/><rect x="11" y="0" width="2" height="2" fill="${c}"/>
+    <rect x="2" y="2" width="12" height="9" fill="${c}"/>
+    <rect x="3" y="3" width="4" height="4" fill="#fff"/><rect x="9" y="3" width="4" height="4" fill="#fff"/>
+    <rect x="4" y="4" width="2" height="2" fill="#111"/><rect x="10" y="4" width="2" height="2" fill="#111"/>
+    <rect x="7" y="6" width="2" height="1" fill="#f97316"/>
+    <rect x="6" y="7" width="1" height="1" fill="#f97316"/><rect x="9" y="7" width="1" height="1" fill="#f97316"/>
+    <rect x="2" y="11" width="5" height="3" fill="${c}"/><rect x="9" y="11" width="5" height="3" fill="${c}"/>
+    <rect x="3" y="13" width="3" height="2" fill="#f97316"/><rect x="10" y="13" width="3" height="2" fill="#f97316"/>
   </svg>`,
   olaf: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
     <rect x="4" y="0" width="8" height="1" fill="#3b82f6"/>
@@ -114,7 +115,7 @@ const ALL_PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl", "olaf"];
 export default function PixelPet() {
   const ctx = usePet();
   if (!ctx) return null;
-  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, uploadSprite, loading, userEmail, stage, cooldowns } = ctx;
+  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, changePetType, uploadSprite, loading, userEmail, stage, cooldowns } = ctx;
   const [open, setOpen] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
@@ -324,6 +325,21 @@ export default function PixelPet() {
                 <div style={{ display: "flex", gap: 6 }}>
                   <input value={rename || pet.name} onChange={(e) => setRename(e.target.value)} className="glass-input" style={{ flex: 1, padding: "6px 8px", fontSize: 12 }} />
                   <button onClick={() => { if (rename.trim()) renamePet(rename.trim()); setRename(""); }} className="glass-btn-primary" style={{ padding: "6px 10px", fontSize: 11 }}>Save</button>
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Pet Type</label>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {availableTypes.map((t) => (
+                    <button key={t} onClick={() => changePetType(t)} style={{
+                      width: 40, height: 40, borderRadius: 8, padding: 3,
+                      background: pet.pet_type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                      border: pet.pet_type === t ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)",
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    }} title={t}>
+                      <img src={getSpriteUrl({ pet_type: t, color: pet.color, sprite_url: null })} alt={t} width={28} height={28} style={{ imageRendering: "pixelated" }} />
+                    </button>
+                  ))}
                 </div>
               </div>
               <div>

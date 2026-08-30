@@ -45,6 +45,7 @@ interface PetContextType {
   createPet: (name: string, pet_type: string, color: string) => Promise<void>;
   renamePet: (name: string) => Promise<void>;
   changePetColor: (color: string) => Promise<void>;
+  changePetType: (pet_type: string) => Promise<void>;
   uploadSprite: (file: File) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
   loading: boolean;
@@ -238,6 +239,12 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     await getSupabase().from("user_pets").update({ color }).eq("id", pet.id);
   }, [pet]);
 
+  const changePetType = useCallback(async (pet_type: string) => {
+    if (!pet) return;
+    setPet({ ...pet, pet_type, sprite_url: null });
+    await getSupabase().from("user_pets").update({ pet_type, sprite_url: null }).eq("id", pet.id);
+  }, [pet]);
+
   const uploadSprite = useCallback(async (file: File) => {
     if (!pet) return;
     const img = new Image();
@@ -300,7 +307,7 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
   const stage = pet ? getGrowthStage(pet.xp) : getGrowthStage(0);
 
   return (
-    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, uploadSprite, addXP, loading, userEmail, stage, cooldowns }}>
+    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, changePetType, uploadSprite, addXP, loading, userEmail, stage, cooldowns }}>
       {children}
     </PetContext.Provider>
   );
