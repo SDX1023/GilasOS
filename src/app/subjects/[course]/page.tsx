@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useCourseDetail } from "@/hooks/use-db";
+import { useAuth } from "@/lib/auth-context";
 import { isAdmin } from "@/lib/admin";
 import { getSupabase } from "@/lib/supabase";
 import { ChevronRight, Plus, Trash2, ExternalLink, Pencil, X, Check, Link as LinkIcon } from "lucide-react";
@@ -28,6 +29,7 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default function CoursePage({ params }: { params: Promise<{ course: string }> }) {
   const { course: courseSlug } = use(params);
+  const { user } = useAuth();
   const { course, modules, loading } = useCourseDetail(courseSlug);
   const [links, setLinks] = useState<ResourceLink[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -85,6 +87,19 @@ export default function CoursePage({ params }: { params: Promise<{ course: strin
 
   if (loading) {
     return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><BookOpen size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to view course resources.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
+        </div>
+      </div>
+    );
   }
 
   if (!course) {

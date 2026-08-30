@@ -8,6 +8,7 @@ import {
   ArrowUpDown, Flag, Clock, Layers, FolderOpen,
   Circle, PanelLeftOpen, PanelLeftClose
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 type FilterStatus = "all" | "active" | "completed";
 type SortBy = "created" | "dueDate" | "priority";
@@ -311,5 +312,18 @@ function TodoApp() {
 }
 
 export default function TodoPage() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><CheckSquare size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to manage your tasks.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
+        </div>
+      </div>
+    );
+  }
   return <TodoProvider><TodoApp /></TodoProvider>;
 }

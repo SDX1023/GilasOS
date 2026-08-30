@@ -79,6 +79,19 @@ export default function StudyPage() {
     );
   }
 
+  if (!userId) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Brain size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to access your study materials.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container" style={{ paddingBottom: "24px" }}>
       <h1 className="page-title">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { Brain, Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 
 interface ReviewerEntry {
   courseId: string;
@@ -42,6 +43,7 @@ function groupReviewers(allReviewers: ReviewerEntry[]): CourseGroup[] {
 }
 
 export default function FlashcardsPage() {
+  const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [allReviewers, setAllReviewers] = useState<ReviewerEntry[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
@@ -126,6 +128,19 @@ export default function FlashcardsPage() {
         <div className="page-header">
           <h1 className="page-title"><Brain size={28} /> Flash Cards</h1>
           <p className="page-subtitle">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Brain size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to access your flashcard decks.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
         </div>
       </div>
     );

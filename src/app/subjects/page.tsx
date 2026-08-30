@@ -2,10 +2,25 @@
 
 import Link from "next/link";
 import { useCourses } from "@/hooks/use-db";
+import { useAuth } from "@/lib/auth-context";
 import { BookOpen, ChevronRight } from "lucide-react";
 
 export default function CoursesPage() {
   const { courses, loading } = useCourses();
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><BookOpen size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to view subjects and resources.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

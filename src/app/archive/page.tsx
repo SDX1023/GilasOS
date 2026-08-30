@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 
 interface ArchiveEntry {
   id: string;
@@ -14,6 +16,7 @@ interface ArchiveEntry {
 }
 
 export default function ArchivePage() {
+  const { user } = useAuth();
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -106,7 +109,20 @@ export default function ArchivePage() {
     const allLinks = getAllLinks(entry);
     if (allLinks.length === 0) return <span>{entry.competition}</span>;
     if (allLinks.length === 1) {
-      return (
+  if (!user) {
+    return (
+      <div className="page-container">
+        <div className="empty-state">
+          <div className="empty-state-icon"><Archive size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to view the archive.</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
         <a href={allLinks[0]} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
           {entry.competition} <ExternalLink size={12} />
         </a>
@@ -204,17 +220,20 @@ export default function ArchivePage() {
               {entries.map((entry) => (
                 <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   {editingId === entry.id ? (
-                    <>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} /></td>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.type} onChange={(e) => setEditValues({ ...editValues, type: e.target.value })} /></td>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="number" min="2000" max="2099" value={editValues.year} onChange={(e) => setEditValues({ ...editValues, year: e.target.value })} placeholder="Year" /></td>
-                      <td style={{ padding: "10px 20px" }}>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <button onClick={() => saveEdit(entry.id)} style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={16} /></button>
-                          <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><X size={16} /></button>
+                    <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 20px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 10 }}>
+                          <input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} placeholder="Competition" />
+                          <input className="glass-input" value={editValues.type} onChange={(e) => setEditValues({ ...editValues, type: e.target.value })} placeholder="Type" />
+                          <input className="glass-input" type="number" min="2000" max="2099" value={editValues.year} onChange={(e) => setEditValues({ ...editValues, year: e.target.value })} placeholder="Year" />
                         </div>
-                      </td>
-                    </>
+                        <LinksInput links={editLinks} setLinks={setEditLinks} />
+                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                          <button onClick={() => saveEdit(entry.id)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.3)" }}><Check size={14} /> Save</button>
+                          <button onClick={() => setEditingId(null)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12 }}><X size={14} /> Cancel</button>
+                        </div>
+                      </div>
+                    </td>
                   ) : (
                     <>
                       <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500 }}>
@@ -238,13 +257,6 @@ export default function ArchivePage() {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {editingId && (
-        <div className="glass-panel" style={{ marginTop: 24 }}>
-          <h3 style={{ fontWeight: 600, marginBottom: 12 }}>Edit Links</h3>
-          <LinksInput links={editLinks} setLinks={setEditLinks} />
         </div>
       )}
     </div>
