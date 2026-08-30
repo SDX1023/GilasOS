@@ -1048,6 +1048,7 @@ select.glass-input option {
 
 button {
   outline: none;
+  border: none;
 }
 
 button:focus-visible {

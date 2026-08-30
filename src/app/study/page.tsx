@@ -5,8 +5,8 @@ import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
-import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark } from "lucide-react";
+import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz } from "@/lib/user-data";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon } from "lucide-react";
 
 type Tab = "flashcards" | "quiz" | "history" | "weak";
 
@@ -288,12 +288,20 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [loadingContent, setLoadingContent] = useState(false);
   const [quizType, setQuizType] = useState<"mc" | "identification" | "mixed">("mc");
   const [answered, setAnswered] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [savedQuizzes, setSavedQuizzes] = useState<any[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
 
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (!userId) { setLoadingSaved(false); return; }
+    loadSavedQuizzes(userId).then((data) => { setSavedQuizzes(data); setLoadingSaved(false); });
+  }, [userId]);
 
   const selectedCourseData = courses.find((c) => c.id === selectedCourse);
 
@@ -343,7 +351,7 @@ function QuizTab({ userId }: { userId: string | null }) {
         setCooldown(retryAfter);
         throw new Error(data.error || "Failed to generate quiz");
       }
-      setQuizQuestions(data.questions); setQuizStarted(true); setCurrentQ(0); setAnswers({}); setShowResults(false); setScore(0);
+      setQuizQuestions(data.questions); setShowPreview(true); setCurrentQ(0); setAnswers({}); setShowResults(false); setScore(0);
     } catch (err: any) { setLastError(err.message || "Failed to generate quiz"); } finally { setIsGenerating(false); }
   }
 
@@ -375,7 +383,45 @@ function QuizTab({ userId }: { userId: string | null }) {
     }
   }
 
-  function restartQuiz() { setQuizStarted(false); setQuizQuestions([]); setAnswers({}); setShowResults(false); setCurrentQ(0); setScore(0); setAnswered(false); }
+  function restartQuiz() { setQuizStarted(false); setQuizQuestions([]); setAnswers({}); setShowResults(false); setCurrentQ(0); setScore(0); setAnswered(false); setShowPreview(false); }
+
+  async function handleSaveQuiz() {
+    if (!userId || !quizQuestions.length) return;
+    const title = selectedSource === "course" ? (selectedCourseData?.title || selectedCourse || "Custom Quiz") : (pdfFile?.name || "Custom Quiz");
+    const source = selectedSource === "course" ? `${selectedCourse}/${selectedModule}` : "custom";
+    const ok = await saveQuiz(userId, title, source, quizQuestions);
+    if (ok) {
+      const updated = await loadSavedQuizzes(userId);
+      setSavedQuizzes(updated);
+      alert("Quiz saved!");
+    }
+  }
+
+  function handleStartQuiz() { setShowPreview(false); setQuizStarted(true); }
+
+  async function handleShareQuiz(id: string) {
+    const code = await shareQuiz(userId!, id);
+    if (code) {
+      const url = `${window.location.origin}/study?shared-quiz=${code}`;
+      navigator.clipboard.writeText(url).then(() => alert("Share link copied!")).catch(() => prompt("Copy this link:", url));
+    }
+  }
+
+  async function handleDeleteSaved(id: string) {
+    if (!userId) return;
+    await deleteSavedQuiz(userId, id);
+    setSavedQuizzes((prev) => prev.filter((q) => q.id !== id));
+  }
+
+  function handleLoadSaved(saved: any) {
+    setQuizQuestions(saved.questions);
+    setShowPreview(true);
+    setAnswers({});
+    setShowResults(false);
+    setScore(0);
+    setCurrentQ(0);
+    setAnswered(false);
+  }
 
   if (showResults) {
     return (
@@ -389,6 +435,11 @@ function QuizTab({ userId }: { userId: string | null }) {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={restartQuiz} className="glass-btn-primary" style={{ padding: "8px 24px" }}>Try Again</button>
+            {userId && (
+              <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "8px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Save size={14} /> Save Quiz
+              </button>
+            )}
             <Link href="/study" className="glass-btn" style={{ padding: "8px 24px" }}>Back to Study</Link>
           </div>
         </div>
@@ -429,6 +480,54 @@ function QuizTab({ userId }: { userId: string | null }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    );
+  }
+
+  if (showPreview && quizQuestions.length > 0) {
+    return (
+      <div style={{ maxWidth: "672px", margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Quiz Preview</h2>
+          <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+          {quizQuestions.map((q, i) => (
+            <div key={i} className="glass-card" style={{ padding: "14px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", marginBottom: "6px" }}>{q.question}</p>
+                  {q.type === "mc" && q.options && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
+                      {q.options.map((opt: string, j: number) => (
+                        <p key={j} className="text-xs" style={{ color: String(j) === getCorrectIndex(q) ? "#16a34a" : "var(--os-text-secondary)" }}>
+                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {String(j) === getCorrectIndex(q) ? "✓" : ""}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {q.type === "identification" && (
+                    <p className="text-xs" style={{ color: "#16a34a" }}>Answer: {q.answer}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+          <button onClick={handleStartQuiz} className="glass-btn-primary" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
+            <Play size={14} /> Start Quiz
+          </button>
+          {userId && (
+            <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <Save size={14} /> Save Quiz
+            </button>
+          )}
+          <button onClick={() => { setShowPreview(false); setQuizQuestions([]); }} className="glass-btn" style={{ padding: "10px 24px" }}>
+            Back
+          </button>
         </div>
       </div>
     );
@@ -690,38 +789,30 @@ function HistoryTab({ userId }: { userId: string | null }) {
         const sourceParts = (h.source || "").split("/");
         const isCourse = sourceParts.length >= 2 && sourceParts[0] !== "text" && sourceParts[0] !== "custom";
         return (
-          <div key={h.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div key={h.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)" }}>{h.deck_title}</p>
+              <p style={{ fontWeight: 500, fontSize: "13px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)" }}>{h.deck_title}</p>
               {isCourse && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 11, color: "var(--os-text-secondary)" }}>
-                  <BookOpen size={10} />
-                  <span>{sourceParts[0]}</span>
-                  {sourceParts[1] && <><span>/</span><span>{sourceParts[1]}</span></>}
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2, fontSize: 10, color: "var(--os-text-secondary)" }}>
+                  <BookOpen size={9} /><span>{sourceParts[0]}</span>{sourceParts[1] && <><span>/</span><span>{sourceParts[1]}</span></>}
                 </div>
-              )}
-              {!isCourse && h.source && h.source !== "text" && h.source !== "custom" && (
-                <p className="text-xs" style={{ color: "var(--os-text-secondary)", marginTop: 3 }}>PDF: {h.deck_title}</p>
               )}
               <p className="text-xs" style={{ color: "var(--os-text-dim)", marginTop: 2 }}>
                 {date.toLocaleDateString()} at {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
             <div style={{ textAlign: "right" }}>
-              <p style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                color: pct >= 80 ? "#16a34a" : pct >= 50 ? "#eab308" : "#dc2626",
-              }}>{pct}%</p>
+              <p style={{ fontSize: "16px", fontWeight: 700, color: pct >= 80 ? "#16a34a" : pct >= 50 ? "#eab308" : "#dc2626" }}>{pct}%</p>
               <p className="text-xs text-secondary">{h.correct_answers}/{h.total_questions}</p>
             </div>
-            <button onClick={() => handleDelete(h.id)}
-              style={{ padding: "6px", borderRadius: "8px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
-              <Trash2 style={{ width: "16px", height: "16px" }} />
+            <button onClick={() => handleDelete(h.id)} style={{ padding: "5px", borderRadius: "6px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+              <Trash2 size={14} />
             </button>
           </div>
         );
       })}
+    </div>
+  );
     </div>
   );
 }

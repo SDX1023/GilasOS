@@ -31,7 +31,12 @@ export default function PixelPet() {
     if (!pet && !loading) setShowAdopt(true);
   }, [pet, loading]);
 
-  if (loading || !pet) return null;
+  if (loading) return null;
+
+  if (!pet) {
+    if (showAdopt) return <AdoptModal onClose={() => setShowAdopt(false)} />;
+    return null;
+  }
 
   const sprite = getSpriteUrl(pet) || "";
 
