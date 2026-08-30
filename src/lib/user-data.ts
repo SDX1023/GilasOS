@@ -85,6 +85,63 @@ export async function saveStudyStats(
   }
 }
 
+// Study Sessions
+export interface StudySession {
+  id: string;
+  user_id: string;
+  session_type: "flashcards" | "quiz";
+  subject: string;
+  module: string | null;
+  deck_title: string | null;
+  duration_seconds: number;
+  cards_studied: number;
+  known: number;
+  forgot: number;
+  dont_know: number;
+  score: number | null;
+  total_questions: number | null;
+  created_at: string;
+}
+
+export async function saveStudySession(
+  userId: string,
+  session: {
+    session_type: "flashcards" | "quiz";
+    subject: string;
+    module?: string;
+    deck_title?: string;
+    duration_seconds: number;
+    cards_studied?: number;
+    known?: number;
+    forgot?: number;
+    dont_know?: number;
+    score?: number;
+    total_questions?: number;
+  }
+) {
+  const supabase = getSupabase();
+  await supabase.from("study_sessions").insert({
+    user_id: userId,
+    ...session,
+  });
+}
+
+export async function loadStudySessions(userId: string, limit = 50): Promise<StudySession[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("study_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+export async function deleteStudySession(userId: string, id: string) {
+  const supabase = getSupabase();
+  await supabase.from("study_sessions").delete().eq("id", id).eq("user_id", userId);
+}
+
 // Notes
 export async function loadUserNotes(userId: string) {
   const supabase = getSupabase();

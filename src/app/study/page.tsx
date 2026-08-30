@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
-import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz } from "@/lib/user-data";
+import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
 import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon } from "lucide-react";
 
-type Tab = "flashcards" | "quiz" | "history" | "weak";
+type Tab = "flashcards" | "quiz" | "history" | "log";
 
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("flashcards");
@@ -16,6 +16,7 @@ export default function StudyPage() {
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const quizStartRef = useRef<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -90,7 +91,7 @@ export default function StudyPage() {
           ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
           ["history", "History", History],
-          ["weak", "Weak Areas", TrendingDown],
+          ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
             onMouseUp={(e) => (e.currentTarget as HTMLButtonElement).blur()}
@@ -118,7 +119,7 @@ export default function StudyPage() {
       )}
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
-      {tab === "weak" && <WeakAreasTab userId={userId} />}
+      {tab === "log" && <StudyLogTab userId={userId} />}
 
 
       {deleteTarget && (
@@ -383,6 +384,22 @@ function QuizTab({ userId }: { userId: string | null }) {
           : "custom";
         saveQuizHistory(userId, title, quizQuestions.length, s, wrong, source).catch(() => {});
         saveStudyStats(userId, s, 0, wrong, quizQuestions.length).catch(() => {});
+        const duration = quizStartRef.current > 0 ? Math.round((Date.now() - quizStartRef.current) / 1000) : 0;
+        if (duration > 0) {
+          saveStudySession(userId, {
+            session_type: "quiz",
+            subject: selectedCourse || "Custom",
+            module: selectedModule || undefined,
+            deck_title: title,
+            duration_seconds: duration,
+            cards_studied: quizQuestions.length,
+            known: s,
+            forgot: 0,
+            dont_know: wrong,
+            score: s,
+            total_questions: quizQuestions.length,
+          }).catch(() => {});
+        }
       }
     }
   }
@@ -401,7 +418,7 @@ function QuizTab({ userId }: { userId: string | null }) {
     }
   }
 
-  function handleStartQuiz() { setShowPreview(false); setQuizStarted(true); }
+  function handleStartQuiz() { setShowPreview(false); setQuizStarted(true); quizStartRef.current = Date.now(); }
 
   async function handleShareQuiz(id: string) {
     const code = await shareQuiz(userId!, id);
@@ -861,33 +878,26 @@ function HistoryTab({ userId }: { userId: string | null }) {
   );
 }
 
-function WeakAreasTab({ userId }: { userId: string | null }) {
-  const [bookmarks, setBookmarks] = useState<any[]>([]);
-  const [studyStats, setStudyStats] = useState<any[]>([]);
+function StudyLogTab({ userId }: { userId: string | null }) {
+  const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
-    (async () => {
-      const [bm, stats] = await Promise.all([
-        loadBookmarkedCards(userId),
-        (async () => {
-          const supabase = getSupabase();
-          const { data } = await supabase.from("study_stats").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(30);
-          return data || [];
-        })(),
-      ]);
-      setBookmarks(bm);
-      setStudyStats(stats);
-      setLoading(false);
-    })();
+    loadStudySessions(userId).then((data) => { setSessions(data); setLoading(false); });
   }, [userId]);
+
+  async function handleDelete(id: string) {
+    if (!userId) return;
+    await deleteStudySession(userId, id);
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+  }
 
   if (!userId) {
     return (
       <div className="empty-state">
-        <TrendingDown className="empty-state-icon" />
-        <p className="text-secondary" style={{ marginBottom: "8px" }}>Sign in to see your weak areas</p>
+        <BarChart3 className="empty-state-icon" />
+        <p className="text-secondary" style={{ marginBottom: "8px" }}>Sign in to see your study log</p>
         <Link href="/login" className="text-secondary" style={{ fontSize: "13px", color: "var(--os-accent)", textDecoration: "underline" }}>Sign in</Link>
       </div>
     );
@@ -895,114 +905,99 @@ function WeakAreasTab({ userId }: { userId: string | null }) {
 
   if (loading) return <p className="text-secondary" style={{ padding: "32px 0", textAlign: "center" }}>Loading...</p>;
 
-  const totalForgot = studyStats.reduce((sum, s) => sum + (s.forgot || 0), 0);
-  const totalDontKnow = studyStats.reduce((sum, s) => sum + (s.dont_know || 0), 0);
-  const totalKnown = studyStats.reduce((sum, s) => sum + (s.known || 0), 0);
-  const totalCards = totalKnown + totalForgot + totalDontKnow;
+  const totalTime = sessions.reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
+  const totalCards = sessions.reduce((sum, s) => sum + (s.cards_studied || 0), 0);
+  const totalKnown = sessions.reduce((sum, s) => sum + (s.known || 0), 0);
   const accuracy = totalCards > 0 ? Math.round((totalKnown / totalCards) * 100) : 0;
 
-  const deckStats: Record<string, { forgot: number; dontKnow: number; known: number }> = {};
-  bookmarks.forEach((b) => {
-    if (!deckStats[b.deck_title]) deckStats[b.deck_title] = { forgot: 0, dontKnow: 0, known: 0 };
-    deckStats[b.deck_title].dontKnow++;
+  const formatTime = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ${mins % 60}m`;
+  };
+
+  const groupedByDay: Record<string, any[]> = {};
+  sessions.forEach((s) => {
+    const date = new Date(s.created_at).toLocaleDateString();
+    if (!groupedByDay[date]) groupedByDay[date] = [];
+    groupedByDay[date].push(s);
   });
 
   return (
     <div style={{ maxWidth: "672px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Weak Areas Report</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Study Log</h2>
+        <span className="text-sm text-secondary">{sessions.length} sessions</span>
+      </div>
 
-      {/* Overall Stats */}
+      {/* Summary Stats */}
       <div className="grid-3" style={{ gap: "12px" }}>
         <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "30px", fontWeight: 700, color: "#16a34a" }}>{totalKnown}</p>
-          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Cards Known</p>
+          <p style={{ fontSize: "28px", fontWeight: 700, color: "var(--os-accent)" }}>{formatTime(totalTime)}</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Total Time</p>
         </div>
         <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "30px", fontWeight: 700, color: "#f97316" }}>{totalDontKnow}</p>
-          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Don&apos;t Know</p>
+          <p style={{ fontSize: "28px", fontWeight: 700, color: "#22c55e" }}>{totalCards}</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Cards Studied</p>
         </div>
         <div className="glass-card" style={{ padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "30px", fontWeight: 700, color: "#ef4444" }}>{totalForgot}</p>
-          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Forgot</p>
+          <p style={{ fontSize: "28px", fontWeight: 700, color: accuracy >= 80 ? "#16a34a" : accuracy >= 50 ? "#eab308" : "#ef4444" }}>{accuracy}%</p>
+          <p className="text-sm text-secondary" style={{ marginTop: "4px" }}>Accuracy</p>
         </div>
       </div>
 
-      {/* Accuracy Ring */}
-      <div className="glass-panel" style={{ padding: "24px", display: "flex", alignItems: "center", gap: "24px" }}>
-        <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
-          <svg style={{ width: "80px", height: "80px", transform: "rotate(-90deg)" }} viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6" style={{ color: "rgba(255,255,255,0.1)" }} />
-            <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" strokeWidth="6"
-              style={{ color: accuracy >= 80 ? "#22c55e" : accuracy >= 50 ? "#eab308" : "#ef4444" }}
-              strokeDasharray={`${accuracy * 2.136} 213.6`} strokeLinecap="round" />
-          </svg>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--os-text-primary)" }}>{accuracy}%</span>
-          </div>
-        </div>
-        <div>
-          <p style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>Overall Accuracy</p>
-          <p className="text-sm text-secondary" style={{ marginTop: "2px" }}>
-            {totalCards > 0 ? `${totalCards} cards studied across ${studyStats.length} sessions` : "Start reviewing to see your accuracy"}
-          </p>
-        </div>
-      </div>
-
-      {/* Bookmarked / Struggling Cards */}
-      {bookmarks.length > 0 && (
-        <div>
-          <h3 className="text-sm" style={{ fontWeight: 500, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", color: "var(--os-text-primary)" }}>
-            <Bookmark style={{ width: "16px", height: "16px", color: "#eab308" }} /> Bookmarked Cards ({bookmarks.length})
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {Object.entries(deckStats).map(([deck, stats]) => (
-              <div key={deck} className="glass-card" style={{ padding: "12px" }}>
-                <p className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{deck}</p>
-                <p className="text-xs text-secondary" style={{ marginTop: "4px" }}>{stats.dontKnow} cards bookmarked for review</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Study Trend */}
-      {studyStats.length > 0 && (
-        <div>
-          <h3 className="text-sm" style={{ fontWeight: 500, marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", color: "var(--os-text-primary)" }}>
-            <BarChart3 style={{ width: "16px", height: "16px" }} /> Recent Sessions
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {studyStats.slice(0, 14).map((s, i) => {
-              const total = (s.known || 0) + (s.forgot || 0) + (s.dont_know || 0);
-              const pct = total > 0 ? Math.round(((s.known || 0) / total) * 100) : 0;
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }} className="text-sm">
-                  <span className="text-xs text-secondary" style={{ width: "80px", textAlign: "right" }}>{s.date?.split(" ").slice(1, 3).join(" ") || ""}</span>
-                  <div style={{ flex: 1, height: "20px", background: "rgba(255,255,255,0.03)", borderRadius: "9999px", overflow: "hidden", display: "flex" }}>
-                    {total > 0 && (
-                      <>
-                        <div style={{ height: "100%", background: "rgba(34,197,94,0.8)", width: `${(s.known || 0) / total * 100}%` }} />
-                        <div style={{ height: "100%", background: "rgba(249,115,22,0.8)", width: `${(s.dont_know || 0) / total * 100}%` }} />
-                        <div style={{ height: "100%", background: "rgba(239,68,68,0.8)", width: `${(s.forgot || 0) / total * 100}%` }} />
-                      </>
-                    )}
+      {/* Sessions by Day */}
+      {Object.entries(groupedByDay).map(([date, daySessions]) => {
+        const dayTime = daySessions.reduce((sum: number, s: any) => sum + (s.duration_seconds || 0), 0);
+        return (
+          <div key={date}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <h3 className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{date}</h3>
+              <span className="text-xs text-secondary">{formatTime(dayTime)} total</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {daySessions.map((s: any) => {
+                const pct = s.total_questions > 0 ? Math.round(((s.score ?? s.known) / s.total_questions) * 100) : (s.cards_studied > 0 ? Math.round(((s.known || 0) / s.cards_studied) * 100) : 0);
+                const time = new Date(s.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <div key={s.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px" }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      background: s.session_type === "quiz" ? "rgba(124,58,237,0.15)" : "rgba(34,197,94,0.15)",
+                    }}>
+                      {s.session_type === "quiz" ? <Sparkles size={16} style={{ color: "#a78bfa" }} /> : <Brain size={16} style={{ color: "#4ade80" }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 500, fontSize: "13px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)" }}>
+                        {s.deck_title || s.subject}
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, fontSize: 10, color: "var(--os-text-secondary)" }}>
+                        <span>{s.session_type === "quiz" ? "Quiz" : "Flashcards"}</span>
+                        <span>{time}</span>
+                        {s.module && <span>{s.module}</span>}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: pct >= 80 ? "#16a34a" : pct >= 50 ? "#eab308" : "#dc2626" }}>{pct}%</p>
+                      <p className="text-xs text-secondary">{formatTime(s.duration_seconds || 0)}</p>
+                    </div>
+                    <button onClick={() => handleDelete(s.id)} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer" }}>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <span className="text-xs" style={{ width: "40px", fontWeight: 500, color: "var(--os-text-primary)" }}>{pct}%</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "12px" }} className="text-xs text-secondary">
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(34,197,94,0.8)", display: "inline-block" }} /> Known</span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(249,115,22,0.8)", display: "inline-block" }} /> Don&apos;t Know</span>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ width: "10px", height: "10px", borderRadius: "9999px", background: "rgba(239,68,68,0.8)", display: "inline-block" }} /> Forgot</span>
-          </div>
-        </div>
-      )}
+        );
+      })}
 
-      {totalCards === 0 && bookmarks.length === 0 && (
+      {sessions.length === 0 && (
         <div className="empty-state">
-          <p className="text-secondary">No study data yet. Review flashcards and take quizzes to see your weak areas.</p>
+          <BarChart3 className="empty-state-icon" />
+          <p className="text-secondary">No study sessions yet. Review flashcards or take a quiz to start tracking!</p>
         </div>
       )}
     </div>

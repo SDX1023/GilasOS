@@ -6,7 +6,7 @@ import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer, Share2, Copy } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards } from "@/lib/user-data";
+import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession } from "@/lib/user-data";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
 import jsPDF from "jspdf";
 
@@ -87,6 +87,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
   const flashQueues = useRef<Record<string, string[]>>({});
+  const sessionStartRef = useRef<number>(0);
   const flashIndex = useRef<Record<string, number>>({});
   const [cardLevels, setCardLevels] = useState<Record<number, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -228,6 +229,20 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const total = knownCount + forgotCount + dontKnowCount;
     if (total === 0) return;
     saveStudyStats(userRef.current.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
+    const duration = sessionStartRef.current > 0 ? Math.round((Date.now() - sessionStartRef.current) / 1000) : 0;
+    if (duration > 0) {
+      saveStudySession(userRef.current.id, {
+        session_type: "flashcards",
+        subject: courseSlug || "Custom",
+        module: moduleSlug || undefined,
+        deck_title: reviewer?.title || undefined,
+        duration_seconds: duration,
+        cards_studied: total,
+        known: knownCount,
+        forgot: forgotCount,
+        dont_know: dontKnowCount,
+      }).catch(() => {});
+    }
   }, [reviewComplete, knownCount, forgotCount, dontKnowCount]);
 
   useEffect(() => {
@@ -336,6 +351,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }
 
   function startReview() {
+    sessionStartRef.current = Date.now();
     const stored = localStorage.getItem(sessionKey);
     if (stored && !shuffled) {
       try {
