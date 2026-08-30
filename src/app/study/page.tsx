@@ -16,7 +16,6 @@ export default function StudyPage() {
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const quizStartRef = useRef<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -296,6 +295,7 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [editAnswer, setEditAnswer] = useState("");
   const [savedQuizzes, setSavedQuizzes] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
+  const quizStartRef = useRef<number>(0);
 
   useEffect(() => {
     if (cooldown <= 0) return;
