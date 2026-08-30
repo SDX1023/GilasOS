@@ -98,7 +98,7 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
           mood: calcMood({ ...prev, hunger: clamp(prev.hunger - 1), happiness: clamp(prev.happiness - 1), energy: clamp(prev.energy - 1) }),
         };
         const supabase = getSupabase();
-        supabase.from("user_pets").update({ hunger: updated.hunger, happiness: updated.happiness, energy: updated.energy, mood: updated.mood }).eq("id", prev.id).catch(() => {});
+        void supabase.from("user_pets").update({ hunger: updated.hunger, happiness: updated.happiness, energy: updated.energy, mood: updated.mood }).eq("id", prev.id);
         return updated;
       });
     }, 60000);

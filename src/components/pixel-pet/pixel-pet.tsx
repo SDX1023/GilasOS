@@ -18,7 +18,9 @@ function getSpriteUrl(pet: any): string | null {
 }
 
 export default function PixelPet() {
-  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, uploadSprite, loading } = usePet();
+  const ctx = usePet();
+  if (!ctx) return null;
+  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, uploadSprite, loading } = ctx;
   const [open, setOpen] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
@@ -31,7 +33,7 @@ export default function PixelPet() {
 
   if (loading || !pet) return null;
 
-  const sprite = getSpriteUrl(pet);
+  const sprite = getSpriteUrl(pet) || "";
 
   return (
     <>
@@ -181,7 +183,9 @@ function ActionBtn({ icon, label, sublabel, onClick, color }: { icon: React.Reac
 }
 
 function AdoptModal({ onClose }: { onClose: () => void }) {
-  const { createPet } = usePet();
+  const ctx = usePet();
+  if (!ctx) return null;
+  const { createPet } = ctx;
   const { PET_TYPES, PET_COLORS } = require("./pet-context");
   const [name, setName] = useState("Buddy");
   const [type, setType] = useState("cat");
