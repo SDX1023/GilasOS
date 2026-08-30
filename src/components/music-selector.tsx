@@ -292,8 +292,8 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
                 onMouseUp={() => setIsDragging(false)}
                 onMouseLeave={() => setIsDragging(false)}
               />
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", padding: "4px 10px", borderRadius: 12, color: "#1DB954", fontSize: 12, fontWeight: 700, border: "1px solid rgba(29,185,84,0.3)" }}>
-                30
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "rgba(0,0,0,0.5)", padding: "3px 8px", borderRadius: 6, color: "#1DB954", fontSize: 11, fontWeight: 600 }}>
+                30s clip
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--os-text-dim)", marginTop: 4 }}>
                 <span>{formatTime(0)}</span>
@@ -330,7 +330,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
               }}
               style={{ ...btnPrimary, width: "100%", marginTop: 16, padding: "10px 0" }}
             >
-              Add to Profile
+              Add to Note
             </button>
           </div>
         )}
