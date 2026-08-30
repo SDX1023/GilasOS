@@ -46,9 +46,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const [userPet, setUserPet] = useState<UserPet | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
     (async () => {
       const supabase = getSupabase();
-      const { data, error } = await supabase.from("user_profiles").select("*").eq("user_id", userId).maybeSingle();
+      const { data, error } = await supabase.from("user_profiles").select("user_id, username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
       if (error) console.error("Profile query error:", error.message, error);
       if (data) {
         setProfile({
@@ -59,8 +60,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           mood_emoji: data.mood_emoji || "",
           spotify_url: data.spotify_url || "",
         });
-      } else {
-        setProfile({ username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
       }
       const { data: petData } = await supabase.from("user_pets").select("name, pet_type, color, sprite_url, bg, xp, level, mood").eq("user_id", userId).maybeSingle();
       if (petData) setUserPet(petData);

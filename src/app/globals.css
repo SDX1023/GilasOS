@@ -704,7 +704,7 @@ body {
 
 .nav-link:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--os-text-primary) !important;
+  color: var(--os-text-primary);
 }
 
 .nav-link:focus,
@@ -1488,8 +1488,8 @@ a:active {
 }
 
 .light .nav-link:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
 }
 
 /* ============================================================

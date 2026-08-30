@@ -148,7 +148,7 @@ export function NoteEditor({
         <div style={{
           width: mode === "split" ? "50%" : mode === "edit" ? "100%" : 0,
           display: mode === "preview" ? "none" : "flex", flexDirection: "column",
-          overflow: "auto", borderRight: mode === "split" ? "1px solid var(--os-glass-border)" : undefined,
+          overflow: "auto", borderRight: mode === "split" ? "2px solid rgba(109,40,217,0.4)" : undefined,
         }}>
           <div style={{ padding: "16px 16px 8px" }}>
             <input
@@ -168,10 +168,11 @@ export function NoteEditor({
 
         {/* Preview */}
         {(mode === "preview" || mode === "split") && (
-          <div style={{ width: mode === "split" ? "50%" : "100%", overflow: "auto" }}>
-            <div style={{ height: 100 }} />
+          <div style={{ width: mode === "split" ? "50%" : "100%", overflow: "auto", background: mode === "split" ? "rgba(255,255,255,0.015)" : "transparent" }}>
+            {mode === "split" && <div style={{ padding: "16px 16px 0", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: 1 }}>Preview</div>}
+            <div style={{ height: mode === "split" ? 8 : 100 }} />
             <div
-              style={{ padding: "16px 32px", maxWidth: 800, margin: "0 auto", color: "var(--os-text-secondary)", lineHeight: 1.7 }}
+              style={{ padding: "0 32px 32px", maxWidth: 800, margin: "0 auto", color: "var(--os-text-secondary)", lineHeight: 1.7 }}
               dangerouslySetInnerHTML={{ __html: preview }}
             />
           </div>
