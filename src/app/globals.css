@@ -6,6 +6,17 @@
   box-sizing: border-box;
 }
 
+::selection {
+  background: transparent;
+  color: inherit;
+}
+
+button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav-link {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 :root {
   --radius: 0.75rem;
   --background: 222 47% 6%;
