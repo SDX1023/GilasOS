@@ -13,17 +13,17 @@ import {
 export default function Home() {
   const features = [
     {
-      icon: Sparkles,
-      title: "Study",
-      description: "Quiz, flashcards, and more",
-      href: "/study",
-      color: "#6d28d9",
-    },
-    {
       icon: BookOpen,
       title: "Subjects",
       description: "Browse subjects and topics",
       href: "/subjects",
+      color: "#6d28d9",
+    },
+    {
+      icon: Sparkles,
+      title: "Study",
+      description: "Quiz, flashcards, and more",
+      href: "/study",
       color: "#8b5cf6",
     },
     {

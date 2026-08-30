@@ -6,6 +6,8 @@ import { Taskbar } from "@/components/taskbar";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
 import { FloatingTimer } from "@/components/pomodoro/floating-timer";
+import { PetProvider } from "@/components/pixel-pet/pet-context";
+import PixelPet from "@/components/pixel-pet/pixel-pet";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,13 +26,16 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthWrapper>
             <PomodoroProvider>
-              <div className="app-shell">
-                <ScrollToTop />
-                <Navbar />
-                <main className="app-main">{children}</main>
-                <Taskbar />
-              </div>
-              <FloatingTimer />
+              <PetProvider>
+                <div className="app-shell">
+                  <ScrollToTop />
+                  <Navbar />
+                  <main className="app-main">{children}</main>
+                  <Taskbar />
+                </div>
+                <FloatingTimer />
+                <PixelPet />
+              </PetProvider>
             </PomodoroProvider>
           </AuthWrapper>
         </ThemeProvider>

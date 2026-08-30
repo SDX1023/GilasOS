@@ -6,8 +6,8 @@ import { useState, useEffect } from "react";
 import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles } from "lucide-react";
 
 const features = [
-  { icon: Sparkles, title: "Study", href: "/study", color: "#6d28d9" },
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#8b5cf6" },
+  { icon: Sparkles, title: "Study", href: "/study", color: "#6d28d9" },
   { icon: Timer, title: "Pomodoro", href: "/pomodoro", color: "#10b981" },
   { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#f59e0b" },
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#ec4899" },
