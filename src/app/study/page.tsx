@@ -6,9 +6,16 @@ import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteRev
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical } from "lucide-react";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Plus, FolderOpen } from "lucide-react";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
+
+interface UserModule {
+  id: string;
+  name: string;
+  type: "pdf" | "deck" | "folder";
+  created_at: string;
+}
 
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("flashcards");
@@ -16,6 +23,10 @@ export default function StudyPage() {
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userModules, setUserModules] = useState<UserModule[]>([]);
+  const [showCreateModule, setShowCreateModule] = useState(false);
+  const [moduleName, setModuleName] = useState("");
+  const [moduleType, setModuleType] = useState<"pdf" | "deck" | "folder">("deck");
 
   useEffect(() => {
     (async () => {
@@ -41,6 +52,9 @@ export default function StudyPage() {
           saveReviewerToSupabase(item.courseId, item.moduleId, item.reviewer).catch(() => {});
         }
         setAllReviewers([...cloudReviewers, ...missingFromCloud]);
+
+        const { data: modules } = await supabase.from("user_modules").select("*").eq("user_id", user.id).order("created_at", { ascending: true });
+        if (modules) setUserModules(modules);
       } else {
         setAllReviewers(localReviewers);
       }
@@ -88,6 +102,29 @@ export default function StudyPage() {
     }
   }
 
+  async function handleCreateModule() {
+    if (!moduleName.trim() || !userId) return;
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from("user_modules").insert({
+      user_id: userId,
+      name: moduleName.trim(),
+      type: moduleType,
+    }).select().single();
+    if (!error && data) {
+      setUserModules((prev) => [...prev, data]);
+    }
+    setShowCreateModule(false);
+    setModuleName("");
+    setModuleType("deck");
+  }
+
+  async function handleDeleteModule(id: string) {
+    if (!userId) return;
+    const supabase = getSupabase();
+    await supabase.from("user_modules").delete().eq("id", id);
+    setUserModules((prev) => prev.filter((m) => m.id !== id));
+  }
+
   if (!mounted) {
     return (
       <div className="page-container">
@@ -109,6 +146,21 @@ export default function StudyPage() {
       </div>
     );
   }
+
+  const getModuleIcon = (type: string) => {
+    switch (type) {
+      case "pdf": return <FileText size={20} style={{ color: "#f59e0b" }} />;
+      case "deck": return <BookOpen size={20} style={{ color: "var(--os-accent)" }} />;
+      default: return <FolderOpen size={20} style={{ color: "var(--os-text-dim)" }} />;
+    }
+  };
+
+  const getModuleCount = (mod: UserModule) => {
+    if (mod.type === "deck") {
+      return allReviewers.filter((r) => r.courseId === mod.name).reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
+    }
+    return 0;
+  };
 
   return (
     <div className="page-container" style={{ paddingBottom: "24px" }}>
@@ -138,10 +190,86 @@ export default function StudyPage() {
       {tab === "flashcards" && (
         <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} onRefresh={refreshReviewers} />
       )}
+
+      {tab === "flashcards" && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--os-text-primary)" }}>My Modules</h2>
+            <button onClick={() => setShowCreateModule(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 13 }}>
+              <Plus size={14} /> Module
+            </button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {userModules.map((mod) => (
+              <div key={mod.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px" }}>
+                <div style={{ padding: 8, borderRadius: 10, background: "rgba(255,255,255,0.05)", flexShrink: 0 }}>
+                  {getModuleIcon(mod.type)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 500, fontSize: 14, color: "var(--os-text-primary)" }}>{mod.name}</p>
+                  <p className="text-xs" style={{ color: "var(--os-text-dim)", marginTop: 2 }}>
+                    {mod.type === "pdf" ? "PDF Module" : mod.type === "deck" ? "Deck Collection" : "Folder"} &middot; {getModuleCount(mod)} cards
+                  </p>
+                </div>
+                <button onClick={() => handleDeleteModule(mod.id)} style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4 }} title="Delete module">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+            {userModules.length === 0 && (
+              <div className="glass-card" style={{ textAlign: "center", padding: 24 }}>
+                <FolderOpen size={32} style={{ color: "var(--os-text-dim)", marginBottom: 8 }} />
+                <p className="text-sm" style={{ color: "var(--os-text-secondary)" }}>No modules yet</p>
+                <p className="text-xs" style={{ color: "var(--os-text-dim)", marginTop: 4 }}>Create a module to organize your study materials</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "log" && <StudyLogTab userId={userId} />}
 
+      {showCreateModule && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div className="glass-panel" style={{ maxWidth: 400, width: "100%", margin: "0 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 600 }}>Create New Module</h3>
+              <button onClick={() => { setShowCreateModule(false); setModuleName(""); }} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6, color: "var(--os-text-primary)" }}>Module Name</label>
+                <input className="glass-input" value={moduleName} onChange={(e) => setModuleName(e.target.value)} placeholder="Enter module name..." autoFocus style={{ width: "100%" }} onKeyDown={(e) => { if (e.key === "Enter") handleCreateModule(); }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6, color: "var(--os-text-primary)" }}>Type</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["pdf", "deck", "folder"] as const).map((t) => (
+                    <button key={t} onClick={() => setModuleType(t)}
+                      className={moduleType === t ? "glass-btn-primary" : "glass-btn"}
+                      style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", fontSize: 13, borderRadius: 10 }}>
+                      {t === "pdf" ? <FileText size={16} /> : t === "deck" ? <BookOpen size={16} /> : <FolderOpen size={16} />}
+                      {t === "pdf" ? "PDF" : t === "deck" ? "Deck" : "Folder"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, paddingTop: 8 }}>
+                <button onClick={handleCreateModule} disabled={!moduleName.trim()} className="glass-btn glass-btn-primary" style={{ flex: 1, padding: "10px", opacity: !moduleName.trim() ? 0.5 : 1 }}>
+                  Create Module
+                </button>
+                <button onClick={() => { setShowCreateModule(false); setModuleName(""); }} className="glass-btn" style={{ padding: "10px 20px" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
