@@ -128,30 +128,29 @@ export const PET_SPRITES: Record<string, (c: string) => string> = {
   </svg>`;
   },
   minion: (c) => {
-    const d = darken(c);
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
-    <rect x="7" y="0" width="10" height="1" fill="#facc15"/>
-    <rect x="6" y="1" width="12" height="2" fill="#facc15"/>
-    <rect x="5" y="2" width="2" height="1" fill="#a1a1aa"/><rect x="17" y="2" width="2" height="1" fill="#a1a1aa"/>
-    <rect x="5" y="3" width="14" height="2" fill="#facc15"/>
-    <rect x="4" y="4" width="16" height="4" fill="#a1a1aa"/>
-    <rect x="5" y="4" width="14" height="3" fill="#d4d4d8"/>
-    <rect x="5" y="5" width="4" height="3" fill="#fff"/><rect x="15" y="5" width="4" height="3" fill="#fff"/>
-    <rect x="6" y="5" width="2" height="2" fill="#451a03"/><rect x="16" y="5" width="2" height="2" fill="#451a03"/>
-    <rect x="7" y="6" width="1" height="1" fill="#fff"/><rect x="17" y="6" width="1" height="1" fill="#fff"/>
-    <rect x="4" y="8" width="16" height="1" fill="#a1a1aa"/>
-    <rect x="5" y="9" width="14" height="2" fill="#facc15"/>
-    <rect x="9" y="10" width="6" height="1" fill="#111"/>
-    <rect x="5" y="11" width="14" height="2" fill="#facc15"/>
-    <rect x="5" y="13" width="14" height="2" fill="#1d4ed8"/>
-    <rect x="6" y="13" width="12" height="1" fill="#2563eb"/>
-    <rect x="4" y="13" width="1" height="4" fill="#facc15"/><rect x="19" y="13" width="1" height="4" fill="#facc15"/>
-    <rect x="5" y="15" width="14" height="4" fill="#1d4ed8"/>
-    <rect x="6" y="15" width="12" height="1" fill="#2563eb"/>
-    <rect x="9" y="16" width="6" height="3" fill="#111"/>
-    <rect x="5" y="19" width="5" height="2" fill="#111"/><rect x="14" y="19" width="5" height="2" fill="#111"/>
-    <rect x="6" y="20" width="3" height="2" fill="#374151"/><rect x="15" y="20" width="3" height="2" fill="#374151"/>
-    <rect x="6" y="22" width="3" height="1" fill="#1d4ed8"/><rect x="15" y="22" width="3" height="1" fill="#1d4ed8"/>
+    <rect x="8" y="0" width="8" height="2" fill="#facc15"/>
+    <rect x="7" y="2" width="10" height="2" fill="#facc15"/>
+    <rect x="6" y="4" width="12" height="2" fill="#facc15"/>
+    <rect x="6" y="5" width="3" height="2" fill="#a1a1aa"/><rect x="15" y="5" width="3" height="2" fill="#a1a1aa"/>
+    <rect x="5" y="6" width="14" height="4" fill="#a1a1aa"/>
+    <rect x="6" y="6" width="12" height="3" fill="#d4d4d8"/>
+    <rect x="8" y="6" width="8" height="3" fill="#fff"/>
+    <rect x="10" y="6" width="4" height="3" fill="#6b4c1e"/>
+    <rect x="11" y="7" width="2" height="1" fill="#111"/>
+    <rect x="5" y="10" width="14" height="1" fill="#a1a1aa"/>
+    <rect x="6" y="11" width="12" height="2" fill="#facc15"/>
+    <rect x="9" y="12" width="6" height="1" fill="#111"/>
+    <rect x="6" y="13" width="12" height="2" fill="#facc15"/>
+    <rect x="5" y="13" width="1" height="3" fill="#facc15"/><rect x="18" y="13" width="1" height="3" fill="#facc15"/>
+    <rect x="6" y="15" width="12" height="2" fill="#2563eb"/>
+    <rect x="7" y="15" width="10" height="1" fill="#3b82f6"/>
+    <rect x="8" y="15" width="8" height="1" fill="#1d4ed8"/>
+    <rect x="6" y="17" width="12" height="2" fill="#1d4ed8"/>
+    <rect x="7" y="17" width="10" height="1" fill="#2563eb"/>
+    <rect x="6" y="19" width="12" height="1" fill="#111"/>
+    <rect x="6" y="20" width="5" height="2" fill="#1d4ed8"/><rect x="13" y="20" width="5" height="2" fill="#1d4ed8"/>
+    <rect x="6" y="22" width="4" height="1" fill="#111"/><rect x="14" y="22" width="4" height="1" fill="#111"/>
   </svg>`;
   },
   bunny: (c) => {
@@ -271,6 +270,28 @@ const PET_SPRITES_SLEEP: Record<string, (c: string) => string> = {
   </svg>`;
   },
   olaf: () => OLAF_SVG_SLEEP,
+  minion: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
+    <rect x="8" y="0" width="8" height="2" fill="#facc15"/>
+    <rect x="7" y="2" width="10" height="2" fill="#facc15"/>
+    <rect x="6" y="4" width="12" height="2" fill="#facc15"/>
+    <rect x="6" y="5" width="3" height="2" fill="#a1a1aa"/><rect x="15" y="5" width="3" height="2" fill="#a1a1aa"/>
+    <rect x="5" y="6" width="14" height="4" fill="#a1a1aa"/>
+    <rect x="6" y="6" width="12" height="3" fill="#d4d4d8"/>
+    <rect x="8" y="7" width="8" height="2" fill="#fff"/>
+    <rect x="9" y="7" width="2" height="1" fill="#94a3b8"/><rect x="13" y="7" width="2" height="1" fill="#94a3b8"/>
+    <rect x="10" y="8" width="4" height="1" fill="#475569"/>
+    <rect x="5" y="10" width="14" height="1" fill="#a1a1aa"/>
+    <rect x="6" y="11" width="12" height="2" fill="#facc15"/>
+    <rect x="9" y="12" width="6" height="1" fill="#111"/>
+    <rect x="6" y="13" width="12" height="2" fill="#facc15"/>
+    <rect x="5" y="13" width="1" height="3" fill="#facc15"/><rect x="18" y="13" width="1" height="3" fill="#facc15"/>
+    <rect x="6" y="15" width="12" height="2" fill="#2563eb"/>
+    <rect x="7" y="15" width="10" height="1" fill="#3b82f6"/>
+    <rect x="6" y="17" width="12" height="2" fill="#1d4ed8"/>
+    <rect x="6" y="19" width="12" height="1" fill="#111"/>
+    <rect x="6" y="20" width="5" height="2" fill="#1d4ed8"/><rect x="13" y="20" width="5" height="2" fill="#1d4ed8"/>
+    <rect x="6" y="22" width="4" height="1" fill="#111"/><rect x="14" y="22" width="4" height="1" fill="#111"/>
+  </svg>`,
 };
 
 // Profile pose sprites — each pet type has a unique activity (128x128)
@@ -454,6 +475,33 @@ const PROFILE_OLAF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24
   <rect x="19" y="14" width="3" height="2" fill="#f59e0b"/>
 </svg>`;
 
+const PROFILE_MINION = (c: string) => {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
+  <rect x="8" y="0" width="8" height="2" fill="#facc15"/>
+  <rect x="7" y="2" width="10" height="2" fill="#facc15"/>
+  <rect x="6" y="4" width="12" height="2" fill="#facc15"/>
+  <rect x="6" y="5" width="3" height="2" fill="#a1a1aa"/><rect x="15" y="5" width="3" height="2" fill="#a1a1aa"/>
+  <rect x="5" y="6" width="14" height="4" fill="#a1a1aa"/>
+  <rect x="6" y="6" width="12" height="3" fill="#d4d4d8"/>
+  <rect x="8" y="6" width="8" height="3" fill="#fff"/>
+  <rect x="10" y="6" width="4" height="3" fill="#6b4c1e"/>
+  <rect x="11" y="7" width="2" height="1" fill="#111"/>
+  <rect x="5" y="10" width="14" height="1" fill="#a1a1aa"/>
+  <rect x="6" y="11" width="12" height="2" fill="#facc15"/>
+  <rect x="9" y="12" width="6" height="1" fill="#111"/>
+  <rect x="6" y="13" width="12" height="2" fill="#facc15"/>
+  <rect x="5" y="13" width="1" height="3" fill="#facc15"/><rect x="18" y="13" width="1" height="3" fill="#facc15"/>
+  <rect x="6" y="15" width="12" height="2" fill="#2563eb"/>
+  <rect x="7" y="15" width="10" height="1" fill="#3b82f6"/>
+  <rect x="8" y="15" width="8" height="1" fill="#1d4ed8"/>
+  <rect x="6" y="17" width="12" height="2" fill="#1d4ed8"/>
+  <rect x="7" y="17" width="10" height="1" fill="#2563eb"/>
+  <rect x="6" y="19" width="12" height="1" fill="#111"/>
+  <rect x="6" y="20" width="5" height="2" fill="#1d4ed8"/><rect x="13" y="20" width="5" height="2" fill="#1d4ed8"/>
+  <rect x="6" y="22" width="4" height="1" fill="#111"/><rect x="14" y="22" width="4" height="1" fill="#111"/>
+</svg>`;
+};
+
 export const PROFILE_SPRITES: Record<string, (c: string) => string> = {
   cat: PROFILE_CAT,
   dog: PROFILE_DOG,
@@ -462,6 +510,7 @@ export const PROFILE_SPRITES: Record<string, (c: string) => string> = {
   penguin: PROFILE_PENGUIN,
   owl: PROFILE_OWL,
   olaf: () => PROFILE_OLAF,
+  minion: PROFILE_MINION,
 };
 
 export function getSpriteUrl(pet: { pet_type: string; color: string; sprite_url: string | null }, sleeping?: boolean): string {
