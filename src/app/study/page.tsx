@@ -499,17 +499,17 @@ function QuizTab({ userId }: { userId: string | null }) {
                 <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", marginBottom: "6px" }}>{q.question}</p>
-                  {q.type === "mc" && q.options && (
+                   {q.type === "mc" && q.options && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
                       {q.options.map((opt: string, j: number) => (
-                        <p key={j} className="text-xs" style={{ color: String(j) === getCorrectIndex(q) ? "#16a34a" : "var(--os-text-secondary)" }}>
-                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {String(j) === getCorrectIndex(q) ? "✓" : ""}
+                        <p key={j} className="text-xs" style={{ color: "var(--os-text-secondary)" }}>
+                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)}
                         </p>
                       ))}
                     </div>
                   )}
                   {q.type === "identification" && (
-                    <p className="text-xs" style={{ color: "#16a34a" }}>Answer: {q.answer}</p>
+                    <p className="text-xs" style={{ color: "var(--os-text-secondary)" }}>Type your answer</p>
                   )}
                 </div>
               </div>
