@@ -262,6 +262,9 @@ export default function FriendsPage() {
   }
 
   return (
+    <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
+      <h1 className="page-title" style={{ fontSize: 24, marginBottom: 20 }}>
+        <Users size={24} /> Friends
       </h1>
 
       {/* Tabs */}

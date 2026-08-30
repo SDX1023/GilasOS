@@ -105,20 +105,6 @@ export default function LeaderboardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {leaderboard.map((entry, i) => {
             const isMe = user?.id === entry.user_id;
-  if (!user) {
-    return (
-      <div className="page-container">
-        <div className="empty-state">
-          <div className="empty-state-icon"><Trophy size={32} style={{ color: "var(--os-text-dim)" }} /></div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Sign in required</h2>
-          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Log in to view the leaderboard.</p>
-          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
               <div key={entry.user_id} className="glass-card" style={{
                 padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
                 border: isMe ? "1px solid var(--os-accent)" : undefined,

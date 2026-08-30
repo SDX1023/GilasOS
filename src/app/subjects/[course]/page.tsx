@@ -6,7 +6,7 @@ import { useCourseDetail } from "@/hooks/use-db";
 import { useAuth } from "@/lib/auth-context";
 import { isAdmin } from "@/lib/admin";
 import { getSupabase } from "@/lib/supabase";
-import { ChevronRight, Plus, Trash2, ExternalLink, Pencil, X, Check, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, Plus, Trash2, ExternalLink, Pencil, X, Check, Link as LinkIcon, BookOpen } from "lucide-react";
 
 interface ResourceLink {
   id: string;
