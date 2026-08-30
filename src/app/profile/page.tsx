@@ -56,7 +56,6 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bio, setBio] = useState("");
   const [moodText, setMoodText] = useState("");
-  const [moodEmoji, setMoodEmoji] = useState("");
   const [customMood, setCustomMood] = useState("");
   const [spotifyUrl, setSpotifyUrl] = useState("");
   const [spotifyInput, setSpotifyInput] = useState("");
@@ -72,12 +71,11 @@ export default function ProfilePage() {
     if (!user) return;
     (async () => {
       const supabase = getSupabase();
-      const { data } = await supabase.from("user_profiles").select("avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", user.id).maybeSingle();
+      const { data } = await supabase.from("user_profiles").select("avatar_url, bio, mood_text, spotify_url").eq("user_id", user.id).maybeSingle();
       if (data) {
         setAvatarUrl(data.avatar_url || "");
         setBio(data.bio || "");
         setMoodText(data.mood_text || "");
-        setMoodEmoji(data.mood_emoji || "");
         setSpotifyUrl(data.spotify_url || "");
         setSpotifyInput(data.spotify_url || "");
       }
@@ -96,7 +94,7 @@ export default function ProfilePage() {
     setSaving(true);
     const supabase = getSupabase();
     await supabase.from("user_profiles").update({
-      avatar_url: avatarUrl, bio, mood_text: moodText, mood_emoji: moodEmoji,
+      avatar_url: avatarUrl, bio, mood_text: moodText,
       spotify_url: spotifyInput.trim() || "",
     }).eq("user_id", user.id);
     setSpotifyUrl(spotifyInput.trim() || "");

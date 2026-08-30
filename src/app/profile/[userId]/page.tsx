@@ -13,7 +13,6 @@ interface ProfileData {
   avatar_url: string;
   bio: string;
   mood_text: string;
-  mood_emoji: string;
   spotify_url: string;
 }
 
@@ -39,7 +38,7 @@ function extractSpotifyId(url: string): { type: string; id: string } | null {
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData>({ username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
+  const [profile, setProfile] = useState<ProfileData>({ username: "User", avatar_url: "", bio: "", mood_text: "", spotify_url: "" });
   const [loading, setLoading] = useState(true);
   const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
@@ -49,7 +48,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
     if (!userId) return;
     (async () => {
       const supabase = getSupabase();
-      const { data, error } = await supabase.from("user_profiles").select("user_id, username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
+      const { data, error } = await supabase.from("user_profiles").select("user_id, username, avatar_url, bio, mood_text, spotify_url").eq("user_id", userId).maybeSingle();
       if (error) console.error("Profile query error:", error.message, error);
       if (data) {
         setProfile({
@@ -57,7 +56,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           avatar_url: data.avatar_url || "",
           bio: data.bio || "",
           mood_text: data.mood_text || "",
-          mood_emoji: data.mood_emoji || "",
           spotify_url: data.spotify_url || "",
         });
       }

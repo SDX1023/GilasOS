@@ -2,7 +2,7 @@
 
 import { Node, mergeAttributes } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 const COLORS = [
@@ -17,6 +17,7 @@ function TextboxNodeView({ node, updateAttributes, deleteNode, editor }: any) {
   const { x, y, width, height, color, content } = node.attrs;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState(false);
 
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -77,46 +78,88 @@ function TextboxNodeView({ node, updateAttributes, deleteNode, editor }: any) {
     <NodeViewWrapper as="div">
       <div
         ref={wrapperRef}
-        className="group rounded-lg shadow-lg border-2 transition-shadow"
-        style={{ left: x, top: y, width, height, borderColor: color, backgroundColor: `${color}10`, position: "absolute" }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          position: "absolute", left: x, top: y, width, height,
+          borderColor: color, backgroundColor: `${color}10`,
+          border: `2px solid ${color}`, borderRadius: 8,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          background: `rgba(15,21,35,0.9)`,
+          transition: "box-shadow 0.2s",
+        }}
       >
+        {/* Drag handle */}
         <div
           onMouseDown={handleDragStart}
-          className="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-3 bg-card border rounded-md cursor-move flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          style={{
+            position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+            width: 32, height: 12, background: "var(--os-bg-secondary)",
+            border: "1px solid var(--os-glass-border)", borderRadius: 6,
+            cursor: "move", display: "flex", alignItems: "center", justifyContent: "center",
+            opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+          }}
         >
-          <div className="w-4 h-1 bg-muted-foreground/30 rounded-full" />
+          <div style={{ width: 16, height: 3, background: "rgba(255,255,255,0.2)", borderRadius: 2 }} />
         </div>
 
+        {/* Resize handle */}
         <div
           onMouseDown={handleResizeStart}
-          className="absolute -bottom-2 -right-2 w-4 h-4 bg-card border rounded cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          style={{
+            position: "absolute", bottom: -8, right: -8, width: 16, height: 16,
+            background: "var(--os-bg-secondary)", border: "1px solid var(--os-glass-border)",
+            borderRadius: 4, cursor: "se-resize",
+            opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+          }}
         />
 
+        {/* Delete button */}
         <button
           onMouseDown={handleDelete}
-          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-600"
+          style={{
+            position: "absolute", top: -8, right: -8, width: 20, height: 20,
+            background: "#ef4444", color: "#fff", borderRadius: 10,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", cursor: "pointer",
+            opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+            padding: 0,
+          }}
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 size={12} />
         </button>
 
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ transform: "translateX(-50%) translateY(-20px)" }}>
+        {/* Color picker */}
+        <div style={{
+          position: "absolute", top: -28, left: "50%", transform: "translateX(-50%)",
+          display: "flex", gap: 4,
+          opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+        }}>
           {COLORS.map((c) => (
             <button
               key={c.value}
               onMouseDown={handleColorChange(c.value)}
-              className="w-3 h-3 rounded-full border border-border hover:scale-125 transition-transform"
-              style={{ backgroundColor: c.value }}
+              style={{
+                width: 12, height: 12, borderRadius: 6,
+                background: c.value, border: "1px solid rgba(255,255,255,0.2)",
+                cursor: "pointer", padding: 0,
+              }}
             />
           ))}
         </div>
 
+        {/* Textarea */}
         <textarea
           ref={textareaRef}
-          className="w-full h-full p-2 text-sm bg-transparent border-none outline-none resize-none focus:outline-none"
           value={content || ""}
           onChange={(e) => updateAttributes({ content: e.target.value })}
           onMouseDown={handleTextareaMouseDown}
           placeholder="Type here..."
+          style={{
+            width: "100%", height: "100%", padding: 8, fontSize: 14,
+            background: "transparent", border: "none", outline: "none",
+            resize: "none", color: "var(--os-text-primary)", fontFamily: "Inter, sans-serif",
+          }}
         />
       </div>
     </NodeViewWrapper>

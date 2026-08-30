@@ -150,67 +150,22 @@ function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) 
 
 function ImageNodeView(props: any) {
   const { node, updateAttributes, editor } = props;
-  const { src, alt, style, x, y } = node.attrs;
+  const { src, alt, style } = node.attrs;
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showCrop, setShowCrop] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const resizeRef = useRef({ startX: 0, startY: 0, startW: 0, startH: 0, corner: "" });
-  const dragRef = useRef({ mx: 0, my: 0, bx: 0, by: 0, started: false });
 
-  const findMyPos = () => {
+  const deleteImage = () => {
     let found: number | null = null;
     editor.view.state.doc.descendants((n: any, p: number) => {
       if (found !== null) return false;
       if (n.type.name === "image" && n.attrs.src === src) { found = p; return false; }
     });
-    return found;
-  };
-
-  const updateImageAttrs = (attrs: Record<string, any>) => {
-    updateAttributes(attrs);
-  };
-
-  const deleteImage = () => {
-    const pos = findMyPos();
-    if (pos === null) return;
-    const n = editor.view.state.doc.nodeAt(pos);
+    if (found === null) return;
+    const n = editor.view.state.doc.nodeAt(found);
     if (!n) return;
-    editor.view.dispatch(editor.view.state.tr.delete(pos, pos + n.nodeSize));
-  };
-
-  const handleDragStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    let startX = x;
-    let startY = y;
-    if (startX == null || startY == null) {
-      const wrapper = wrapperRef.current;
-      if (wrapper) {
-        const rect = wrapper.getBoundingClientRect();
-        const editorEl = editor.view.dom;
-        const editorRect = editorEl.getBoundingClientRect();
-        startX = rect.left - editorRect.left + editorEl.scrollLeft;
-        startY = rect.top - editorRect.top + editorEl.scrollTop;
-      } else {
-        startX = 0;
-        startY = 0;
-      }
-    }
-    dragRef.current = { mx: e.clientX, my: e.clientY, bx: startX, by: startY, started: true };
-    const onMove = (ev: MouseEvent) => {
-      if (!dragRef.current.started) return;
-      const dx = ev.clientX - dragRef.current.mx;
-      const dy = ev.clientY - dragRef.current.my;
-      updateImageAttrs({ x: dragRef.current.bx + dx, y: dragRef.current.by + dy });
-    };
-    const onUp = () => {
-      dragRef.current.started = false;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    editor.view.dispatch(editor.view.state.tr.delete(found, found + n.nodeSize));
   };
 
   const startResize = (corner: string) => (e: React.MouseEvent) => {
@@ -237,14 +192,14 @@ function ImageNodeView(props: any) {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
       const img = imgRef.current;
-      if (img) updateImageAttrs({ style: `width: ${img.style.width}; height: ${img.style.height};` });
+      if (img) updateAttributes({ style: `width: ${img.style.width}; height: ${img.style.height};` });
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   };
 
   const applyCrop = (dataUrl: string) => {
-    updateImageAttrs({ src: dataUrl, style: "" });
+    updateAttributes({ src: dataUrl, style: "" });
     setShowCrop(false);
   };
 
@@ -256,24 +211,19 @@ function ImageNodeView(props: any) {
     });
   }
 
-  const hasPos = x != null && y != null;
-  const posStyle: React.CSSProperties = hasPos ? { position: "absolute" as const, left: x, top: y } : {};
-
   const isSelected = editor.isActive("image", { src });
 
   return (
-    <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: hasPos ? "block" : "inline-block", minHeight: hasPos ? 40 : undefined }}>
+    <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: "inline-block" }}>
       {isSelected && (
-        <div className="image-toolbar" style={hasPos ? { position: "absolute", top: -36, left: "50%", transform: "translateX(-50%)", zIndex: 20 } : { position: "relative", marginBottom: 4 }}>
-          <div onMouseDown={handleDragStart} className="image-toolbar-btn" style={{ cursor: "move" }} title="Drag to move">⠿</div>
-          <div className="image-toolbar-divider" />
+        <div className="image-toolbar" style={{ position: "relative", marginBottom: 4 }}>
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
         </div>
       )}
       <div
-        style={{ ...posStyle, position: "relative", display: "inline-block" }}
+        style={{ position: "relative", display: "inline-block" }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -285,7 +235,7 @@ function ImageNodeView(props: any) {
             <div onMouseDown={startResize("se")} className="image-handle" style={{ bottom: -4, right: -4, cursor: "nwse-resize" }} />
           </>
         )}
-        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={{ ...parsedStyle, cursor: isSelected ? "grab" : undefined }} draggable="false" onMouseDown={isSelected ? handleDragStart : undefined} />
+        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={{ ...parsedStyle, cursor: isSelected ? "grab" : undefined }} draggable="false" />
       </div>
       {showCrop && <CropModal src={src} onCrop={applyCrop} onClose={() => setShowCrop(false)} />}
     </NodeViewWrapper>

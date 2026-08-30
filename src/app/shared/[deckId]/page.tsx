@@ -30,7 +30,6 @@ interface CreatorProfile {
   avatar_url: string;
   bio: string;
   mood_text: string;
-  mood_emoji: string;
 }
 
 export default function SharedDeckPage({ params }: { params: Promise<{ deckId: string }> }) {
@@ -83,7 +82,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
       setCards(loadedCards);
 
-      const { data: profile } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji").eq("user_id", sharedDeck.user_id).maybeSingle();
+      const { data: profile } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text").eq("user_id", sharedDeck.user_id).maybeSingle();
       if (profile) setCreator(profile);
 
       setLoading(false);
