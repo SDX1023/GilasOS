@@ -39,7 +39,7 @@ function extractSpotifyId(url: string): { type: string; id: string } | null {
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ProfileData>({ username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
   const [loading, setLoading] = useState(true);
   const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
