@@ -1143,13 +1143,6 @@ a:focus-visible {
 
 .glass-btn {
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-
-.glass-btn:focus,
-.glass-btn:active {
-  outline: none;
-  box-shadow: none;
-}
   padding: 10px 20px;
   border-radius: 10px;
   border: none;
@@ -1158,6 +1151,12 @@ a:focus-visible {
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.glass-btn:focus,
+.glass-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .glass-btn-primary {
