@@ -15,6 +15,8 @@ interface PDFModule {
   name: string;
   description?: string;
   color: string;
+  module_type: "pdf" | "deck" | "custom";
+  module_order: number;
   created_at: string;
 }
 
@@ -30,8 +32,11 @@ export default function StudyPage() {
   const [showCreateModule, setShowCreateModule] = useState(false);
   const [moduleName, setModuleName] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
+  const [moduleType, setModuleType] = useState<"pdf" | "deck" | "custom">("custom");
   const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [draggedModule, setDraggedModule] = useState<string | null>(null);
+  const [dragOverModule, setDragOverModule] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -58,7 +63,7 @@ export default function StudyPage() {
         }
         setAllReviewers([...cloudReviewers, ...missingFromCloud]);
 
-        const { data: modules } = await supabase.from("user_modules").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+        const { data: modules } = await supabase.from("user_modules").select("*").eq("user_id", user.id).order("module_order", { ascending: true });
         if (modules) setUserModules(modules);
       } else {
         setAllReviewers(localReviewers);
@@ -104,13 +109,16 @@ export default function StudyPage() {
       name: moduleName.trim(),
       description: moduleDescription.trim() || null,
       color: selectedColor,
+      module_type: moduleType,
+      module_order: userModules.length,
     }).select().single();
     if (!error && data) {
-      setUserModules((prev) => [data, ...prev]);
+      setUserModules((prev) => [...prev, data]);
     }
     setShowCreateModule(false);
     setModuleName("");
     setModuleDescription("");
+    setModuleType("custom");
     setSelectedColor(COLOR_OPTIONS[0]);
   }
 
@@ -121,10 +129,48 @@ export default function StudyPage() {
     setUserModules((prev) => prev.filter((m) => m.id !== id));
   }
 
-  const filteredModules = userModules.filter((m) =>
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  function handleDragStart(e: React.DragEvent, moduleId: string) {
+    setDraggedModule(moduleId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", moduleId);
+  }
+
+  function handleDragEnd() {
+    setDraggedModule(null);
+    setDragOverModule(null);
+  }
+
+  function handleDragOver(e: React.DragEvent, moduleId: string) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedModule !== moduleId) setDragOverModule(moduleId);
+  }
+
+  function handleDragLeave() { setDragOverModule(null); }
+
+  async function handleDrop(e: React.DragEvent, targetId: string) {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData("text/plain");
+    if (sourceId === targetId) return;
+    const srcIdx = userModules.findIndex((m) => m.id === sourceId);
+    const tgtIdx = userModules.findIndex((m) => m.id === targetId);
+    if (srcIdx === -1 || tgtIdx === -1) return;
+    const arr = [...userModules];
+    const [removed] = arr.splice(srcIdx, 1);
+    arr.splice(tgtIdx, 0, removed);
+    const updated = arr.map((m, i) => ({ ...m, module_order: i }));
+    setUserModules(updated);
+    if (userId) {
+      const supabase = getSupabase();
+      for (const m of updated) await supabase.from("user_modules").update({ module_order: m.module_order }).eq("id", m.id);
+    }
+    setDraggedModule(null);
+    setDragOverModule(null);
+  }
+
+  const filteredModules = [...userModules]
+    .sort((a, b) => a.module_order - b.module_order)
+    .filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.description?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const totalCards = userModules.reduce((acc, m) => {
     return acc + allReviewers.filter((r) => r.courseId === m.name).reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
@@ -178,24 +224,17 @@ export default function StudyPage() {
         <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} onRefresh={refreshReviewers} />
       )}
 
-      {/* PDF Flashcard Modules */}
+            {/* PDF Flashcard Modules */}
       {tab === "flashcards" && (
         <div style={{ marginTop: 24 }}>
           <div className="glass-card" style={{ padding: 24 }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--os-text-primary)", flex: 1 }}>PDF Flashcard Modules</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--os-text-primary)", flex: 1 }}>Flashcard Modules</h2>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
                   <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--os-text-dim)" }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search modules..."
-                    className="glass-input"
-                    style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13 }}
-                  />
+                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search modules..." className="glass-input" style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13 }} />
                 </div>
                 <button onClick={() => setShowCreateModule(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap" }}>
                   <Plus size={14} /> Module
@@ -203,57 +242,68 @@ export default function StudyPage() {
               </div>
             </div>
 
-            {/* Module Grid */}
+            {/* Drag hint */}
+            {userModules.length > 1 && (
+              <div style={{ fontSize: 12, color: "var(--os-text-dim)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <GripVertical size={12} /> Drag modules to reorder
+              </div>
+            )}
+
+            {/* Module List */}
             {filteredModules.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 0" }}>
                 <FolderOpen size={48} style={{ color: "var(--os-text-dim)", opacity: 0.3, marginBottom: 12 }} />
-                <p style={{ color: "var(--os-text-secondary)" }}>No modules yet</p>
-                <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 4 }}>Create your first PDF flashcard module</p>
+                <p style={{ color: "var(--os-text-secondary)" }}>No modules found</p>
+                <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 4 }}>Create your first module to get started</p>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {filteredModules.map((mod) => {
+                  const isDragOver = dragOverModule === mod.id;
+                  const isDragging = draggedModule === mod.id;
                   const cardCount = allReviewers.filter((r) => r.courseId === mod.name).reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
-                  const date = new Date(mod.created_at).toLocaleDateString();
+                  const deckCount = allReviewers.filter((r) => r.courseId === mod.name).length;
                   return (
-                    <div key={mod.id} className="glass-card-link" style={{ padding: 20, cursor: "pointer", transition: "all 0.2s", position: "relative", overflow: "hidden" }}>
-                      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: mod.color || "#00d4ff", borderRadius: "4px 0 0 4px" }} />
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                        <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: mod.color || "#00d4ff", flexShrink: 0 }} />
-                            <h3 style={{ fontWeight: 600, fontSize: 14, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mod.name}</h3>
-                          </div>
-                          {mod.description && (
-                            <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 6, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{mod.description}</p>
-                          )}
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 12, color: "var(--os-text-dim)" }}>
-                            <span>{cardCount} cards</span>
-                            <span>&middot;</span>
-                            <span>Created {date}</span>
-                          </div>
+                    <div key={mod.id} draggable onDragStart={(e) => handleDragStart(e, mod.id)} onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, mod.id)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, mod.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+                        background: isDragOver ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)",
+                        border: isDragOver ? "1px solid rgba(0,212,255,0.5)" : "1px solid var(--os-glass-border)",
+                        borderRadius: 12, cursor: "grab", opacity: isDragging ? 0.5 : 1,
+                        transform: isDragOver ? "scale(1.01)" : "none",
+                        boxShadow: isDragOver ? "0 4px 16px rgba(0,212,255,0.1)" : "none",
+                        transition: "all 0.2s", position: "relative",
+                      }}>
+                      <div style={{ color: "var(--os-text-dim)", opacity: 0.4, flexShrink: 0 }}><GripVertical size={18} /></div>
+                      <div style={{ width: 4, height: 40, borderRadius: 2, background: mod.color || "#00d4ff", flexShrink: 0 }} />
+                      <div style={{ padding: 8, borderRadius: 8, background: "rgba(255,255,255,0.05)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {mod.module_type === "pdf" ? <FileText size={18} style={{ color: "#f59e0b" }} /> : mod.module_type === "deck" ? <BookOpen size={18} style={{ color: "#00d4ff" }} /> : <FolderOpen size={18} style={{ color: "var(--os-text-dim)" }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontWeight: 500, fontSize: 14, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mod.name}</span>
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: "rgba(255,255,255,0.08)", color: "var(--os-text-dim)", whiteSpace: "nowrap" }}>{mod.module_type === "pdf" ? "PDF" : mod.module_type === "deck" ? "Deck" : "Module"}</span>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteModule(mod.id); }}
-                            style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4 }}
-                            title="Delete module">
-                            <Trash2 size={14} />
-                          </button>
-                          <ChevronRight size={16} style={{ color: "var(--os-text-dim)", opacity: 0.4 }} />
+                        {mod.description && <p style={{ color: "var(--os-text-dim)", fontSize: 13, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mod.description}</p>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, fontSize: 12, color: "var(--os-text-dim)" }}>
+                          <span>{cardCount} cards</span>
+                          {deckCount > 0 && <><span>&middot;</span><span>{deckCount} {deckCount === 1 ? "deck" : "decks"}</span></>}
                         </div>
                       </div>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteModule(mod.id); }} style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.3, flexShrink: 0 }} title="Delete module"><Trash2 size={14} /></button>
+                      <ChevronRight size={16} style={{ color: "var(--os-text-dim)", opacity: 0.3, flexShrink: 0 }} />
+                      {isDragOver && <div style={{ position: "absolute", inset: 0, border: "2px dashed rgba(0,212,255,0.4)", borderRadius: 12, pointerEvents: "none" }} />}
                     </div>
                   );
                 })}
               </div>
             )}
 
-            {/* Stats */}
             {userModules.length > 0 && (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--os-glass-border)", display: "flex", gap: 16, fontSize: 13, color: "var(--os-text-dim)" }}>
-                <span>Total: {userModules.length} modules</span>
-                <span>&middot;</span>
-                <span>{totalCards} cards</span>
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--os-glass-border)", display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: "var(--os-text-dim)" }}>
+                <span>{filteredModules.length} modules</span><span>&middot;</span><span>{totalCards} cards</span><span>&middot;</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><GripVertical size={12} /> Drag to reorder</span>
               </div>
             )}
           </div>
@@ -269,10 +319,8 @@ export default function StudyPage() {
         <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
           <div className="glass-panel" style={{ maxWidth: 420, width: "100%", margin: "0 16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--os-text-primary)" }}>Create PDF Module</h3>
-              <button onClick={() => { setShowCreateModule(false); setModuleName(""); setModuleDescription(""); }} style={{ padding: 6, borderRadius: 8, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}>
-                <X size={18} />
-              </button>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--os-text-primary)" }}>Create Flashcard Module</h3>
+              <button onClick={() => { setShowCreateModule(false); setModuleName(""); setModuleDescription(""); }} style={{ padding: 6, borderRadius: 8, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={18} /></button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
@@ -284,28 +332,37 @@ export default function StudyPage() {
                 <input className="glass-input" value={moduleDescription} onChange={(e) => setModuleDescription(e.target.value)} placeholder="What is this module about?" style={{ width: "100%" }} />
               </div>
               <div>
+                <label style={{ display: "block", fontSize: 13, color: "var(--os-text-secondary)", marginBottom: 8 }}>Type</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {([
+                    ["pdf", "PDF", "#f59e0b"],
+                    ["deck", "Deck", "#00d4ff"],
+                    ["custom", "Custom", "var(--os-text-dim)"],
+                  ] as const).map(([t, label, bg]) => (
+                    <button key={t} onClick={() => setModuleType(t)} style={{
+                      padding: "10px 12px", borderRadius: 10, fontSize: 13, fontWeight: 500, cursor: "pointer", border: "none",
+                      background: moduleType === t ? (t === "pdf" ? "#f59e0b" : t === "deck" ? "#00d4ff" : "rgba(255,255,255,0.2)") : "rgba(255,255,255,0.05)",
+                      color: moduleType === t ? "#fff" : "var(--os-text-secondary)", transition: "all 0.15s",
+                    }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <label style={{ display: "block", fontSize: 13, color: "var(--os-text-secondary)", marginBottom: 8 }}>Module Color</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {COLOR_OPTIONS.map((color) => (
-                    <button key={color} onClick={() => setSelectedColor(color)}
-                      style={{
-                        width: 32, height: 32, borderRadius: "50%", background: color, border: "none", cursor: "pointer",
-                        outline: selectedColor === color ? "2px solid #fff" : "none",
-                        outlineOffset: selectedColor === color ? 2 : 0,
-                        transform: selectedColor === color ? "scale(1.1)" : "scale(1)",
-                        transition: "all 0.15s",
-                      }} />
+                    <button key={color} onClick={() => setSelectedColor(color)} style={{
+                      width: 32, height: 32, borderRadius: "50%", background: color, border: "none", cursor: "pointer",
+                      outline: selectedColor === color ? "2px solid #fff" : "none", outlineOffset: selectedColor === color ? 2 : 0,
+                      transform: selectedColor === color ? "scale(1.15)" : "scale(1)", transition: "all 0.15s",
+                    }} />
                   ))}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10, paddingTop: 8, borderTop: "1px solid var(--os-glass-border)" }}>
                 <button onClick={handleCreateModule} disabled={!moduleName.trim()} className="glass-btn glass-btn-primary"
-                  style={{ flex: 1, padding: "10px 16px", opacity: !moduleName.trim() ? 0.5 : 1, cursor: !moduleName.trim() ? "not-allowed" : "pointer" }}>
-                  Create Module
-                </button>
-                <button onClick={() => { setShowCreateModule(false); setModuleName(""); setModuleDescription(""); }} className="glass-btn" style={{ padding: "10px 20px" }}>
-                  Cancel
-                </button>
+                  style={{ flex: 1, padding: "10px 16px", opacity: !moduleName.trim() ? 0.5 : 1, cursor: !moduleName.trim() ? "not-allowed" : "pointer" }}>Create Module</button>
+                <button onClick={() => { setShowCreateModule(false); setModuleName(""); setModuleDescription(""); }} className="glass-btn" style={{ padding: "10px 20px" }}>Cancel</button>
               </div>
             </div>
           </div>

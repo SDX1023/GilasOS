@@ -5,6 +5,8 @@ DO $$ BEGIN
     name TEXT NOT NULL,
     description TEXT,
     color TEXT DEFAULT '#00d4ff',
+    module_type TEXT DEFAULT 'custom' CHECK (module_type IN ('pdf', 'deck', 'custom')),
+    module_order INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 EXCEPTION WHEN duplicate_table THEN null;
