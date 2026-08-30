@@ -40,7 +40,7 @@ export function Taskbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <div className="taskbar">
+    <div className="taskbar" style={{ position: "fixed", bottom: 12, left: "50%", transform: "translateX(-50%)", zIndex: 9999 }}>
       {features.map((f) => {
         const active = isActive(f.href);
         return (
@@ -51,7 +51,6 @@ export function Taskbar() {
             title={f.title}
             tabIndex={-1}
             onMouseDown={(e) => e.preventDefault()}
-            style={active ? {} : {}}
           >
             <f.icon size={18} strokeWidth={active ? 2 : 1.5} />
           </Link>
