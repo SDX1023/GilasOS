@@ -216,12 +216,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           </h2>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{
-              width: 72, height: 72, borderRadius: 12, overflow: "hidden",
+              width: 128, height: 128, borderRadius: 16, overflow: "hidden",
               border: "2px solid rgba(255,255,255,0.1)",
               background: "rgba(255,255,255,0.05)",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              <img src={getProfileSpriteUrl(userPet)} alt={userPet.name} width={56} height={56} style={{ imageRendering: "pixelated" }} />
+              <img src={getProfileSpriteUrl(userPet)} alt={userPet.name} width={128} height={128} style={{ imageRendering: "pixelated" }} />
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 15, fontWeight: 600, color: "var(--os-text-primary)" }}>{userPet.name}</p>

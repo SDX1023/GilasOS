@@ -49,8 +49,8 @@ export default function PixelPet() {
 
   const petAnimStyle: React.CSSProperties = {
     imageRendering: "pixelated" as any,
-    width: Math.round(56 * scale),
-    height: Math.round(56 * scale),
+    width: Math.round(128 * scale),
+    height: Math.round(128 * scale),
     animation: action === "eating" ? "petShake 0.5s ease-in-out 4"
       : action === "playing" ? "petPlay 0.6s ease-in-out 3"
       : action === "sleeping" ? "petSleep 2.5s ease-in-out infinite"
@@ -88,7 +88,7 @@ export default function PixelPet() {
         }}
       >
         {/* Pet Scene Background */}
-        <div style={{ position: "relative", width: "100%", height: 130, overflow: "hidden", flexShrink: 0 }}>
+        <div style={{ position: "relative", width: "100%", height: 180, overflow: "hidden", flexShrink: 0 }}>
           <div style={{ position: "absolute", inset: 0, background: bg.sky }} />
           {/* Stars for night/sakura */}
           {["night", "sakura"].includes(pet.bg || "night") && [...Array(6)].map((_, i) => (
