@@ -111,8 +111,8 @@ export default function ArchivePage() {
   const [editValues, setEditValues] = useState({ competition: "", type: "", year: "" });
   const [editLinks, setEditLinks] = useState<string[]>([]);
   const [editLabels, setEditLabels] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<"year" | "type" | "">("");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [typeSort, setTypeSort] = useState<"asc" | "desc" | "">("");
+  const [yearSort, setYearSort] = useState<"asc" | "desc" | "">("desc");
 
   useEffect(() => {
     const password = sessionStorage.getItem("archive_admin");
@@ -193,23 +193,24 @@ export default function ArchivePage() {
     loadEntries();
   };
 
-  const handleSort = (field: "year" | "type") => {
-    if (sortBy === field) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortDir("asc");
-    }
+  const handleTypeSort = () => {
+    setTypeSort(typeSort === "asc" ? "desc" : typeSort === "desc" ? "" : "asc");
+  };
+
+  const handleYearSort = () => {
+    setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc");
   };
 
   const sortedEntries = [...entries].sort((a, b) => {
-    if (!sortBy) return 0;
-    if (sortBy === "year") {
-      const diff = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
-      return sortDir === "asc" ? diff : -diff;
+    if (typeSort) {
+      const cmp = (a.type || "").localeCompare(b.type || "");
+      if (cmp !== 0) return typeSort === "asc" ? cmp : -cmp;
     }
-    const cmp = (a.type || "").localeCompare(b.type || "");
-    return sortDir === "asc" ? cmp : -cmp;
+    if (yearSort) {
+      const diff = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
+      if (diff !== 0) return yearSort === "asc" ? diff : -diff;
+    }
+    return 0;
   });
 
   if (!user) {
@@ -281,11 +282,11 @@ export default function ArchivePage() {
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
                 <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={() => handleSort("type")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "160px" }}>
-                  Type{sortBy === "type" ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
+                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "160px" }}>
+                  Type{typeSort ? <span style={{ marginLeft: 4 }}>{typeSort === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
                 </th>
-                <th onClick={() => handleSort("year")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "120px" }}>
-                  Year{sortBy === "year" ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
+                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "120px" }}>
+                  Year{yearSort ? <span style={{ marginLeft: 4 }}>{yearSort === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
                 </th>
                 {isAdmin && <th style={{ width: 80 }}></th>}
               </tr>
