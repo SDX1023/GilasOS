@@ -122,7 +122,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           <div className="empty-state-icon"><User size={32} style={{ color: "var(--os-text-dim)" }} /></div>
           <p className="text-secondary text-sm">User not found.</p>
           <Link href="/friends" className="glass-btn glass-btn-ghost" style={{ marginTop: 12 }}>
-            <ArrowLeft size={14} /> Back to Leaderboard
+        <ArrowLeft size={14} /> Back to Friends
           </Link>
         </div>
       </div>
@@ -203,35 +203,25 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </p>
             )}
           </div>
+          {userPet && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <img src={getProfileSpriteUrl(userPet)} alt={userPet.name} width={96} height={96} style={{ imageRendering: "pixelated" }} />
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--os-text-primary)" }}>{userPet.name}</p>
+                <p style={{ fontSize: 11, color: "var(--os-text-secondary)", marginTop: 2 }}>
+                  Lv.{userPet.level} {userPet.pet_type}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 1 }}>
+                  {userPet.mood === "happy" ? "Feeling great!" : userPet.mood === "sad" ? "Needs attention" : "Just vibing~"}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         {profile.bio && (
           <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>{profile.bio}</p>
         )}
       </div>
-
-      {userPet && (
-        <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-            🐾 Pet Companion
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{
-              width: 128, height: 128, borderRadius: 16, overflow: "hidden",
-              border: "2px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.05)",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <img src={getProfileSpriteUrl(userPet)} alt={userPet.name} width={128} height={128} style={{ imageRendering: "pixelated" }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--os-text-primary)" }}>{userPet.name}</p>
-              <p style={{ fontSize: 12, color: "var(--os-text-secondary)", marginTop: 2 }}>
-                Lv.{userPet.level} {userPet.pet_type} · {userPet.mood === "happy" ? "Feeling great!" : userPet.mood === "sad" ? "Needs attention" : "Just vibing~"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {(profile.mood_text || spotifyParsed) && (
         <div className="glass-panel" style={{ padding: 24 }}>
