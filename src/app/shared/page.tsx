@@ -37,7 +37,9 @@ export default function SharedDecksPage() {
     (async () => {
       const supabase = getSupabase();
       let shared: any[] | null = null;
-      const { data, error } = await supabase.from("shared_decks").select("*").or(`user_id.eq.${user.id},shared_with_user_id.eq.${user.id}`).order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("shared_decks").select("*")
+        .or(`and(user_id.eq.${user.id},shared_with_user_id.is.null),shared_with_user_id.eq.${user.id}`)
+        .order("created_at", { ascending: false });
       if (error) {
         const { data: fallback } = await supabase.from("shared_decks").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
         shared = fallback;

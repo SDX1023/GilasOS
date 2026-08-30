@@ -330,8 +330,8 @@ function AdoptModal({ onClose, availableTypes }: { onClose: () => void; availabl
         </div>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
           {availableTypes.map((t) => (
-            <button key={t} onClick={() => setType(t)} style={{ width: 44, height: 44, borderRadius: 10, background: type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)", border: type === t ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }} title={t}>
-              <img src={getSpriteUrl({ pet_type: t, color: type === t ? "#fff" : color, sprite_url: null })} alt={t} width={32} height={32} style={{ imageRendering: "pixelated" }} />
+            <button key={t} onClick={() => setType(t)} style={{ width: 44, height: 44, borderRadius: 10, background: type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)", border: type === t ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4, overflow: "hidden" }} title={t}>
+              <img src={getSpriteUrl({ pet_type: t, color: type === t ? "#fff" : color, sprite_url: null })} alt={t} width={48} height={48} style={{ imageRendering: "pixelated", transform: "scale(0.55)", transformOrigin: "center" }} />
             </button>
           ))}
         </div>

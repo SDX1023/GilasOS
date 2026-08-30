@@ -1445,6 +1445,9 @@ a:focus-visible {
     padding: 6px 10px;
     border-radius: 14px;
     gap: 1px;
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+    justify-content: center;
   }
 
   .taskbar-item {

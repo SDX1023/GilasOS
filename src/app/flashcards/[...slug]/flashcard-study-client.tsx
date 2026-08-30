@@ -98,6 +98,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareRecipient, setShareRecipient] = useState("");
   const [shareError, setShareError] = useState("");
+  const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
@@ -107,6 +108,18 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!showShareModal || !user) return;
+    (async () => {
+      const supabase = getSupabase();
+      const { data: allFriendships } = await supabase.from("user_friends").select("*").or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`).eq("status", "accepted");
+      if (!allFriendships || allFriendships.length === 0) { setFriends([]); return; }
+      const otherIds = allFriendships.map((f: any) => f.requester_id === user.id ? f.addressee_id : f.requester_id);
+      const { data: profiles } = await supabase.from("user_profiles").select("user_id, username").in("user_id", otherIds);
+      if (profiles) setFriends(profiles.map((p: any) => ({ user_id: p.user_id, username: p.username })));
+    })();
+  }, [showShareModal, user]);
 
   useEffect(() => {
     (async () => {
@@ -525,7 +538,22 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowShareModal(false)}>
           <div className="glass-panel" style={{ width: 400, padding: 24 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Share Deck</h3>
-            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with (username)</label>
+            {friends.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with a friend</label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {friends.map((f) => (
+                    <button key={f.user_id} onClick={() => setShareRecipient(shareRecipient === f.username ? "" : f.username)} style={{
+                      padding: "4px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      background: shareRecipient === f.username ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                      border: shareRecipient === f.username ? "1px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)",
+                      color: shareRecipient === f.username ? "#fff" : "var(--os-text-secondary)",
+                    }}>{f.username}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Or enter username manually</label>
             <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
             {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
             {shared && copied && <p style={{ fontSize: 12, color: "#22c55e", marginTop: 4 }}>Link copied to clipboard!</p>}
