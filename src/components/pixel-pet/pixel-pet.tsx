@@ -120,6 +120,7 @@ export default function PixelPet() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
   const [rename, setRename] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isOwner = userEmail === "si.davidsdx@gmail.com";
@@ -255,8 +256,22 @@ export default function PixelPet() {
           </div>
           {/* Pet Name + Stage overlay */}
           <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, textAlign: "center" }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
-              {pet.name}
+            {renaming ? (
+              <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
+                <input
+                  autoFocus value={rename} onChange={(e) => setRename(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && rename.trim()) { renamePet(rename.trim()); setRename(""); setRenaming(false); } if (e.key === "Escape") setRenaming(false); }}
+                  className="glass-input"
+                  style={{ width: 100, padding: "2px 6px", fontSize: 11, textAlign: "center", height: 22 }}
+                />
+                <button onClick={() => { if (rename.trim()) { renamePet(rename.trim()); setRename(""); } setRenaming(false); }}
+                  style={{ background: "var(--os-accent)", border: "none", borderRadius: 4, color: "#fff", fontSize: 10, padding: "0 6px", cursor: "pointer" }}>OK</button>
+              </div>
+            ) : (
+              <p onClick={() => { setRename(pet.name); setRenaming(true); }} style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 4px rgba(0,0,0,0.6)", cursor: "pointer" }} title="Click to rename">
+                {pet.name} <span style={{ fontSize: 8, opacity: 0.5 }}>&#9998;</span>
+              </p>
+            )}
             </p>
           </div>
         </div>
