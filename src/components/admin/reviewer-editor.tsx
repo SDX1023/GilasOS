@@ -17,6 +17,7 @@ interface FlashcardData {
   front: string;
   back: string;
   hint?: string;
+  card_type?: "standard" | "identification";
 }
 
 interface ReviewerEditorProps {
