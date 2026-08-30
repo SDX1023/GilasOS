@@ -94,17 +94,17 @@ export function ReviewerEditor({
   const validCardCount = cards.filter((c) => c.front.trim() && c.back.trim()).length;
 
   return (
-    <div className="flex flex-col h-screen">
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
-        <div className="flex items-center gap-2">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid var(--os-glass-border)", background: "var(--os-bg-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={onBack}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            style={{ padding: 8, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-secondary)", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={16} />
           </button>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--os-text-dim)" }}>
             <span>{courseId}</span>
             <span>/</span>
             <span>{moduleId}</span>
@@ -113,110 +113,129 @@ export function ReviewerEditor({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
             {validCardCount} cards
           </span>
           {lastSaved && (
-            <span className="text-xs text-muted-foreground">
+            <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
           <button
             onClick={handleSave}
             disabled={!title.trim() || isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+              background: (!title.trim() || isSaving) ? "var(--os-accent)" : "var(--os-accent)",
+              opacity: (!title.trim() || isSaving) ? 0.5 : 1,
+              border: "none", borderRadius: 8, color: "#fff", fontSize: 13, fontWeight: 500,
+              cursor: (!title.trim() || isSaving) ? "not-allowed" : "pointer",
+              fontFamily: "Inter, sans-serif",
+            }}
           >
-            <Save className="h-4 w-4" />
+            <Save size={14} />
             {isSaving ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
 
       {/* Title */}
-      <div className="px-4 sm:px-8 pt-4 sm:pt-8 pb-4">
+      <div style={{ padding: "16px 16px 8px" }}>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Untitled Reviewer"
-          className="w-full text-2xl sm:text-4xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/50"
+          style={{
+            width: "100%", fontSize: 28, fontWeight: 700, background: "transparent",
+            border: "none", outline: "none", color: "var(--os-text-primary)",
+            fontFamily: "Inter, sans-serif",
+          }}
         />
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-auto px-4 sm:px-8 pb-8">
-        <div className="space-y-3">
+      <div style={{ flex: 1, overflow: "auto", padding: "0 16px 32px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {cards.map((card, index) => (
             <div
               key={index}
-              className="border rounded-lg bg-card overflow-hidden"
+              className="glass-card"
+              style={{ padding: 0, overflow: "hidden" }}
             >
               {/* Card Header */}
               <div
-                className="flex items-center gap-2 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
+                  cursor: "pointer", transition: "background 0.15s",
+                }}
                 onClick={() => setExpandedCard(expandedCard === index ? null : index)}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
-                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                <GripVertical size={14} style={{ color: "var(--os-text-dim)", cursor: "grab", flexShrink: 0 }} />
                 {expandedCard === index ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
                 )}
-                <span className="text-sm font-medium flex-1">
-                  {card.front || <span className="text-muted-foreground italic">Empty card</span>}
+                <span style={{ fontSize: 13, fontWeight: 500, flex: 1, minWidth: 0, color: "var(--os-text-primary)" }}>
+                  {card.front || <span style={{ color: "var(--os-text-dim)", fontStyle: "italic" }}>Empty card</span>}
                 </span>
-                <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>#{index + 1}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     duplicateCard(index);
                   }}
-                  className="p-1 hover:bg-muted rounded"
+                  style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", display: "flex", alignItems: "center", justifyContent: "center" }}
                   title="Duplicate"
                 >
-                  <RotateCcw className="h-3 w-3" />
+                  <RotateCcw size={12} />
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteCard(index);
                   }}
-                  className="p-1 hover:bg-muted rounded text-red-500"
+                  style={{ padding: 4, borderRadius: 6, background: "none", border: "none", cursor: cards.length <= 1 ? "not-allowed" : "pointer", color: "#ef4444", opacity: cards.length <= 1 ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
                   title="Delete"
                   disabled={cards.length <= 1}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 size={12} />
                 </button>
               </div>
 
               {/* Card Content */}
               {expandedCard === index && (
-                <div className="px-4 pb-4 space-y-3 border-t">
-                  <div className="pt-3">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <div style={{ padding: "0 14px 14px", borderTop: "1px solid var(--os-glass-border)", display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
                       Front (Question)
                     </label>
                     <textarea
                       value={card.front}
                       onChange={(e) => updateCard(index, "front", e.target.value)}
                       placeholder="Enter the question or prompt..."
-                      className="w-full mt-1 px-3 py-2 rounded-lg border bg-background resize-none h-24 text-sm"
+                      className="glass-input"
+                      style={{ width: "100%", resize: "none", minHeight: 80, fontSize: 13 }}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
                       Back (Answer)
                     </label>
                     <textarea
                       value={card.back}
                       onChange={(e) => updateCard(index, "back", e.target.value)}
                       placeholder="Enter the answer..."
-                      className="w-full mt-1 px-3 py-2 rounded-lg border bg-background resize-none h-24 text-sm"
+                      className="glass-input"
+                      style={{ width: "100%", resize: "none", minHeight: 80, fontSize: 13 }}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
                       Hint (Optional)
                     </label>
                     <input
@@ -224,22 +243,25 @@ export function ReviewerEditor({
                       value={card.hint || ""}
                       onChange={(e) => updateCard(index, "hint", e.target.value)}
                       placeholder="Optional hint..."
-                      className="w-full mt-1 px-3 py-2 rounded-lg border bg-background text-sm"
+                      className="glass-input"
+                      style={{ width: "100%", fontSize: 13 }}
                     />
                   </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <button
                         onClick={() => moveCard(index, "up")}
                         disabled={index === 0}
-                        className="px-2 py-1 text-xs bg-muted rounded disabled:opacity-50"
+                        className="glass-btn"
+                        style={{ padding: "4px 10px", fontSize: 11, opacity: index === 0 ? 0.4 : 1, cursor: index === 0 ? "not-allowed" : "pointer" }}
                       >
                         ↑ Move Up
                       </button>
                       <button
                         onClick={() => moveCard(index, "down")}
                         disabled={index === cards.length - 1}
-                        className="px-2 py-1 text-xs bg-muted rounded disabled:opacity-50"
+                        className="glass-btn"
+                        style={{ padding: "4px 10px", fontSize: 11, opacity: index === cards.length - 1 ? 0.4 : 1, cursor: index === cards.length - 1 ? "not-allowed" : "pointer" }}
                       >
                         ↓ Move Down
                       </button>
@@ -254,9 +276,19 @@ export function ReviewerEditor({
         {/* Add Card Button */}
         <button
           onClick={addCard}
-          className="w-full mt-4 p-4 border-2 border-dashed rounded-lg text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors flex items-center justify-center gap-2"
+          style={{
+            width: "100%", marginTop: 14, padding: 14,
+            border: "2px dashed rgba(255,255,255,0.1)", borderRadius: 12,
+            background: "transparent", cursor: "pointer",
+            color: "var(--os-text-dim)", fontSize: 13, fontWeight: 500,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            fontFamily: "Inter, sans-serif",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; e.currentTarget.style.color = "var(--os-text-primary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "var(--os-text-dim)"; }}
         >
-          <Plus className="h-4 w-4" />
+          <Plus size={14} />
           Add Card
         </button>
       </div>

@@ -437,3 +437,58 @@ export async function updateFriendNote(
     .eq("user_id", userId);
   return !error;
 }
+
+// Note Reactions
+export interface NoteReaction {
+  id: string;
+  note_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
+export async function toggleReaction(
+  userId: string,
+  noteId: string,
+  emoji: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from("note_reactions")
+    .select("id")
+    .eq("note_id", noteId)
+    .eq("user_id", userId)
+    .eq("emoji", emoji)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("note_reactions").delete().eq("id", existing.id);
+    return false;
+  } else {
+    await supabase.from("note_reactions").insert({ note_id: noteId, user_id: userId, emoji });
+    return true;
+  }
+}
+
+export async function loadReactions(noteIds: string[], userId: string): Promise<Record<string, { emoji: string; count: number; myReaction: boolean }[]>> {
+  if (noteIds.length === 0) return {};
+  const supabase = getSupabase();
+  const { data: reactions } = await supabase
+    .from("note_reactions")
+    .select("*")
+    .in("note_id", noteIds);
+  if (!reactions || reactions.length === 0) return {};
+
+  const grouped: Record<string, { emoji: string; count: number; myReaction: boolean }[]> = {};
+  for (const r of reactions) {
+    if (!grouped[r.note_id]) grouped[r.note_id] = [];
+    const existing = grouped[r.note_id].find((e) => e.emoji === r.emoji);
+    if (existing) {
+      existing.count++;
+      if (r.user_id === userId) existing.myReaction = true;
+    } else {
+      grouped[r.note_id].push({ emoji: r.emoji, count: 1, myReaction: r.user_id === userId });
+    }
+  }
+  return grouped;
+}

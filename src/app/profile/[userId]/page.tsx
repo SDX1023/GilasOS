@@ -176,7 +176,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13,
         color: "var(--os-text-dim)", textDecoration: "none", marginBottom: 24,
       }}>
-        <ArrowLeft size={14} /> Back to Leaderboard
+        <ArrowLeft size={14} /> Back to Friends
       </Link>
 
       <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
@@ -199,7 +199,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
             </div>
             {profile.mood_text && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                {profile.mood_text.split(",").map((m: string) => m.trim()).filter(Boolean).map((mood: string, i: number) => (
+                {profile.mood_text.split(" | ").map((m: string) => m.trim()).filter(Boolean).map((mood: string, i: number) => (
                   <span key={i} style={{ padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 500, background: "rgba(109,40,217,0.1)", color: "var(--os-accent)", border: "1px solid rgba(109,40,217,0.2)" }}>
                     {mood}
                   </span>

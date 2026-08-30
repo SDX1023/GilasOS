@@ -185,7 +185,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
             </div>
             {creator.mood_text && (
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                {creator.mood_text.split(",").map((m: string) => m.trim()).filter(Boolean).slice(0, 3).map((mood: string, i: number) => (
+                {creator.mood_text.split(" | ").map((m: string) => m.trim()).filter(Boolean).slice(0, 3).map((mood: string, i: number) => (
                   <span key={i} style={{ padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 500, background: "rgba(109,40,217,0.1)", color: "var(--os-accent)" }}>
                     {mood}
                   </span>

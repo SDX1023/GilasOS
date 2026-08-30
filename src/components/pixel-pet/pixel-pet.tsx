@@ -23,6 +23,7 @@ export default function PixelPet() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
   const [rename, setRename] = useState("");
+  const [customizedName, setCustomizedName] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [editAnswer, setEditAnswer] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -154,6 +155,7 @@ export default function PixelPet() {
             {renaming ? (
               <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
                 <input autoFocus value={rename} onChange={(e) => setRename(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => { if (e.key === "Enter" && rename.trim()) { renamePet(rename.trim()); setRename(""); setRenaming(false); } if (e.key === "Escape") setRenaming(false); }}
                   className="glass-input" style={{ width: 100, padding: "2px 6px", fontSize: 11, textAlign: "center", height: 22 }} />
                 <button onClick={() => { if (rename.trim()) { renamePet(rename.trim()); setRename(""); } setRenaming(false); }}
@@ -198,7 +200,7 @@ export default function PixelPet() {
           <CooldownBtn icon={<Utensils size={14} />} label="Feed" sublabel="+30 hunger" onClick={feedPet} color="#f59e0b" cooldown={cooldowns.feed} maxCooldown={30} />
           <CooldownBtn icon={<Gamepad2 size={14} />} label="Play" sublabel="+30 happy, -10 energy" onClick={playWithPet} color="#ec4899" cooldown={cooldowns.play} maxCooldown={30} />
           <CooldownBtn icon={<Moon size={14} />} label="Sleep" sublabel="+40 energy" onClick={sleepPet} color="#3b82f6" cooldown={cooldowns.sleep} maxCooldown={60} />
-          <ActionBtn icon={<Palette size={14} />} label="Customize" sublabel="Name, type, color, BG" onClick={() => setShowCustomize(true)} color="#8b5cf6" />
+          <ActionBtn icon={<Palette size={14} />} label="Customize" sublabel="Name, type, color, BG" onClick={() => { setCustomizedName(pet.name); setShowCustomize(true); }} color="#8b5cf6" />
         </div>
 
         {/* Mood */}
@@ -220,8 +222,8 @@ export default function PixelPet() {
               <div>
                 <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 4, display: "block" }}>Name</label>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <input value={rename || pet.name} onChange={(e) => setRename(e.target.value)} className="glass-input" style={{ flex: 1, padding: "6px 8px", fontSize: 12 }} />
-                  <button onClick={() => { if (rename.trim()) renamePet(rename.trim()); setRename(""); }} className="glass-btn-primary" style={{ padding: "6px 10px", fontSize: 11 }}>Save</button>
+                  <input value={customizedName} onChange={(e) => setCustomizedName(e.target.value)} className="glass-input" style={{ flex: 1, padding: "6px 8px", fontSize: 12 }} />
+                  <button onClick={() => { if (customizedName.trim()) renamePet(customizedName.trim()); }} className="glass-btn-primary" style={{ padding: "6px 10px", fontSize: 11 }}>Save</button>
                 </div>
               </div>
               <div>

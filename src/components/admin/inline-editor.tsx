@@ -624,34 +624,52 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
 
   if (!editor) return null;
 
+  const toolbarBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: 6, borderRadius: 6, background: active ? "var(--os-glass-hover)" : "transparent",
+    border: "none", cursor: "pointer", color: active ? "var(--os-text-primary)" : "var(--os-text-secondary)",
+    fontFamily: "Inter, sans-serif", transition: "background 0.15s",
+  });
+
   return (
-    <div className="relative">
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b bg-muted/50 flex-wrap sticky top-0 z-10">
-        <select onChange={(e) => { const v = e.target.value; if (v === "p") editor.chain().focus().setParagraph().run(); else editor.chain().focus().toggleHeading({ level: parseInt(v) as 1 | 2 | 3 }).run(); e.target.value = "p"; }} defaultValue="p" className="px-1.5 py-1 rounded text-xs bg-background border border-border cursor-pointer">
+    <div style={{ position: "relative" }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 2, padding: "6px 8px",
+        borderBottom: "1px solid var(--os-glass-border)", background: "rgba(255,255,255,0.02)",
+        flexWrap: "wrap", position: "sticky", top: 0, zIndex: 10,
+      }}>
+        <select onChange={(e) => { const v = e.target.value; if (v === "p") editor.chain().focus().setParagraph().run(); else editor.chain().focus().toggleHeading({ level: parseInt(v) as 1 | 2 | 3 }).run(); e.target.value = "p"; }} defaultValue="p" style={{
+          padding: "4px 6px", borderRadius: 6, fontSize: 12, background: "var(--os-bg-secondary)",
+          border: "1px solid var(--os-glass-border)", cursor: "pointer", color: "var(--os-text-primary)",
+          fontFamily: "Inter, sans-serif",
+        }}>
           <option value="p">Normal</option><option value="1">H1</option><option value="2">H2</option><option value="3">H3</option>
         </select>
-        <select onChange={(e) => { const s = e.target.value; if (s === "normal") return; const { from, to } = editor.state.selection; const sel = editor.state.doc.textBetween(from, to); if (sel) editor.chain().focus().deleteRange({ from, to }).insertContent("[fs:" + s + "]" + sel + "[/fs]").run(); e.target.value = "normal"; }} defaultValue="normal" className="px-1.5 py-1 rounded text-xs bg-background border border-border cursor-pointer">
+        <select onChange={(e) => { const s = e.target.value; if (s === "normal") return; const { from, to } = editor.state.selection; const sel = editor.state.doc.textBetween(from, to); if (sel) editor.chain().focus().deleteRange({ from, to }).insertContent("[fs:" + s + "]" + sel + "[/fs]").run(); e.target.value = "normal"; }} defaultValue="normal" style={{
+          padding: "4px 6px", borderRadius: 6, fontSize: 12, background: "var(--os-bg-secondary)",
+          border: "1px solid var(--os-glass-border)", cursor: "pointer", color: "var(--os-text-primary)",
+          fontFamily: "Inter, sans-serif",
+        }}>
           <option value="normal">Font Size</option><option value="12px">12</option><option value="14px">14</option><option value="16px">16</option><option value="18px">18</option><option value="20px">20</option><option value="24px">24</option><option value="28px">28</option><option value="32px">32</option>
         </select>
-        <div className="w-px h-5 bg-border mx-1" />
-        <button onClick={() => editor.chain().focus().toggleBold().run()} className={`p-1.5 rounded text-sm font-bold ${editor.isActive("bold") ? "bg-muted" : "hover:bg-muted"}`}>B</button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-1.5 rounded text-sm italic ${editor.isActive("italic") ? "bg-muted" : "hover:bg-muted"}`}>I</button>
-        <button onClick={() => editor.chain().focus().toggleCode().run()} className={`p-1.5 rounded font-mono text-xs ${editor.isActive("code") ? "bg-muted" : "hover:bg-muted"}`}>{"</>"}</button>
-        <div className="w-px h-5 bg-border mx-1" />
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded ${editor.isActive("bulletList") ? "bg-muted" : "hover:bg-muted"}`}>• List</button>
-        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={`p-1.5 rounded ${editor.isActive("orderedList") ? "bg-muted" : "hover:bg-muted"}`}>1. List</button>
-        <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`p-1.5 rounded ${editor.isActive("blockquote") ? "bg-muted" : "hover:bg-muted"}`}>" Quote</button>
-        <div className="w-px h-5 bg-border mx-1" />
+        <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
+        <button onClick={() => editor.chain().focus().toggleBold().run()} style={{ ...toolbarBtnStyle(editor.isActive("bold")), fontWeight: 700, fontSize: 14 }}>B</button>
+        <button onClick={() => editor.chain().focus().toggleItalic().run()} style={{ ...toolbarBtnStyle(editor.isActive("italic")), fontStyle: "italic", fontSize: 14 }}>I</button>
+        <button onClick={() => editor.chain().focus().toggleCode().run()} style={{ ...toolbarBtnStyle(editor.isActive("code")), fontFamily: "monospace", fontSize: 12 }}>{"</>"}</button>
+        <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
+        <button onClick={() => editor.chain().focus().toggleBulletList().run()} style={toolbarBtnStyle(editor.isActive("bulletList"))}>• List</button>
+        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} style={toolbarBtnStyle(editor.isActive("orderedList"))}>1. List</button>
+        <button onClick={() => editor.chain().focus().toggleBlockquote().run()} style={toolbarBtnStyle(editor.isActive("blockquote"))}>" Quote</button>
+        <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
         <button onClick={() => {
           editor.chain().focus().insertContentAt(editor.state.selection.$from.pos, {
             type: "textbox",
             attrs: { x: 80 + Math.random() * 200, y: 80 + Math.random() * 100, width: 200, height: 80, color: "#3b82f6", content: "" },
           }).run();
-        }} className="p-1.5 rounded hover:bg-muted text-xs font-medium" title="Draggable text box">📝 Box</button>
-        <div className="w-px h-5 bg-border mx-1" />
-        <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} className="p-1.5 rounded hover:bg-muted" title="Insert image">🖼</button>
-        <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="p-1.5 rounded hover:bg-muted" title="Divider">—</button>
-        <div className="ml-auto text-xs text-muted-foreground">Paste, drag, or click 🖼 to insert images</div>
+        }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Draggable text box">📝 Box</button>
+        <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
+        <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} style={toolbarBtnStyle(false)} title="Insert image">🖼</button>
+        <button onClick={() => editor.chain().focus().setHorizontalRule().run()} style={toolbarBtnStyle(false)} title="Divider">—</button>
+        <div style={{ marginLeft: "auto", fontSize: 12, color: "var(--os-text-dim)" }}>Paste, drag, or click 🖼 to insert images</div>
       </div>
       <EditorContent editor={editor} />
     </div>

@@ -456,9 +456,14 @@ function QuizTab({ userId }: { userId: string | null }) {
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={restartQuiz} className="glass-btn-primary" style={{ padding: "8px 24px" }}>Try Again</button>
             {userId && (
-              <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "8px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
-                <Save size={14} /> Save Quiz
-              </button>
+              <>
+                <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "8px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Save size={14} /> Save Quiz
+                </button>
+                <button onClick={async () => { await handleSaveQuiz(); }} className="glass-btn" style={{ padding: "8px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Share2 size={14} /> Share
+                </button>
+              </>
             )}
             <Link href="/study" className="glass-btn" style={{ padding: "8px 24px" }}>Back to Study</Link>
           </div>
@@ -704,6 +709,9 @@ function QuizTab({ userId }: { userId: string | null }) {
                 </div>
                 <button onClick={() => handleLoadSaved(q)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
                   <Play style={{ width: 12, height: 12, marginRight: 4 }} /> Load
+                </button>
+                <button onClick={() => handleShareQuiz(q.id)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
+                  <Share2 style={{ width: 12, height: 12, marginRight: 4 }} /> Share
                 </button>
                 <button onClick={() => handleDeleteSaved(q.id)} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
                   <Trash2 size={14} />

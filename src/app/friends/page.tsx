@@ -5,7 +5,8 @@ import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 import { Search, UserPlus, UserCheck, UserX, X, Check, Loader2, Users, Clock, Link as LinkIcon, MessageCircle, Music, Trash2, Edit3, Send } from "lucide-react";
 import Link from "next/link";
-import { postFriendNote, loadFriendNotes, deleteFriendNote, updateFriendNote, FriendNote } from "@/lib/user-data";
+import { postFriendNote, loadFriendNotes, deleteFriendNote, updateFriendNote, FriendNote, toggleReaction, loadReactions } from "@/lib/user-data";
+import { SpotifySearch } from "@/components/spotify-search";
 
 interface Friendship {
   id: string;
@@ -17,6 +18,8 @@ interface Friendship {
 }
 
 type Tab = "notes" | "friends" | "requests" | "search";
+
+const REACTION_EMOJIS = ["❤️", "😂", "😢", "😡"];
 
 export default function FriendsPage() {
   const { user } = useAuth();
@@ -36,6 +39,10 @@ export default function FriendsPage() {
   const [posting, setPosting] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [showSpotify, setShowSpotify] = useState(false);
+  const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; album_art: string } | null>(null);
+  const [reactions, setReactions] = useState<Record<string, { emoji: string; count: number; myReaction: boolean }[]>>({});
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
 
   const supabase = getSupabase();
 
@@ -86,15 +93,28 @@ export default function FriendsPage() {
     const data = await loadFriendNotes(user.id);
     setNotes(data);
     setNotesLoading(false);
+    const noteIds = data.map((n) => n.id);
+    if (noteIds.length > 0) {
+      const r = await loadReactions(noteIds, user.id);
+      setReactions(r);
+    }
   }, [user]);
 
   useEffect(() => { loadFriends(); loadNotes(); }, [loadFriends, loadNotes]);
 
+  useEffect(() => {
+    if (showReactionPicker) {
+      const timer = setTimeout(() => setShowReactionPicker(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showReactionPicker]);
+
   const postNote = async () => {
     if (!user || !noteText.trim()) return;
     setPosting(true);
-    await postFriendNote(user.id, noteText.trim());
+    await postFriendNote(user.id, noteText.trim(), attachedSong || undefined);
     setNoteText("");
+    setAttachedSong(null);
     await loadNotes();
     setPosting(false);
   };
@@ -111,6 +131,15 @@ export default function FriendsPage() {
     setEditingNoteId(null);
     setEditText("");
     await loadNotes();
+  };
+
+  const handleReaction = async (noteId: string, emoji: string) => {
+    if (!user) return;
+    await toggleReaction(user.id, noteId, emoji);
+    setShowReactionPicker(null);
+    const noteIds = notes.map((n) => n.id);
+    const r = await loadReactions(noteIds, user.id);
+    setReactions(r);
   };
 
   const searchUsers = async () => {
@@ -243,8 +272,39 @@ export default function FriendsPage() {
               rows={2}
               style={{ width: "100%", resize: "none", marginBottom: 8, fontSize: 13 }}
             />
+
+            {attachedSong && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10, marginBottom: 10, padding: "8px 12px",
+                borderRadius: 8, background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.2)",
+              }}>
+                {attachedSong.album_art && (
+                  <img src={attachedSong.album_art} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "cover" }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 500, color: "#1ed760", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{attachedSong.name}</p>
+                  <p style={{ fontSize: 11, color: "var(--os-text-dim)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{attachedSong.artist}</p>
+                </div>
+                <button onClick={() => setAttachedSong(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", padding: 2, flexShrink: 0 }}>
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{noteText.length}/200</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{noteText.length}/200</span>
+                <button
+                  onClick={() => setShowSpotify(true)}
+                  style={{
+                    padding: "4px 8px", borderRadius: 6, background: "rgba(30,215,96,0.1)", border: "1px solid rgba(30,215,96,0.2)",
+                    color: "#1ed760", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  <Music size={12} /> Song
+                </button>
+              </div>
               <button
                 onClick={postNote}
                 disabled={!noteText.trim() || posting}
@@ -272,6 +332,7 @@ export default function FriendsPage() {
               {notes.map((note) => {
                 const isMine = user?.id === note.user_id;
                 const isEditing = editingNoteId === note.id;
+                const noteReactions = reactions[note.id] || [];
                 return (
                   <div key={note.id} className="glass-card" style={{ padding: "12px 16px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -349,6 +410,62 @@ export default function FriendsPage() {
                         <Music size={14} style={{ color: "#1ed760", marginLeft: "auto" }} />
                       </a>
                     )}
+
+                    {/* Reactions */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                      {noteReactions.map((r) => (
+                        <button
+                          key={r.emoji}
+                          onClick={() => handleReaction(note.id, r.emoji)}
+                          style={{
+                            padding: "2px 8px", borderRadius: 12, fontSize: 13, cursor: "pointer",
+                            background: r.myReaction ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.05)",
+                            border: r.myReaction ? "1px solid rgba(109,40,217,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                            display: "flex", alignItems: "center", gap: 4, fontFamily: "Inter, sans-serif",
+                          }}
+                        >
+                          <span>{r.emoji}</span>
+                          {r.count > 0 && <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{r.count}</span>}
+                        </button>
+                      ))}
+                      <div style={{ position: "relative" }}>
+                        <button
+                          onClick={() => setShowReactionPicker(showReactionPicker === note.id ? null : note.id)}
+                          style={{
+                            width: 26, height: 26, borderRadius: 13, fontSize: 13, cursor: "pointer",
+                            background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                            display: "flex", alignItems: "center", justifyContent: "center", color: "var(--os-text-dim)",
+                          }}
+                        >
+                          +
+                        </button>
+                        {showReactionPicker === note.id && (
+                          <div style={{
+                            position: "absolute", bottom: 32, left: 0, display: "flex", gap: 4,
+                            padding: "6px 8px", borderRadius: 20, background: "var(--os-bg-secondary)",
+                            border: "1px solid var(--os-glass-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                            zIndex: 20,
+                          }}>
+                            {REACTION_EMOJIS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReaction(note.id, emoji)}
+                                style={{
+                                  width: 32, height: 32, borderRadius: 16, fontSize: 16, cursor: "pointer",
+                                  background: "transparent", border: "none",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  transition: "transform 0.15s",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.3)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -536,6 +653,17 @@ export default function FriendsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Spotify Modal */}
+      {showSpotify && (
+        <SpotifySearch
+          onSelect={(track) => {
+            setAttachedSong({ name: track.name, artist: track.artist, url: track.url, album_art: track.albumArt || "" });
+            setShowSpotify(false);
+          }}
+          onClose={() => setShowSpotify(false)}
+        />
       )}
     </div>
   );

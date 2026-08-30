@@ -58,3 +58,51 @@ END $$;
 -- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_friend_notes_user ON friend_notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_friend_notes_expires ON friend_notes(expires_at);
+
+-- Note Reactions
+DO $$ BEGIN
+  CREATE TABLE note_reactions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    note_id UUID NOT NULL REFERENCES friend_notes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    emoji TEXT NOT NULL CHECK (emoji IN ('❤️', '😂', '😢', '😡')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(note_id, user_id, emoji)
+  );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+ALTER TABLE note_reactions ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Users see reactions on visible notes" ON note_reactions
+    FOR SELECT USING (
+      note_id IN (
+        SELECT id FROM friend_notes WHERE user_id = auth.uid()
+        OR user_id IN (
+          SELECT CASE
+            WHEN requester_id = auth.uid() THEN addressee_id
+            WHEN addressee_id = auth.uid() THEN requester_id
+          END
+          FROM user_friends
+          WHERE status = 'accepted'
+          AND (requester_id = auth.uid() OR addressee_id = auth.uid())
+        )
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Users can react to notes" ON note_reactions
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Users can remove own reactions" ON note_reactions
+    FOR DELETE USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_note_reactions_note ON note_reactions(note_id);

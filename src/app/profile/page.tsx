@@ -246,16 +246,16 @@ export default function ProfilePage() {
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {DEFAULT_MOODS.map((phrase) => {
-              const selected = moodText.split(",").map((s) => s.trim()).filter(Boolean).includes(phrase);
+              const selected = moodText.split(" | ").map((s) => s.trim()).filter(Boolean).includes(phrase);
               return (
                 <button
                   key={phrase}
                   onClick={() => {
-                    const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                    const moods = moodText.split(" | ").map((s) => s.trim()).filter(Boolean);
                     if (selected) {
-                      setMoodText(moods.filter((m) => m !== phrase).join(", "));
+                      setMoodText(moods.filter((m) => m !== phrase).join(" | "));
                     } else {
-                      setMoodText([...moods, phrase].join(", "));
+                      setMoodText([...moods, phrase].join(" | "));
                     }
                   }}
                   style={{
@@ -279,9 +279,9 @@ export default function ProfilePage() {
               placeholder="Or type your own mood..."
               onKeyDown={(e) => {
                 if (e.key === "Enter" && customMood.trim()) {
-                  const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                  const moods = moodText.split(" | ").map((s) => s.trim()).filter(Boolean);
                   if (!moods.includes(customMood.trim())) {
-                    setMoodText([...moods, customMood.trim()].join(", "));
+                    setMoodText([...moods, customMood.trim()].join(" | "));
                   }
                   setCustomMood("");
                 }
@@ -291,9 +291,9 @@ export default function ProfilePage() {
             <button
               onClick={() => {
                 if (customMood.trim()) {
-                  const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                  const moods = moodText.split(" | ").map((s) => s.trim()).filter(Boolean);
                   if (!moods.includes(customMood.trim())) {
-                    setMoodText([...moods, customMood.trim()].join(", "));
+                    setMoodText([...moods, customMood.trim()].join(" | "));
                   }
                   setCustomMood("");
                 }
