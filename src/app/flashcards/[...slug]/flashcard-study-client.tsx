@@ -103,6 +103,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
+  const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in">("flip");
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
@@ -668,6 +669,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               >
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
+              <button onClick={() => { setReviewStudyMode(reviewStudyMode === "flip" ? "type-in" : "flip"); setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); }}
+                className="glass-btn"
+                style={reviewStudyMode === "type-in" ? { background: "var(--os-accent)", color: "#fff" } : {}}
+              >
+                {reviewStudyMode === "flip" ? "📝 Type-in" : "🔄 Flip"}
+              </button>
               <button onClick={exitReview} className="glass-btn">
                 Exit
               </button>
@@ -696,7 +703,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             ) : (
               <>
                 {/* Standard card: flip to reveal */}
-                {(queue[queueIndex].card_type || "standard") === "standard" ? (
+                {reviewStudyMode === "flip" ? (
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
                       className="flashcard-study-card"

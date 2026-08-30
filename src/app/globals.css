@@ -1189,15 +1189,21 @@ a:active {
 }
 
 .glass-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--os-text-secondary);
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
   padding: 10px 20px;
   border-radius: 10px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 14px;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: all 0.2s ease;
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--os-text-primary);
 }
 
 .glass-btn:focus,
