@@ -86,11 +86,10 @@ export function Navbar() {
               <div style={{ position: "relative" }} ref={toolsRef}>
                 <button
                   onClick={() => setShowTools(!showTools)}
+                  className={`nav-link${isToolsActive ? " nav-active" : ""}`}
                   style={{
                     display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                     fontSize: 13, fontWeight: 500, fontFamily: "Inter, sans-serif",
-                    background: isToolsActive ? "var(--os-accent)" : "transparent",
-                    color: isToolsActive ? "#fff" : "var(--os-text-dim)",
                     border: "none", cursor: "pointer",
                   }}
                 >
@@ -124,11 +123,9 @@ export function Navbar() {
               </div>
 
               {isAdmin && (
-                <Link href="/admin" className="nav-link" style={{
+                <Link href="/admin" className={`nav-link${isActive("/admin") ? " nav-active" : ""}`} style={{
                   display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                   fontSize: 13, fontWeight: 500, textDecoration: "none",
-                  background: isActive("/admin") ? "var(--os-accent)" : "transparent",
-                  color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
                 }}>
                   <Shield size={15} /> <span>Admin</span>
                 </Link>
@@ -275,11 +272,9 @@ export function Navbar() {
             ))}
           </div>
           {isAdmin && (
-            <Link href="/admin" className="nav-link" style={{
+            <Link href="/admin" className={`nav-link${isActive("/admin") ? " nav-active" : ""}`} style={{
               display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
               borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none",
-              background: isActive("/admin") ? "var(--os-accent)" : "transparent",
-              color: isActive("/admin") ? "#fff" : "var(--os-text-dim)",
             }}>
               <Shield size={18} /> Admin
             </Link>

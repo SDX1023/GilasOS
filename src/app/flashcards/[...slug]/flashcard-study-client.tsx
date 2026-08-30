@@ -100,6 +100,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [shareRecipient, setShareRecipient] = useState("");
   const [shareError, setShareError] = useState("");
   const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [answerChecked, setAnswerChecked] = useState(false);
+  const [answerCorrect, setAnswerCorrect] = useState(false);
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
@@ -149,12 +152,14 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   front: c.front,
                   back: c.back,
                   hint: c.hint || "",
+                  card_type: c.card_type || "standard",
                 })),
               });
               setCards((r.flashcards || []).map((c: any) => ({
                 front: c.front,
                 back: c.back,
                 hint: c.hint || "",
+                card_type: c.card_type || "standard",
               })));
               found = true;
               break;
@@ -380,6 +385,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     if (newQueue.length === 0) { setQueue([]); setReviewComplete(true); }
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
+    setTypedAnswer(""); setAnswerChecked(false);
   }
 
   function handleDontKnow() {
@@ -391,6 +397,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     if (newQueue.length === 0) { setQueue([]); setReviewComplete(true); }
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
+    setTypedAnswer(""); setAnswerChecked(false);
   }
 
   function handleForgot() {
@@ -402,6 +409,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     if (newQueue.length === 0) { setQueue([]); setReviewComplete(true); }
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
+    setTypedAnswer(""); setAnswerChecked(false);
   }
 
   async function syncToCloud(updatedCards: any[]) {
