@@ -677,6 +677,15 @@ body {
   background: var(--os-accent);
 }
 
+.taskbar-active {
+  color: var(--os-accent) !important;
+  background: rgba(var(--os-accent-rgb), 0.15) !important;
+}
+
+.taskbar-active svg {
+  stroke-width: 2 !important;
+}
+
 .taskbar-divider {
   width: 1px;
   height: 24px;
@@ -711,6 +720,16 @@ body {
   outline: none;
   box-shadow: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.nav-active {
+  background: var(--os-accent) !important;
+  color: #fff !important;
+}
+
+.light .nav-active {
+  background: var(--os-accent) !important;
+  color: #fff !important;
 }
 
 /* ============================================================
@@ -1491,6 +1510,11 @@ a:active {
   color: #0f172a;
 }
 
+.light .nav-active {
+  background: var(--os-accent) !important;
+  color: #fff !important;
+}
+
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -1716,7 +1740,7 @@ a:active {
 .ProseMirror pre code { background: none; padding: 0; }
 .ProseMirror hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
 .ProseMirror .is-empty::before { content: attr(data-placeholder); color: var(--os-text-dim); float: left; height: 0; pointer-events: none; }
-.ProseMirror [data-textbox] { position: absolute; border: 2px solid; border-radius: 8px; padding: 8px; min-width: 100px; min-height: 50px; background: rgba(15,21,35,0.9); }
+.ProseMirror [data-textbox] { border: 2px solid; border-radius: 8px; padding: 0; min-width: 100px; min-height: 50px; }
 
 .ProseMirror img.tiptap-image { max-width: 100%; border-radius: 10px; margin: 16px 0; display: block; cursor: pointer; }
 

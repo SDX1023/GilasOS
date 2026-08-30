@@ -150,12 +150,11 @@ function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) 
 
 function ImageNodeView(props: any) {
   const { node, updateAttributes, editor } = props;
-  const { src, alt, style, x, y } = node.attrs;
+  const { src, alt, style } = node.attrs;
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showCrop, setShowCrop] = useState(false);
   const resizeRef = useRef({ startX: 0, startY: 0, startW: 0, startH: 0, corner: "" });
-  const dragRef = useRef({ dragging: false, offsetX: 0, offsetY: 0 });
 
   const deleteImage = () => {
     let found: number | null = null;
@@ -167,28 +166,6 @@ function ImageNodeView(props: any) {
     const n = editor.view.state.doc.nodeAt(found);
     if (!n) return;
     editor.view.dispatch(editor.view.state.tr.delete(found, found + n.nodeSize));
-  };
-
-  const startDrag = (e: React.MouseEvent) => {
-    if (e.target !== imgRef.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragRef.current.dragging = true;
-    dragRef.current.offsetX = e.clientX - (x || 0);
-    dragRef.current.offsetY = e.clientY - (y || 0);
-    const onMove = (ev: MouseEvent) => {
-      if (!dragRef.current.dragging) return;
-      const newX = ev.clientX - dragRef.current.offsetX;
-      const newY = ev.clientY - dragRef.current.offsetY;
-      updateAttributes({ x: Math.max(0, newX), y: Math.max(0, newY) });
-    };
-    const onUp = () => {
-      dragRef.current.dragging = false;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
   };
 
   const startResize = (corner: string) => (e: React.MouseEvent) => {
@@ -237,20 +214,9 @@ function ImageNodeView(props: any) {
   const isSelected = editor.isActive("image", { src });
 
   return (
-    <NodeViewWrapper
-      as="div"
-      ref={wrapperRef}
-      style={{
-        position: "absolute",
-        left: x != null ? `${x}px` : undefined,
-        top: y != null ? `${y}px` : undefined,
-        display: "inline-block",
-        zIndex: isSelected ? 20 : 1,
-        cursor: "grab",
-      }}
-    >
+    <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: "block" }}>
       {isSelected && (
-        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap" }}>
+        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4 }}>
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
@@ -265,7 +231,7 @@ function ImageNodeView(props: any) {
             <div onMouseDown={startResize("se")} className="image-handle" style={{ bottom: -4, right: -4, cursor: "nwse-resize" }} />
           </>
         )}
-        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={{ ...parsedStyle, cursor: "grab" }} draggable="false" onMouseDown={startDrag} />
+        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={parsedStyle} draggable="false" />
       </div>
       {showCrop && <CropModal src={src} onCrop={applyCrop} onClose={() => setShowCrop(false)} />}
     </NodeViewWrapper>
@@ -279,8 +245,6 @@ const CustomImage = Image.extend({
       alt: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("alt"), renderHTML: (attrs: any) => (attrs.alt ? { alt: attrs.alt } : {}) },
       title: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("title"), renderHTML: (attrs: any) => (attrs.title ? { title: attrs.title } : {}) },
       style: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("style"), renderHTML: (attrs: any) => (attrs.style ? { style: attrs.style } : {}) },
-      x: { default: 50, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-x"); return v ? parseInt(v) : 50; }, renderHTML: (attrs: any) => (attrs.x != null ? { "data-x": String(attrs.x) } : {}) },
-      y: { default: 50, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-y"); return v ? parseInt(v) : 50; }, renderHTML: (attrs: any) => (attrs.y != null ? { "data-y": String(attrs.y) } : {}) },
     };
   },
   addNodeView() {
@@ -297,14 +261,10 @@ export function markdownToHtml(md: string): string {
 
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     const sm = alt.match(/<!--(style:.*?)-->/);
-    const pm = alt.match(/<!--pos:([^,]+),([^>]+)-->/);
     const cleanAlt = alt.replace(/<!--.*?-->/g, "").trim();
-    const posStyle = pm ? `position:absolute;left:${pm[1]}px;top:${pm[2]}px;` : "";
     const baseStyle = sm ? sm[1].replace("style:", "") : "";
-    const fullStyle = posStyle + baseStyle;
-    const posAttrs = pm ? ` data-x="${pm[1]}" data-y="${pm[2]}"` : "";
-    if (fullStyle) return `<img src="${src}" alt="${cleanAlt}" style="${fullStyle}"${posAttrs}>`;
-    return `<img src="${src}" alt="${cleanAlt}"${posAttrs}>`;
+    if (baseStyle) return `<img src="${src}" alt="${cleanAlt}" style="${baseStyle}">`;
+    return `<img src="${src}" alt="${cleanAlt}">`;
   });
 
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -348,15 +308,13 @@ export function htmlToMarkdown(html: string): string {
   const textboxes: string[] = [];
   md = md.replace(/<div\s[^>]*data-textbox=""[^>]*>([\s\S]*?)<\/div>/g, (_match, inner) => {
     const divTag = _match.match(/<div[^>]*>/)?.[0] || "";
-    const x = divTag.match(/x="(\d+)"/)?.[1] || "100";
-    const y = divTag.match(/y="(\d+)"/)?.[1] || "100";
-    const width = divTag.match(/width="(\d+)"/)?.[1] || "200";
-    const height = divTag.match(/height="(\d+)"/)?.[1] || "80";
+    const width = divTag.match(/width="(\d+)"/)?.[1] || "280";
+    const height = divTag.match(/height="(\d+)"/)?.[1] || "100";
     const color = divTag.match(/color="([^"]*)"/)?.[1] || "#3b82f6";
     const attrContent = divTag.match(/content="([^"]*)"/)?.[1];
     const text = attrContent || inner.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").trim();
     const safeText = escapeHtml(text).replace(/\n/g, "<br>");
-    textboxes.push(`<div data-textbox="" x="${x}" y="${y}" width="${width}" height="${height}" color="${color}">${safeText}</div>`);
+    textboxes.push(`<div data-textbox="" width="${width}" height="${height}" color="${color}">${safeText}</div>`);
     return `%%TEXTBOX_${textboxes.length - 1}%%`;
   });
 
@@ -367,11 +325,8 @@ export function htmlToMarkdown(html: string): string {
     const src = attrs.match(/src="([^"]*)"/)?.[1] || "";
     const alt = attrs.match(/alt="([^"]*)"/)?.[1] || "";
     const style = attrs.match(/style="([^"]*)"/)?.[1];
-    const dx = attrs.match(/data-x="([^"]*)"/)?.[1];
-    const dy = attrs.match(/data-y="([^"]*)"/)?.[1];
-    const posTag = dx && dy ? `<!--pos:${dx},${dy}-->` : "";
     const styleTag = style ? `<!--style:${style}-->` : "";
-    const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
+    const altParts = [alt, styleTag].filter(Boolean).join("");
     return `![${altParts}](${src})`;
   });
   md = md.replace(/<p[^>]*>(.*?)<\/p>/gs, "$1");
@@ -442,11 +397,8 @@ export function docToMarkdown(editor: any): string {
       const src = node.attrs.src || "";
       const alt = node.attrs.alt || "";
       const style = node.attrs.style || "";
-      const x = node.attrs.x;
-      const y = node.attrs.y;
       const styleTag = style ? `<!--style:${style}-->` : "";
-      const posTag = (x != null && y != null) ? `<!--pos:${x},${y}-->` : "";
-      const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
+      const altParts = [alt, styleTag].filter(Boolean).join("");
       return `![${altParts}](${src})`;
     }
     if (node.type === "textbox") {
@@ -479,11 +431,8 @@ export function docToMarkdown(editor: any): string {
       const src = node.attrs.src || "";
       const alt = node.attrs.alt || "";
       const style = node.attrs.style || "";
-      const x = node.attrs.x;
-      const y = node.attrs.y;
       const styleTag = style ? `<!--style:${style}-->` : "";
-      const posTag = (x != null && y != null) ? `<!--pos:${x},${y}-->` : "";
-      const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
+      const altParts = [alt, styleTag].filter(Boolean).join("");
       return `![${altParts}](${src})`;
     }
     if (node.content) {
@@ -504,7 +453,7 @@ export function docToMarkdown(editor: any): string {
   for (let i = 0; i < textboxes.length; i++) {
     const tb = textboxes[i];
     const safeContent = (tb.content || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const tbHtml = `<div data-textbox="" x="${tb.x || 100}" y="${tb.y || 100}" width="${tb.width || 200}" height="${tb.height || 80}" color="${tb.color || "#3b82f6"}">${safeContent}</div>`;
+    const tbHtml = `<div data-textbox="" width="${tb.width || 280}" height="${tb.height || 100}" color="${tb.color || "#3b82f6"}">${safeContent}</div>`;
     md = md.replace(`%%TEXTBOX_${i}%%`, tbHtml);
   }
 
@@ -524,7 +473,7 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      CustomImage.configure({ inline: false, allowBase64: true, HTMLAttributes: { class: "tiptap-image" } }),
+      CustomImage.configure({ inline: true, allowBase64: true, HTMLAttributes: { class: "tiptap-image" } }),
       Textbox,
       Placeholder.configure({ placeholder: "Start writing..." }),
     ],
@@ -633,7 +582,7 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
         <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
         <button onClick={() => editor.chain().focus().toggleBold().run()} style={{ ...toolbarBtnStyle(editor.isActive("bold")), fontWeight: 700, fontSize: 14 }}>B</button>
         <button onClick={() => editor.chain().focus().toggleItalic().run()} style={{ ...toolbarBtnStyle(editor.isActive("italic")), fontStyle: "italic", fontSize: 14 }}>I</button>
-        <button onClick={() => editor.chain().focus().toggleCode().run()} style={{ ...toolbarBtnStyle(editor.isActive("code")), fontFamily: "monospace", fontSize: 12 }}>{"</>"}</button>
+        <button onClick={() => editor.chain().focus().toggleCode().run()} style={{ ...toolbarBtnStyle(editor.isActive("code")), fontFamily: "monospace", fontSize: 12 }}>{"></>"}</button>
         <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
         <button onClick={() => editor.chain().focus().toggleBulletList().run()} style={toolbarBtnStyle(editor.isActive("bulletList"))}>• List</button>
         <button onClick={() => editor.chain().focus().toggleOrderedList().run()} style={toolbarBtnStyle(editor.isActive("orderedList"))}>1. List</button>
@@ -644,7 +593,7 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
             type: "textbox",
             attrs: { width: 280, height: 100, color: "#3b82f6", content: "" },
           }).run();
-        }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Draggable text box">📝 Box</button>
+        }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Text box">📝 Box</button>
         <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
         <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} style={toolbarBtnStyle(false)} title="Insert image">🖼</button>
         <button onClick={() => editor.chain().focus().setHorizontalRule().run()} style={toolbarBtnStyle(false)} title="Divider">—</button>

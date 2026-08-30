@@ -69,14 +69,12 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="nav-link"
+                  className={`nav-link${isActive(item.href) ? " nav-active" : ""}`}
                   tabIndex={-1}
                   onMouseDown={(e) => e.preventDefault()}
                   style={{
                     display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                     fontSize: 13, fontWeight: 500, textDecoration: "none",
-                    background: isActive(item.href) ? "var(--os-accent)" : "transparent",
-                    color: isActive(item.href) ? "#fff" : "var(--os-text-dim)",
                   }}
                 >
                   <item.icon size={15} />

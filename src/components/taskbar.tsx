@@ -47,14 +47,11 @@ export function Taskbar() {
           <Link
             key={f.href}
             href={f.href}
-            className="taskbar-item"
+            className={`taskbar-item${active ? " taskbar-active" : ""}`}
             title={f.title}
             tabIndex={-1}
             onMouseDown={(e) => e.preventDefault()}
-            style={{
-              color: active ? "var(--os-accent)" : undefined,
-              background: active ? "rgba(var(--os-accent-rgb), 0.15)" : undefined,
-            }}
+            style={active ? {} : {}}
           >
             <f.icon size={18} strokeWidth={active ? 2 : 1.5} />
           </Link>
