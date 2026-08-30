@@ -41,7 +41,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
   const [userPet, setUserPet] = useState<UserPet | null>(null);
@@ -50,8 +49,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
     (async () => {
       const supabase = getSupabase();
       const { data } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
-      if (data) setProfile(data);
-      else setNotFound(true);
+      setProfile(data || { username: "User", avatar_url: "", bio: "", mood_text: "", mood_emoji: "", spotify_url: "" });
       const { data: petData } = await supabase.from("user_pets").select("name, pet_type, color, sprite_url, bg, xp, level, mood").eq("user_id", userId).maybeSingle();
       if (petData) setUserPet(petData);
       setLoading(false);
@@ -111,20 +109,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
     return (
       <div className="page-container" style={{ maxWidth: 600 }}>
         <p className="text-secondary text-sm">Loading profile...</p>
-      </div>
-    );
-  }
-
-  if (notFound || !profile) {
-    return (
-      <div className="page-container" style={{ maxWidth: 600 }}>
-        <div className="empty-state">
-          <div className="empty-state-icon"><User size={32} style={{ color: "var(--os-text-dim)" }} /></div>
-          <p className="text-secondary text-sm">User not found.</p>
-          <Link href="/friends" className="glass-btn glass-btn-ghost" style={{ marginTop: 12 }}>
-        <ArrowLeft size={14} /> Back to Friends
-          </Link>
-        </div>
       </div>
     );
   }

@@ -41,7 +41,7 @@ export default function FriendsPage() {
   const [editText, setEditText] = useState("");
   const [showSpotify, setShowSpotify] = useState(false);
   const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; album_art: string; preview: string | null } | null>(null);
-  const [reactions, setReactions] = useState<Record<string, { emoji: string; count: number; myReaction: boolean }[]>>({});
+  const [reactions, setReactions] = useState<Record<string, { emoji: string; count: number; myReaction: boolean; users: string[] }[]>>({});
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
   const [playingNoteId, setPlayingNoteId] = useState<string | null>(null);
