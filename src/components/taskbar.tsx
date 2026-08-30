@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles } from "lucide-react";
+import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#8b5cf6" },
@@ -12,7 +12,8 @@ const features = [
   { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#f59e0b" },
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#ec4899" },
   { icon: Users, title: "Friends", href: "/friends", color: "#06b6d4" },
-  { icon: Trophy, title: "Archive", href: "/archive", color: "#ef4444" },
+  { icon: Archive, title: "Archive", href: "/archive", color: "#ef4444" },
+  { icon: Trophy, title: "Leaderboard", href: "/leaderboard", color: "#eab308" },
 ];
 
 export function Taskbar() {

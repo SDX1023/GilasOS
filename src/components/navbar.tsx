@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon } from "lucide-react";
+import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Archive } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
@@ -17,7 +17,7 @@ const navItems = [
 const toolItems = [
   { href: "/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/pdf-to-cards", label: "PDF to Cards", icon: FileText },
-  { href: "/archive", label: "Archive", icon: Trophy },
+  { href: "/archive", label: "Archive", icon: Archive },
   { href: "/shared", label: "Shared", icon: LinkIcon },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];

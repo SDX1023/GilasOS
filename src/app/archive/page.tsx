@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trophy, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink } from "lucide-react";
+import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink } from "lucide-react";
 
 interface ArchiveEntry {
   id: string;
@@ -71,7 +71,7 @@ export default function ArchivePage() {
     <div className="page-container">
       <div className="flex-between" style={{ marginBottom: 32 }}>
         <div>
-          <h1 className="page-title"><Trophy size={28} /> Archive</h1>
+          <h1 className="page-title"><Archive size={28} /> Archive</h1>
           <p className="page-subtitle">Competition history and records</p>
         </div>
         {isAdmin ? (

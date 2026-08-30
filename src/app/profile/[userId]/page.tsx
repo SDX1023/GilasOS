@@ -6,7 +6,7 @@ import { getSupabase } from "@/lib/supabase";
 import { User, Music, ArrowLeft, UserPlus, UserCheck, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getSpriteUrl } from "@/components/pixel-pet/pet-sprites";
+import { getSpriteUrl, getProfileSpriteUrl } from "@/components/pixel-pet/pet-sprites";
 
 interface ProfileData {
   username: string;
@@ -221,7 +221,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               background: "rgba(255,255,255,0.05)",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              <img src={getSpriteUrl(userPet)} alt={userPet.name} width={56} height={56} style={{ imageRendering: "pixelated" }} />
+              <img src={getProfileSpriteUrl(userPet)} alt={userPet.name} width={56} height={56} style={{ imageRendering: "pixelated" }} />
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 15, fontWeight: 600, color: "var(--os-text-primary)" }}>{userPet.name}</p>
