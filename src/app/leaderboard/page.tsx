@@ -105,6 +105,7 @@ export default function LeaderboardPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {leaderboard.map((entry, i) => {
             const isMe = user?.id === entry.user_id;
+            return (
               <div key={entry.user_id} className="glass-card" style={{
                 padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
                 border: isMe ? "1px solid var(--os-accent)" : undefined,
