@@ -93,7 +93,6 @@ export default function StudyPage() {
           ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
-            onMouseUp={(e) => (e.currentTarget as HTMLButtonElement).blur()}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
@@ -103,10 +102,10 @@ export default function StudyPage() {
               fontSize: "13px",
               fontWeight: 500,
               whiteSpace: "nowrap",
-              transition: "all 0.2s",
               background: tab === key ? "var(--os-accent)" : "transparent",
               color: tab === key ? "#fff" : "var(--os-text-secondary)",
               cursor: "pointer",
+              boxShadow: "none",
             }}>
             <Icon style={{ width: "16px", height: "16px" }} /> {label}
           </button>

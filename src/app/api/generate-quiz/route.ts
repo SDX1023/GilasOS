@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
-const MAX_CHARS = 360000;
-const CHUNK_SIZE = 20000;
-const CONCURRENCY = 2;
-const MAX_RETRIES = 3;
-const BASE_DELAY = 1500;
-const REQUEST_TIMEOUT_MS = 30000;
+const MAX_CHARS = 200000;
+const CHUNK_SIZE = 15000;
+const CONCURRENCY = 1;
+const MAX_RETRIES = 2;
+const BASE_DELAY = 2000;
+const REQUEST_TIMEOUT_MS = 45000;
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;

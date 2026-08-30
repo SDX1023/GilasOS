@@ -30,8 +30,8 @@ const OLAF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" wi
   <rect x="3" y="4" width="1" height="6" fill="#222"/><rect x="20" y="4" width="1" height="6" fill="#222"/>
   <rect x="5" y="4" width="14" height="10" fill="#f8fafc"/>
   <rect x="6" y="4" width="12" height="1" fill="#e2e8f0"/>
-  <rect x="6" y="6" width="4" height="3" fill="#475569"/><rect x="14" y="6" width="4" height="3" fill="#475569"/>
-  <rect x="7" y="6" width="2" height="2" fill="#94a3b8"/><rect x="15" y="6" width="2" height="2" fill="#94a3b8"/>
+  <rect x="7" y="6" width="3" height="2" fill="#475569"/><rect x="14" y="6" width="3" height="2" fill="#475569"/>
+  <rect x="8" y="6" width="1" height="1" fill="#94a3b8"/><rect x="15" y="6" width="1" height="1" fill="#94a3b8"/>
   <rect x="11" y="8" width="2" height="2" fill="#111"/>
   <rect x="11" y="10" width="2" height="1" fill="#f472b6"/>
   <rect x="6" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="16" y="10" width="2" height="2" fill="#f9a8d4"/>
@@ -53,8 +53,8 @@ const OLAF_SVG_SLEEP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 
   <rect x="3" y="4" width="1" height="6" fill="#222"/><rect x="20" y="4" width="1" height="6" fill="#222"/>
   <rect x="5" y="4" width="14" height="10" fill="#f8fafc"/>
   <rect x="6" y="4" width="12" height="1" fill="#e2e8f0"/>
-  <rect x="6" y="6" width="4" height="3" fill="#475569"/><rect x="14" y="6" width="4" height="3" fill="#475569"/>
-  <rect x="7" y="7" width="2" height="1" fill="#94a3b8"/><rect x="15" y="7" width="2" height="1" fill="#94a3b8"/>
+  <rect x="7" y="6" width="3" height="2" fill="#475569"/><rect x="14" y="6" width="3" height="2" fill="#475569"/>
+  <rect x="8" y="7" width="1" height="1" fill="#94a3b8"/><rect x="15" y="7" width="1" height="1" fill="#94a3b8"/>
   <rect x="11" y="8" width="2" height="2" fill="#111"/>
   <rect x="11" y="10" width="2" height="1" fill="#f472b6"/>
   <rect x="6" y="10" width="2" height="2" fill="#f9a8d4"/><rect x="16" y="10" width="2" height="2" fill="#f9a8d4"/>
@@ -129,27 +129,29 @@ export const PET_SPRITES: Record<string, (c: string) => string> = {
   },
   minion: (c) => {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="128" height="128" shape-rendering="crispEdges">
-    <rect x="8" y="0" width="8" height="2" fill="#facc15"/>
-    <rect x="7" y="2" width="10" height="2" fill="#facc15"/>
-    <rect x="6" y="4" width="12" height="2" fill="#facc15"/>
-    <rect x="5" y="5" width="14" height="4" fill="#a1a1aa"/>
-    <rect x="6" y="5" width="12" height="3" fill="#d4d4d8"/>
-    <rect x="6" y="5" width="5" height="3" fill="#fff"/><rect x="13" y="5" width="5" height="3" fill="#fff"/>
-    <rect x="7" y="5" width="3" height="3" fill="#6b4c1e"/><rect x="14" y="5" width="3" height="3" fill="#6b4c1e"/>
-    <rect x="8" y="6" width="1" height="1" fill="#111"/><rect x="15" y="6" width="1" height="1" fill="#111"/>
-    <rect x="5" y="9" width="14" height="1" fill="#a1a1aa"/>
-    <rect x="6" y="10" width="12" height="2" fill="#facc15"/>
-    <rect x="9" y="11" width="6" height="1" fill="#111"/>
-    <rect x="6" y="12" width="12" height="2" fill="#facc15"/>
-    <rect x="5" y="12" width="1" height="4" fill="#facc15"/><rect x="18" y="12" width="1" height="4" fill="#facc15"/>
-    <rect x="6" y="14" width="12" height="2" fill="#2563eb"/>
-    <rect x="7" y="14" width="10" height="1" fill="#3b82f6"/>
-    <rect x="8" y="14" width="8" height="1" fill="#1d4ed8"/>
-    <rect x="6" y="16" width="12" height="2" fill="#1d4ed8"/>
-    <rect x="7" y="16" width="10" height="1" fill="#2563eb"/>
-    <rect x="6" y="18" width="12" height="1" fill="#111"/>
-    <rect x="6" y="19" width="5" height="2" fill="#1d4ed8"/><rect x="13" y="19" width="5" height="2" fill="#1d4ed8"/>
-    <rect x="6" y="21" width="4" height="1" fill="#111"/><rect x="14" y="21" width="4" height="1" fill="#111"/>
+    <rect x="10" y="0" width="1" height="1" fill="#111"/><rect x="13" y="0" width="1" height="1" fill="#111"/>
+    <rect x="10" y="1" width="1" height="1" fill="#111"/><rect x="13" y="1" width="1" height="1" fill="#111"/>
+    <rect x="9" y="2" width="6" height="1" fill="#facc15"/>
+    <rect x="8" y="3" width="8" height="1" fill="#facc15"/>
+    <rect x="7" y="4" width="10" height="1" fill="#facc15"/>
+    <rect x="6" y="5" width="12" height="1" fill="#a1a1aa"/>
+    <rect x="6" y="6" width="12" height="2" fill="#d4d4d8"/>
+    <rect x="7" y="6" width="4" height="2" fill="#fff"/><rect x="13" y="6" width="4" height="2" fill="#fff"/>
+    <rect x="8" y="6" width="2" height="2" fill="#6b4c1e"/><rect x="14" y="6" width="2" height="2" fill="#6b4c1e"/>
+    <rect x="9" y="7" width="1" height="1" fill="#111"/><rect x="15" y="7" width="1" height="1" fill="#111"/>
+    <rect x="6" y="8" width="12" height="1" fill="#a1a1aa"/>
+    <rect x="7" y="9" width="10" height="1" fill="#facc15"/>
+    <rect x="9" y="9" width="6" height="1" fill="#111"/>
+    <rect x="7" y="10" width="10" height="1" fill="#facc15"/>
+    <rect x="7" y="11" width="10" height="1" fill="#facc15"/>
+    <rect x="3" y="11" width="3" height="2" fill="#facc15"/><rect x="18" y="11" width="3" height="2" fill="#facc15"/>
+    <rect x="3" y="13" width="2" height="1" fill="#111"/><rect x="19" y="13" width="2" height="1" fill="#111"/>
+    <rect x="7" y="12" width="10" height="1" fill="#2563eb"/>
+    <rect x="7" y="13" width="10" height="3" fill="#1d4ed8"/>
+    <rect x="8" y="13" width="8" height="1" fill="#2563eb"/>
+    <rect x="8" y="14" width="3" height="1" fill="#3b82f6"/><rect x="13" y="14" width="3" height="1" fill="#3b82f6"/>
+    <rect x="7" y="16" width="10" height="1" fill="#1d4ed8"/>
+    <rect x="7" y="17" width="4" height="2" fill="#111"/><rect x="13" y="17" width="4" height="2" fill="#111"/>
   </svg>`;
   },
   bunny: (c) => {
