@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
+import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase, addModule } from "@/lib/custom-content";
 import { Brain, Trash2, ChevronRight, ChevronDown, Plus, Pencil, Check, X, GripVertical } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -58,6 +58,8 @@ export default function FlashcardsPage() {
   const [renamingTitle, setRenamingTitle] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverModule, setDragOverModule] = useState<string | null>(null);
+  const [addingModuleTo, setAddingModuleTo] = useState<string | null>(null);
+  const [newModuleName, setNewModuleName] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -128,6 +130,24 @@ export default function FlashcardsPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  };
+
+  const addModuleToCourse = async (courseId: string) => {
+    if (!newModuleName.trim()) return;
+    const moduleId = newModuleName.trim().toLowerCase().replace(/\s+/g, "-");
+    addModule(courseId, { id: moduleId, courseId, title: newModuleName.trim(), description: "" });
+    if (userId) {
+      const reviewerId = `${courseId}/${moduleId}/_placeholder_${Date.now()}`;
+      const placeholder = { id: reviewerId, moduleId, courseId, title: newModuleName.trim(), cards: [] };
+      await saveReviewerToSupabase(courseId, moduleId, placeholder);
+    }
+    const cloudReviewers = await loadReviewersFromSupabase();
+    setAllReviewers(cloudReviewers);
+    setAddingModuleTo(null);
+    setNewModuleName("");
+    const next = new Set(openModules);
+    next.add(`${courseId}/${moduleId}`);
+    setOpenModules(next);
   };
 
   const createDeck = async () => {
@@ -355,6 +375,31 @@ export default function FlashcardsPage() {
                         </div>
                       );
                     })}
+                    <div style={{ padding: "4px 16px 8px 46px" }}>
+                      {addingModuleTo === course.courseId ? (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            className="glass-input"
+                            value={newModuleName}
+                            onChange={(e) => setNewModuleName(e.target.value)}
+                            placeholder="Module name"
+                            autoFocus
+                            style={{ flex: 1, padding: "6px 10px", fontSize: 13 }}
+                            onKeyDown={(e) => { if (e.key === "Enter") addModuleToCourse(course.courseId); if (e.key === "Escape") { setAddingModuleTo(null); setNewModuleName(""); } }}
+                          />
+                          <button onClick={() => addModuleToCourse(course.courseId)} className="glass-btn glass-btn-primary" style={{ padding: "6px 12px", fontSize: 12 }}>Add</button>
+                          <button onClick={() => { setAddingModuleTo(null); setNewModuleName(""); }} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12 }}>Cancel</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setAddingModuleTo(course.courseId)}
+                          className="btn-tab"
+                          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 12, borderRadius: 8 }}
+                        >
+                          <Plus size={12} /> Add Module
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -1863,3 +1863,65 @@ a:active {
   border-radius: 2px;
   z-index: 15;
 }
+
+/* ============================================================
+   FIX: Button Highlighting — dedicated classes
+   ============================================================ */
+button:focus {
+  outline: none;
+}
+
+.btn-tab {
+  color: var(--os-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-tab:hover:not(.active) {
+  color: var(--os-text-primary);
+  background: rgba(255,255,255,0.05);
+}
+.btn-tab.active {
+  color: var(--os-accent);
+  background: rgba(0,212,255,0.12);
+}
+
+.btn-mode {
+  color: var(--os-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-mode:hover:not(.active) {
+  color: var(--os-text-primary);
+  background: rgba(255,255,255,0.05);
+}
+.btn-mode.active {
+  color: #fff;
+  background: var(--os-accent);
+}
+
+.btn-action {
+  color: var(--os-text-primary);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-action:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.btn-action-primary {
+  color: #fff;
+  background: var(--os-accent);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-action-primary:hover {
+  opacity: 0.9;
+}

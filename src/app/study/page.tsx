@@ -124,22 +124,11 @@ export default function StudyPage() {
           ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => setTab(key)}
+            className={`btn-tab ${tab === key ? "active" : ""}`}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
-              padding: "8px 16px",
-              borderRadius: "14px",
-              border: "none",
-              outline: "none",
-              fontSize: "13px",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              background: tab === key ? "var(--os-accent)" : "transparent",
-              color: tab === key ? "#fff" : "var(--os-text-secondary)",
-              cursor: "pointer",
-              boxShadow: "none",
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              WebkitTapHighlightColor: "transparent",
+              padding: "8px 16px", borderRadius: "14px", fontSize: "13px",
+              fontWeight: 500, whiteSpace: "nowrap",
             }}>
             <Icon style={{ width: "16px", height: "16px" }} /> {label}
           </button>
@@ -653,11 +642,9 @@ function QuizTab({ userId }: { userId: string | null }) {
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center", userSelect: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
             {(["mc", "identification", "mixed"] as const).map((t) => (
-              <button key={t} onClick={() => setQuizType(t)} onMouseDown={(e) => e.preventDefault()} style={{
-                padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500, transition: "all 0.2s",
-                background: quizType === t ? "var(--os-accent)" : "transparent",
-                color: quizType === t ? "#fff" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
-              }}>
+              <button key={t} onClick={() => setQuizType(t)} onMouseDown={(e) => e.preventDefault()}
+                className={`btn-mode ${quizType === t ? "active" : ""}`}
+                style={{ padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500 }}>
                 {t === "mc" ? "MC" : t === "identification" ? "ID" : "Mixed"}
               </button>
             ))}
@@ -1027,11 +1014,9 @@ function QuizTab({ userId }: { userId: string | null }) {
           <label style={{ display: "block", fontSize: "13px", fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>Question Type</label>
           <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)" }}>
             {(["mc", "identification", "mixed"] as const).map((t) => (
-              <button key={t} onClick={() => setQuizType(t)} style={{
-                flex: 1, justifyContent: "center", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500, transition: "colors 0.2s",
-                background: quizType === t ? "var(--os-bg)" : "transparent", boxShadow: quizType === t ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
-                color: quizType === t ? "var(--os-text-primary)" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
-              }}>
+              <button key={t} onClick={() => setQuizType(t)}
+                className={`btn-mode ${quizType === t ? "active" : ""}`}
+                style={{ flex: 1, justifyContent: "center", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: 500 }}>
                 {t === "mc" ? "Multiple Choice" : t === "identification" ? "Identification" : "Mixed"}
               </button>
             ))}
