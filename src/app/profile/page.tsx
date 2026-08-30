@@ -239,27 +239,37 @@ export default function ProfilePage() {
           <Music size={18} /> Music & Mood
         </h2>
 
-        {/* Mood Phrase */}
+        {/* Mood Phrase - Multiple Selection */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 8 }}>
-            <Smile size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> Current Mood
+            <Smile size={14} style={{ verticalAlign: "middle", marginRight: 4 }} /> Current Moods
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {DEFAULT_MOODS.map((phrase) => (
-              <button
-                key={phrase}
-                onClick={() => setMoodText(moodText === phrase ? "" : phrase)}
-                style={{
-                  padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-                  border: moodText === phrase ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.08)",
-                  background: moodText === phrase ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)",
-                  color: moodText === phrase ? "var(--os-accent)" : "var(--os-text-secondary)",
-                  cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
-                }}
-              >
-                {phrase}
-              </button>
-            ))}
+            {DEFAULT_MOODS.map((phrase) => {
+              const selected = moodText.split(",").map((s) => s.trim()).filter(Boolean).includes(phrase);
+              return (
+                <button
+                  key={phrase}
+                  onClick={() => {
+                    const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                    if (selected) {
+                      setMoodText(moods.filter((m) => m !== phrase).join(", "));
+                    } else {
+                      setMoodText([...moods, phrase].join(", "));
+                    }
+                  }}
+                  style={{
+                    padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    border: selected ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.08)",
+                    background: selected ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)",
+                    color: selected ? "var(--os-accent)" : "var(--os-text-secondary)",
+                    cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
+                  }}
+                >
+                  {selected ? "✓ " : ""}{phrase}
+                </button>
+              );
+            })}
           </div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <input
@@ -269,7 +279,10 @@ export default function ProfilePage() {
               placeholder="Or type your own mood..."
               onKeyDown={(e) => {
                 if (e.key === "Enter" && customMood.trim()) {
-                  setMoodText(customMood.trim());
+                  const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                  if (!moods.includes(customMood.trim())) {
+                    setMoodText([...moods, customMood.trim()].join(", "));
+                  }
                   setCustomMood("");
                 }
               }}
@@ -278,7 +291,10 @@ export default function ProfilePage() {
             <button
               onClick={() => {
                 if (customMood.trim()) {
-                  setMoodText(customMood.trim());
+                  const moods = moodText.split(",").map((s) => s.trim()).filter(Boolean);
+                  if (!moods.includes(customMood.trim())) {
+                    setMoodText([...moods, customMood.trim()].join(", "));
+                  }
                   setCustomMood("");
                 }
               }}
@@ -286,7 +302,7 @@ export default function ProfilePage() {
               className="glass-btn glass-btn-primary"
               style={{ padding: "6px 14px", fontSize: 12, opacity: customMood.trim() ? 1 : 0.5 }}
             >
-              Set
+              Add
             </button>
           </div>
           {moodText && (
@@ -322,10 +338,10 @@ export default function ProfilePage() {
           {!showSpotifySearch && !selectedTrack && (
             <button
               onClick={() => setShowSpotifySearch(true)}
-              className="glass-btn glass-btn-ghost"
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-start", color: "var(--os-text-dim)" }}
+              className="glass-btn"
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-start", padding: "10px 14px", background: "rgba(29,185,84,0.08)", border: "1px solid rgba(29,185,84,0.2)", color: "#1DB954", fontSize: 13 }}
             >
-              Search for a song on Spotify...
+              <Music size={14} /> Search for a song on Spotify...
             </button>
           )}
 

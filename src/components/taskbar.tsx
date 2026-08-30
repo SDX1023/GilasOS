@@ -49,6 +49,8 @@ export function Taskbar() {
             href={f.href}
             className="taskbar-item"
             title={f.title}
+            tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()}
             style={{
               color: active ? "var(--os-accent)" : undefined,
               background: active ? "rgba(var(--os-accent-rgb), 0.15)" : undefined,

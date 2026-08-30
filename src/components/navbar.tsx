@@ -70,6 +70,8 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className="nav-link"
+                  tabIndex={-1}
+                  onMouseDown={(e) => e.preventDefault()}
                   style={{
                     display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                     fontSize: 13, fontWeight: 500, textDecoration: "none",
@@ -240,6 +242,8 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className="nav-link"
+              tabIndex={-1}
+              onMouseDown={(e) => e.preventDefault()}
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                 borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none",
@@ -258,6 +262,8 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className="nav-link"
+                tabIndex={-1}
+                onMouseDown={(e) => e.preventDefault()}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                   borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: "none",

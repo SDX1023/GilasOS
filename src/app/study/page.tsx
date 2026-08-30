@@ -92,7 +92,7 @@ export default function StudyPage() {
           ["history", "History", History],
           ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
-          <button key={key} onClick={() => setTab(key)} onBlur={(e) => e.currentTarget.blur()}
+          <button key={key} tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => setTab(key)}
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "8px 16px",
