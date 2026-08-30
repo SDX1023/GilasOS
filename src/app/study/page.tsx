@@ -255,6 +255,19 @@ function FlashcardsTab({ allReviewers, userId, onDelete }: {
   );
 }
 
+function getCorrectIndex(q: any): string {
+  if (q.correct == null) return "0";
+  const c = String(q.correct).trim();
+  if (/^[0-3]$/.test(c)) return c;
+  const code = c.toUpperCase().charCodeAt(0);
+  if (code >= 65 && code <= 68) return String(code - 65);
+  return "0";
+}
+
+function stripOptionPrefix(opt: string): string {
+  return opt.replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+}
+
 function QuizTab({ userId }: { userId: string | null }) {
   const { courses } = useCourses();
   const [inputText, setInputText] = useState("");
@@ -274,6 +287,7 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [courseContent, setCourseContent] = useState("");
   const [loadingContent, setLoadingContent] = useState(false);
   const [quizType, setQuizType] = useState<"mc" | "identification" | "mixed">("mc");
+  const [answered, setAnswered] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -333,26 +347,35 @@ function QuizTab({ userId }: { userId: string | null }) {
     } catch (err: any) { setLastError(err.message || "Failed to generate quiz"); } finally { setIsGenerating(false); }
   }
 
-  function answerQuestion(answer: string) { setAnswers((prev) => ({ ...prev, [currentQ]: answer })); }
+  function answerQuestion(answer: string) {
+    setAnswers((prev) => ({ ...prev, [currentQ]: answer }));
+  }
 
   function nextQuestion() {
-    if (currentQ < quizQuestions.length - 1) { setCurrentQ(currentQ + 1); }
+    if (currentQ < quizQuestions.length - 1) { setCurrentQ(currentQ + 1); setAnswered(false); }
     else {
       let s = 0;
       quizQuestions.forEach((q, i) => {
-        if (q.type === "mc" && answers[i] === String(q.correct)) s++;
-        if (q.type === "identification" && answers[i]?.toLowerCase().trim() === q.answer.toLowerCase().trim()) s++;
+        const correctIdx = getCorrectIndex(q);
+        if (q.type === "mc" && answers[i] === correctIdx) s++;
+        if (q.type === "identification" && answers[i]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim()) s++;
       });
       setScore(s); setShowResults(true);
       if (userId) {
         const wrong = quizQuestions.length - s;
-        saveQuizHistory(userId, selectedSource === "course" ? (selectedCourseData?.title || selectedCourse) : (pdfFile?.name || "Custom Quiz"), quizQuestions.length, s, wrong, selectedSource).catch(() => {});
+        const title = selectedSource === "course"
+          ? (selectedCourseData?.title || selectedCourse || "Custom Quiz")
+          : (pdfFile?.name || "Custom Quiz");
+        const source = selectedSource === "course"
+          ? `${selectedCourse}/${selectedModule}`
+          : "custom";
+        saveQuizHistory(userId, title, quizQuestions.length, s, wrong, source).catch(() => {});
         saveStudyStats(userId, s, 0, wrong, quizQuestions.length).catch(() => {});
       }
     }
   }
 
-  function restartQuiz() { setQuizStarted(false); setQuizQuestions([]); setAnswers({}); setShowResults(false); setCurrentQ(0); setScore(0); }
+  function restartQuiz() { setQuizStarted(false); setQuizQuestions([]); setAnswers({}); setShowResults(false); setCurrentQ(0); setScore(0); setAnswered(false); }
 
   if (showResults) {
     return (
@@ -366,30 +389,35 @@ function QuizTab({ userId }: { userId: string | null }) {
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={restartQuiz} className="glass-btn-primary" style={{ padding: "8px 24px" }}>Try Again</button>
-            <Link href="/flashcards" className="glass-btn" style={{ padding: "8px 24px" }}>Study Flashcards</Link>
+            <Link href="/study" className="glass-btn" style={{ padding: "8px 24px" }}>Back to Study</Link>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "32px" }}>
           <h3 style={{ fontWeight: 600, fontSize: "18px", color: "var(--os-text-primary)" }}>Review Answers</h3>
           {quizQuestions.map((q, i) => {
             const userAnswer = answers[i] || "";
-            const isCorrect = q.type === "mc" ? userAnswer === String(q.correct) : userAnswer.toLowerCase().trim() === q.answer.toLowerCase().trim();
+            const correctIdx = getCorrectIndex(q);
+            const isCorrect = q.type === "mc" ? userAnswer === correctIdx : userAnswer.toLowerCase().trim() === (q.answer || "").toLowerCase().trim();
             return (
               <div key={i} className="glass-card" style={{
                 borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
                 background: isCorrect ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
               }}>
                 <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. {q.question}</p>
-                {q.type === "mc" && (
+                {q.type === "mc" && q.options && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "16px" }}>
-                    {q.options.map((opt: string, j: number) => (
-                      <p key={j} className="text-sm" style={{
-                        color: j === Number(q.correct) ? "#16a34a" : userAnswer === String(j) ? "#dc2626" : "var(--os-text-secondary)",
-                        fontWeight: j === Number(q.correct) ? 500 : 400,
-                      }}>
-                        {String.fromCharCode(65 + j)}. {opt} {j === Number(q.correct) ? " ✓" : userAnswer === String(j) ? " ✗" : ""}
-                      </p>
-                    ))}
+                    {q.options.map((opt: string, j: number) => {
+                      const isCorrectOpt = String(j) === correctIdx;
+                      const isUserChoice = userAnswer === String(j);
+                      return (
+                        <p key={j} className="text-sm" style={{
+                          color: isCorrectOpt ? "#16a34a" : isUserChoice && !isCorrectOpt ? "#dc2626" : "var(--os-text-secondary)",
+                          fontWeight: isCorrectOpt ? 500 : 400,
+                        }}>
+                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
+                        </p>
+                      );
+                    })}
                   </div>
                 )}
                 {q.type === "identification" && (
@@ -408,6 +436,10 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   if (quizStarted && quizQuestions.length > 0) {
     const q = quizQuestions[currentQ];
+    const correctIdx = getCorrectIndex(q);
+    const userAns = answers[currentQ];
+    const isMc = q.type === "mc";
+
     return (
       <div style={{ maxWidth: "672px", margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
@@ -418,48 +450,71 @@ function QuizTab({ userId }: { userId: string | null }) {
         </div>
         <div className="glass-panel" style={{ padding: "24px", marginBottom: "24px" }}>
           <span style={{
-            display: "inline-block",
-            fontSize: "12px",
-            padding: "4px 8px",
-            borderRadius: "9999px",
-            marginBottom: "12px",
-            background: q.type === "mc" ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)",
-            color: q.type === "mc" ? "#2563eb" : "#9333ea",
+            display: "inline-block", fontSize: "12px", padding: "4px 8px", borderRadius: "9999px", marginBottom: "12px",
+            background: isMc ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)",
+            color: isMc ? "#2563eb" : "#9333ea",
           }}>
-            {q.type === "mc" ? "Multiple Choice" : "Identification"}
+            {isMc ? "Multiple Choice" : "Identification"}
           </span>
           <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}>{q.question}</p>
         </div>
-        {q.type === "mc" ? (
+
+        {isMc ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-            {q.options.map((opt: string, j: number) => (
-              <button key={j} onClick={() => answerQuestion(String(j))}
-                className="glass-card"
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "16px",
-                  transition: "all 0.2s",
-                  borderColor: answers[currentQ] === String(j) ? "var(--os-accent)" : "rgba(255,255,255,0.06)",
-                  background: answers[currentQ] === String(j) ? "rgba(59,130,246,0.05)" : "transparent",
-                  boxShadow: answers[currentQ] === String(j) ? "0 0 0 2px var(--os-accent)" : "none",
-                }}>
-                <span style={{ fontWeight: 500, marginRight: "12px" }}>{String.fromCharCode(65 + j)}.</span>{opt}
-              </button>
-            ))}
+            {q.options.map((opt: string, j: number) => {
+              const isChosen = userAns === String(j);
+              const isCorrectOpt = String(j) === correctIdx;
+              const showFeedback = answered;
+              let bg = "transparent";
+              let border = "rgba(255,255,255,0.06)";
+              let shadow = "none";
+              let txtColor = "var(--os-text-primary)";
+
+              if (showFeedback) {
+                if (isCorrectOpt) { bg = "rgba(34,197,94,0.1)"; border = "#16a34a"; shadow = "0 0 0 2px rgba(34,197,94,0.3)"; txtColor = "#16a34a"; }
+                else if (isChosen && !isCorrectOpt) { bg = "rgba(239,68,68,0.1)"; border = "#ef4444"; shadow = "0 0 0 2px rgba(239,68,68,0.3)"; txtColor = "#ef4444"; }
+              } else if (isChosen) {
+                bg = "rgba(59,130,246,0.05)"; border = "var(--os-accent)"; shadow = "0 0 0 2px var(--os-accent)";
+              }
+
+              return (
+                <button key={j} onClick={() => !answered && answerQuestion(String(j))} disabled={answered}
+                  className="glass-card" style={{
+                    width: "100%", textAlign: "left", padding: "14px 16px", transition: "all 0.2s",
+                    borderColor: border, background: bg, boxShadow: shadow, cursor: answered ? "default" : "pointer",
+                    opacity: showFeedback && !isCorrectOpt && !isChosen ? 0.5 : 1,
+                  }}>
+                  <span style={{ fontWeight: 500, marginRight: "10px", color: txtColor }}>{String.fromCharCode(65 + j)}.</span>
+                  <span style={{ color: txtColor }}>{stripOptionPrefix(opt)}</span>
+                  {showFeedback && isCorrectOpt && <span style={{ marginLeft: 8, color: "#16a34a" }}>✓</span>}
+                  {showFeedback && isChosen && !isCorrectOpt && <span style={{ marginLeft: 8, color: "#ef4444" }}>✗</span>}
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div style={{ marginBottom: "24px" }}>
-            <input type="text" value={answers[currentQ] || ""} onChange={(e) => answerQuestion(e.target.value)}
-              placeholder="Type your answer..." className="glass-input" style={{ width: "100%", fontSize: "18px" }} autoFocus
-              onKeyDown={(e) => e.key === "Enter" && answers[currentQ] && nextQuestion()} />
+            <input type="text" value={answers[currentQ] || ""} onChange={(e) => !answered && answerQuestion(e.target.value)}
+              placeholder="Type your answer..." className="glass-input" style={{
+                width: "100%", fontSize: "18px",
+                borderColor: answered ? (answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444") : undefined,
+              }}
+              disabled={answered} autoFocus />
+            {answered && (
+              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444"}` }}>
+                <p style={{ fontSize: 13, color: answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444", fontWeight: 500 }}>
+                  {answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "✓ Correct!" : `✗ Correct answer: ${q.answer}`}
+                </p>
+              </div>
+            )}
           </div>
         )}
+
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={nextQuestion} disabled={!answers[currentQ]}
+          <button onClick={() => { if (!answered) { setAnswered(true); } else { nextQuestion(); } }}
             className="glass-btn-primary"
-            style={{ padding: "8px 24px", opacity: answers[currentQ] ? 1 : 0.5, cursor: answers[currentQ] ? "pointer" : "not-allowed" }}>
-            {currentQ === quizQuestions.length - 1 ? "Finish" : "Next"}
+            style={{ padding: "8px 24px" }}>
+            {!answered ? "Check" : currentQ === quizQuestions.length - 1 ? "Finish" : "Next"}
           </button>
         </div>
       </div>
@@ -517,7 +572,7 @@ function QuizTab({ userId }: { userId: string | null }) {
               <textarea value={inputText} onChange={(e) => setInputText(e.target.value)}
                 placeholder="Paste your notes, textbook content, or study material here..."
                 className="glass-input" style={{ width: "100%", height: "160px", resize: "none" }} />
-              {inputText && <p className="text-xs text-secondary" style={{ marginTop: "4px" }}>~{Math.min(500, Math.max(5, Math.ceil(inputText.length / 200)))} questions will be generated</p>}
+              {inputText && <p className="text-xs text-secondary" style={{ marginTop: "4px" }}>~{Math.max(5, Math.ceil(inputText.length / 500))} questions will be generated</p>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <label className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", cursor: "pointer", borderStyle: "dashed", fontSize: "13px" }}>
@@ -632,11 +687,23 @@ function HistoryTab({ userId }: { userId: string | null }) {
       {history.map((h) => {
         const pct = h.total_questions > 0 ? Math.round((h.correct_answers / h.total_questions) * 100) : 0;
         const date = new Date(h.created_at);
+        const sourceParts = (h.source || "").split("/");
+        const isCourse = sourceParts.length >= 2 && sourceParts[0] !== "text" && sourceParts[0] !== "custom";
         return (
           <div key={h.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)" }}>{h.deck_title}</p>
-              <p className="text-sm text-secondary" style={{ marginTop: "2px" }}>
+              {isCourse && (
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3, fontSize: 11, color: "var(--os-text-secondary)" }}>
+                  <BookOpen size={10} />
+                  <span>{sourceParts[0]}</span>
+                  {sourceParts[1] && <><span>/</span><span>{sourceParts[1]}</span></>}
+                </div>
+              )}
+              {!isCourse && h.source && h.source !== "text" && h.source !== "custom" && (
+                <p className="text-xs" style={{ color: "var(--os-text-secondary)", marginTop: 3 }}>PDF: {h.deck_title}</p>
+              )}
+              <p className="text-xs" style={{ color: "var(--os-text-dim)", marginTop: 2 }}>
                 {date.toLocaleDateString()} at {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>

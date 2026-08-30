@@ -120,8 +120,9 @@ function buildQuizPrompt(chunkText: string, idx: number, total: number, question
 
 IMPORTANT: This text uses BULLET POINTS. Create fill-in-the-blank questions.
 
-RULES:
-- Create 1 question for every 2-3 bullet points
+CRITICAL RULES:
+- You MUST generate at least ${Math.ceil(bullets / 2)} questions from these ${bullets} bullet points
+- Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Use underscores or blanks where the answer goes
 - Include the correct answer
 - Return ONLY JSON array: [{"question":"The ___ is responsible for...","type":"identification","answer":"nucleus"}]
@@ -135,8 +136,9 @@ ${chunkText}`;
 
 IMPORTANT: This text uses BULLET POINTS. Create quiz questions from the key facts.
 
-RULES:
-- Create 1 question for every 2-3 bullet points
+CRITICAL RULES:
+- You MUST generate at least ${Math.ceil(bullets / 2)} questions from these ${bullets} bullet points
+- Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Each question must have 4 options (A, B, C, D)
 - Include the correct answer
 - Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
@@ -150,8 +152,9 @@ ${chunkText}`;
 
 IMPORTANT: This text uses BULLET POINTS. Create a MIX of question types.
 
-RULES:
-- Create 1 question for every 2-3 bullet points
+CRITICAL RULES:
+- You MUST generate at least ${Math.ceil(bullets / 2)} questions from these ${bullets} bullet points
+- Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Half should be multiple-choice with 4 options, half should be identification (fill-in-the-blank)
 - Return ONLY JSON array with mixed types:
   MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
@@ -168,7 +171,8 @@ ${chunkText}`;
     if (questionType === "identification") {
       return `Generate identification quiz questions from this Q&A material. ${ctx}
 
-RULES:
+CRITICAL RULES:
+- You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - Convert each Q&A pair into a fill-in-the-blank question
 - The blank should be where the answer goes
 - Return ONLY JSON array: [{"question":"The process of ___ is...","type":"identification","answer":"photosynthesis"}]
@@ -179,7 +183,8 @@ ${chunkText}`;
     if (questionType === "mc") {
       return `Generate multiple-choice quiz questions from this Q&A material. ${ctx}
 
-RULES:
+CRITICAL RULES:
+- You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - For each Q&A pair, create a question using the Q as the stem
 - Add 3 wrong options that are plausible but incorrect
 - Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
@@ -189,7 +194,8 @@ ${chunkText}`;
     }
     return `Generate a mix of MC and identification questions from this Q&A material. ${ctx}
 
-RULES:
+CRITICAL RULES:
+- You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - Half MC with 4 options, half identification fill-in-the-blank
 - Return ONLY JSON array:
   MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
@@ -212,8 +218,8 @@ EXTRACTION RULES:
 3. For each date: "___ happened in ___" (fill in year)
 4. For each definition: "___ is defined as ___" (fill in term)
 
-FORMAT RULES:
-- Create 1 question for every 2-3 sentences of important information
+CRITICAL RULES:
+- Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Return ONLY JSON array: [{"question":"The ___ is responsible for...","type":"identification","answer":"nucleus"}]
 
 TEXT:
@@ -228,8 +234,8 @@ EXTRACTION RULES:
 3. For each date: "When did [EVENT] happen?" with 4 options
 4. For each definition: "What is [TERM]?" with 4 options
 
-FORMAT RULES:
-- Create 1 question for every 3-4 sentences of important information
+CRITICAL RULES:
+- Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Each question must have 4 options (A, B, C, D)
 - Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
 
@@ -238,9 +244,9 @@ ${chunkText}`;
     }
     return `Generate a mix of MC and identification questions from this text. ${ctx}
 
-RULES:
+CRITICAL RULES:
+- Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Half MC with 4 options, half identification fill-in-the-blank
-- Create 1 question for every 3-4 sentences of important information
 - Return ONLY JSON array:
   MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
   ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
@@ -364,7 +370,7 @@ async function callDeepSeek(
         model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
-        max_tokens: 8192,
+        max_tokens: 16384,
       }),
     });
 
