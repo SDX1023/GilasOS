@@ -303,7 +303,7 @@ export default function ArchivePage() {
                         </div>
                         <div>
                           <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Links</label>
-                          <LinksInput links={editLinks} setLinks={setEditLinks} />
+                          <LinksInput links={editLinks} labels={editLabels} setLinks={setEditLinks} setLabels={setEditLabels} />
                         </div>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                           <button onClick={() => saveEdit(entry.id)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.3)" }}><Check size={14} /> Save</button>

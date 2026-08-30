@@ -132,7 +132,7 @@ export default function FlashcardsPage() {
     const courseId = newDeckModule.trim() || "My Decks";
     const moduleId = "custom";
     const reviewerId = `${courseId}/${moduleId}/${Date.now()}`;
-    const reviewer = { id: reviewerId, title: newDeckName.trim(), cards: [] };
+    const reviewer = { id: reviewerId, moduleId, courseId, title: newDeckName.trim(), cards: [] };
     await saveReviewerToSupabase(courseId, moduleId, reviewer);
     const cloudReviewers = await loadReviewersFromSupabase();
     setAllReviewers(cloudReviewers);
