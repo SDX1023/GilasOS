@@ -224,8 +224,6 @@ function ImageNodeView(props: any) {
       )}
       <div
         style={{ position: "relative", display: "inline-block" }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {isSelected && (
           <>
