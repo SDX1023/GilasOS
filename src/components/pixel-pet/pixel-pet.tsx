@@ -272,7 +272,6 @@ export default function PixelPet() {
                 {pet.name} <span style={{ fontSize: 8, opacity: 0.5 }}>&#9998;</span>
               </p>
             )}
-            </p>
           </div>
         </div>
 
