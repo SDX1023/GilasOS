@@ -6,18 +6,34 @@
   box-sizing: border-box;
 }
 
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body,
+body * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 ::selection {
   background: transparent !important;
   color: inherit !important;
 }
 
-* {
-  -webkit-tap-highlight-color: transparent;
+button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav-link, label, th, td, span, div, p, h1, h2, h3, h4, h5, h6, a {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav-link {
-  user-select: none;
-  -webkit-user-select: none;
+.text-select, .selectable {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 :root {

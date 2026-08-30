@@ -5,8 +5,8 @@ import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
-import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon } from "lucide-react";
+import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical } from "lucide-react";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
 
@@ -70,6 +70,24 @@ export default function StudyPage() {
     setDeleteTarget(null);
   }
 
+  async function refreshReviewers() {
+    const localReviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
+    const customContent = loadCustomContent();
+    for (const course of customContent.courses) {
+      for (const mod of course.modules) {
+        for (const reviewer of mod.reviewers) {
+          localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+        }
+      }
+    }
+    if (userId) {
+      const cloudReviewers = await loadReviewersFromSupabase();
+      setAllReviewers(cloudReviewers);
+    } else {
+      setAllReviewers(localReviewers);
+    }
+  }
+
   if (!mounted) {
     return (
       <div className="page-container">
@@ -129,7 +147,7 @@ export default function StudyPage() {
       </div>
 
       {tab === "flashcards" && (
-        <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} />
+        <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} onRefresh={refreshReviewers} />
       )}
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
@@ -154,13 +172,16 @@ export default function StudyPage() {
   );
 }
 
-function FlashcardsTab({ allReviewers, userId, onDelete }: {
+function FlashcardsTab({ allReviewers, userId, onDelete, onRefresh }: {
   allReviewers: { courseId: string; moduleId: string; reviewer: any }[];
   userId: string | null;
   onDelete: (target: { courseId: string; moduleId: string; reviewerId: string; title: string }) => void;
+  onRefresh: () => void;
 }) {
   const [openCourses, setOpenCourses] = useState<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renamingTitle, setRenamingTitle] = useState("");
 
   const toggleCourse = (id: string) => {
     setOpenCourses((prev) => {
@@ -175,6 +196,14 @@ function FlashcardsTab({ allReviewers, userId, onDelete }: {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  };
+
+  const handleRename = async (reviewerId: string) => {
+    if (!renamingTitle.trim()) return;
+    await getSupabase().from("reviewers").update({ title: renamingTitle.trim() }).eq("id", reviewerId);
+    setRenamingId(null);
+    setRenamingTitle("");
+    onRefresh();
   };
 
   if (allReviewers.length === 0) {
@@ -241,22 +270,52 @@ function FlashcardsTab({ allReviewers, userId, onDelete }: {
                       </button>
                       {modOpen && (
                         <div style={{ padding: "0 16px 8px 62px", display: "flex", flexDirection: "column", gap: 6 }}>
-                          {mods.map(({ courseId: cid, moduleId: mid, reviewer }) => (
-                            <div key={reviewer.id} className="glass-card-link" style={{ position: "relative", padding: "10px 14px" }}>
-                              <Link href={`/flashcards/${reviewer.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</span>
-                                  <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>{reviewer.cards?.length || 0} cards</span>
-                                </div>
-                                <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
-                              </Link>
-                              <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId: mid, reviewerId: reviewer.id, title: reviewer.title }); }}
-                                style={{ position: "absolute", top: 8, right: 8, padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4 }}
-                                title="Delete deck">
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          ))}
+                          {mods.map(({ courseId: cid, moduleId: mid, reviewer }) => {
+                            const isRenaming = renamingId === reviewer.id;
+                            return (
+                              <div key={reviewer.id} className="glass-card-link" style={{ position: "relative", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                                <Link href={isRenaming ? "#" : `/flashcards/${reviewer.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flex: 1, minWidth: 0 }} onClick={(e) => isRenaming && e.preventDefault()}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    {isRenaming ? (
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <input
+                                          autoFocus
+                                          className="glass-input"
+                                          value={renamingTitle}
+                                          onChange={(e) => setRenamingTitle(e.target.value)}
+                                          onKeyDown={(e) => { if (e.key === "Enter") handleRename(reviewer.id); if (e.key === "Escape") { setRenamingId(null); setRenamingTitle(""); } }}
+                                          style={{ flex: 1, padding: "2px 6px", fontSize: 13 }}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <button onClick={(e) => { e.preventDefault(); handleRename(reviewer.id); }} style={{ background: "var(--os-accent)", border: "none", borderRadius: 4, color: "#fff", padding: "2px 6px", cursor: "pointer", flexShrink: 0 }}><Check size={12} /></button>
+                                        <button onClick={(e) => { e.preventDefault(); setRenamingId(null); setRenamingTitle(""); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 4, color: "var(--os-text-secondary)", padding: "2px 6px", cursor: "pointer", flexShrink: 0 }}><X size={12} /></button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</span>
+                                        <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>{reviewer.cards?.length || 0} cards</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  {!isRenaming && <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
+                                </Link>
+                                {!isRenaming && (
+                                  <button onClick={(e) => { e.preventDefault(); setRenamingId(reviewer.id); setRenamingTitle(reviewer.title); }}
+                                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4, flexShrink: 0 }}
+                                    title="Rename deck">
+                                    <Pencil size={13} />
+                                  </button>
+                                )}
+                                {!isRenaming && (
+                                  <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId: mid, reviewerId: reviewer.id, title: reviewer.title }); }}
+                                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4, flexShrink: 0 }}
+                                    title="Delete deck">
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -320,6 +379,8 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [shareError, setShareError] = useState("");
   const [shareQuizType, setShareQuizType] = useState<"mc" | "identification" | "mixed">("mixed");
   const quizStartRef = useRef<number>(0);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renamingTitle, setRenamingTitle] = useState("");
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -495,6 +556,14 @@ function QuizTab({ userId }: { userId: string | null }) {
     if (!userId) return;
     await deleteSavedQuiz(userId, id);
     setSavedQuizzes((prev) => prev.filter((q) => q.id !== id));
+  }
+
+  async function handleRenameQuiz(quizId: string) {
+    if (!renamingTitle.trim() || !userId) return;
+    await renameSavedQuiz(userId, quizId, renamingTitle.trim());
+    setSavedQuizzes((prev) => prev.map((q) => q.id === quizId ? { ...q, title: renamingTitle.trim() } : q));
+    setRenamingId(null);
+    setRenamingTitle("");
   }
 
   function handleLoadSaved(saved: any) {
@@ -823,23 +892,45 @@ function QuizTab({ userId }: { userId: string | null }) {
             <Save style={{ width: "16px", height: "16px" }} /> Saved Quizzes ({savedQuizzes.length})
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {savedQuizzes.map((q) => (
-              <div key={q.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px" }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 500, fontSize: "13px", color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.title}</p>
-                  <p className="text-xs text-secondary" style={{ marginTop: 2 }}>{q.questions?.length || 0} questions</p>
+            {savedQuizzes.map((q) => {
+              const isRenaming = renamingId === q.id;
+              return (
+                <div key={q.id} className="glass-card" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {isRenaming ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input autoFocus className="glass-input" value={renamingTitle} onChange={(e) => setRenamingTitle(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleRenameQuiz(q.id); if (e.key === "Escape") { setRenamingId(null); setRenamingTitle(""); } }}
+                          style={{ flex: 1, padding: "4px 8px", fontSize: "13px" }} />
+                        <button onClick={() => handleRenameQuiz(q.id)} style={{ background: "var(--os-accent)", border: "none", borderRadius: 4, color: "#fff", padding: "4px 8px", cursor: "pointer", fontSize: 12 }}><Check size={12} /></button>
+                        <button onClick={() => { setRenamingId(null); setRenamingTitle(""); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 4, color: "var(--os-text-secondary)", padding: "4px 8px", cursor: "pointer", fontSize: 12 }}><X size={12} /></button>
+                      </div>
+                    ) : (
+                      <>
+                        <p style={{ fontWeight: 500, fontSize: "13px", color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.title}</p>
+                        <p className="text-xs text-secondary" style={{ marginTop: 2 }}>{q.questions?.length || 0} questions</p>
+                      </>
+                    )}
+                  </div>
+                  <button onClick={() => handleLoadSaved(q)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
+                    <Play style={{ width: 12, height: 12, marginRight: 4 }} /> Load
+                  </button>
+                  <button onClick={() => handleShareQuiz(q.id)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
+                    <Share2 style={{ width: 12, height: 12, marginRight: 4 }} /> Share
+                  </button>
+                  {!isRenaming && (
+                    <button onClick={() => { setRenamingId(q.id); setRenamingTitle(q.title); }} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }} title="Rename quiz">
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  {!isRenaming && (
+                    <button onClick={() => handleDeleteSaved(q.id)} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
-                <button onClick={() => handleLoadSaved(q)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
-                  <Play style={{ width: 12, height: 12, marginRight: 4 }} /> Load
-                </button>
-                <button onClick={() => handleShareQuiz(q.id)} className="glass-btn" style={{ padding: "6px 12px", fontSize: "12px", flexShrink: 0 }}>
-                  <Share2 style={{ width: 12, height: 12, marginRight: 4 }} /> Share
-                </button>
-                <button onClick={() => handleDeleteSaved(q.id)} style={{ padding: "4px", borderRadius: "4px", color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

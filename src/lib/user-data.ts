@@ -326,6 +326,11 @@ export async function deleteSavedQuiz(userId: string, id: string) {
   await supabase.from("saved_quizzes").delete().eq("id", id).eq("user_id", userId);
 }
 
+export async function renameSavedQuiz(userId: string, quizId: string, newTitle: string) {
+  const supabase = getSupabase();
+  await supabase.from("saved_quizzes").update({ title: newTitle }).eq("id", quizId).eq("user_id", userId);
+}
+
 export async function shareQuiz(userId: string, id: string, recipientUserId?: string): Promise<string | null> {
   const supabase = getSupabase();
   const code = Math.random().toString(36).substring(2, 10);

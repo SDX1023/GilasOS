@@ -19,6 +19,7 @@ export default function PdfToFlashcardsPage() {
   const [saving, setSaving] = useState(false);
   const [lastError, setLastError] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
+  const [targetModule, setTargetModule] = useState("pdf-cards");
   const [cooldown, setCooldown] = useState(() => {
     if (typeof window === "undefined") return 0;
     const until = localStorage.getItem("flashcard-cooldown-until");
@@ -84,12 +85,12 @@ export default function PdfToFlashcardsPage() {
     setSaving(true); setSaveMsg("");
     try {
       ensureCourseAndModule();
-      addReviewer(PDF_COURSE_ID, PDF_MODULE_ID, { title: deckName, cards: generatedCards });
+      addReviewer(PDF_COURSE_ID, targetModule, { title: deckName, cards: generatedCards });
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const reviewerId = `${PDF_COURSE_ID}/${PDF_MODULE_ID}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
-        await supabase.from("reviewers").upsert({ id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: PDF_MODULE_ID, title: deckName }, { onConflict: "id" });
+        const reviewerId = `${PDF_COURSE_ID}/${targetModule}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
+        await supabase.from("reviewers").upsert({ id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: targetModule, title: deckName }, { onConflict: "id" });
         const rows = generatedCards.map((card, i) => ({ id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "" }));
         await supabase.from("flashcards").insert(rows);
       }
@@ -160,8 +161,9 @@ export default function PdfToFlashcardsPage() {
           <div className="flex-between" style={{ marginBottom: 16 }}>
             <h2 style={{ fontWeight: 600 }}>Generated Cards ({generatedCards.length})</h2>
             {generatedCards.length > 0 && (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input className="glass-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" style={{ width: 140 }} />
+                <input className="glass-input" value={targetModule} onChange={(e) => setTargetModule(e.target.value)} placeholder="Module (default: pdf-cards)" style={{ width: 160 }} />
                 <button onClick={saveDeck} disabled={!deckName.trim() || saving} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", fontSize: 13, opacity: !deckName.trim() || saving ? 0.5 : 1 }}>
                   <Save size={12} /> {saving ? "Saving..." : "Save"}
                 </button>
