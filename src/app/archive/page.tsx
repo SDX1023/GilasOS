@@ -283,10 +283,10 @@ export default function ArchivePage() {
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
                 <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
                 <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "160px" }}>
-                  Type{typeSort ? <span style={{ marginLeft: 4 }}>{typeSort === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
+                  Type {typeSort === "asc" ? "A→Z ↑" : typeSort === "desc" ? "Z→A ↓" : "↕"}
                 </th>
                 <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "120px" }}>
-                  Year{yearSort ? <span style={{ marginLeft: 4 }}>{yearSort === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
+                  Year {yearSort === "asc" ? "Oldest ↑" : yearSort === "desc" ? "Newest ↓" : "↕"}
                 </th>
                 {isAdmin && <th style={{ width: 80 }}></th>}
               </tr>

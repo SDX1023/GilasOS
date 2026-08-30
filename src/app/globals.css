@@ -7,12 +7,15 @@
 }
 
 ::selection {
-  background: transparent;
-  color: inherit;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav-link {
-  -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
 }
