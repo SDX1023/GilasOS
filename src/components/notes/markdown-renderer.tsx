@@ -66,6 +66,19 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
       }
     );
 
+    html = html.replace(
+      /<img([^>]*data-x="[^"]*"[^>]*)>/g,
+      (_m: string, attrs: string) => {
+        const src = attrs.match(/src="([^"]*)"/)?.[1] || "";
+        const alt = attrs.match(/alt="([^"]*)"/)?.[1] || "";
+        const x = attrs.match(/data-x="([^"]*)"/)?.[1] || "50";
+        const y = attrs.match(/data-y="([^"]*)"/)?.[1] || "50";
+        const style = attrs.match(/style="([^"]*)"/)?.[1] || "";
+        const posStyle = `position:absolute;left:${x}px;top:${y}px;`;
+        return `<img src="${src}" alt="${alt}" style="${posStyle}${style}" />`;
+      }
+    );
+
     setHtmlContent(html);
   }, [content, allLinksMap]);
 

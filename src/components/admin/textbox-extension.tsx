@@ -78,6 +78,8 @@ function TextboxNodeView({ node, updateAttributes, deleteNode, editor }: any) {
     <NodeViewWrapper
       as="div"
       className="pm-abs"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         position: "absolute",
         left: x != null ? `${x}px` : "100px",

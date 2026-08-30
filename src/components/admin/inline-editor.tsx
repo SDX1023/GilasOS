@@ -246,12 +246,12 @@ function ImageNodeView(props: any) {
         position: "absolute",
         left: x != null ? `${x}px` : "50px",
         top: y != null ? `${y}px` : "50px",
-        zIndex: isSelected ? 30 : 10,
+        zIndex: isSelected ? 50 : hovered ? 40 : 10,
         cursor: "grab",
       }}
     >
-      {isSelected && (
-        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap" }}>
+      {(isSelected || hovered) && (
+        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap", opacity: hovered || isSelected ? 1 : 0, transition: "opacity 0.15s" }}>
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
