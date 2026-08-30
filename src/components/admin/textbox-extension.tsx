@@ -3,7 +3,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import React, { useRef, useState } from "react";
-import { Trash2, GripVertical } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 const COLORS = [
   { name: "Blue", value: "#3b82f6" },
@@ -13,10 +13,29 @@ const COLORS = [
   { name: "Red", value: "#ef4444" },
 ];
 
-function TextboxNodeView({ node, updateAttributes, deleteNode }: any) {
-  const { width, height, color, content } = node.attrs;
+function TextboxNodeView({ node, updateAttributes, deleteNode, editor }: any) {
+  const { x, y, width, height, color, content } = node.attrs;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = x || 0;
+    const origY = y || 0;
+    const onMove = (ev: MouseEvent) => {
+      updateAttributes({ x: Math.max(0, origX + ev.clientX - startX), y: Math.max(0, origY + ev.clientY - startY) });
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -56,80 +75,94 @@ function TextboxNodeView({ node, updateAttributes, deleteNode }: any) {
   };
 
   return (
-    <NodeViewWrapper as="div">
+    <NodeViewWrapper
+      as="div"
+      className="pm-abs"
+      style={{
+        position: "absolute",
+        left: x != null ? `${x}px` : "100px",
+        top: y != null ? `${y}px` : "100px",
+        width: `${width}px`,
+        minHeight: `${height}px`,
+        border: `2px solid ${color}`,
+        borderRadius: 8,
+        background: `rgba(15,21,35,0.95)`,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        zIndex: 20,
+      }}
+    >
+      {/* Drag handle */}
       <div
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseDown={handleDragStart}
         style={{
-          width: `${width}px`,
-          minHeight: `${height}px`,
-          borderColor: color,
-          border: `2px solid ${color}`,
-          borderRadius: 8,
-          background: `rgba(15,21,35,0.9)`,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          position: "relative",
-          margin: "8px 0",
-          transition: "box-shadow 0.2s",
+          position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+          width: 32, height: 12, background: "var(--os-bg-secondary)",
+          border: "1px solid var(--os-glass-border)", borderRadius: 6,
+          cursor: "move", display: "flex", alignItems: "center", justifyContent: "center",
+          opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
         }}
       >
-        {/* Top toolbar */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 4,
-          padding: "4px 8px", borderBottom: `1px solid ${color}33`,
-          opacity: hovered ? 1 : 0, transition: "opacity 0.2s",
-        }}>
-          <div style={{ display: "flex", gap: 3 }}>
-            {COLORS.map((c) => (
-              <button
-                key={c.value}
-                onMouseDown={handleColorChange(c.value)}
-                style={{
-                  width: 12, height: 12, borderRadius: 6,
-                  background: c.value, border: "1px solid rgba(255,255,255,0.2)",
-                  cursor: "pointer", padding: 0,
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ flex: 1 }} />
-          <button
-            onMouseDown={handleDelete}
-            style={{
-              width: 20, height: 20,
-              background: "#ef4444", color: "#fff", borderRadius: 10,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              border: "none", cursor: "pointer", padding: 0,
-            }}
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
-          value={content || ""}
-          onChange={(e) => updateAttributes({ content: e.target.value })}
-          onMouseDown={handleTextareaMouseDown}
-          placeholder="Type here..."
-          style={{
-            width: "100%", height: `${height - 32}px`, padding: 8, fontSize: 14,
-            background: "transparent", border: "none", outline: "none",
-            resize: "none", color: "var(--os-text-primary)", fontFamily: "Inter, sans-serif",
-          }}
-        />
-
-        {/* Resize handle */}
-        <div
-          onMouseDown={handleResizeStart}
-          style={{
-            position: "absolute", bottom: -6, right: -6, width: 12, height: 12,
-            background: color, borderRadius: 3, cursor: "se-resize",
-            opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
-          }}
-        />
+        <div style={{ width: 16, height: 3, background: "rgba(255,255,255,0.2)", borderRadius: 2 }} />
       </div>
+
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleResizeStart}
+        style={{
+          position: "absolute", bottom: -8, right: -8, width: 16, height: 16,
+          background: color, border: "none",
+          borderRadius: 4, cursor: "se-resize",
+          opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+        }}
+      />
+
+      {/* Delete button */}
+      <button
+        onMouseDown={handleDelete}
+        style={{
+          position: "absolute", top: -8, right: -8, width: 20, height: 20,
+          background: "#ef4444", color: "#fff", borderRadius: 10,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          border: "none", cursor: "pointer",
+          opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+          padding: 0,
+        }}
+      >
+        <Trash2 size={12} />
+      </button>
+
+      {/* Color picker */}
+      <div style={{
+        position: "absolute", top: -28, left: "50%", transform: "translateX(-50%)",
+        display: "flex", gap: 4,
+        opacity: hovered ? 1 : 0, transition: "opacity 0.2s", zIndex: 10,
+      }}>
+        {COLORS.map((c) => (
+          <button
+            key={c.value}
+            onMouseDown={handleColorChange(c.value)}
+            style={{
+              width: 12, height: 12, borderRadius: 6,
+              background: c.value, border: "1px solid rgba(255,255,255,0.2)",
+              cursor: "pointer", padding: 0,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={content || ""}
+        onChange={(e) => updateAttributes({ content: e.target.value })}
+        onMouseDown={handleTextareaMouseDown}
+        placeholder="Type here..."
+        style={{
+          width: "100%", height: `${height - 32}px`, padding: 8, fontSize: 14,
+          background: "transparent", border: "none", outline: "none",
+          resize: "none", color: "var(--os-text-primary)", fontFamily: "Inter, sans-serif",
+        }}
+      />
     </NodeViewWrapper>
   );
 }
@@ -143,6 +176,8 @@ export const Textbox = Node.create({
 
   addAttributes() {
     return {
+      x: { default: 100 },
+      y: { default: 100 },
       width: { default: 280 },
       height: { default: 100 },
       color: { default: "#3b82f6" },
@@ -154,6 +189,8 @@ export const Textbox = Node.create({
     return [{
       tag: "div[data-textbox]",
       getAttrs: (el) => ({
+        x: parseInt(el.getAttribute("x") || "100"),
+        y: parseInt(el.getAttribute("y") || "100"),
         width: parseInt(el.getAttribute("width") || "280"),
         height: parseInt(el.getAttribute("height") || "100"),
         color: el.getAttribute("color") || "#3b82f6",

@@ -1744,6 +1744,19 @@ a:active {
 
 .ProseMirror img.tiptap-image { max-width: 100%; border-radius: 10px; margin: 16px 0; display: block; cursor: pointer; }
 
+/* Collapse ProseMirror's wrapper div for absolutely-positioned nodes (no duplication) */
+.ProseMirror > div:has(> .pm-abs) {
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+.ProseMirror > div:has(> .pm-abs) .pm-abs {
+  pointer-events: auto !important;
+}
+
 .image-toolbar {
   display: flex;
   align-items: center;

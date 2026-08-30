@@ -168,11 +168,11 @@ export function NoteEditor({
 
         {/* Preview */}
         {(mode === "preview" || mode === "split") && (
-          <div style={{ width: mode === "split" ? "50%" : "100%", overflow: "auto", background: mode === "split" ? "rgba(255,255,255,0.015)" : "transparent" }}>
+          <div style={{ width: mode === "split" ? "50%" : "100%", overflow: "visible", background: mode === "split" ? "rgba(255,255,255,0.015)" : "transparent" }}>
             {mode === "split" && <div style={{ padding: "16px 16px 0", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: 1 }}>Preview</div>}
             <div style={{ height: mode === "split" ? 8 : 100 }} />
             <div
-              style={{ padding: "0 32px 32px", maxWidth: 800, margin: "0 auto", color: "var(--os-text-secondary)", lineHeight: 1.7 }}
+              style={{ padding: "0 32px 32px", maxWidth: 800, margin: "0 auto", color: "var(--os-text-secondary)", lineHeight: 1.7, position: "relative", minHeight: 400 }}
               dangerouslySetInnerHTML={{ __html: preview }}
             />
           </div>

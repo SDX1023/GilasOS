@@ -150,10 +150,11 @@ function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) 
 
 function ImageNodeView(props: any) {
   const { node, updateAttributes, editor } = props;
-  const { src, alt, style } = node.attrs;
+  const { src, alt, style, x, y } = node.attrs;
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showCrop, setShowCrop] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const resizeRef = useRef({ startX: 0, startY: 0, startW: 0, startH: 0, corner: "" });
 
   const deleteImage = () => {
@@ -166,6 +167,27 @@ function ImageNodeView(props: any) {
     const n = editor.view.state.doc.nodeAt(found);
     if (!n) return;
     editor.view.dispatch(editor.view.state.tr.delete(found, found + n.nodeSize));
+  };
+
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = x || 0;
+    const origY = y || 0;
+    const onMove = (ev: MouseEvent) => {
+      updateAttributes({
+        x: Math.max(0, origX + ev.clientX - startX),
+        y: Math.max(0, origY + ev.clientY - startY),
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   };
 
   const startResize = (corner: string) => (e: React.MouseEvent) => {
@@ -214,9 +236,22 @@ function ImageNodeView(props: any) {
   const isSelected = editor.isActive("image", { src });
 
   return (
-    <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: "block" }}>
+    <NodeViewWrapper
+      as="div"
+      ref={wrapperRef}
+      className="pm-abs"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: "absolute",
+        left: x != null ? `${x}px` : "50px",
+        top: y != null ? `${y}px` : "50px",
+        zIndex: isSelected ? 30 : 10,
+        cursor: "grab",
+      }}
+    >
       {isSelected && (
-        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4 }}>
+        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap" }}>
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
@@ -231,7 +266,15 @@ function ImageNodeView(props: any) {
             <div onMouseDown={startResize("se")} className="image-handle" style={{ bottom: -4, right: -4, cursor: "nwse-resize" }} />
           </>
         )}
-        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={parsedStyle} draggable="false" />
+        <img
+          ref={imgRef}
+          src={src}
+          alt={alt}
+          className="tiptap-image"
+          style={{ ...parsedStyle, cursor: isSelected ? "grab" : undefined, display: "block" }}
+          draggable="false"
+          onMouseDown={(e) => { if (isSelected) startDrag(e); }}
+        />
       </div>
       {showCrop && <CropModal src={src} onCrop={applyCrop} onClose={() => setShowCrop(false)} />}
     </NodeViewWrapper>
@@ -245,6 +288,8 @@ const CustomImage = Image.extend({
       alt: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("alt"), renderHTML: (attrs: any) => (attrs.alt ? { alt: attrs.alt } : {}) },
       title: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("title"), renderHTML: (attrs: any) => (attrs.title ? { title: attrs.title } : {}) },
       style: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("style"), renderHTML: (attrs: any) => (attrs.style ? { style: attrs.style } : {}) },
+      x: { default: 50, parseHTML: (el: HTMLElement) => parseInt(el.getAttribute("data-x") || "50"), renderHTML: (attrs: any) => (attrs.x != null ? { "data-x": String(attrs.x) } : {}) },
+      y: { default: 50, parseHTML: (el: HTMLElement) => parseInt(el.getAttribute("data-y") || "50"), renderHTML: (attrs: any) => (attrs.y != null ? { "data-y": String(attrs.y) } : {}) },
     };
   },
   addNodeView() {
@@ -261,10 +306,12 @@ export function markdownToHtml(md: string): string {
 
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     const sm = alt.match(/<!--(style:.*?)-->/);
+    const pm = alt.match(/<!--pos:([^,]+),([^>]+)-->/);
     const cleanAlt = alt.replace(/<!--.*?-->/g, "").trim();
     const baseStyle = sm ? sm[1].replace("style:", "") : "";
-    if (baseStyle) return `<img src="${src}" alt="${cleanAlt}" style="${baseStyle}">`;
-    return `<img src="${src}" alt="${cleanAlt}">`;
+    const posAttrs = pm ? ` data-x="${pm[1]}" data-y="${pm[2]}"` : "";
+    if (baseStyle) return `<img src="${src}" alt="${cleanAlt}" style="${baseStyle}"${posAttrs}>`;
+    return `<img src="${src}" alt="${cleanAlt}"${posAttrs}>`;
   });
 
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -308,13 +355,15 @@ export function htmlToMarkdown(html: string): string {
   const textboxes: string[] = [];
   md = md.replace(/<div\s[^>]*data-textbox=""[^>]*>([\s\S]*?)<\/div>/g, (_match, inner) => {
     const divTag = _match.match(/<div[^>]*>/)?.[0] || "";
+    const x = divTag.match(/x="(\d+)"/)?.[1] || "100";
+    const y = divTag.match(/y="(\d+)"/)?.[1] || "100";
     const width = divTag.match(/width="(\d+)"/)?.[1] || "280";
     const height = divTag.match(/height="(\d+)"/)?.[1] || "100";
     const color = divTag.match(/color="([^"]*)"/)?.[1] || "#3b82f6";
     const attrContent = divTag.match(/content="([^"]*)"/)?.[1];
     const text = attrContent || inner.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").trim();
     const safeText = escapeHtml(text).replace(/\n/g, "<br>");
-    textboxes.push(`<div data-textbox="" width="${width}" height="${height}" color="${color}">${safeText}</div>`);
+    textboxes.push(`<div data-textbox="" x="${x}" y="${y}" width="${width}" height="${height}" color="${color}">${safeText}</div>`);
     return `%%TEXTBOX_${textboxes.length - 1}%%`;
   });
 
@@ -325,8 +374,11 @@ export function htmlToMarkdown(html: string): string {
     const src = attrs.match(/src="([^"]*)"/)?.[1] || "";
     const alt = attrs.match(/alt="([^"]*)"/)?.[1] || "";
     const style = attrs.match(/style="([^"]*)"/)?.[1];
+    const dx = attrs.match(/data-x="([^"]*)"/)?.[1];
+    const dy = attrs.match(/data-y="([^"]*)"/)?.[1];
     const styleTag = style ? `<!--style:${style}-->` : "";
-    const altParts = [alt, styleTag].filter(Boolean).join("");
+    const posTag = (dx && dy) ? `<!--pos:${dx},${dy}-->` : "";
+    const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
     return `![${altParts}](${src})`;
   });
   md = md.replace(/<p[^>]*>(.*?)<\/p>/gs, "$1");
@@ -397,8 +449,11 @@ export function docToMarkdown(editor: any): string {
       const src = node.attrs.src || "";
       const alt = node.attrs.alt || "";
       const style = node.attrs.style || "";
+      const x = node.attrs.x;
+      const y = node.attrs.y;
       const styleTag = style ? `<!--style:${style}-->` : "";
-      const altParts = [alt, styleTag].filter(Boolean).join("");
+      const posTag = (x != null && y != null) ? `<!--pos:${x},${y}-->` : "";
+      const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
       return `![${altParts}](${src})`;
     }
     if (node.type === "textbox") {
@@ -431,8 +486,11 @@ export function docToMarkdown(editor: any): string {
       const src = node.attrs.src || "";
       const alt = node.attrs.alt || "";
       const style = node.attrs.style || "";
+      const x = node.attrs.x;
+      const y = node.attrs.y;
       const styleTag = style ? `<!--style:${style}-->` : "";
-      const altParts = [alt, styleTag].filter(Boolean).join("");
+      const posTag = (x != null && y != null) ? `<!--pos:${x},${y}-->` : "";
+      const altParts = [alt, styleTag, posTag].filter(Boolean).join("");
       return `![${altParts}](${src})`;
     }
     if (node.content) {
@@ -453,7 +511,7 @@ export function docToMarkdown(editor: any): string {
   for (let i = 0; i < textboxes.length; i++) {
     const tb = textboxes[i];
     const safeContent = (tb.content || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const tbHtml = `<div data-textbox="" width="${tb.width || 280}" height="${tb.height || 100}" color="${tb.color || "#3b82f6"}">${safeContent}</div>`;
+    const tbHtml = `<div data-textbox="" x="${tb.x || 100}" y="${tb.y || 100}" width="${tb.width || 280}" height="${tb.height || 100}" color="${tb.color || "#3b82f6"}">${safeContent}</div>`;
     md = md.replace(`%%TEXTBOX_${i}%%`, tbHtml);
   }
 
@@ -591,9 +649,9 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
         <button onClick={() => {
           editor.chain().focus().insertContentAt(editor.state.selection.$from.pos, {
             type: "textbox",
-            attrs: { width: 280, height: 100, color: "#3b82f6", content: "" },
+            attrs: { x: 100, y: 100, width: 280, height: 100, color: "#3b82f6", content: "" },
           }).run();
-        }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Text box">📝 Box</button>
+        }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Draggable text box">📝 Box</button>
         <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />
         <button onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = (e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => { editor.chain().focus().setImage({ src: ev.target?.result as string, alt: f.name }).run(); }; r.readAsDataURL(f); } }; i.click(); }} style={toolbarBtnStyle(false)} title="Insert image">🖼</button>
         <button onClick={() => editor.chain().focus().setHorizontalRule().run()} style={toolbarBtnStyle(false)} title="Divider">—</button>
