@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabase";
 import { User, Music, ArrowLeft, UserPlus, UserCheck, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { getSpriteUrl } from "@/components/pixel-pet/pet-sprites";
 
 interface ProfileData {
   username: string;
@@ -14,6 +15,17 @@ interface ProfileData {
   mood_text: string;
   mood_emoji: string;
   spotify_url: string;
+}
+
+interface UserPet {
+  name: string;
+  pet_type: string;
+  color: string;
+  sprite_url: string | null;
+  bg: string;
+  xp: number;
+  level: number;
+  mood: string;
 }
 
 function extractSpotifyId(url: string): { type: string; id: string } | null {
@@ -32,6 +44,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const [notFound, setNotFound] = useState(false);
   const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
+  const [userPet, setUserPet] = useState<UserPet | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -39,6 +52,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       const { data } = await supabase.from("user_profiles").select("username, avatar_url, bio, mood_text, mood_emoji, spotify_url").eq("user_id", userId).maybeSingle();
       if (data) setProfile(data);
       else setNotFound(true);
+      const { data: petData } = await supabase.from("user_pets").select("name, pet_type, color, sprite_url, bg, xp, level, mood").eq("user_id", userId).maybeSingle();
+      if (petData) setUserPet(petData);
       setLoading(false);
     })();
   }, [userId]);
@@ -193,6 +208,30 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>{profile.bio}</p>
         )}
       </div>
+
+      {userPet && (
+        <div className="glass-panel" style={{ padding: 24, marginBottom: 20 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+            🐾 Pet Companion
+          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: 12, overflow: "hidden",
+              border: "2px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.05)",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <img src={getSpriteUrl(userPet)} alt={userPet.name} width={56} height={56} style={{ imageRendering: "pixelated" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--os-text-primary)" }}>{userPet.name}</p>
+              <p style={{ fontSize: 12, color: "var(--os-text-secondary)", marginTop: 2 }}>
+                Lv.{userPet.level} {userPet.pet_type} · {userPet.mood === "happy" ? "Feeling great!" : userPet.mood === "sad" ? "Needs attention" : "Just vibing~"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(profile.mood_text || spotifyParsed) && (
         <div className="glass-panel" style={{ padding: 24 }}>

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 import { Trophy, Medal, Flame, Target, Calendar } from "lucide-react";
 import Link from "next/link";
+import { getSpriteUrl } from "@/components/pixel-pet/pet-sprites";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -19,17 +20,28 @@ interface LeaderboardEntry {
   accuracy: number;
 }
 
+interface UserPet {
+  user_id: string;
+  pet_type: string;
+  color: string;
+  sprite_url: string | null;
+  name: string;
+  bg: string;
+}
+
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPets, setUserPets] = useState<Record<string, UserPet>>({});
 
   useEffect(() => {
     (async () => {
       try {
-        const [statsRes, profilesRes] = await Promise.all([
+        const [statsRes, profilesRes, petsRes] = await Promise.all([
           fetch("/api/study-stats").then((r) => r.json()),
           getSupabase().from("user_profiles").select("user_id, username"),
+          getSupabase().from("user_pets").select("user_id, pet_type, color, sprite_url, name, bg"),
         ]);
         const profileMap: Record<string, string> = {};
         if (profilesRes.data) profilesRes.data.forEach((p: any) => { profileMap[p.user_id] = p.username; });
@@ -39,6 +51,11 @@ export default function LeaderboardPage() {
           });
         }
         setLeaderboard(statsRes);
+        if (petsRes.data) {
+          const petMap: Record<string, UserPet> = {};
+          petsRes.data.forEach((p: any) => { petMap[p.user_id] = p; });
+          setUserPets(petMap);
+        }
       } catch {}
       setLoading(false);
     })();
@@ -82,6 +99,14 @@ export default function LeaderboardPage() {
                 border: isMe ? "1px solid var(--os-accent)" : undefined,
               }}>
                 <div style={{ flexShrink: 0 }}>{getMedalIcon(i)}</div>
+                {userPets[entry.user_id] && (
+                  <img
+                    src={getSpriteUrl(userPets[entry.user_id])}
+                    alt={userPets[entry.user_id].name}
+                    width={32} height={32}
+                    style={{ imageRendering: "pixelated", flexShrink: 0 }}
+                  />
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Link href={`/profile/${entry.user_id}`} style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none", color: "var(--os-text-primary)" }}>{entry.username}</Link>

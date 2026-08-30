@@ -1,191 +1,62 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { usePet } from "./pet-context";
+import { GROWTH_STAGE_NAMES } from "./pet-context";
+import { getSpriteUrl, PET_BGS } from "./pet-sprites";
 import { ChevronRight, ChevronLeft, Utensils, Moon, Gamepad2, Palette, Upload, X, Sparkles } from "lucide-react";
 
-const PET_SPRITES: Record<string, (c: string) => string> = {
-  cat: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="1" y="0" width="3" height="4" fill="${c}"/><rect x="12" y="0" width="3" height="4" fill="${c}"/>
-    <rect x="2" y="1" width="1" height="2" fill="#fca5a5"/><rect x="13" y="1" width="1" height="2" fill="#fca5a5"/>
-    <rect x="3" y="3" width="10" height="6" fill="${c}"/>
-    <rect x="2" y="4" width="1" height="1" fill="${c}"/><rect x="13" y="4" width="1" height="1" fill="${c}"/>
-    <rect x="4" y="4" width="3" height="3" fill="#fff"/><rect x="9" y="4" width="3" height="3" fill="#fff"/>
-    <rect x="5" y="5" width="2" height="2" fill="#111"/><rect x="10" y="5" width="2" height="2" fill="#111"/>
-    <rect x="6" y="5" width="1" height="1" fill="#fff"/><rect x="11" y="5" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="7" width="2" height="1" fill="#f472b6"/>
-    <rect x="3" y="7" width="1" height="1" fill="#fff"/><rect x="12" y="7" width="1" height="1" fill="#fff"/>
-    <rect x="1" y="7" width="2" height="1" fill="${c}"/><rect x="13" y="7" width="2" height="1" fill="${c}"/>
-    <rect x="3" y="9" width="10" height="3" fill="${c}"/>
-    <rect x="4" y="9" width="8" height="1" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="3" y="12" width="4" height="1" fill="${c}"/><rect x="9" y="12" width="4" height="1" fill="${c}"/>
-    <rect x="3" y="13" width="3" height="2" fill="#fff"/><rect x="10" y="13" width="3" height="2" fill="#fff"/>
-    <rect x="4" y="14" width="1" height="1" fill="${c}"/><rect x="11" y="14" width="1" height="1" fill="${c}"/>
-    <rect x="14" y="9" width="1" height="1" fill="${c}"/><rect x="15" y="8" width="1" height="1" fill="${c}"/><rect x="14" y="7" width="1" height="1" fill="${c}"/>
-  </svg>`,
-  dog: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="0" y="1" width="3" height="6" fill="${c}"/><rect x="13" y="1" width="3" height="6" fill="${c}"/>
-    <rect x="1" y="2" width="1" height="3" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/><rect x="14" y="2" width="1" height="3" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="3" y="2" width="10" height="7" fill="${c}"/>
-    <rect x="4" y="3" width="8" height="2" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="4" y="4" width="3" height="3" fill="#fff"/><rect x="9" y="4" width="3" height="3" fill="#fff"/>
-    <rect x="5" y="5" width="2" height="2" fill="#111"/><rect x="10" y="5" width="2" height="2" fill="#111"/>
-    <rect x="6" y="5" width="1" height="1" fill="#fff"/><rect x="11" y="5" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="7" width="2" height="2" fill="#111"/>
-    <rect x="7" y="9" width="2" height="1" fill="#f472b6"/>
-    <rect x="3" y="9" width="10" height="3" fill="${c}"/>
-    <rect x="3" y="12" width="4" height="1" fill="${c}"/><rect x="9" y="12" width="4" height="1" fill="${c}"/>
-    <rect x="3" y="13" width="3" height="2" fill="#fff"/><rect x="10" y="13" width="3" height="2" fill="#fff"/>
-    <rect x="4" y="14" width="1" height="1" fill="${c}"/><rect x="11" y="14" width="1" height="1" fill="${c}"/>
-  </svg>`,
-  fox: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="1" y="0" width="3" height="5" fill="${c}"/><rect x="12" y="0" width="3" height="5" fill="${c}"/>
-    <rect x="2" y="1" width="1" height="3" fill="#fff"/><rect x="13" y="1" width="1" height="3" fill="#fff"/>
-    <rect x="3" y="4" width="10" height="6" fill="${c}"/>
-    <rect x="4" y="4" width="8" height="2" fill="#fff"/>
-    <rect x="4" y="5" width="3" height="3" fill="#fff"/><rect x="9" y="5" width="3" height="3" fill="#fff"/>
-    <rect x="5" y="6" width="2" height="2" fill="#111"/><rect x="10" y="6" width="2" height="2" fill="#111"/>
-    <rect x="6" y="6" width="1" height="1" fill="#fff"/><rect x="11" y="6" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="8" width="2" height="1" fill="#111"/>
-    <rect x="3" y="10" width="10" height="2" fill="${c}"/>
-    <rect x="3" y="12" width="4" height="1" fill="#fff"/><rect x="9" y="12" width="4" height="1" fill="#fff"/>
-    <rect x="3" y="13" width="3" height="2" fill="#fff"/><rect x="10" y="13" width="3" height="2" fill="#fff"/>
-    <rect x="4" y="14" width="1" height="1" fill="${c}"/><rect x="11" y="14" width="1" height="1" fill="${c}"/>
-    <rect x="14" y="8" width="2" height="1" fill="${c}"/><rect x="15" y="7" width="1" height="2" fill="${c}"/>
-  </svg>`,
-  bunny: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="4" y="0" width="2" height="6" fill="${c}"/><rect x="10" y="0" width="2" height="6" fill="${c}"/>
-    <rect x="5" y="1" width="1" height="4" fill="#f9a8d4"/><rect x="10" y="1" width="1" height="4" fill="#f9a8d4"/>
-    <rect x="3" y="5" width="10" height="6" fill="${c}"/>
-    <rect x="3" y="6" width="1" height="4" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/><rect x="12" y="6" width="1" height="4" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="4" y="6" width="3" height="3" fill="#fff"/><rect x="9" y="6" width="3" height="3" fill="#fff"/>
-    <rect x="5" y="7" width="2" height="2" fill="#111"/><rect x="10" y="7" width="2" height="2" fill="#111"/>
-    <rect x="6" y="7" width="1" height="1" fill="#fff"/><rect x="11" y="7" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="9" width="2" height="1" fill="#f9a8d4"/>
-    <rect x="3" y="11" width="4" height="1" fill="${c}"/><rect x="9" y="11" width="4" height="1" fill="${c}"/>
-    <rect x="3" y="12" width="3" height="2" fill="#fff"/><rect x="10" y="12" width="3" height="2" fill="#fff"/>
-    <rect x="4" y="13" width="1" height="2" fill="${c}"/><rect x="11" y="13" width="1" height="2" fill="${c}"/>
-    <rect x="6" y="12" width="4" height="2" fill="#fff"/>
-    <rect x="7" y="13" width="2" height="1" fill="${c}"/>
-  </svg>`,
-  penguin: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="3" y="1" width="10" height="11" fill="#1e293b"/>
-    <rect x="4" y="2" width="8" height="2" fill="#334155"/>
-    <rect x="4" y="4" width="8" height="7" fill="#f1f5f9"/>
-    <rect x="4" y="5" width="3" height="3" fill="#fff"/><rect x="9" y="5" width="3" height="3" fill="#fff"/>
-    <rect x="5" y="6" width="2" height="2" fill="#111"/><rect x="10" y="6" width="2" height="2" fill="#111"/>
-    <rect x="6" y="6" width="1" height="1" fill="#fff"/><rect x="11" y="6" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="8" width="2" height="2" fill="${c}"/>
-    <rect x="7" y="10" width="2" height="1" fill="#111"/>
-    <rect x="1" y="4" width="3" height="6" fill="#1e293b"/><rect x="12" y="4" width="3" height="6" fill="#1e293b"/>
-    <rect x="2" y="5" width="1" height="4" fill="#334155"/><rect x="13" y="5" width="1" height="4" fill="#334155"/>
-    <rect x="3" y="12" width="10" height="2" fill="#1e293b"/>
-    <rect x="4" y="13" width="3" height="2" fill="${c}"/><rect x="9" y="13" width="3" height="2" fill="${c}"/>
-    <rect x="5" y="14" width="1" height="1" fill="#111"/><rect x="10" y="14" width="1" height="1" fill="#111"/>
-  </svg>`,
-  owl: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="2" y="0" width="2" height="3" fill="${c}"/><rect x="12" y="0" width="2" height="3" fill="${c}"/>
-    <rect x="3" y="1" width="1" height="2" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/><rect x="12" y="1" width="1" height="2" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="2" y="3" width="12" height="8" fill="${c}"/>
-    <rect x="3" y="3" width="10" height="2" fill="${c === '#f59e0b' ? '#fbbf24' : c}"/>
-    <rect x="3" y="5" width="4" height="4" fill="#fff"/><rect x="9" y="5" width="4" height="4" fill="#fff"/>
-    <rect x="4" y="5" width="3" height="3" fill="#f5f5f4"/><rect x="10" y="5" width="3" height="3" fill="#f5f5f4"/>
-    <rect x="5" y="6" width="1" height="2" fill="#111"/><rect x="10" y="6" width="1" height="2" fill="#111"/>
-    <rect x="5" y="6" width="1" height="1" fill="#fff"/><rect x="10" y="6" width="1" height="1" fill="#fff"/>
-    <rect x="7" y="7" width="2" height="2" fill="#f97316"/>
-    <rect x="3" y="9" width="10" height="2" fill="${c}"/>
-    <rect x="2" y="11" width="5" height="2" fill="${c}"/><rect x="9" y="11" width="5" height="2" fill="${c}"/>
-    <rect x="3" y="13" width="3" height="2" fill="#f97316"/><rect x="10" y="13" width="3" height="2" fill="#f97316"/>
-    <rect x="4" y="14" width="1" height="1" fill="#111"/><rect x="11" y="14" width="1" height="1" fill="#111"/>
-  </svg>`,
-  olaf: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="3" y="0" width="1" height="1" fill="#60a5fa"/><rect x="5" y="0" width="1" height="1" fill="#60a5fa"/><rect x="7" y="0" width="1" height="1" fill="#60a5fa"/>
-    <rect x="4" y="0" width="8" height="1" fill="#3b82f6"/>
-    <rect x="3" y="1" width="10" height="1" fill="#2563eb"/>
-    <rect x="2" y="2" width="12" height="1" fill="#1d4ed8"/>
-    <rect x="2" y="3" width="12" height="7" fill="#f8fafc"/>
-    <rect x="1" y="3" width="2" height="6" fill="#111"/>
-    <rect x="13" y="3" width="2" height="6" fill="#111"/>
-    <rect x="2" y="4" width="1" height="4" fill="#111"/><rect x="13" y="4" width="1" height="4" fill="#111"/>
-    <rect x="4" y="4" width="3" height="2" fill="#e2e8f0"/><rect x="9" y="4" width="3" height="2" fill="#e2e8f0"/>
-    <rect x="5" y="5" width="1" height="1" fill="#475569"/><rect x="10" y="5" width="1" height="1" fill="#475569"/>
-    <rect x="6" y="4" width="1" height="1" fill="#e2e8f0"/><rect x="9" y="4" width="1" height="1" fill="#e2e8f0"/>
-    <rect x="7" y="6" width="2" height="2" fill="#111"/>
-    <rect x="7" y="8" width="2" height="1" fill="#94a3b8"/>
-    <rect x="6" y="9" width="1" height="1" fill="#ef4444"/><rect x="9" y="9" width="1" height="1" fill="#ef4444"/>
-    <rect x="3" y="10" width="10" height="3" fill="#f8fafc"/>
-    <rect x="4" y="10" width="8" height="1" fill="#e2e8f0"/>
-    <rect x="3" y="13" width="4" height="2" fill="#f8fafc"/><rect x="9" y="13" width="4" height="2" fill="#f8fafc"/>
-    <rect x="4" y="14" width="1" height="1" fill="#111"/><rect x="11" y="14" width="1" height="1" fill="#111"/>
-  </svg>`,
-};
-
-const PET_SPRITES_SLEEP: Record<string, (c: string) => string> = {
-  cat: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="2" y="0" width="2" height="3" fill="${c}"/><rect x="12" y="0" width="2" height="3" fill="${c}"/>
-    <rect x="3" y="3" width="10" height="7" fill="${c}"/>
-    <rect x="5" y="5" width="2" height="1" fill="#111"/><rect x="9" y="5" width="2" height="1" fill="#111"/>
-    <rect x="7" y="6" width="2" height="1" fill="#f472b6"/>
-    <rect x="3" y="10" width="10" height="2" fill="${c}"/>
-    <rect x="4" y="12" width="2" height="3" fill="${c}"/><rect x="10" y="12" width="2" height="3" fill="${c}"/>
-  </svg>`,
-  olaf: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
-    <rect x="4" y="1" width="8" height="1" fill="#3b82f6"/>
-    <rect x="3" y="2" width="10" height="1" fill="#2563eb"/>
-    <rect x="2" y="3" width="12" height="7" fill="#f8fafc"/>
-    <rect x="1" y="4" width="2" height="4" fill="#111"/>
-    <rect x="13" y="4" width="2" height="4" fill="#111"/>
-    <rect x="5" y="5" width="2" height="1" fill="#111"/><rect x="9" y="5" width="2" height="1" fill="#111"/>
-    <rect x="7" y="6" width="2" height="1" fill="#94a3b8"/>
-    <rect x="2" y="10" width="12" height="3" fill="#f8fafc"/>
-    <rect x="4" y="13" width="2" height="2" fill="#f8fafc"/><rect x="10" y="13" width="2" height="2" fill="#f8fafc"/>
-  </svg>`,
-};
-
-function getSpriteUrl(pet: any, sleeping?: boolean): string {
-  if (pet.sprite_url && !sleeping) return pet.sprite_url;
-  const sprites = sleeping
-    ? (PET_SPRITES_SLEEP[pet.pet_type]?.(pet.color) || PET_SPRITES_SLEEP.cat?.(pet.color) || PET_SPRITES.cat(pet.color))
-    : (PET_SPRITES[pet.pet_type]?.(pet.color) || PET_SPRITES.cat(pet.color));
-  return `data:image/svg+xml,${encodeURIComponent(sprites)}`;
-}
-
 const ALL_PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl", "olaf"];
+
+function getGrowthScale(xp: number, stageOverride?: string | null): number {
+  const name = stageOverride || (xp < 500 ? "Baby" : xp < 1000 ? "Toddler" : xp < 1500 ? "Teen" : "Adult");
+  if (name === "Baby") return 0.7;
+  if (name === "Toddler") return 0.85;
+  if (name === "Teen") return 1.0;
+  return 1.15;
+}
 
 export default function PixelPet() {
   const ctx = usePet();
   if (!ctx) return null;
-  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, changePetType, uploadSprite, loading, userEmail, stage, cooldowns } = ctx;
+  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, changePetType, changePetBg, setStageOverride, uploadSprite, loading, userEmail, stage, cooldowns } = ctx;
   const [open, setOpen] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
   const [rename, setRename] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [editAnswer, setEditAnswer] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isOwner = userEmail === "si.davidsdx@gmail.com";
   const availableTypes = isOwner ? ALL_PET_TYPES : ALL_PET_TYPES.filter((t) => t !== "olaf");
+  const isLoggedIn = !!userEmail;
 
   useEffect(() => {
-    if (!pet && !loading) setShowAdopt(true);
-  }, [pet, loading]);
+    if (!pet && !loading && isLoggedIn) setShowAdopt(true);
+  }, [pet, loading, isLoggedIn]);
 
   if (loading) return null;
 
   if (!pet) {
-    if (showAdopt) return <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />;
+    if (showAdopt && isLoggedIn) return <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />;
     return null;
   }
 
   const sprite = getSpriteUrl(pet, action === "sleeping");
   const xpProgress = stage.next !== null ? ((pet.xp - stage.min) / (stage.max - stage.min)) * 100 : 100;
+  const scale = getGrowthScale(pet.xp, pet.stage_override);
+  const bg = PET_BGS[pet.bg] || PET_BGS.night;
 
   const petAnimStyle: React.CSSProperties = {
     imageRendering: "pixelated" as any,
+    width: Math.round(56 * scale),
+    height: Math.round(56 * scale),
     animation: action === "eating" ? "petShake 0.5s ease-in-out 4"
       : action === "playing" ? "petPlay 0.6s ease-in-out 3"
       : action === "sleeping" ? "petSleep 2.5s ease-in-out infinite"
       : action === "happy" ? "petBounce 0.6s ease-in-out 3"
       : "petIdle 2s ease-in-out infinite",
+    transition: "width 0.5s, height 0.5s",
   };
 
   return (
@@ -218,48 +89,32 @@ export default function PixelPet() {
       >
         {/* Pet Scene Background */}
         <div style={{ position: "relative", width: "100%", height: 130, overflow: "hidden", flexShrink: 0 }}>
-          {/* Sky */}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, #0c1445 0%, #1a1a3e 40%, #1e3a5f 100%)" }} />
-          {/* Stars */}
-          {[...Array(6)].map((_, i) => (
+          <div style={{ position: "absolute", inset: 0, background: bg.sky }} />
+          {/* Stars for night/sakura */}
+          {["night", "sakura"].includes(pet.bg || "night") && [...Array(6)].map((_, i) => (
             <div key={i} style={{
-              position: "absolute",
-              width: 2, height: 2, borderRadius: "50%",
-              background: "rgba(255,255,255," + (0.3 + (i % 3) * 0.2) + ")",
+              position: "absolute", width: 2, height: 2, borderRadius: "50%",
+              background: `rgba(255,255,255,${0.3 + (i % 3) * 0.2})`,
               top: 8 + (i * 13) % 50, left: 15 + (i * 37) % 220,
               animation: `cloudDrift ${3 + i}s ease-in-out infinite`,
               animationDelay: `${i * 0.5}s`,
             }} />
           ))}
           {/* Clouds */}
-          <div style={{
-            position: "absolute", top: 12, left: 20,
-            width: 36, height: 10, borderRadius: 5,
-            background: "rgba(255,255,255,0.06)",
-            animation: "cloudDrift 6s ease-in-out infinite",
-          }} />
-          <div style={{
-            position: "absolute", top: 28, right: 25,
-            width: 28, height: 8, borderRadius: 4,
-            background: "rgba(255,255,255,0.04)",
-            animation: "cloudDrift 8s ease-in-out infinite",
-            animationDelay: "2s",
-          }} />
+          <div style={{ position: "absolute", top: 12, left: 20, width: 36, height: 10, borderRadius: 5, background: "rgba(255,255,255,0.06)", animation: "cloudDrift 6s ease-in-out infinite" }} />
+          <div style={{ position: "absolute", top: 28, right: 25, width: 28, height: 8, borderRadius: 4, background: "rgba(255,255,255,0.04)", animation: "cloudDrift 8s ease-in-out infinite", animationDelay: "2s" }} />
           {/* Grass */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 32 }}>
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 14, background: "linear-gradient(180deg, #166534 0%, #14532d 100%)" }} />
-            <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, height: 6, background: "#166534", borderRadius: "4px 4px 0 0" }} />
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 14, background: bg.grass }} />
+            <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, height: 6, background: bg.grass.includes("#166534") ? "#166534" : bg.grass.includes("#f1f5f9") ? "#e2e8f0" : "#166534", borderRadius: "4px 4px 0 0" }} />
             {[...Array(12)].map((_, i) => (
               <div key={i} style={{
-                position: "absolute",
-                bottom: 14 + (i % 3) * 2,
-                left: 8 + i * 20,
+                position: "absolute", bottom: 14 + (i % 3) * 2, left: 8 + i * 20,
                 width: 3, height: 6 + (i % 4) * 2,
-                background: "#22c55e",
+                background: bg.grass.includes("#f1f5f9") ? "#cbd5e1" : "#22c55e",
                 borderRadius: "2px 2px 0 0",
                 animation: `grassSway ${2 + (i % 3)}s ease-in-out infinite`,
-                animationDelay: `${i * 0.2}s`,
-                opacity: 0.7,
+                animationDelay: `${i * 0.2}s`, opacity: 0.7,
               }} />
             ))}
           </div>
@@ -271,8 +126,7 @@ export default function PixelPet() {
                   <span key={i} style={{
                     position: "absolute", top: -8 - i * 6, right: -10 + i * 4,
                     fontSize: 10, opacity: 0,
-                    animation: `zzzFloat 2s ease-out infinite`,
-                    animationDelay: `${i * 0.6}s`,
+                    animation: `zzzFloat 2s ease-out infinite`, animationDelay: `${i * 0.6}s`,
                     color: "#93c5fd",
                   }}>z</span>
                 ))}
@@ -284,25 +138,24 @@ export default function PixelPet() {
                   <span key={i} style={{
                     position: "absolute", top: -6, left: i === 0 ? -6 : undefined, right: i === 1 ? -6 : undefined,
                     fontSize: 10, opacity: 0,
-                    animation: `heartPop 1.2s ease-out infinite`,
-                    animationDelay: `${i * 0.3}s`,
+                    animation: `heartPop 1.2s ease-out infinite`, animationDelay: `${i * 0.3}s`,
                     color: "#f472b6",
                   }}>&#10084;</span>
                 ))}
               </div>
             )}
-            <img src={sprite} alt={pet.name} width={56} height={56} style={petAnimStyle} />
+            {action === "eating" && (
+              <div style={{ position: "absolute", top: -4, right: -8, fontSize: 12, animation: "heartPop 0.8s ease-out infinite" }}>🐟</div>
+            )}
+            <img src={sprite} alt={pet.name} style={petAnimStyle} />
           </div>
-          {/* Pet Name + Stage overlay */}
+          {/* Pet Name */}
           <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, textAlign: "center" }}>
             {renaming ? (
               <div style={{ display: "flex", justifyContent: "center", gap: 4 }}>
-                <input
-                  autoFocus value={rename} onChange={(e) => setRename(e.target.value)}
+                <input autoFocus value={rename} onChange={(e) => setRename(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && rename.trim()) { renamePet(rename.trim()); setRename(""); setRenaming(false); } if (e.key === "Escape") setRenaming(false); }}
-                  className="glass-input"
-                  style={{ width: 100, padding: "2px 6px", fontSize: 11, textAlign: "center", height: 22 }}
-                />
+                  className="glass-input" style={{ width: 100, padding: "2px 6px", fontSize: 11, textAlign: "center", height: 22 }} />
                 <button onClick={() => { if (rename.trim()) { renamePet(rename.trim()); setRename(""); } setRenaming(false); }}
                   style={{ background: "var(--os-accent)", border: "none", borderRadius: 4, color: "#fff", fontSize: 10, padding: "0 6px", cursor: "pointer" }}>OK</button>
               </div>
@@ -342,19 +195,10 @@ export default function PixelPet() {
 
         {/* Actions */}
         <div style={{ padding: "0 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <CooldownBtn
-            icon={<Utensils size={14} />} label="Feed" sublabel="+30 hunger"
-            onClick={feedPet} color="#f59e0b" cooldown={cooldowns.feed} maxCooldown={30}
-          />
-          <CooldownBtn
-            icon={<Gamepad2 size={14} />} label="Play" sublabel="+30 happy, -10 energy"
-            onClick={playWithPet} color="#ec4899" cooldown={cooldowns.play} maxCooldown={30}
-          />
-          <CooldownBtn
-            icon={<Moon size={14} />} label="Sleep" sublabel="+40 energy"
-            onClick={sleepPet} color="#3b82f6" cooldown={cooldowns.sleep} maxCooldown={60}
-          />
-          <ActionBtn icon={<Palette size={14} />} label="Customize" sublabel="Name, color, sprite" onClick={() => setShowCustomize(true)} color="#8b5cf6" />
+          <CooldownBtn icon={<Utensils size={14} />} label="Feed" sublabel="+30 hunger" onClick={feedPet} color="#f59e0b" cooldown={cooldowns.feed} maxCooldown={30} />
+          <CooldownBtn icon={<Gamepad2 size={14} />} label="Play" sublabel="+30 happy, -10 energy" onClick={playWithPet} color="#ec4899" cooldown={cooldowns.play} maxCooldown={30} />
+          <CooldownBtn icon={<Moon size={14} />} label="Sleep" sublabel="+40 energy" onClick={sleepPet} color="#3b82f6" cooldown={cooldowns.sleep} maxCooldown={60} />
+          <ActionBtn icon={<Palette size={14} />} label="Customize" sublabel="Name, type, color, BG" onClick={() => setShowCustomize(true)} color="#8b5cf6" />
         </div>
 
         {/* Mood */}
@@ -367,7 +211,7 @@ export default function PixelPet() {
 
       {showCustomize && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowCustomize(false)}>
-          <div className="glass-panel" style={{ padding: 20, width: 300, borderRadius: 14 }} onClick={(e) => e.stopPropagation()}>
+          <div className="glass-panel" style={{ padding: 20, width: 300, borderRadius: 14, maxHeight: "80vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <h3 style={{ fontWeight: 600, fontSize: 14, color: "var(--os-text-primary)" }}>Customize {pet.name}</h3>
               <button onClick={() => setShowCustomize(false)} style={{ background: "none", border: "none", color: "var(--os-text-secondary)", cursor: "pointer" }}><X size={16} /></button>
@@ -404,6 +248,48 @@ export default function PixelPet() {
                 </div>
               </div>
               <div>
+                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Background</label>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {Object.entries(PET_BGS).map(([key, val]) => (
+                    <button key={key} onClick={() => changePetBg(key)} style={{
+                      width: 40, height: 28, borderRadius: 6, padding: 0, overflow: "hidden",
+                      background: val.sky, border: (pet.bg || "night") === key ? "2px solid #fff" : "2px solid rgba(255,255,255,0.08)",
+                      cursor: "pointer", fontSize: 10, display: "flex", alignItems: "flex-end", justifyContent: "center",
+                      color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.5)", paddingBottom: 1,
+                    }} title={val.name}>
+                      {val.emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isOwner && (
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Age Override (Admin)</label>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {GROWTH_STAGE_NAMES.map((s) => (
+                      <button key={s} onClick={() => setStageOverride(pet.stage_override === s ? null : s)} style={{
+                        padding: "4px 10px", borderRadius: 6, fontSize: 11,
+                        background: pet.stage_override === s ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                        border: pet.stage_override === s ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)",
+                        cursor: "pointer", color: "var(--os-text-primary)",
+                      }}>
+                        {s === "Baby" ? "🥚" : s === "Toddler" ? "🐾" : s === "Teen" ? "⭐" : "👑"} {s}
+                      </button>
+                    ))}
+                    {pet.stage_override && (
+                      <button onClick={() => setStageOverride(null)} style={{
+                        padding: "4px 10px", borderRadius: 6, fontSize: 11,
+                        background: "rgba(239,68,68,0.1)", border: "2px solid rgba(239,68,68,0.2)",
+                        cursor: "pointer", color: "#ef4444",
+                      }}>Reset</button>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 10, color: "var(--os-text-dim)", marginTop: 4 }}>
+                    {pet.stage_override ? `Forced: ${pet.stage_override} (overrides XP)` : "Auto from XP"}
+                  </p>
+                </div>
+              )}
+              <div>
                 <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Upload Photo</label>
                 <button onClick={() => fileRef.current?.click()} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 11, width: "100%", justifyContent: "center" }}>
                   <Upload size={12} /> Choose image (BG removed + pixelated)
@@ -420,7 +306,7 @@ export default function PixelPet() {
         </div>
       )}
 
-      {showAdopt && <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />}
+      {showAdopt && isLoggedIn && <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />}
     </>
   );
 }
@@ -439,11 +325,9 @@ function AdoptModal({ onClose, availableTypes }: { onClose: () => void; availabl
         <Sparkles size={28} style={{ color: "var(--os-accent)" }} />
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--os-text-primary)" }}>Adopt a Pet!</h2>
         <p className="text-sm" style={{ color: "var(--os-text-secondary)", textAlign: "center" }}>Your study companion grows as you study.</p>
-
         <div style={{ width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <img src={getSpriteUrl({ pet_type: type, color, sprite_url: null })} alt="preview" width={64} height={64} style={{ imageRendering: "pixelated" }} />
         </div>
-
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
           {availableTypes.map((t) => (
             <button key={t} onClick={() => setType(t)} style={{ width: 44, height: 44, borderRadius: 10, background: type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)", border: type === t ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }} title={t}>
@@ -451,15 +335,12 @@ function AdoptModal({ onClose, availableTypes }: { onClose: () => void; availabl
             </button>
           ))}
         </div>
-
         <input value={name} onChange={(e) => setName(e.target.value)} className="glass-input" style={{ width: "100%", padding: "8px 10px", fontSize: 13, textAlign: "center" }} placeholder="Name your pet..." />
-
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
           {["#f59e0b","#ef4444","#3b82f6","#10b981","#8b5cf6","#ec4899","#6b7280","#f97316"].map((c) => (
             <button key={c} onClick={() => setColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: color === c ? "2px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
           ))}
         </div>
-
         <button onClick={() => { createPet(name, type, color); onClose(); }} className="glass-btn-primary" style={{ width: "100%", padding: "10px", fontWeight: 600, fontSize: 13 }}>
           Adopt {name}!
         </button>
@@ -494,36 +375,19 @@ function CooldownBtn({ icon, label, sublabel, onClick, color, cooldown, maxCoold
       border: "1px solid " + (ready ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)"),
       cursor: ready ? "pointer" : "not-allowed",
       transition: "all 0.15s", textAlign: "left", width: "100%",
-      opacity: ready ? 1 : 0.5,
-      position: "relative", overflow: "hidden",
+      opacity: ready ? 1 : 0.5, position: "relative", overflow: "hidden",
     }}
       onMouseEnter={(e) => { if (ready) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
       onMouseLeave={(e) => { if (ready) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
     >
-      {!ready && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, bottom: 0,
-          width: `${pct}%`, background: color + "0d",
-          animation: "cooldownPulse 1.5s ease-in-out infinite",
-        }} />
-      )}
+      {!ready && <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`, background: color + "0d", animation: "cooldownPulse 1.5s ease-in-out infinite" }} />}
       <div style={{ width: 30, height: 30, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0, position: "relative" }}>
         {icon}
-        {!ready && (
-          <div style={{
-            position: "absolute", inset: 0, borderRadius: 8,
-            border: `2px solid ${color}`,
-            borderRightColor: "transparent",
-            animation: "spin 1s linear infinite",
-            opacity: 0.6,
-          }} />
-        )}
+        {!ready && <div style={{ position: "absolute", inset: 0, borderRadius: 8, border: `2px solid ${color}`, borderRightColor: "transparent", animation: "spin 1s linear infinite", opacity: 0.6 }} />}
       </div>
       <div style={{ position: "relative", flex: 1 }}>
         <p style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)" }}>{label}</p>
-        <p style={{ fontSize: 10, color: "var(--os-text-secondary)" }}>
-          {ready ? sublabel : `Ready in ${cooldown}s`}
-        </p>
+        <p style={{ fontSize: 10, color: "var(--os-text-secondary)" }}>{ready ? sublabel : `Ready in ${cooldown}s`}</p>
       </div>
     </button>
   );

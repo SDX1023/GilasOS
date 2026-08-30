@@ -289,6 +289,9 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [quizType, setQuizType] = useState<"mc" | "identification" | "mixed">("mc");
   const [answered, setAnswered] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showAnswers, setShowAnswers] = useState(false);
+  const [editingQ, setEditingQ] = useState<number | null>(null);
+  const [editAnswer, setEditAnswer] = useState("");
   const [savedQuizzes, setSavedQuizzes] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
 
@@ -490,31 +493,73 @@ function QuizTab({ userId }: { userId: string | null }) {
       <div style={{ maxWidth: "672px", margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Quiz Preview</h2>
-          <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "var(--os-text-secondary)" }}>
+              <input type="checkbox" checked={showAnswers} onChange={(e) => setShowAnswers(e.target.checked)} style={{ accentColor: "var(--os-accent)" }} />
+              Show Answers
+            </label>
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
-          {quizQuestions.map((q, i) => (
-            <div key={i} className="glass-card" style={{ padding: "14px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", marginBottom: "6px" }}>{q.question}</p>
-                   {q.type === "mc" && q.options && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
-                      {q.options.map((opt: string, j: number) => (
-                        <p key={j} className="text-xs" style={{ color: "var(--os-text-secondary)" }}>
-                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)}
-                        </p>
-                      ))}
+          {quizQuestions.map((q, i) => {
+            const isEditing = editingQ === i;
+            const correctIdx = getCorrectIndex(q);
+            return (
+              <div key={i} className="glass-card" style={{ padding: "14px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", flex: 1 }}>{q.question}</p>
+                      <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "9999px", background: q.type === "mc" ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)", color: q.type === "mc" ? "#2563eb" : "#9333ea" }}>
+                        {q.type === "mc" ? "MC" : "ID"}
+                      </span>
                     </div>
-                  )}
-                  {q.type === "identification" && (
-                    <p className="text-xs" style={{ color: "var(--os-text-secondary)" }}>Type your answer</p>
-                  )}
+                    {q.type === "mc" && q.options && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
+                        {q.options.map((opt: string, j: number) => (
+                          <p key={j} className="text-xs" style={{ color: showAnswers && String(j) === correctIdx ? "#16a34a" : "var(--os-text-secondary)", fontWeight: showAnswers && String(j) === correctIdx ? 500 : 400 }}>
+                            {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {showAnswers && String(j) === correctIdx ? "✓" : ""}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {q.type === "identification" && (
+                      <div style={{ marginLeft: "4px" }}>
+                        {isEditing ? (
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            <input
+                              autoFocus value={editAnswer} onChange={(e) => setEditAnswer(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && editAnswer.trim()) {
+                                  const updated = [...quizQuestions]; updated[i] = { ...updated[i], answer: editAnswer.trim() }; setQuizQuestions(updated);
+                                  setEditingQ(null); setEditAnswer("");
+                                }
+                                if (e.key === "Escape") { setEditingQ(null); setEditAnswer(""); }
+                              }}
+                              className="glass-input" style={{ flex: 1, padding: "4px 8px", fontSize: "12px" }}
+                            />
+                            <button onClick={() => { if (editAnswer.trim()) { const updated = [...quizQuestions]; updated[i] = { ...updated[i], answer: editAnswer.trim() }; setQuizQuestions(updated); } setEditingQ(null); setEditAnswer(""); }}
+                              style={{ background: "var(--os-accent)", border: "none", borderRadius: "4px", color: "#fff", fontSize: "10px", padding: "4px 8px", cursor: "pointer" }}>Save</button>
+                            <button onClick={() => { setEditingQ(null); setEditAnswer(""); }}
+                              style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "4px", color: "var(--os-text-secondary)", fontSize: "10px", padding: "4px 8px", cursor: "pointer" }}>Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {showAnswers && <p className="text-xs" style={{ color: "#16a34a", fontWeight: 500 }}>Answer: {q.answer}</p>}
+                            {!showAnswers && <p className="text-xs" style={{ color: "var(--os-text-secondary)" }}>Type your answer</p>}
+                            <button onClick={() => { setEditingQ(i); setEditAnswer(q.answer || ""); }}
+                              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", color: "var(--os-text-secondary)", fontSize: "10px", padding: "2px 6px", cursor: "pointer" }} title="Edit answer">✎</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
           <button onClick={handleStartQuiz} className="glass-btn-primary" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: "6px" }}>

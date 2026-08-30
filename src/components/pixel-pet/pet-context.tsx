@@ -7,6 +7,7 @@ export interface Pet {
   name: string;
   pet_type: string;
   color: string;
+  bg: string;
   sprite_url: string | null;
   level: number;
   xp: number;
@@ -17,6 +18,7 @@ export interface Pet {
   last_fed_at: string;
   last_played_at: string;
   last_slept_at: string;
+  stage_override: string | null;
 }
 
 export type PetAction = "idle" | "walking" | "eating" | "playing" | "sleeping" | "happy" | "sad";
@@ -46,6 +48,8 @@ interface PetContextType {
   renamePet: (name: string) => Promise<void>;
   changePetColor: (color: string) => Promise<void>;
   changePetType: (pet_type: string) => Promise<void>;
+  changePetBg: (bg: string) => Promise<void>;
+  setStageOverride: (stage: string | null) => Promise<void>;
   uploadSprite: (file: File) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
   loading: boolean;
@@ -77,6 +81,19 @@ export function getGrowthStage(xp: number): GrowthStage {
   if (xp < 1500) return { name: "Teen", emoji: "⭐", min: 1000, max: 1500, next: 1500 };
   return { name: "Adult", emoji: "👑", min: 1500, max: Infinity, next: null };
 }
+
+const GROWTH_STAGES: Record<string, GrowthStage> = {
+  Baby: { name: "Baby", emoji: "🥚", min: 0, max: 500, next: 500 },
+  Toddler: { name: "Toddler", emoji: "🐾", min: 500, max: 1000, next: 1000 },
+  Teen: { name: "Teen", emoji: "⭐", min: 1000, max: 1500, next: 1500 },
+  Adult: { name: "Adult", emoji: "👑", min: 1500, max: Infinity, next: null },
+};
+
+export function getGrowthStageByName(name: string): GrowthStage {
+  return GROWTH_STAGES[name] || getGrowthStage(0);
+}
+
+export const GROWTH_STAGE_NAMES = Object.keys(GROWTH_STAGES);
 
 function getCooldownRemaining(lastAction: string, cooldownSec: number): number {
   const elapsed = (Date.now() - new Date(lastAction).getTime()) / 1000;
@@ -245,6 +262,18 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     await getSupabase().from("user_pets").update({ pet_type, sprite_url: null }).eq("id", pet.id);
   }, [pet]);
 
+  const changePetBg = useCallback(async (bg: string) => {
+    if (!pet) return;
+    setPet({ ...pet, bg });
+    await getSupabase().from("user_pets").update({ bg }).eq("id", pet.id);
+  }, [pet]);
+
+  const setStageOverride = useCallback(async (stage: string | null) => {
+    if (!pet) return;
+    setPet({ ...pet, stage_override: stage });
+    await getSupabase().from("user_pets").update({ stage_override: stage }).eq("id", pet.id);
+  }, [pet]);
+
   const uploadSprite = useCallback(async (file: File) => {
     if (!pet) return;
     const img = new Image();
@@ -304,10 +333,10 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     await getSupabase().from("user_pets").update({ xp: newXp }).eq("id", pet.id);
   }, [pet]);
 
-  const stage = pet ? getGrowthStage(pet.xp) : getGrowthStage(0);
+  const stage = pet ? (pet.stage_override ? getGrowthStageByName(pet.stage_override) : getGrowthStage(pet.xp)) : getGrowthStage(0);
 
   return (
-    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, changePetType, uploadSprite, addXP, loading, userEmail, stage, cooldowns }}>
+    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, changePetType, changePetBg, setStageOverride, uploadSprite, addXP, loading, userEmail, stage, cooldowns }}>
       {children}
     </PetContext.Provider>
   );
