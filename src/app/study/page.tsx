@@ -574,26 +574,38 @@ function QuizTab({ userId }: { userId: string | null }) {
   if (showPreview && quizQuestions.length > 0) {
     return (
       <div style={{ maxWidth: "672px", margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Quiz Preview</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
-            <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "12px", color: "var(--os-text-secondary)" }}>
-              <input type="checkbox" checked={showAnswers} onChange={(e) => setShowAnswers(e.target.checked)} style={{ accentColor: "var(--os-accent)" }} />
-              Show Answers
-            </label>
-          </div>
+          <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: 4, background: "rgba(255,255,255,0.03)", marginBottom: 16 }}>
-          {(["mc", "identification", "mixed"] as const).map((t) => (
-            <button key={t} onClick={() => setQuizType(t)} style={{
-              flex: 1, justifyContent: "center", padding: "6px 10px", borderRadius: 6, fontSize: 12, fontWeight: 500, transition: "colors 0.2s",
-              background: quizType === t ? "var(--os-bg)" : "transparent", boxShadow: quizType === t ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
-              color: quizType === t ? "var(--os-text-primary)" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
-            }}>
-              {t === "mc" ? "MC" : t === "identification" ? "ID" : "Mixed"}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
+            {(["mc", "identification", "mixed"] as const).map((t) => (
+              <button key={t} onClick={() => setQuizType(t)} style={{
+                padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500, transition: "all 0.2s",
+                background: quizType === t ? "var(--os-accent)" : "transparent",
+                color: quizType === t ? "#fff" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
+              }}>
+                {t === "mc" ? "MC" : t === "identification" ? "ID" : "Mixed"}
+              </button>
+            ))}
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: "var(--os-text-secondary)", padding: "7px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
+            <input type="checkbox" checked={showAnswers} onChange={(e) => setShowAnswers(e.target.checked)} style={{ accentColor: "var(--os-accent)" }} />
+            Show Answers
+          </label>
+          <div style={{ flex: 1 }} />
+          <button onClick={handleStartQuiz} className="glass-btn glass-btn-primary" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+            <Play size={14} /> Start Quiz
+          </button>
+          {userId && (
+            <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+              <Save size={14} /> Save Quiz
             </button>
-          ))}
+          )}
+          <button onClick={() => { setShowPreview(false); setQuizQuestions([]); }} className="glass-btn" style={{ padding: "8px 20px", fontSize: 13 }}>
+            Back
+          </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
           {quizQuestions.map((q, i) => {
@@ -654,19 +666,6 @@ function QuizTab({ userId }: { userId: string | null }) {
               </div>
             );
           })}
-        </div>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-          <button onClick={handleStartQuiz} className="glass-btn-primary" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <Play size={14} /> Start Quiz
-          </button>
-          {userId && (
-            <button onClick={handleSaveQuiz} className="glass-btn" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: "6px" }}>
-              <Save size={14} /> Save Quiz
-            </button>
-          )}
-          <button onClick={() => { setShowPreview(false); setQuizQuestions([]); }} className="glass-btn" style={{ padding: "10px 24px" }}>
-            Back
-          </button>
         </div>
       </div>
     );
