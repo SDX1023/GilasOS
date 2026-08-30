@@ -52,7 +52,7 @@ function renderLinks(entry: ArchiveEntry) {
       <p style={{ marginBottom: 4 }}>{entry.competition}</p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {unique.map((link, i) => (
-          <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, padding: "2px 8px", borderRadius: 6, background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.2)" }}>
+          <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, padding: "3px 10px", borderRadius: 6, background: "rgba(109,40,217,0.15)", border: "1px solid rgba(109,40,217,0.4)" }}>
             <LinkIcon size={10} /> Link {i + 1}
           </a>
         ))}
