@@ -98,7 +98,7 @@ export default function StudyPage() {
         <PenTool style={{ width: "28px", height: "28px" }} /> Study
       </h1>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto", userSelect: "none" }}>
         {([
           ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
@@ -578,10 +578,10 @@ function QuizTab({ userId }: { userId: string | null }) {
           <h2 style={{ fontSize: "18px", fontWeight: 600, color: "var(--os-text-primary)" }}>Quiz Preview</h2>
           <span className="text-sm text-secondary">{quizQuestions.length} questions</span>
         </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center", userSelect: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
             {(["mc", "identification", "mixed"] as const).map((t) => (
-              <button key={t} onClick={() => setQuizType(t)} style={{
+              <button key={t} onClick={() => setQuizType(t)} onMouseDown={(e) => e.preventDefault()} style={{
                 padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 500, transition: "all 0.2s",
                 background: quizType === t ? "var(--os-accent)" : "transparent",
                 color: quizType === t ? "#fff" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
