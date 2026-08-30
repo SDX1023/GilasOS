@@ -349,3 +349,91 @@ export async function loadSharedQuiz(code: string): Promise<any | null> {
   if (error || !data) return null;
   return data;
 }
+
+// Friend Notes
+export interface FriendNote {
+  id: string;
+  user_id: string;
+  content: string;
+  song_name: string | null;
+  song_artist: string | null;
+  song_url: string | null;
+  song_album_art: string | null;
+  expires_at: string;
+  created_at: string;
+  // Joined from profile
+  username?: string;
+  avatar_url?: string | null;
+}
+
+export async function postFriendNote(
+  userId: string,
+  content: string,
+  song?: { name: string; artist: string; url: string; album_art: string }
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("friend_notes").insert({
+    user_id: userId,
+    content,
+    song_name: song?.name || null,
+    song_artist: song?.artist || null,
+    song_url: song?.url || null,
+    song_album_art: song?.album_art || null,
+  });
+  return !error;
+}
+
+export async function loadFriendNotes(userId: string): Promise<FriendNote[]> {
+  const supabase = getSupabase();
+  const { data: notes } = await supabase
+    .from("friend_notes")
+    .select("*")
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (!notes || notes.length === 0) return [];
+
+  const userIds = [...new Set(notes.map((n) => n.user_id))];
+  const { data: profiles } = await supabase
+    .from("user_profiles")
+    .select("user_id, username, avatar_url")
+    .in("user_id", userIds);
+
+  const profileMap: Record<string, { username: string; avatar_url: string | null }> = {};
+  if (profiles) {
+    profiles.forEach((p) => { profileMap[p.user_id] = { username: p.username, avatar_url: p.avatar_url }; });
+  }
+
+  return notes.map((n) => ({
+    ...n,
+    username: profileMap[n.user_id]?.username || "Unknown",
+    avatar_url: profileMap[n.user_id]?.avatar_url || null,
+  }));
+}
+
+export async function deleteFriendNote(userId: string, noteId: string) {
+  const supabase = getSupabase();
+  await supabase.from("friend_notes").delete().eq("id", noteId).eq("user_id", userId);
+}
+
+export async function updateFriendNote(
+  userId: string,
+  noteId: string,
+  content: string,
+  song?: { name: string; artist: string; url: string; album_art: string } | null
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const update: Record<string, any> = {
+    content,
+    song_name: song?.name || null,
+    song_artist: song?.artist || null,
+    song_url: song?.url || null,
+    song_album_art: song?.album_art || null,
+  };
+  const { error } = await supabase
+    .from("friend_notes")
+    .update(update)
+    .eq("id", noteId)
+    .eq("user_id", userId);
+  return !error;
+}

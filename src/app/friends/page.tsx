@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
-import { Search, UserPlus, UserCheck, UserX, X, Check, Loader2, Users, Clock, Link as LinkIcon } from "lucide-react";
+import { Search, UserPlus, UserCheck, UserX, X, Check, Loader2, Users, Clock, Link as LinkIcon, MessageCircle, Music, Trash2, Edit3, Send } from "lucide-react";
 import Link from "next/link";
+import { postFriendNote, loadFriendNotes, deleteFriendNote, updateFriendNote, FriendNote } from "@/lib/user-data";
 
 interface Friendship {
   id: string;
@@ -15,11 +16,11 @@ interface Friendship {
   other_user?: { user_id: string; username: string; avatar_url: string | null };
 }
 
-type Tab = "friends" | "requests" | "search";
+type Tab = "notes" | "friends" | "requests" | "search";
 
 export default function FriendsPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("friends");
+  const [tab, setTab] = useState<Tab>("notes");
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [pendingIn, setPendingIn] = useState<Friendship[]>([]);
   const [pendingOut, setPendingOut] = useState<Friendship[]>([]);
@@ -27,6 +28,14 @@ export default function FriendsPage() {
   const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; avatar_url: string | null; friendship_status: string | null }[]>([]);
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Notes state
+  const [notes, setNotes] = useState<FriendNote[]>([]);
+  const [noteText, setNoteText] = useState("");
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   const supabase = getSupabase();
 
@@ -71,7 +80,38 @@ export default function FriendsPage() {
     setLoading(false);
   }, [user, supabase]);
 
-  useEffect(() => { loadFriends(); }, [loadFriends]);
+  const loadNotes = useCallback(async () => {
+    if (!user) return;
+    setNotesLoading(true);
+    const data = await loadFriendNotes(user.id);
+    setNotes(data);
+    setNotesLoading(false);
+  }, [user]);
+
+  useEffect(() => { loadFriends(); loadNotes(); }, [loadFriends, loadNotes]);
+
+  const postNote = async () => {
+    if (!user || !noteText.trim()) return;
+    setPosting(true);
+    await postFriendNote(user.id, noteText.trim());
+    setNoteText("");
+    await loadNotes();
+    setPosting(false);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!user) return;
+    await deleteFriendNote(user.id, noteId);
+    await loadNotes();
+  };
+
+  const handleEditNote = async (noteId: string) => {
+    if (!user || !editText.trim()) return;
+    await updateFriendNote(user.id, noteId, editText.trim());
+    setEditingNoteId(null);
+    setEditText("");
+    await loadNotes();
+  };
 
   const searchUsers = async () => {
     if (!searchQuery.trim() || !user) return;
@@ -140,6 +180,16 @@ export default function FriendsPage() {
     loadFriends();
   };
 
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
@@ -157,6 +207,7 @@ export default function FriendsPage() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }}>
         {([
+          { id: "notes" as Tab, label: "Notes", count: notes.length },
           { id: "friends" as Tab, label: "Friends", count: friends.length },
           { id: "requests" as Tab, label: "Requests", count: pendingIn.length },
           { id: "search" as Tab, label: "Find Users", count: null },
@@ -177,6 +228,134 @@ export default function FriendsPage() {
           </button>
         ))}
       </div>
+
+      {/* Notes Tab */}
+      {tab === "notes" && (
+        <div>
+          {/* Compose box */}
+          <div className="glass-card" style={{ padding: 16, marginBottom: 16 }}>
+            <textarea
+              className="glass-input"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="What's on your mind?"
+              maxLength={200}
+              rows={2}
+              style={{ width: "100%", resize: "none", marginBottom: 8, fontSize: 13 }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{noteText.length}/200</span>
+              <button
+                onClick={postNote}
+                disabled={!noteText.trim() || posting}
+                className="glass-btn glass-btn-primary"
+                style={{ padding: "6px 16px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, opacity: (!noteText.trim() || posting) ? 0.5 : 1 }}
+              >
+                {posting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                Post
+              </button>
+            </div>
+          </div>
+
+          {/* Notes list */}
+          {notesLoading ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+              <Loader2 size={24} className="animate-spin" style={{ color: "var(--os-accent)" }} />
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="empty-state" style={{ padding: 40 }}>
+              <MessageCircle size={32} style={{ color: "var(--os-text-dim)" }} />
+              <p className="text-secondary text-sm" style={{ marginTop: 12 }}>No notes from friends yet</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {notes.map((note) => {
+                const isMine = user?.id === note.user_id;
+                const isEditing = editingNoteId === note.id;
+                return (
+                  <div key={note.id} className="glass-card" style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <Link href={`/profile/${note.user_id}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                          {note.avatar_url ? (
+                            <img src={note.avatar_url} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                          ) : (
+                            <UserCheck size={14} style={{ color: "var(--os-accent)" }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--os-text-primary)" }}>{note.username}</span>
+                      </Link>
+                      <span style={{ fontSize: 11, color: "var(--os-text-dim)", marginLeft: "auto" }}>{timeAgo(note.created_at)}</span>
+                      {isMine && !isEditing && (
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button
+                            onClick={() => { setEditingNoteId(note.id); setEditText(note.content); }}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--os-text-dim)" }}
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNote(note.id)}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "#ef4444" }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <div>
+                        <textarea
+                          className="glass-input"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          maxLength={200}
+                          rows={2}
+                          style={{ width: "100%", resize: "none", fontSize: 13, marginBottom: 8 }}
+                          autoFocus
+                        />
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button onClick={() => handleEditNote(note.id)} className="glass-btn glass-btn-primary" style={{ padding: "4px 12px", fontSize: 11 }}>
+                            Save
+                          </button>
+                          <button onClick={() => { setEditingNoteId(null); setEditText(""); }} className="glass-btn glass-btn-ghost" style={{ padding: "4px 12px", fontSize: 11, color: "var(--os-text-dim)" }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 14, color: "var(--os-text-primary)", lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap" }}>{note.content}</p>
+                    )}
+
+                    {note.song_name && (
+                      <a
+                        href={note.song_url || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10, marginTop: 10, padding: "8px 12px",
+                          borderRadius: 8, background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.2)",
+                          textDecoration: "none",
+                        }}
+                      >
+                        {note.song_album_art && (
+                          <img src={note.song_album_art} alt="" style={{ width: 36, height: 36, borderRadius: 4, objectFit: "cover" }} />
+                        )}
+                        <div>
+                          <p style={{ fontSize: 12, fontWeight: 500, color: "#1ed760", margin: 0 }}>{note.song_name}</p>
+                          <p style={{ fontSize: 11, color: "var(--os-text-dim)", margin: 0 }}>{note.song_artist}</p>
+                        </div>
+                        <Music size={14} style={{ color: "#1ed760", marginLeft: "auto" }} />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Friends Tab */}
       {tab === "friends" && (
