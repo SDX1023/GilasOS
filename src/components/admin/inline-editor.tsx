@@ -150,11 +150,12 @@ function CropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) 
 
 function ImageNodeView(props: any) {
   const { node, updateAttributes, editor } = props;
-  const { src, alt, style } = node.attrs;
+  const { src, alt, style, x, y } = node.attrs;
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showCrop, setShowCrop] = useState(false);
   const resizeRef = useRef({ startX: 0, startY: 0, startW: 0, startH: 0, corner: "" });
+  const dragRef = useRef({ dragging: false, offsetX: 0, offsetY: 0 });
 
   const deleteImage = () => {
     let found: number | null = null;
@@ -166,6 +167,28 @@ function ImageNodeView(props: any) {
     const n = editor.view.state.doc.nodeAt(found);
     if (!n) return;
     editor.view.dispatch(editor.view.state.tr.delete(found, found + n.nodeSize));
+  };
+
+  const startDrag = (e: React.MouseEvent) => {
+    if (e.target !== imgRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragRef.current.dragging = true;
+    dragRef.current.offsetX = e.clientX - (x || 0);
+    dragRef.current.offsetY = e.clientY - (y || 0);
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current.dragging) return;
+      const newX = ev.clientX - dragRef.current.offsetX;
+      const newY = ev.clientY - dragRef.current.offsetY;
+      updateAttributes({ x: Math.max(0, newX), y: Math.max(0, newY) });
+    };
+    const onUp = () => {
+      dragRef.current.dragging = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   };
 
   const startResize = (corner: string) => (e: React.MouseEvent) => {
@@ -214,17 +237,26 @@ function ImageNodeView(props: any) {
   const isSelected = editor.isActive("image", { src });
 
   return (
-    <NodeViewWrapper as="div" ref={wrapperRef} style={{ position: "relative", display: "inline-block" }}>
+    <NodeViewWrapper
+      as="div"
+      ref={wrapperRef}
+      style={{
+        position: "absolute",
+        left: x != null ? `${x}px` : undefined,
+        top: y != null ? `${y}px` : undefined,
+        display: "inline-block",
+        zIndex: isSelected ? 20 : 1,
+        cursor: "grab",
+      }}
+    >
       {isSelected && (
-        <div className="image-toolbar" style={{ position: "relative", marginBottom: 4 }}>
+        <div className="image-toolbar" style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 4, whiteSpace: "nowrap" }}>
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); deleteImage(); }} className="image-toolbar-btn image-toolbar-btn-delete" title="Delete"><Trash2 size={14} /></button>
           <div className="image-toolbar-divider" />
           <button onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowCrop(true); }} className="image-toolbar-btn" title="Crop"><Crop size={14} /></button>
         </div>
       )}
-      <div
-        style={{ position: "relative", display: "inline-block" }}
-      >
+      <div style={{ position: "relative", display: "inline-block" }}>
         {isSelected && (
           <>
             <div onMouseDown={startResize("nw")} className="image-handle" style={{ top: -4, left: -4, cursor: "nwse-resize" }} />
@@ -233,7 +265,7 @@ function ImageNodeView(props: any) {
             <div onMouseDown={startResize("se")} className="image-handle" style={{ bottom: -4, right: -4, cursor: "nwse-resize" }} />
           </>
         )}
-        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={{ ...parsedStyle, cursor: isSelected ? "grab" : undefined }} draggable="false" />
+        <img ref={imgRef} src={src} alt={alt} className="tiptap-image" style={{ ...parsedStyle, cursor: "grab" }} draggable="false" onMouseDown={startDrag} />
       </div>
       {showCrop && <CropModal src={src} onCrop={applyCrop} onClose={() => setShowCrop(false)} />}
     </NodeViewWrapper>
@@ -247,8 +279,8 @@ const CustomImage = Image.extend({
       alt: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("alt"), renderHTML: (attrs: any) => (attrs.alt ? { alt: attrs.alt } : {}) },
       title: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("title"), renderHTML: (attrs: any) => (attrs.title ? { title: attrs.title } : {}) },
       style: { default: null, parseHTML: (el: HTMLElement) => el.getAttribute("style"), renderHTML: (attrs: any) => (attrs.style ? { style: attrs.style } : {}) },
-      x: { default: null, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-x"); return v ? parseInt(v) : null; }, renderHTML: (attrs: any) => (attrs.x != null ? { "data-x": String(attrs.x) } : {}) },
-      y: { default: null, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-y"); return v ? parseInt(v) : null; }, renderHTML: (attrs: any) => (attrs.y != null ? { "data-y": String(attrs.y) } : {}) },
+      x: { default: 50, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-x"); return v ? parseInt(v) : 50; }, renderHTML: (attrs: any) => (attrs.x != null ? { "data-x": String(attrs.x) } : {}) },
+      y: { default: 50, parseHTML: (el: HTMLElement) => { const v = el.getAttribute("data-y"); return v ? parseInt(v) : 50; }, renderHTML: (attrs: any) => (attrs.y != null ? { "data-y": String(attrs.y) } : {}) },
     };
   },
   addNodeView() {
@@ -610,7 +642,7 @@ export function InlineEditor({ content, onChange }: InlineEditorProps) {
         <button onClick={() => {
           editor.chain().focus().insertContentAt(editor.state.selection.$from.pos, {
             type: "textbox",
-            attrs: { x: 80 + Math.random() * 200, y: 80 + Math.random() * 100, width: 200, height: 80, color: "#3b82f6", content: "" },
+            attrs: { width: 280, height: 100, color: "#3b82f6", content: "" },
           }).run();
         }} style={{ ...toolbarBtnStyle(false), fontSize: 12, fontWeight: 500 }} title="Draggable text box">📝 Box</button>
         <div style={{ width: 1, height: 20, background: "var(--os-glass-border)", margin: "0 4px" }} />

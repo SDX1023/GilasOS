@@ -697,7 +697,7 @@ body {
    NAVBAR
    ============================================================ */
 .nav-link {
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, box-shadow 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
