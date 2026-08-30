@@ -360,6 +360,7 @@ export interface FriendNote {
   song_url: string | null;
   song_album_art: string | null;
   song_preview: string | null;
+  song_start_time: number;
   expires_at: string;
   created_at: string;
   username?: string;
@@ -369,7 +370,8 @@ export interface FriendNote {
 export async function postFriendNote(
   userId: string,
   content: string,
-  song?: { name: string; artist: string; url: string; album_art: string; preview: string | null }
+  song?: { name: string; artist: string; url: string; album_art: string; preview: string | null },
+  startTime: number = 0
 ): Promise<boolean> {
   const supabase = getSupabase();
   const { error } = await supabase.from("friend_notes").insert({
@@ -380,6 +382,7 @@ export async function postFriendNote(
     song_url: song?.url || null,
     song_album_art: song?.album_art || null,
     song_preview: song?.preview || null,
+    song_start_time: startTime,
   });
   return !error;
 }

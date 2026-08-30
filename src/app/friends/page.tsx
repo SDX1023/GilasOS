@@ -6,7 +6,7 @@ import { getSupabase } from "@/lib/supabase";
 import { Search, UserPlus, UserCheck, UserX, X, Check, Loader2, Users, Clock, Link as LinkIcon, MessageCircle, Music, Trash2, Edit3, Send } from "lucide-react";
 import Link from "next/link";
 import { postFriendNote, loadFriendNotes, deleteFriendNote, updateFriendNote, FriendNote, toggleReaction, loadReactions } from "@/lib/user-data";
-import { SpotifySearch } from "@/components/spotify-search";
+import { MusicSelector } from "@/components/music-selector";
 
 interface Friendship {
   id: string;
@@ -40,7 +40,8 @@ export default function FriendsPage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [showSpotify, setShowSpotify] = useState(false);
-  const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; album_art: string; preview: string | null } | null>(null);
+  const [attachedSong, setAttachedSong] = useState<{ name: string; artist: string; url: string; albumArt: string; preview: string | null } | null>(null);
+  const [songStartTime, setSongStartTime] = useState(0);
   const [reactions, setReactions] = useState<Record<string, { emoji: string; count: number; myReaction: boolean; users: string[] }[]>>({});
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
@@ -115,7 +116,7 @@ export default function FriendsPage() {
   const postNote = async () => {
     if (!user || !noteText.trim()) return;
     setPosting(true);
-    await postFriendNote(user.id, noteText.trim(), attachedSong || undefined);
+    await postFriendNote(user.id, noteText.trim(), attachedSong ? { name: attachedSong.name, artist: attachedSong.artist, url: attachedSong.url, album_art: attachedSong.albumArt, preview: attachedSong.preview } : undefined, songStartTime);
     setNoteText("");
     setAttachedSong(null);
     await loadNotes();
@@ -222,7 +223,7 @@ export default function FriendsPage() {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const togglePlay = (noteId: string, previewUrl: string) => {
+  const togglePlay = (noteId: string, previewUrl: string, startTime: number = 0) => {
     if (audioRef.current) {
       audioRef.current.pause();
       if (playingNoteId === noteId) {
@@ -232,6 +233,7 @@ export default function FriendsPage() {
       }
     }
     const audio = new Audio(previewUrl);
+    audio.onloadedmetadata = () => { if (startTime > 0) audio.currentTime = startTime; };
     audio.onended = () => { setPlayingNoteId(null); audioRef.current = null; };
     audio.play().catch(() => {});
     audioRef.current = audio;
@@ -297,8 +299,8 @@ export default function FriendsPage() {
                 display: "flex", alignItems: "center", gap: 10, marginBottom: 10, padding: "8px 12px",
                 borderRadius: 8, background: "rgba(30,215,96,0.08)", border: "1px solid rgba(30,215,96,0.2)",
               }}>
-                {attachedSong.album_art && (
-                  <img src={attachedSong.album_art} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "cover" }} />
+                {attachedSong.albumArt && (
+                  <img src={attachedSong.albumArt} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "cover" }} />
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 12, fontWeight: 500, color: "#1ed760", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{attachedSong.name}</p>
@@ -415,7 +417,7 @@ export default function FriendsPage() {
                       }}>
                         {note.song_preview && (
                           <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(note.id, note.song_preview!); }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePlay(note.id, note.song_preview!, note.song_start_time || 0); }}
                             style={{
                               width: 32, height: 32, borderRadius: 16, flexShrink: 0,
                               background: playingNoteId === note.id ? "#1ed760" : "rgba(30,215,96,0.2)",
@@ -706,11 +708,12 @@ export default function FriendsPage() {
         </div>
       )}
 
-      {/* Spotify Modal */}
+      {/* Music Selector Modal */}
       {showSpotify && (
-        <SpotifySearch
-          onSelect={(track) => {
-            setAttachedSong({ name: track.name, artist: track.artist, url: track.url, album_art: track.albumArt || "", preview: track.preview || null });
+        <MusicSelector
+          onSelect={(track, startTime) => {
+            setAttachedSong({ name: track.name, artist: track.artist, url: track.url, albumArt: track.albumArt, preview: track.preview });
+            setSongStartTime(startTime);
             setShowSpotify(false);
           }}
           onClose={() => setShowSpotify(false)}

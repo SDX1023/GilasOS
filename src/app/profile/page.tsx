@@ -316,6 +316,7 @@ export default function ProfilePage() {
             <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)" }}>{username || "User"}</h2>
             <p className="text-secondary text-sm">{user.email}</p>
           </div>
+        </div>
 
         {/* Avatar Picker */}
         {showAvatarPicker && (
