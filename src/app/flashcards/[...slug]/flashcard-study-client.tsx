@@ -629,7 +629,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       </div>
 
       {reviewMode && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "rgba(15,21,35,0.6)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "rgba(10,14,24,0.98)" }}>
           {flashImage && (
             <div style={{ position: "absolute", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", opacity: flashVisible ? 1 : 0, transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}>
               <img src={flashImage} alt="" style={{ maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain", transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
@@ -700,7 +700,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
                       className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "rgba(30,41,59,0.95)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div>
                         <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
                           {reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)}
@@ -735,7 +735,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   /* Identification card: type answer */
                   <>
                     <div className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "rgba(30,41,59,0.95)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ width: "100%" }}>
                         <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)", marginBottom: "1.5rem" }}>
                           {swapped ? queue[queueIndex].back : queue[queueIndex].front}

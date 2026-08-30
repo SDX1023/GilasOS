@@ -720,13 +720,14 @@ body {
    ============================================================ */
 .nav-link {
   color: var(--os-text-dim) !important;
+  background: transparent !important;
   transition: color 0.15s ease, box-shadow 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
 .nav-link:hover {
-  color: var(--os-text-primary);
+  color: var(--os-text-primary) !important;
 }
 
 .nav-link:focus,
@@ -1711,9 +1712,6 @@ a:active {
 .mt-4 { margin-top: 16px; }
 .overflow-auto { overflow: auto; }
 .select-none { user-select: none; }
-.nav-link {
-  -webkit-tap-highlight-color: transparent;
-}
 .inline { display: inline; }
 .hidden { display: none; }
 .select-none { user-select: none; }

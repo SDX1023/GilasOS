@@ -90,7 +90,7 @@ export function Navbar() {
                   style={{
                     display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
                     fontSize: 13, fontWeight: 500, fontFamily: "Inter, sans-serif",
-                    border: "none", cursor: "pointer",
+                    background: "transparent", border: "none", cursor: "pointer",
                   }}
                 >
                   <Settings size={15} />
