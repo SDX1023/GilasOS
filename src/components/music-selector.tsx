@@ -224,8 +224,8 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
   const formatTime = (s: number) => `${Math.floor(s)}:${Math.floor((s % 1) * 60).toString().padStart(2, "0")}`;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }} onClick={onClose}>
-      <div style={{ background: "#1a1a2e", borderRadius: "16px 16px 0 0", maxWidth: 480, width: "100%", margin: "0 auto", maxHeight: "85vh", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+      <div style={{ background: "#1a1a2e", borderRadius: 16, maxWidth: 440, width: "100%", margin: "0 16px", maxHeight: "80vh", display: "flex", flexDirection: "column", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
 
         {/* Drag handle */}
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>

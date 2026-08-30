@@ -264,7 +264,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewMode, reviewFlipped, reviewComplete]);
+  }, [reviewMode, reviewFlipped, reviewComplete, typedAnswer, answerChecked]);
 
   function saveProgressIfNeeded() {
     const total = knownCount + forgotCount + dontKnowCount;
@@ -373,6 +373,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const queueCards = shuffled ? shuffleArray(cards) : buildSpacedQueue(cards);
     setQueue(queueCards); setQueueIndex(0); setKnownCount(0); setForgotCount(0);
     setDontKnowCount(0); setShowSummary(false); setReviewFlipped(false); setSwapped(false);
+    setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
     setReviewComplete(false); setReviewMode(true);
   }
 
@@ -661,7 +662,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <Bookmark style={{ width: 16, height: 16 }} />
                 </button>
               )}
-              <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); }}
+              <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); }}
                 className="glass-btn"
                 style={swapped ? { background: "var(--os-accent)", color: "#fff" } : {}}
               >
@@ -694,38 +695,104 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               </div>
             ) : (
               <>
-                <div onClick={() => setReviewFlipped(!reviewFlipped)}
-                  className="glass-card"
-                  style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s" }}>
-                  <div>
-                    <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75 }}>
-                      {reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)}
-                    </p>
-                    {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic" }} className="text-secondary">Hint: {queue[queueIndex].hint}</p>}
-                  </div>
-                </div>
-                <div className="text-xs text-secondary" style={{ marginTop: "1rem" }}>
-                  {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
-                </div>
-                <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
-                  {!reviewFlipped ? (
-                    <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>
-                      Show Answer
-                    </button>
-                  ) : (
-                    <>
-                      <button id="btn-forgot" onClick={handleForgot} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: "1rem", fontWeight: 500 }}>
-                        I Forgot
-                      </button>
-                      <button id="btn-dontknow" onClick={handleDontKnow} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(249,115,22,0.1)", color: "#f97316", fontSize: "1rem", fontWeight: 500 }}>
-                        I Don&apos;t Know
-                      </button>
-                      <button id="btn-know" onClick={handleKnow} className="glass-btn" style={{ padding: "0.75rem 1.5rem", background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: "1rem", fontWeight: 500 }}>
-                        I Know
-                      </button>
-                    </>
-                  )}
-                </div>
+                {/* Standard card: flip to reveal */}
+                {(queue[queueIndex].card_type || "standard") === "standard" ? (
+                  <>
+                    <div onClick={() => setReviewFlipped(!reviewFlipped)}
+                      className="flashcard-study-card"
+                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "rgba(30,41,59,0.95)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div>
+                        <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
+                          {reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)}
+                        </p>
+                        {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                      {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                    </div>
+                    <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+                      {!reviewFlipped ? (
+                        <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>
+                          Show Answer
+                        </button>
+                      ) : (
+                        <>
+                          <button id="btn-forgot" onClick={handleForgot} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                            I Forgot
+                          </button>
+                          <button id="btn-dontknow" onClick={handleDontKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                            I Don&apos;t Know
+                          </button>
+                          <button id="btn-know" onClick={handleKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                            I Know
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* Identification card: type answer */
+                  <>
+                    <div className="flashcard-study-card"
+                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "rgba(30,41,59,0.95)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ width: "100%" }}>
+                        <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)", marginBottom: "1.5rem" }}>
+                          {swapped ? queue[queueIndex].back : queue[queueIndex].front}
+                        </p>
+                        {!swapped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginBottom: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
+                        {!answerChecked ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                            <input
+                              type="text"
+                              value={typedAnswer}
+                              onChange={(e) => setTypedAnswer(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === queue[queueIndex].back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                              placeholder="Type your answer..."
+                              autoFocus
+                              style={{ width: "100%", maxWidth: 400, padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.15)", color: "var(--os-text-primary)", fontSize: "1rem", outline: "none", textAlign: "center", fontFamily: "Inter, sans-serif" }}
+                            />
+                            <button
+                              onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === queue[queueIndex].back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                              disabled={!typedAnswer.trim()}
+                              className="glass-btn-primary"
+                              style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: typedAnswer.trim() ? 1 : 0.4 }}
+                            >
+                              Check
+                            </button>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize: "1rem", marginBottom: 8, color: answerCorrect ? "#4ade80" : "#f87171" }}>
+                              {answerCorrect ? "Correct!" : `Your answer: ${typedAnswer}`}
+                            </p>
+                            {!answerCorrect && (
+                              <p style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--os-text-primary)" }}>
+                                Correct answer: {queue[queueIndex].back}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                      {!answerChecked ? "Type answer, then press Enter or click Check" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                    </div>
+                    {answerChecked && (
+                      <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+                        <button id="btn-forgot" onClick={handleForgot} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Forgot
+                        </button>
+                        <button id="btn-dontknow" onClick={handleDontKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Don&apos;t Know
+                        </button>
+                        <button id="btn-know" onClick={handleKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Know
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>
