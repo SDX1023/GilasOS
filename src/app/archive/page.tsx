@@ -2,69 +2,77 @@
 
 import { useState, useEffect } from "react";
 import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink } from "lucide-react";
+import { getSupabase } from "@/lib/supabase";
 
 interface ArchiveEntry {
   id: string;
   competition: string;
-  competitionUrl: string;
+  competition_url: string;
   type: string;
-  date: string;
-}
-
-function loadEntries(): ArchiveEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem("archive_entries");
-    return stored ? JSON.parse(stored) : [];
-  } catch { return []; }
-}
-
-function saveEntries(entries: ArchiveEntry[]) {
-  localStorage.setItem("archive_entries", JSON.stringify(entries));
+  year: string;
 }
 
 export default function ArchivePage() {
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newEntry, setNewEntry] = useState({ competition: "", competitionUrl: "", type: "", date: "" });
-  const [editValues, setEditValues] = useState({ competition: "", competitionUrl: "", type: "", date: "" });
+  const [newEntry, setNewEntry] = useState({ competition: "", competition_url: "", type: "", year: "" });
+  const [editValues, setEditValues] = useState({ competition: "", competition_url: "", type: "", year: "" });
 
   useEffect(() => {
-    setEntries(loadEntries());
     const password = sessionStorage.getItem("archive_admin");
     setIsAdmin(password === "SDX102310");
+    loadEntries();
   }, []);
+
+  async function loadEntries() {
+    setLoading(true);
+    const supabase = getSupabase();
+    const { data } = await supabase.from("archive_entries").select("*").order("year", { ascending: false });
+    setEntries(data || []);
+    setLoading(false);
+  }
 
   const handleAdminLogin = () => {
     const password = prompt("Enter admin password:");
     if (password === "SDX102310") { sessionStorage.setItem("archive_admin", "SDX102310"); setIsAdmin(true); }
   };
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!newEntry.competition.trim()) return;
-    const entry: ArchiveEntry = { id: Date.now().toString(), ...newEntry };
-    const updated = [...entries, entry];
-    setEntries(updated); saveEntries(updated);
-    setNewEntry({ competition: "", competitionUrl: "", type: "", date: "" });
-    setShowAddForm(false);
+    const supabase = getSupabase();
+    const { error } = await supabase.from("archive_entries").insert({
+      competition: newEntry.competition,
+      competition_url: newEntry.competition_url,
+      type: newEntry.type,
+      year: newEntry.year,
+    });
+    if (!error) {
+      setNewEntry({ competition: "", competition_url: "", type: "", year: "" });
+      setShowAddForm(false);
+      loadEntries();
+    }
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     if (!confirm("Delete this entry?")) return;
-    const updated = entries.filter((e) => e.id !== id);
-    setEntries(updated); saveEntries(updated);
+    const supabase = getSupabase();
+    await supabase.from("archive_entries").delete().eq("id", id);
+    loadEntries();
   };
 
   const startEdit = (entry: ArchiveEntry) => {
     setEditingId(entry.id);
-    setEditValues({ competition: entry.competition, competitionUrl: entry.competitionUrl || "", type: entry.type, date: entry.date });
+    setEditValues({ competition: entry.competition, competition_url: entry.competition_url || "", type: entry.type, year: entry.year });
   };
 
-  const saveEdit = (id: string) => {
-    const updated = entries.map((e) => (e.id === id ? { ...e, ...editValues } : e));
-    setEntries(updated); saveEntries(updated); setEditingId(null);
+  const saveEdit = async (id: string) => {
+    const supabase = getSupabase();
+    await supabase.from("archive_entries").update(editValues).eq("id", id);
+    setEditingId(null);
+    loadEntries();
   };
 
   return (
@@ -93,9 +101,9 @@ export default function ArchivePage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
             <input className="glass-input" value={newEntry.competition} onChange={(e) => setNewEntry({ ...newEntry, competition: e.target.value })} placeholder="Competition" autoFocus />
-            <input className="glass-input" value={newEntry.competitionUrl} onChange={(e) => setNewEntry({ ...newEntry, competitionUrl: e.target.value })} placeholder="Link (optional)" />
+            <input className="glass-input" value={newEntry.competition_url} onChange={(e) => setNewEntry({ ...newEntry, competition_url: e.target.value })} placeholder="Link (optional)" />
             <input className="glass-input" value={newEntry.type} onChange={(e) => setNewEntry({ ...newEntry, type: e.target.value })} placeholder="Type" />
-            <input className="glass-input" type="number" min="2000" max="2099" value={newEntry.date} onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })} placeholder="Year" />
+            <input className="glass-input" type="number" min="2000" max="2099" value={newEntry.year} onChange={(e) => setNewEntry({ ...newEntry, year: e.target.value })} placeholder="Year" />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={addEntry} className="glass-btn glass-btn-primary">Add</button>
@@ -104,7 +112,11 @@ export default function ArchivePage() {
         </div>
       )}
 
-      {entries.length === 0 ? (
+      {loading ? (
+        <div className="empty-state">
+          <p className="text-secondary text-sm">Loading...</p>
+        </div>
+      ) : entries.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon"><Archive size={32} style={{ color: "var(--os-text-dim)" }} /></div>
           <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No archive entries yet</h2>
@@ -127,9 +139,9 @@ export default function ArchivePage() {
                   {editingId === entry.id ? (
                     <>
                       <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} /></td>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competitionUrl} onChange={(e) => setEditValues({ ...editValues, competitionUrl: e.target.value })} placeholder="Link" /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.competition_url} onChange={(e) => setEditValues({ ...editValues, competition_url: e.target.value })} placeholder="Link" /></td>
                       <td style={{ padding: "10px 20px" }}><input className="glass-input" value={editValues.type} onChange={(e) => setEditValues({ ...editValues, type: e.target.value })} /></td>
-                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="number" min="2000" max="2099" value={editValues.date} onChange={(e) => setEditValues({ ...editValues, date: e.target.value })} placeholder="Year" /></td>
+                      <td style={{ padding: "10px 20px" }}><input className="glass-input" type="number" min="2000" max="2099" value={editValues.year} onChange={(e) => setEditValues({ ...editValues, year: e.target.value })} placeholder="Year" /></td>
                       <td style={{ padding: "10px 20px" }}>
                         <div style={{ display: "flex", gap: 4 }}>
                           <button onClick={() => saveEdit(entry.id)} style={{ background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={16} /></button>
@@ -140,15 +152,15 @@ export default function ArchivePage() {
                   ) : (
                     <>
                       <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500 }}>
-                        {entry.competitionUrl ? (
-                          <a href={entry.competitionUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
+                        {entry.competition_url ? (
+                          <a href={entry.competition_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
                             {entry.competition} <ExternalLink size={12} />
                           </a>
                         ) : entry.competition}
                       </td>
                       <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)" }}>{entry.type}</td>
                       <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-                        <Calendar size={14} /> {entry.date || "—"}
+                        <Calendar size={14} /> {entry.year || "—"}
                       </td>
                       {isAdmin && (
                         <td style={{ padding: "14px 20px" }}>

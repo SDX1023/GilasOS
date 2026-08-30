@@ -73,7 +73,7 @@ export function Navbar() {
                   tabIndex={-1}
                   onMouseDown={(e) => e.preventDefault()}
                   style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
+                    display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
                     fontSize: 13, fontWeight: 500, textDecoration: "none",
                   }}
                 >
@@ -88,7 +88,7 @@ export function Navbar() {
                   onClick={() => setShowTools(!showTools)}
                   className={`nav-link${isToolsActive ? " nav-active" : ""}`}
                   style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
+                    display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
                     fontSize: 13, fontWeight: 500, fontFamily: "Inter, sans-serif",
                     background: "transparent", border: "none", cursor: "pointer",
                   }}
@@ -124,7 +124,7 @@ export function Navbar() {
 
               {isAdmin && (
                 <Link href="/admin" className={`nav-link${isActive("/admin") ? " nav-active" : ""}`} style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 8,
+                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
                   fontSize: 13, fontWeight: 500, textDecoration: "none",
                 }}>
                   <Shield size={15} /> <span>Admin</span>
@@ -137,7 +137,7 @@ export function Navbar() {
             <button
               onClick={() => setTheme((resolvedTheme || theme) === "dark" ? "light" : "dark")}
               style={{
-                padding: 6, borderRadius: 8, background: "none", border: "none",
+                padding: 6, borderRadius: 12, background: "none", border: "none",
                 color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
                 alignItems: "center", justifyContent: "center", width: 32, height: 32,
               }}
@@ -160,7 +160,7 @@ export function Navbar() {
                     onClick={() => setShowMenu(!showMenu)}
                     style={{
                       display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
-                      borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)",
                       background: "none", color: "var(--os-text-secondary)", cursor: "pointer",
                       fontSize: 13, fontFamily: "Inter, sans-serif",
                     }}
@@ -205,7 +205,7 @@ export function Navbar() {
               ) : (
                 <Link href="/login" style={{
                   display: "flex", alignItems: "center", gap: 6, padding: "5px 12px",
-                  borderRadius: 8, border: "1px solid var(--os-accent)",
+                  borderRadius: 12, border: "1px solid var(--os-accent)",
                   color: "var(--os-accent)", textDecoration: "none", fontSize: 13, fontWeight: 500,
                 }}>
                   <LogIn size={15} /> <span>Log In</span>
@@ -217,7 +217,7 @@ export function Navbar() {
               onClick={() => setShowMobile(!showMobile)}
               className="nav-mobile-btn"
               style={{
-                padding: 6, borderRadius: 8, background: "none", border: "none",
+                padding: 6, borderRadius: 12, background: "none", border: "none",
                 color: "var(--os-text-dim)", cursor: "pointer", display: "none",
               }}
             >
