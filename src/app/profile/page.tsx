@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, Save, Camera, X, Smile, ExternalLink } from "lucide-react";
+import { User, Music, Save, Camera, X, Smile, ExternalLink, Crop } from "lucide-react";
 import Link from "next/link";
 import { SpotifySearch } from "@/components/spotify-search";
 
@@ -51,6 +51,131 @@ interface SpotifyTrack {
   preview: string | null;
 }
 
+function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: string) => void; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [cs, setCs] = useState({ w: 0, h: 0 });
+  const [action, setAction] = useState<"move" | "tl" | "tr" | "bl" | "br" | null>(null);
+  const sr = useRef({ mx: 0, my: 0, c: { x: 0, y: 0, w: 0, h: 0 } });
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imgRef.current = img;
+      const maxW = Math.min(400, img.width);
+      const r = img.height / img.width;
+      const h = maxW * r;
+      setCs({ w: maxW, h });
+      const s = Math.min(maxW, h);
+      setCrop({ x: (maxW - s) / 2, y: (h - s) / 2, w: s, h: s });
+    };
+    img.src = src;
+  }, [src]);
+
+  useEffect(() => {
+    const cv = canvasRef.current;
+    const img = imgRef.current;
+    if (!cv || !img || !cs.w) return;
+    cv.width = cs.w;
+    cv.height = cs.h;
+    const ctx = cv.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, cs.w, cs.h);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, cs.w, cs.h);
+    ctx.clearRect(crop.x, crop.y, crop.w, crop.h);
+    const scaleX = img.naturalWidth / cs.w;
+    const scaleY = img.naturalHeight / cs.h;
+    ctx.drawImage(img, crop.x * scaleX, crop.y * scaleY, crop.w * scaleX, crop.h * scaleY, crop.x, crop.y, crop.w, crop.h);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+    ctx.setLineDash([]);
+    [[crop.x, crop.y], [crop.x + crop.w, crop.y], [crop.x, crop.y + crop.h], [crop.x + crop.w, crop.y + crop.h]].forEach(([cx, cy]) => {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(cx - 5, cy - 5, 10, 10);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - 5, cy - 5, 10, 10);
+    });
+  }, [crop, cs]);
+
+  const gp = (e: React.MouseEvent) => {
+    const r = canvasRef.current!.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  const hc = (p: { x: number; y: number }): "tl" | "tr" | "bl" | "br" | null => {
+    const m = 12;
+    if (Math.abs(p.x - crop.x) < m && Math.abs(p.y - crop.y) < m) return "tl";
+    if (Math.abs(p.x - (crop.x + crop.w)) < m && Math.abs(p.y - crop.y) < m) return "tr";
+    if (Math.abs(p.x - crop.x) < m && Math.abs(p.y - (crop.y + crop.h)) < m) return "bl";
+    if (Math.abs(p.x - (crop.x + crop.w)) < m && Math.abs(p.y - (crop.y + crop.h)) < m) return "br";
+    return null;
+  };
+
+  const md = (e: React.MouseEvent) => {
+    const p = gp(e);
+    const c = hc(p);
+    if (c) { setAction(c); sr.current = { mx: p.x, my: p.y, c: { ...crop } }; }
+    else if (p.x >= crop.x && p.x <= crop.x + crop.w && p.y >= crop.y && p.y <= crop.y + crop.h) {
+      setAction("move");
+      sr.current = { mx: p.x - crop.x, my: p.y - crop.y, c: { ...crop } };
+    }
+  };
+
+  const mm = (e: React.MouseEvent) => {
+    if (!action) return;
+    const p = gp(e);
+    const s = sr.current;
+    const min = 30;
+    let c = { ...s.c };
+    if (action === "move") { c.x = Math.max(0, Math.min(cs.w - c.w, p.x - s.mx)); c.y = Math.max(0, Math.min(cs.h - c.h, p.y - s.my)); }
+    else if (action === "br") { c.w = Math.max(min, Math.min(cs.w - c.x, p.x - c.x)); c.h = c.w; }
+    else if (action === "bl") { const nx = Math.min(p.x, c.x + c.w - min); c.w += c.x - nx; c.x = nx; c.h = c.w; }
+    else if (action === "tr") { c.w = Math.max(min, Math.min(cs.w - c.x, p.x - c.x)); const ny = c.y + c.h - c.w; c.h = c.w; c.y = ny; }
+    else if (action === "tl") { const nx = Math.min(p.x, c.x + c.w - min); c.w += c.x - nx; c.x = nx; c.h = c.w; c.y = s.c.y + s.c.h - c.w; }
+    setCrop(c);
+  };
+
+  const apply = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const out = document.createElement("canvas");
+    out.width = 256;
+    out.height = 256;
+    const ctx = out.getContext("2d")!;
+    const sx = img.naturalWidth / cs.w;
+    const sy = img.naturalHeight / cs.h;
+    ctx.drawImage(img, crop.x * sx, crop.y * sy, crop.w * sx, crop.h * sy, 0, 0, 256, 256);
+    onCrop(out.toDataURL("image/png"));
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }} onClick={onClose}>
+      <div style={{ background: "var(--os-bg-secondary)", borderRadius: 12, padding: 24, maxWidth: 460, width: "100%", margin: "0 16px" }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 16, color: "var(--os-text-primary)" }}>Crop Profile Picture</h3>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <canvas
+            ref={canvasRef}
+            style={{ borderRadius: 10, cursor: action === "move" ? "move" : action ? "nwse-resize" : "default", maxWidth: "100%" }}
+            onMouseDown={md}
+            onMouseMove={mm}
+            onMouseUp={() => setAction(null)}
+            onMouseLeave={() => setAction(null)}
+          />
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", background: "rgba(255,255,255,0.06)", borderRadius: 8, fontSize: 13, border: "none", cursor: "pointer", color: "var(--os-text-secondary)", fontFamily: "Inter, sans-serif" }}>Cancel</button>
+          <button onClick={apply} style={{ padding: "8px 16px", background: "var(--os-accent)", color: "#fff", borderRadius: 8, fontSize: 13, border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Apply</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user, username, refreshProfile } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -65,6 +190,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showSpotifySearch, setShowSpotifySearch] = useState(false);
+  const [cropImage, setCropImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -104,17 +230,29 @@ export default function ProfilePage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCropImage(ev.target?.result as string);
+      setShowAvatarPicker(false);
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const applyCrop = async (dataUrl: string) => {
+    if (!user) return;
+    setCropImage(null);
     const supabase = getSupabase();
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, file);
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const path = `${user.id}/${Date.now()}.png`;
+    const { error } = await supabase.storage.from("avatars").upload(path, blob, { contentType: "image/png" });
     if (!error) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(data.publicUrl);
-      setShowAvatarPicker(false);
     }
   };
 
@@ -178,7 +316,6 @@ export default function ProfilePage() {
             <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)" }}>{username || "User"}</h2>
             <p className="text-secondary text-sm">{user.email}</p>
           </div>
-        </div>
 
         {/* Avatar Picker */}
         {showAvatarPicker && (
@@ -376,6 +513,9 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Crop Modal */}
+      {cropImage && <AvatarCropModal src={cropImage} onCrop={applyCrop} onClose={() => setCropImage(null)} />}
     </div>
   );
 }
