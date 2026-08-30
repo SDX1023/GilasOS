@@ -813,8 +813,6 @@ function HistoryTab({ userId }: { userId: string | null }) {
       })}
     </div>
   );
-    </div>
-  );
 }
 
 function WeakAreasTab({ userId }: { userId: string | null }) {
