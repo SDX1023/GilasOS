@@ -30,7 +30,8 @@ export default function ArchivePage() {
   async function loadEntries() {
     setLoading(true);
     const supabase = getSupabase();
-    const { data } = await supabase.from("archive_entries").select("*").order("year", { ascending: false });
+    const { data, error } = await supabase.from("archive_entries").select("*").order("year", { ascending: false });
+    if (error) console.error("Archive load error:", error);
     setEntries(data || []);
     setLoading(false);
   }
