@@ -106,7 +106,7 @@ export default function ArchivePage() {
 
       {entries.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon"><Trophy size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <div className="empty-state-icon"><Archive size={32} style={{ color: "var(--os-text-dim)" }} /></div>
           <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No archive entries yet</h2>
           <p className="text-secondary text-sm">Competition records will appear here.</p>
         </div>
