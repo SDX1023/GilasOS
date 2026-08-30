@@ -155,7 +155,7 @@ export function NoteEditor({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+      <div className="editor-wrapper" style={{ flex: 1, display: "flex", minHeight: 0 }}>
         {/* Editor */}
         <div style={{
           width: mode === "split" ? "50%" : mode === "edit" ? "100%" : 0,
