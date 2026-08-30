@@ -3,7 +3,8 @@ DO $$ BEGIN
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'deck' CHECK (type IN ('pdf', 'deck', 'folder')),
+    description TEXT,
+    color TEXT DEFAULT '#00d4ff',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 EXCEPTION WHEN duplicate_table THEN null;
