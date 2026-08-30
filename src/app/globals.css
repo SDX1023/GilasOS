@@ -37,8 +37,7 @@ button, .glass-btn, .glass-btn-primary, .glass-btn-ghost, .glass-card-link, .nav
 }
 
 button:active {
-  background-color: inherit !important;
-  color: inherit !important;
+  opacity: 0.85;
 }
 
 *:focus {

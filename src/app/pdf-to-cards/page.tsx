@@ -33,11 +33,15 @@ export default function PdfToFlashcardsPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  const ensureCourseAndModule = () => {
+  const ensureCourseAndModule = (moduleId?: string) => {
     const custom = loadCustomContent();
     if (!custom.courses.find((c) => c.id === PDF_COURSE_ID)) {
       addCourse({ id: PDF_COURSE_ID, title: "PDF Generated", description: "Flashcards generated from PDFs" });
-      addModule(PDF_COURSE_ID, { id: PDF_MODULE_ID, courseId: PDF_COURSE_ID, title: "My Decks", description: "Auto-saved from PDF to Flashcards" });
+    }
+    const target = moduleId || PDF_MODULE_ID;
+    const course = custom.courses.find((c) => c.id === PDF_COURSE_ID);
+    if (!course?.modules.find((m) => m.id === target)) {
+      addModule(PDF_COURSE_ID, { id: target, courseId: PDF_COURSE_ID, title: target, description: `Auto-saved from PDF to Flashcards` });
     }
   };
 
@@ -84,7 +88,7 @@ export default function PdfToFlashcardsPage() {
     if (!deckName.trim() || generatedCards.length === 0) return;
     setSaving(true); setSaveMsg("");
     try {
-      ensureCourseAndModule();
+      ensureCourseAndModule(targetModule);
       addReviewer(PDF_COURSE_ID, targetModule, { title: deckName, cards: generatedCards });
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
