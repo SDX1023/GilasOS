@@ -21,6 +21,20 @@ export interface Pet {
 
 export type PetAction = "idle" | "walking" | "eating" | "playing" | "sleeping" | "happy" | "sad";
 
+export interface GrowthStage {
+  name: string;
+  emoji: string;
+  min: number;
+  max: number;
+  next: number | null;
+}
+
+export interface Cooldowns {
+  feed: number;
+  play: number;
+  sleep: number;
+}
+
 interface PetContextType {
   pet: Pet | null;
   action: PetAction;
@@ -34,6 +48,9 @@ interface PetContextType {
   uploadSprite: (file: File) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
   loading: boolean;
+  userEmail: string | null;
+  stage: GrowthStage;
+  cooldowns: Cooldowns;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -42,8 +59,7 @@ export function usePet() {
   return useContext(PetContext);
 }
 
-const PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl"];
-const PET_COLORS = ["#f59e0b", "#ef4444", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#6b7280", "#f97316"];
+const COOLDOWN_SECS = { feed: 30, play: 30, sleep: 60 };
 
 function clamp(v: number) { return Math.max(0, Math.min(100, v)); }
 
@@ -54,19 +70,34 @@ function calcMood(pet: Pet): string {
   return "sad";
 }
 
-export { PET_TYPES, PET_COLORS };
+export function getGrowthStage(xp: number): GrowthStage {
+  if (xp < 500) return { name: "Baby", emoji: "🥚", min: 0, max: 500, next: 500 };
+  if (xp < 1000) return { name: "Toddler", emoji: "🐾", min: 500, max: 1000, next: 1000 };
+  if (xp < 1500) return { name: "Teen", emoji: "⭐", min: 1000, max: 1500, next: 1500 };
+  return { name: "Adult", emoji: "👑", min: 1500, max: Infinity, next: null };
+}
+
+function getCooldownRemaining(lastAction: string, cooldownSec: number): number {
+  const elapsed = (Date.now() - new Date(lastAction).getTime()) / 1000;
+  return Math.max(0, cooldownSec - Math.floor(elapsed));
+}
 
 export function PetProvider({ children }: { children: React.ReactNode }) {
   const [pet, setPet] = useState<Pet | null>(null);
   const [action, setAction] = useState<PetAction>("idle");
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [cooldowns, setCooldowns] = useState<Cooldowns>({ feed: 0, play: 0, sleep: 0 });
   const decayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadPet = useCallback(async () => {
     try {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
+      setUserEmail(user.email ?? null);
+
       const { data } = await supabase.from("user_pets").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
         const now = Date.now();
@@ -77,6 +108,25 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
         data.happiness = clamp(data.happiness - Math.floor(minsSincePlayed * 0.2));
         data.energy = clamp(data.energy - Math.floor(minsSinceSlept * 0.25));
         data.mood = calcMood(data);
+
+        const { data: stats } = await supabase
+          .from("study_stats").select("known, forgot, cards_total, date").eq("user_id", user.id);
+        if (stats && stats.length > 0) {
+          const totalKnown = stats.reduce((s, r) => s + (r.known || 0), 0);
+          const uniqueDays = new Set(stats.map((r: any) => r.date)).size;
+          const sorted = stats.map((r: any) => r.date).sort().reverse();
+          let streak = 0;
+          const d = new Date(); d.setHours(0, 0, 0, 0);
+          for (let i = 0; i < sorted.length; i++) {
+            const exp = new Date(d); exp.setDate(exp.getDate() - i);
+            if (sorted[i] === exp.toDateString()) streak++; else break;
+          }
+          const points = totalKnown * 10 + streak * 50 + uniqueDays * 5;
+          if (points !== data.xp) {
+            data.xp = points;
+            void supabase.from("user_pets").update({ xp: points }).eq("id", data.id);
+          }
+        }
         setPet(data);
       }
     } catch {}
@@ -105,30 +155,60 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     return () => { if (decayRef.current) clearInterval(decayRef.current); };
   }, [pet?.id]);
 
+  useEffect(() => {
+    cooldownRef.current = setInterval(() => {
+      setPet((prev) => {
+        if (!prev) return prev;
+        return { ...prev };
+      });
+    }, 1000);
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
+  }, []);
+
+  useEffect(() => {
+    if (!pet) return;
+    setCooldowns({
+      feed: getCooldownRemaining(pet.last_fed_at, COOLDOWN_SECS.feed),
+      play: getCooldownRemaining(pet.last_played_at, COOLDOWN_SECS.play),
+      sleep: getCooldownRemaining(pet.last_slept_at, COOLDOWN_SECS.sleep),
+    });
+    const t = setInterval(() => {
+      setCooldowns({
+        feed: getCooldownRemaining(pet.last_fed_at, COOLDOWN_SECS.feed),
+        play: getCooldownRemaining(pet.last_played_at, COOLDOWN_SECS.play),
+        sleep: getCooldownRemaining(pet.last_slept_at, COOLDOWN_SECS.sleep),
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [pet?.last_fed_at, pet?.last_played_at, pet?.last_slept_at]);
+
   const feedPet = useCallback(async () => {
     if (!pet) return;
+    if (getCooldownRemaining(pet.last_fed_at, COOLDOWN_SECS.feed) > 0) return;
     const supabase = getSupabase();
     const updated = { ...pet, hunger: clamp(pet.hunger + 30), last_fed_at: new Date().toISOString() };
     updated.mood = calcMood(updated);
     setPet(updated);
     setAction("eating");
-    setTimeout(() => setAction("happy"), 2000);
+    setTimeout(() => setAction("idle"), 2000);
     await supabase.from("user_pets").update({ hunger: updated.hunger, last_fed_at: updated.last_fed_at, mood: updated.mood }).eq("id", pet.id);
   }, [pet]);
 
   const playWithPet = useCallback(async () => {
     if (!pet) return;
+    if (getCooldownRemaining(pet.last_played_at, COOLDOWN_SECS.play) > 0) return;
     const supabase = getSupabase();
     const updated = { ...pet, happiness: clamp(pet.happiness + 30), energy: clamp(pet.energy - 10), last_played_at: new Date().toISOString() };
     updated.mood = calcMood(updated);
     setPet(updated);
     setAction("playing");
-    setTimeout(() => setAction("happy"), 2500);
+    setTimeout(() => setAction("idle"), 2500);
     await supabase.from("user_pets").update({ happiness: updated.happiness, energy: updated.energy, last_played_at: updated.last_played_at, mood: updated.mood }).eq("id", pet.id);
   }, [pet]);
 
   const sleepPet = useCallback(async () => {
     if (!pet) return;
+    if (getCooldownRemaining(pet.last_slept_at, COOLDOWN_SECS.sleep) > 0) return;
     const supabase = getSupabase();
     const updated = { ...pet, energy: clamp(pet.energy + 40), last_slept_at: new Date().toISOString() };
     updated.mood = calcMood(updated);
@@ -212,14 +292,15 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
   const addXP = useCallback(async (amount: number) => {
     if (!pet) return;
     const newXp = pet.xp + amount;
-    const newLevel = Math.floor(newXp / 100) + 1;
-    const updated = { ...pet, xp: newXp % 100, level: newLevel };
+    const updated = { ...pet, xp: newXp };
     setPet(updated);
-    await getSupabase().from("user_pets").update({ xp: updated.xp, level: updated.level }).eq("id", pet.id);
+    await getSupabase().from("user_pets").update({ xp: newXp }).eq("id", pet.id);
   }, [pet]);
 
+  const stage = pet ? getGrowthStage(pet.xp) : getGrowthStage(0);
+
   return (
-    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, uploadSprite, addXP, loading }}>
+    <PetContext.Provider value={{ pet, action, setAction, feedPet, playWithPet, sleepPet, createPet, renamePet, changePetColor, uploadSprite, addXP, loading, userEmail, stage, cooldowns }}>
       {children}
     </PetContext.Provider>
   );

@@ -3,29 +3,126 @@ import { useState, useRef, useEffect } from "react";
 import { usePet } from "./pet-context";
 import { ChevronRight, ChevronLeft, Utensils, Moon, Gamepad2, Palette, Upload, X, Sparkles } from "lucide-react";
 
-const PET_SVG: Record<string, (color: string) => string> = {
-  cat: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="8" y="4" width="4" height="6" fill="${c}"/><rect x="20" y="4" width="4" height="6" fill="${c}"/><rect x="6" y="8" width="20" height="16" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="14" y="18" width="4" height="2" rx="1" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/><rect x="26" y="18" width="6" height="3" fill="${c}"/></svg>`,
-  dog: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="4" y="6" width="6" height="10" rx="2" fill="${c}"/><rect x="22" y="6" width="6" height="10" rx="2" fill="${c}"/><rect x="6" y="8" width="20" height="16" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="13" y="18" width="6" height="4" rx="2" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-  fox: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="6" y="2" width="4" height="8" fill="${c}"/><rect x="22" y="2" width="4" height="8" fill="${c}"/><rect x="6" y="8" width="20" height="14" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="3" rx="1" fill="#111"/><rect x="14" y="17" width="4" height="3" rx="1" fill="#111"/><rect x="8" y="22" width="16" height="4" fill="#fff"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-  bunny: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="10" y="0" width="3" height="10" rx="1" fill="${c}"/><rect x="19" y="0" width="3" height="10" rx="1" fill="${c}"/><rect x="7" y="8" width="18" height="16" rx="6" fill="${c}"/><rect x="11" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="14" y="18" width="4" height="2" rx="1" fill="#f9a8d4"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-  penguin: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="6" y="4" width="20" height="22" rx="6" fill="#111"/><rect x="10" y="10" width="12" height="14" rx="4" fill="#fff"/><rect x="11" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="14" y="17" width="4" height="2" rx="1" fill="${c}"/><rect x="6" y="14" width="3" height="8" fill="#111"/><rect x="23" y="14" width="3" height="8" fill="#111"/><rect x="10" y="28" width="4" height="4" fill="${c}"/><rect x="18" y="28" width="4" height="4" fill="${c}"/></svg>`,
-  owl: (c) => `<svg viewBox="0 0 32 32" width="64" height="64"><rect x="4" y="4" width="8" height="6" fill="${c}"/><rect x="20" y="4" width="8" height="6" fill="${c}"/><rect x="4" y="8" width="24" height="18" rx="4" fill="${c}"/><rect x="8" y="10" width="7" height="7" rx="3" fill="#fff"/><rect x="17" y="10" width="7" height="7" rx="3" fill="#fff"/><rect x="10" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="19" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="14" y="17" width="4" height="3" rx="1" fill="${c === '#f59e0b' ? '#f97316' : c}"/><rect x="6" y="22" width="6" height="4" fill="${c}"/><rect x="20" y="22" width="6" height="4" fill="${c}"/><rect x="10" y="28" width="4" height="4" fill="#f97316"/><rect x="18" y="28" width="4" height="4" fill="#f97316"/></svg>`,
+const PET_SPRITES: Record<string, (c: string) => string> = {
+  cat: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="2" y="0" width="2" height="3" fill="${c}"/><rect x="12" y="0" width="2" height="3" fill="${c}"/>
+    <rect x="3" y="1" width="1" height="2" fill="#fff"/><rect x="12" y="1" width="1" height="2" fill="#fff"/>
+    <rect x="3" y="3" width="10" height="7" fill="${c}"/>
+    <rect x="5" y="4" width="2" height="2" fill="#fff"/><rect x="9" y="4" width="2" height="2" fill="#fff"/>
+    <rect x="6" y="5" width="1" height="1" fill="#111"/><rect x="10" y="5" width="1" height="1" fill="#111"/>
+    <rect x="7" y="6" width="2" height="1" fill="#f472b6"/>
+    <rect x="4" y="7" width="1" height="1" fill="#fff"/><rect x="11" y="7" width="1" height="1" fill="#fff"/>
+    <rect x="3" y="10" width="10" height="2" fill="${c}"/>
+    <rect x="4" y="12" width="2" height="3" fill="${c}"/><rect x="10" y="12" width="2" height="3" fill="${c}"/>
+    <rect x="13" y="8" width="3" height="1" fill="${c}"/><rect x="14" y="7" width="2" height="1" fill="${c}"/>
+  </svg>`,
+  dog: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="1" y="1" width="3" height="5" fill="${c}"/><rect x="12" y="1" width="3" height="5" fill="${c}"/>
+    <rect x="3" y="3" width="10" height="7" fill="${c}"/>
+    <rect x="5" y="4" width="2" height="2" fill="#fff"/><rect x="9" y="4" width="2" height="2" fill="#fff"/>
+    <rect x="6" y="5" width="1" height="1" fill="#111"/><rect x="10" y="5" width="1" height="1" fill="#111"/>
+    <rect x="7" y="7" width="2" height="2" fill="#111"/>
+    <rect x="3" y="10" width="10" height="2" fill="${c}"/>
+    <rect x="4" y="12" width="2" height="3" fill="${c}"/><rect x="10" y="12" width="2" height="3" fill="${c}"/>
+  </svg>`,
+  fox: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="2" y="0" width="2" height="4" fill="${c}"/><rect x="12" y="0" width="2" height="4" fill="${c}"/>
+    <rect x="3" y="3" width="10" height="7" fill="${c}"/>
+    <rect x="5" y="4" width="2" height="2" fill="#fff"/><rect x="9" y="4" width="2" height="2" fill="#fff"/>
+    <rect x="6" y="5" width="1" height="1" fill="#111"/><rect x="10" y="5" width="1" height="1" fill="#111"/>
+    <rect x="7" y="7" width="2" height="1" fill="#111"/>
+    <rect x="3" y="10" width="10" height="2" fill="#fff"/>
+    <rect x="4" y="12" width="2" height="3" fill="${c}"/><rect x="10" y="12" width="2" height="3" fill="${c}"/>
+    <rect x="13" y="8" width="3" height="1" fill="${c}"/>
+  </svg>`,
+  bunny: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="4" y="0" width="2" height="5" fill="${c}"/><rect x="10" y="0" width="2" height="5" fill="${c}"/>
+    <rect x="5" y="1" width="1" height="3" fill="#f9a8d4"/><rect x="10" y="1" width="1" height="3" fill="#f9a8d4"/>
+    <rect x="3" y="5" width="10" height="6" fill="${c}"/>
+    <rect x="5" y="6" width="2" height="2" fill="#fff"/><rect x="9" y="6" width="2" height="2" fill="#fff"/>
+    <rect x="6" y="7" width="1" height="1" fill="#111"/><rect x="10" y="7" width="1" height="1" fill="#111"/>
+    <rect x="7" y="8" width="2" height="1" fill="#f9a8d4"/>
+    <rect x="3" y="11" width="4" height="2" fill="${c}"/><rect x="9" y="11" width="4" height="2" fill="${c}"/>
+    <rect x="4" y="13" width="2" height="2" fill="${c}"/><rect x="10" y="13" width="2" height="2" fill="${c}"/>
+  </svg>`,
+  penguin: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="3" y="1" width="10" height="10" fill="#1e293b"/>
+    <rect x="5" y="2" width="6" height="8" fill="#f1f5f9"/>
+    <rect x="5" y="3" width="2" height="2" fill="#fff"/><rect x="9" y="3" width="2" height="2" fill="#fff"/>
+    <rect x="6" y="4" width="1" height="1" fill="#111"/><rect x="10" y="4" width="1" height="1" fill="#111"/>
+    <rect x="7" y="5" width="2" height="2" fill="${c}"/>
+    <rect x="2" y="4" width="2" height="5" fill="#1e293b"/><rect x="12" y="4" width="2" height="5" fill="#1e293b"/>
+    <rect x="3" y="11" width="10" height="2" fill="#1e293b"/>
+    <rect x="5" y="13" width="2" height="2" fill="${c}"/><rect x="9" y="13" width="2" height="2" fill="${c}"/>
+  </svg>`,
+  owl: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="2" y="0" width="3" height="3" fill="${c}"/><rect x="11" y="0" width="3" height="3" fill="${c}"/>
+    <rect x="2" y="3" width="12" height="9" fill="${c}"/>
+    <rect x="3" y="4" width="4" height="4" fill="#fff"/><rect x="9" y="4" width="4" height="4" fill="#fff"/>
+    <rect x="5" y="5" width="1" height="2" fill="#111"/><rect x="10" y="5" width="1" height="2" fill="#111"/>
+    <rect x="7" y="7" width="2" height="2" fill="${c === '#f59e0b' ? '#f97316' : c}"/>
+    <rect x="2" y="12" width="5" height="3" fill="${c}"/><rect x="9" y="12" width="5" height="3" fill="${c}"/>
+    <rect x="5" y="13" width="2" height="2" fill="#f97316"/><rect x="9" y="13" width="2" height="2" fill="#f97316"/>
+  </svg>`,
+  olaf: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="4" y="0" width="8" height="1" fill="#3b82f6"/>
+    <rect x="3" y="1" width="10" height="1" fill="#2563eb"/>
+    <rect x="2" y="2" width="12" height="8" fill="#f8fafc"/>
+    <rect x="1" y="3" width="2" height="5" fill="#111"/>
+    <rect x="13" y="3" width="2" height="5" fill="#111"/>
+    <rect x="5" y="4" width="2" height="1" fill="#94a3b8"/><rect x="9" y="4" width="2" height="1" fill="#94a3b8"/>
+    <rect x="7" y="5" width="2" height="2" fill="#111"/>
+    <rect x="7" y="8" width="2" height="1" fill="#ef4444"/>
+    <rect x="2" y="10" width="12" height="3" fill="#f8fafc"/>
+    <rect x="4" y="13" width="2" height="2" fill="#f8fafc"/><rect x="10" y="13" width="2" height="2" fill="#f8fafc"/>
+    <rect x="3" y="14" width="1" height="1" fill="#111"/><rect x="12" y="14" width="1" height="1" fill="#111"/>
+  </svg>`,
 };
 
-function getSpriteUrl(pet: any): string | null {
-  if (pet.sprite_url) return pet.sprite_url;
-  return `data:image/svg+xml,${encodeURIComponent((PET_SVG[pet.pet_type] || PET_SVG.cat)(pet.color))}`;
+const PET_SPRITES_SLEEP: Record<string, (c: string) => string> = {
+  cat: (c) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="2" y="0" width="2" height="3" fill="${c}"/><rect x="12" y="0" width="2" height="3" fill="${c}"/>
+    <rect x="3" y="3" width="10" height="7" fill="${c}"/>
+    <rect x="5" y="5" width="2" height="1" fill="#111"/><rect x="9" y="5" width="2" height="1" fill="#111"/>
+    <rect x="7" y="6" width="2" height="1" fill="#f472b6"/>
+    <rect x="3" y="10" width="10" height="2" fill="${c}"/>
+    <rect x="4" y="12" width="2" height="3" fill="${c}"/><rect x="10" y="12" width="2" height="3" fill="${c}"/>
+  </svg>`,
+  olaf: () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64" shape-rendering="crispEdges">
+    <rect x="4" y="1" width="8" height="1" fill="#3b82f6"/>
+    <rect x="3" y="2" width="10" height="1" fill="#2563eb"/>
+    <rect x="2" y="3" width="12" height="7" fill="#f8fafc"/>
+    <rect x="1" y="4" width="2" height="4" fill="#111"/>
+    <rect x="13" y="4" width="2" height="4" fill="#111"/>
+    <rect x="5" y="5" width="2" height="1" fill="#111"/><rect x="9" y="5" width="2" height="1" fill="#111"/>
+    <rect x="7" y="6" width="2" height="1" fill="#94a3b8"/>
+    <rect x="2" y="10" width="12" height="3" fill="#f8fafc"/>
+    <rect x="4" y="13" width="2" height="2" fill="#f8fafc"/><rect x="10" y="13" width="2" height="2" fill="#f8fafc"/>
+  </svg>`,
+};
+
+function getSpriteUrl(pet: any, sleeping?: boolean): string {
+  if (pet.sprite_url && !sleeping) return pet.sprite_url;
+  const sprites = sleeping
+    ? (PET_SPRITES_SLEEP[pet.pet_type]?.(pet.color) || PET_SPRITES_SLEEP.cat?.(pet.color) || PET_SPRITES.cat(pet.color))
+    : (PET_SPRITES[pet.pet_type]?.(pet.color) || PET_SPRITES.cat(pet.color));
+  return `data:image/svg+xml,${encodeURIComponent(sprites)}`;
 }
+
+const ALL_PET_TYPES = ["cat", "dog", "fox", "bunny", "penguin", "owl", "olaf"];
 
 export default function PixelPet() {
   const ctx = usePet();
   if (!ctx) return null;
-  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, uploadSprite, loading } = ctx;
+  const { pet, action, feedPet, playWithPet, sleepPet, renamePet, changePetColor, uploadSprite, loading, userEmail, stage, cooldowns } = ctx;
   const [open, setOpen] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showAdopt, setShowAdopt] = useState(false);
   const [rename, setRename] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const isOwner = userEmail === "si.davidsdx@gmail.com";
+  const availableTypes = isOwner ? ALL_PET_TYPES : ALL_PET_TYPES.filter((t) => t !== "olaf");
 
   useEffect(() => {
     if (!pet && !loading) setShowAdopt(true);
@@ -34,22 +131,31 @@ export default function PixelPet() {
   if (loading) return null;
 
   if (!pet) {
-    if (showAdopt) return <AdoptModal onClose={() => setShowAdopt(false)} />;
+    if (showAdopt) return <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />;
     return null;
   }
 
-  const sprite = getSpriteUrl(pet) || "";
+  const sprite = getSpriteUrl(pet, action === "sleeping");
+  const xpProgress = stage.next !== null ? ((pet.xp - stage.min) / (stage.max - stage.min)) * 100 : 100;
+
+  const petAnimStyle: React.CSSProperties = {
+    imageRendering: "pixelated" as any,
+    animation: action === "eating" ? "petShake 0.5s ease-in-out 4"
+      : action === "playing" ? "petPlay 0.6s ease-in-out 3"
+      : action === "sleeping" ? "petSleep 2.5s ease-in-out infinite"
+      : action === "happy" ? "petBounce 0.6s ease-in-out 3"
+      : "petIdle 2s ease-in-out infinite",
+  };
 
   return (
     <>
-      {/* Side toggle arrow — fixed right edge, centered vertically */}
       <button
         onClick={() => setOpen(!open)}
         style={{
-          position: "fixed", right: open ? 250 : 0, top: "50%", transform: "translateY(-50%)",
+          position: "fixed", right: open ? 260 : 0, top: "50%", transform: "translateY(-50%)",
           zIndex: 101, width: 20, height: 48,
-          background: "var(--os-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRight: open ? "none" : "1px solid rgba(255,255,255,0.1)",
-          borderRadius: open ? "8px 0 0 8px" : "8px 0 0 8px",
+          background: "var(--os-bg)", border: "1px solid rgba(255,255,255,0.1)", borderRight: open ? "none" : undefined,
+          borderRadius: "8px 0 0 8px",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "-2px 0 8px rgba(0,0,0,0.15)", transition: "right 0.25s ease",
           color: "var(--os-text-secondary)",
@@ -58,10 +164,9 @@ export default function PixelPet() {
         {open ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
-      {/* Side panel — slides from right */}
       <div
         style={{
-          position: "fixed", right: 0, top: 0, bottom: 0, width: 250, zIndex: 100,
+          position: "fixed", right: 0, top: 0, bottom: 0, width: 260, zIndex: 100,
           background: "var(--os-bg)", borderLeft: "1px solid rgba(255,255,255,0.08)",
           transform: open ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.25s ease",
@@ -70,43 +175,142 @@ export default function PixelPet() {
           overflowY: "auto",
         }}
       >
-        {/* Pet header */}
-        <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src={sprite} alt={pet.name} width={44} height={44} style={{ imageRendering: "pixelated", borderRadius: 10, background: "rgba(255,255,255,0.05)", padding: 2 }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 600, fontSize: 14, color: "var(--os-text-primary)" }}>{pet.name}</p>
-              <p className="text-xs" style={{ color: "var(--os-text-secondary)" }}>Lv.{pet.level} {pet.pet_type}</p>
-            </div>
-            <button onClick={() => setShowCustomize(true)} style={{ background: "none", border: "none", color: "var(--os-text-secondary)", cursor: "pointer", padding: 4 }}>
-              <Palette size={14} />
-            </button>
+        {/* Pet Scene Background */}
+        <div style={{ position: "relative", width: "100%", height: 130, overflow: "hidden", flexShrink: 0 }}>
+          {/* Sky */}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, #0c1445 0%, #1a1a3e 40%, #1e3a5f 100%)" }} />
+          {/* Stars */}
+          {[...Array(6)].map((_, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              width: 2, height: 2, borderRadius: "50%",
+              background: "rgba(255,255,255," + (0.3 + (i % 3) * 0.2) + ")",
+              top: 8 + (i * 13) % 50, left: 15 + (i * 37) % 220,
+              animation: `cloudDrift ${3 + i}s ease-in-out infinite`,
+              animationDelay: `${i * 0.5}s`,
+            }} />
+          ))}
+          {/* Clouds */}
+          <div style={{
+            position: "absolute", top: 12, left: 20,
+            width: 36, height: 10, borderRadius: 5,
+            background: "rgba(255,255,255,0.06)",
+            animation: "cloudDrift 6s ease-in-out infinite",
+          }} />
+          <div style={{
+            position: "absolute", top: 28, right: 25,
+            width: 28, height: 8, borderRadius: 4,
+            background: "rgba(255,255,255,0.04)",
+            animation: "cloudDrift 8s ease-in-out infinite",
+            animationDelay: "2s",
+          }} />
+          {/* Grass */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 32 }}>
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 14, background: "linear-gradient(180deg, #166534 0%, #14532d 100%)" }} />
+            <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, height: 6, background: "#166534", borderRadius: "4px 4px 0 0" }} />
+            {[...Array(12)].map((_, i) => (
+              <div key={i} style={{
+                position: "absolute",
+                bottom: 14 + (i % 3) * 2,
+                left: 8 + i * 20,
+                width: 3, height: 6 + (i % 4) * 2,
+                background: "#22c55e",
+                borderRadius: "2px 2px 0 0",
+                animation: `grassSway ${2 + (i % 3)}s ease-in-out infinite`,
+                animationDelay: `${i * 0.2}s`,
+                opacity: 0.7,
+              }} />
+            ))}
+          </div>
+          {/* Pet Sprite */}
+          <div style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {action === "sleeping" && (
+              <div style={{ position: "relative", marginBottom: -4 }}>
+                {[0, 1, 2].map((i) => (
+                  <span key={i} style={{
+                    position: "absolute", top: -8 - i * 6, right: -10 + i * 4,
+                    fontSize: 10, opacity: 0,
+                    animation: `zzzFloat 2s ease-out infinite`,
+                    animationDelay: `${i * 0.6}s`,
+                    color: "#93c5fd",
+                  }}>z</span>
+                ))}
+              </div>
+            )}
+            {action === "happy" && (
+              <div style={{ position: "relative" }}>
+                {[0, 1].map((i) => (
+                  <span key={i} style={{
+                    position: "absolute", top: -6, left: i === 0 ? -6 : undefined, right: i === 1 ? -6 : undefined,
+                    fontSize: 10, opacity: 0,
+                    animation: `heartPop 1.2s ease-out infinite`,
+                    animationDelay: `${i * 0.3}s`,
+                    color: "#f472b6",
+                  }}>&#10084;</span>
+                ))}
+              </div>
+            )}
+            <img src={sprite} alt={pet.name} width={56} height={56} style={petAnimStyle} />
+          </div>
+          {/* Pet Name + Stage overlay */}
+          <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, textAlign: "center" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)", textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+              {pet.name}
+            </p>
+          </div>
+        </div>
+
+        {/* Stage + XP Bar */}
+        <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)" }}>
+              {stage.emoji} {stage.name}
+            </span>
+            <span style={{ fontSize: 10, color: "var(--os-text-secondary)" }}>
+              {pet.xp} XP{stage.next !== null ? ` / ${stage.next}` : ""}
+            </span>
+          </div>
+          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${xpProgress}%`,
+              background: stage.name === "Baby" ? "#22c55e" : stage.name === "Toddler" ? "#3b82f6" : stage.name === "Teen" ? "#f59e0b" : "#8b5cf6",
+              borderRadius: 99, transition: "width 0.5s ease",
+            }} />
           </div>
         </div>
 
         {/* Stats */}
-        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <StatRow label="Hunger" value={pet.hunger} color="#f59e0b" icon="🍖" />
-          <StatRow label="Happiness" value={pet.happiness} color="#ec4899" icon="💖" />
-          <StatRow label="Energy" value={pet.energy} color="#3b82f6" icon="⚡" />
+        <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+          <StatBar label="Hunger" value={pet.hunger} color="#f59e0b" icon="🍖" />
+          <StatBar label="Happiness" value={pet.happiness} color="#ec4899" icon="❤️" />
+          <StatBar label="Energy" value={pet.energy} color="#3b82f6" icon="⚡" />
         </div>
 
-        {/* Action buttons */}
+        {/* Actions */}
         <div style={{ padding: "0 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <ActionBtn icon={<Utensils size={14} />} label="Feed" sublabel="+30 hunger" onClick={feedPet} color="#f59e0b" />
-          <ActionBtn icon={<Gamepad2 size={14} />} label="Play" sublabel="+30 happy, -10 energy" onClick={playWithPet} color="#ec4899" />
-          <ActionBtn icon={<Moon size={14} />} label="Sleep" sublabel="+40 energy" onClick={sleepPet} color="#3b82f6" />
+          <CooldownBtn
+            icon={<Utensils size={14} />} label="Feed" sublabel="+30 hunger"
+            onClick={feedPet} color="#f59e0b" cooldown={cooldowns.feed} maxCooldown={30}
+          />
+          <CooldownBtn
+            icon={<Gamepad2 size={14} />} label="Play" sublabel="+30 happy, -10 energy"
+            onClick={playWithPet} color="#ec4899" cooldown={cooldowns.play} maxCooldown={30}
+          />
+          <CooldownBtn
+            icon={<Moon size={14} />} label="Sleep" sublabel="+40 energy"
+            onClick={sleepPet} color="#3b82f6" cooldown={cooldowns.sleep} maxCooldown={60}
+          />
+          <ActionBtn icon={<Palette size={14} />} label="Customize" sublabel="Name, color, sprite" onClick={() => setShowCustomize(true)} color="#8b5cf6" />
         </div>
 
         {/* Mood */}
-        <div style={{ padding: "14px", marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ padding: "12px 14px", marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <p style={{ fontSize: 11, color: "var(--os-text-secondary)", textAlign: "center" }}>
-            {action === "eating" ? "Nom nom nom! 🐟" : action === "playing" ? "Wheee! 🧶" : action === "sleeping" ? "Zzz... 💤" : pet.mood === "happy" ? "Feeling great! ✨" : pet.mood === "sad" ? "Needs attention... 💔" : "Just vibing~ 😌"}
+            {pet.mood === "happy" ? "Feeling great!" : pet.mood === "sad" ? "Needs attention..." : "Just vibing~"}
           </p>
         </div>
       </div>
 
-      {/* Customize modal */}
       {showCustomize && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowCustomize(false)}>
           <div className="glass-panel" style={{ padding: 20, width: 300, borderRadius: 14 }} onClick={(e) => e.stopPropagation()}>
@@ -131,7 +335,7 @@ export default function PixelPet() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Upload Photo as Pet</label>
+                <label style={{ fontSize: 11, fontWeight: 500, color: "var(--os-text-secondary)", marginBottom: 6, display: "block" }}>Upload Photo</label>
                 <button onClick={() => fileRef.current?.click()} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", fontSize: 11, width: "100%", justifyContent: "center" }}>
                   <Upload size={12} /> Choose image (BG removed + pixelated)
                 </button>
@@ -147,22 +351,112 @@ export default function PixelPet() {
         </div>
       )}
 
-      {showAdopt && <AdoptModal onClose={() => setShowAdopt(false)} />}
+      {showAdopt && <AdoptModal onClose={() => setShowAdopt(false)} availableTypes={availableTypes} />}
     </>
   );
 }
 
-function StatRow({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
+function AdoptModal({ onClose, availableTypes }: { onClose: () => void; availableTypes: string[] }) {
+  const ctx = usePet();
+  if (!ctx) return null;
+  const { createPet } = ctx;
+  const [name, setName] = useState("Buddy");
+  const [type, setType] = useState(availableTypes[0] || "cat");
+  const [color, setColor] = useState("#f59e0b");
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="glass-panel" style={{ padding: 24, width: 320, borderRadius: 16, display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
+        <Sparkles size={28} style={{ color: "var(--os-accent)" }} />
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--os-text-primary)" }}>Adopt a Pet!</h2>
+        <p className="text-sm" style={{ color: "var(--os-text-secondary)", textAlign: "center" }}>Your study companion grows as you study.</p>
+
+        <div style={{ width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src={getSpriteUrl({ pet_type: type, color, sprite_url: null })} alt="preview" width={64} height={64} style={{ imageRendering: "pixelated" }} />
+        </div>
+
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center" }}>
+          {availableTypes.map((t) => (
+            <button key={t} onClick={() => setType(t)} style={{ width: 44, height: 44, borderRadius: 10, background: type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)", border: type === t ? "2px solid var(--os-accent)" : "2px solid rgba(255,255,255,0.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }} title={t}>
+              <img src={getSpriteUrl({ pet_type: t, color: type === t ? "#fff" : color, sprite_url: null })} alt={t} width={32} height={32} style={{ imageRendering: "pixelated" }} />
+            </button>
+          ))}
+        </div>
+
+        <input value={name} onChange={(e) => setName(e.target.value)} className="glass-input" style={{ width: "100%", padding: "8px 10px", fontSize: 13, textAlign: "center" }} placeholder="Name your pet..." />
+
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
+          {["#f59e0b","#ef4444","#3b82f6","#10b981","#8b5cf6","#ec4899","#6b7280","#f97316"].map((c) => (
+            <button key={c} onClick={() => setColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: color === c ? "2px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
+          ))}
+        </div>
+
+        <button onClick={() => { createPet(name, type, color); onClose(); }} className="glass-btn-primary" style={{ width: "100%", padding: "10px", fontWeight: 600, fontSize: 13 }}>
+          Adopt {name}!
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StatBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 11, color: "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>{icon} {label}</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+        <span style={{ fontSize: 11, color: "var(--os-text-secondary)" }}>{icon} {label}</span>
         <span style={{ fontSize: 11, color: "var(--os-text-secondary)" }}>{value}%</span>
       </div>
-      <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
+      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${value}%`, background: color, borderRadius: 99, transition: "width 0.4s ease" }} />
       </div>
     </div>
+  );
+}
+
+function CooldownBtn({ icon, label, sublabel, onClick, color, cooldown, maxCooldown }: {
+  icon: React.ReactNode; label: string; sublabel: string; onClick: () => void; color: string; cooldown: number; maxCooldown: number;
+}) {
+  const ready = cooldown <= 0;
+  const pct = ready ? 100 : ((maxCooldown - cooldown) / maxCooldown) * 100;
+  return (
+    <button onClick={onClick} disabled={!ready} style={{
+      display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
+      background: ready ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
+      border: "1px solid " + (ready ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)"),
+      cursor: ready ? "pointer" : "not-allowed",
+      transition: "all 0.15s", textAlign: "left", width: "100%",
+      opacity: ready ? 1 : 0.5,
+      position: "relative", overflow: "hidden",
+    }}
+      onMouseEnter={(e) => { if (ready) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+      onMouseLeave={(e) => { if (ready) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+    >
+      {!ready && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, bottom: 0,
+          width: `${pct}%`, background: color + "0d",
+          animation: "cooldownPulse 1.5s ease-in-out infinite",
+        }} />
+      )}
+      <div style={{ width: 30, height: 30, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0, position: "relative" }}>
+        {icon}
+        {!ready && (
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: 8,
+            border: `2px solid ${color}`,
+            borderRightColor: "transparent",
+            animation: "spin 1s linear infinite",
+            opacity: 0.6,
+          }} />
+        )}
+      </div>
+      <div style={{ position: "relative", flex: 1 }}>
+        <p style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)" }}>{label}</p>
+        <p style={{ fontSize: 10, color: "var(--os-text-secondary)" }}>
+          {ready ? sublabel : `Ready in ${cooldown}s`}
+        </p>
+      </div>
+    </button>
   );
 }
 
@@ -173,8 +467,8 @@ function ActionBtn({ icon, label, sublabel, onClick, color }: { icon: React.Reac
       background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
       cursor: "pointer", transition: "all 0.15s", textAlign: "left", width: "100%",
     }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = color + "40"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
     >
       <div style={{ width: 30, height: 30, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>
         {icon}
@@ -184,55 +478,6 @@ function ActionBtn({ icon, label, sublabel, onClick, color }: { icon: React.Reac
         <p style={{ fontSize: 10, color: "var(--os-text-secondary)" }}>{sublabel}</p>
       </div>
     </button>
-  );
-}
-
-function AdoptModal({ onClose }: { onClose: () => void }) {
-  const ctx = usePet();
-  if (!ctx) return null;
-  const { createPet } = ctx;
-  const { PET_TYPES, PET_COLORS } = require("./pet-context");
-  const [name, setName] = useState("Buddy");
-  const [type, setType] = useState("cat");
-  const [color, setColor] = useState("#f59e0b");
-
-  const makeSvg = (t: string, c: string) => {
-    const map: Record<string, (c: string) => string> = {
-      cat: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="8" y="4" width="4" height="6" fill="${c}"/><rect x="20" y="4" width="4" height="6" fill="${c}"/><rect x="6" y="8" width="20" height="16" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="14" y="18" width="4" height="2" rx="1" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-      dog: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="4" y="6" width="6" height="10" rx="2" fill="${c}"/><rect x="22" y="6" width="6" height="10" rx="2" fill="${c}"/><rect x="6" y="8" width="20" height="16" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="4" rx="1" fill="#111"/><rect x="13" y="18" width="6" height="4" rx="2" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-      fox: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="6" y="2" width="4" height="8" fill="${c}"/><rect x="22" y="2" width="4" height="8" fill="${c}"/><rect x="6" y="8" width="20" height="14" rx="4" fill="${c}"/><rect x="10" y="12" width="4" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="4" height="3" rx="1" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-      bunny: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="10" y="0" width="3" height="10" rx="1" fill="${c}"/><rect x="19" y="0" width="3" height="10" rx="1" fill="${c}"/><rect x="7" y="8" width="18" height="16" rx="6" fill="${c}"/><rect x="11" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="${c}"/><rect x="20" y="28" width="4" height="4" fill="${c}"/></svg>`,
-      penguin: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="6" y="4" width="20" height="22" rx="6" fill="#111"/><rect x="10" y="10" width="12" height="14" rx="4" fill="#fff"/><rect x="11" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="18" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="14" y="17" width="4" height="2" rx="1" fill="${c}"/><rect x="10" y="28" width="4" height="4" fill="${c}"/><rect x="18" y="28" width="4" height="4" fill="${c}"/></svg>`,
-      owl: (c) => `<svg viewBox="0 0 32 32" width="40" height="40"><rect x="4" y="4" width="8" height="6" fill="${c}"/><rect x="20" y="4" width="8" height="6" fill="${c}"/><rect x="4" y="8" width="24" height="18" rx="4" fill="${c}"/><rect x="8" y="10" width="7" height="7" rx="3" fill="#fff"/><rect x="17" y="10" width="7" height="7" rx="3" fill="#fff"/><rect x="10" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="19" y="12" width="3" height="3" rx="1" fill="#111"/><rect x="10" y="28" width="4" height="4" fill="#f97316"/><rect x="18" y="28" width="4" height="4" fill="#f97316"/></svg>`,
-    };
-    return (map[t] || map.cat)(c);
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div className="glass-panel" style={{ padding: 24, width: 320, borderRadius: 16, display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-        <Sparkles size={28} style={{ color: "var(--os-accent)" }} />
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--os-text-primary)" }}>Adopt a Pet!</h2>
-        <p className="text-sm" style={{ color: "var(--os-text-secondary)", textAlign: "center" }}>Your study companion grows as you study.</p>
-        <div dangerouslySetInnerHTML={{ __html: makeSvg(type, color) }} style={{ imageRendering: "pixelated" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4 }}>
-          {PET_TYPES.map((t: string) => (
-            <button key={t} onClick={() => setType(t)} style={{ width: 36, height: 36, borderRadius: 8, background: type === t ? "var(--os-accent)" : "rgba(255,255,255,0.05)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title={t}>
-              <div dangerouslySetInnerHTML={{ __html: makeSvg(t, type === t ? "#fff" : color) }} style={{ imageRendering: "pixelated", width: 28, height: 28 }} />
-            </button>
-          ))}
-        </div>
-        <input value={name} onChange={(e) => setName(e.target.value)} className="glass-input" style={{ width: "100%", padding: "8px 10px", fontSize: 13, textAlign: "center" }} placeholder="Name your pet..." />
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
-          {PET_COLORS.map((c: string) => (
-            <button key={c} onClick={() => setColor(c)} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: color === c ? "2px solid #fff" : "2px solid transparent", cursor: "pointer" }} />
-          ))}
-        </div>
-        <button onClick={() => { createPet(name, type, color); onClose(); }} className="glass-btn-primary" style={{ width: "100%", padding: "10px", fontWeight: 600, fontSize: 13 }}>
-          Adopt {name}!
-        </button>
-      </div>
-    </div>
   );
 }
 
