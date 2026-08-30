@@ -46,11 +46,23 @@ export function NoteEditor({
       (_m: string, attrs: string, inner: string) => {
         const x = attrs.match(/x="(\d+)"/)?.[1] || "100";
         const y = attrs.match(/y="(\d+)"/)?.[1] || "100";
-        const width = attrs.match(/width="(\d+)"/)?.[1] || "200";
-        const height = attrs.match(/height="(\d+)"/)?.[1] || "80";
+        const width = attrs.match(/width="(\d+)"/)?.[1] || "280";
+        const height = attrs.match(/height="(\d+)"/)?.[1] || "100";
         const color = attrs.match(/color="([^"]*)"/)?.[1] || "#3b82f6";
         const rawContent = inner.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "").trim();
-        return `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px solid ${color};background:${color}10;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:8px;font-size:14px;overflow:auto;pointer-events:auto;white-space:pre-wrap;">${rawContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
+        return `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;min-height:${height}px;border:2px solid ${color};background:rgba(15,21,35,0.9);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:8px;font-size:14px;white-space:pre-wrap;z-index:10;">${rawContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>`;
+      }
+    );
+    html = html.replace(
+      /<img([^>]*data-x="[^"]*"[^>]*)>/g,
+      (_m: string, attrs: string) => {
+        const src = attrs.match(/src="([^"]*)"/)?.[1] || "";
+        const alt = attrs.match(/alt="([^"]*)"/)?.[1] || "";
+        const x = attrs.match(/data-x="([^"]*)"/)?.[1] || "50";
+        const y = attrs.match(/data-y="([^"]*)"/)?.[1] || "50";
+        const style = attrs.match(/style="([^"]*)"/)?.[1] || "";
+        const posStyle = `position:absolute;left:${x}px;top:${y}px;`;
+        return `<img src="${src}" alt="${alt}" style="${posStyle}${style}" />`;
       }
     );
     setPreview(html);
