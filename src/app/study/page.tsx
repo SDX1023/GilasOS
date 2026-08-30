@@ -584,6 +584,17 @@ function QuizTab({ userId }: { userId: string | null }) {
             </label>
           </div>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 8, padding: 4, background: "rgba(255,255,255,0.03)", marginBottom: 16 }}>
+          {(["mc", "identification", "mixed"] as const).map((t) => (
+            <button key={t} onClick={() => setQuizType(t)} style={{
+              flex: 1, justifyContent: "center", padding: "6px 10px", borderRadius: 6, fontSize: 12, fontWeight: 500, transition: "colors 0.2s",
+              background: quizType === t ? "var(--os-bg)" : "transparent", boxShadow: quizType === t ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+              color: quizType === t ? "var(--os-text-primary)" : "var(--os-text-secondary)", border: "none", cursor: "pointer",
+            }}>
+              {t === "mc" ? "MC" : t === "identification" ? "ID" : "Mixed"}
+            </button>
+          ))}
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
           {quizQuestions.map((q, i) => {
             const isEditing = editingQ === i;

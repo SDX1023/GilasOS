@@ -19,7 +19,7 @@ interface MusicSelectorProps {
 }
 
 const WAVEFORM_BARS = 100;
-const TRACK_DURATION = 30;
+const TRACK_DURATION = 60;
 
 let generatedBars: number[] = [];
 function getBars() {
@@ -43,9 +43,21 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
   const [hasMore, setHasMore] = useState(false);
   const waveformRef = useRef<HTMLCanvasElement>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(400);
   const isDraggingRef = useRef(false);
   const dragStartX = useRef(0);
   const dragStartSel = useRef(0);
+
+  useEffect(() => {
+    const measure = () => {
+      if (waveformContainerRef.current) {
+        setCanvasWidth(waveformContainerRef.current.offsetWidth);
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [selectedTrack]);
 
   const maxStart = Math.max(0, TRACK_DURATION - clipDuration);
 
@@ -344,7 +356,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
 
             {/* Waveform with draggable selection */}
             <div ref={waveformContainerRef} style={{ position: "relative", height: 64, marginBottom: 4, cursor: "grab", touchAction: "none" }} onMouseDown={onDragStart} onTouchStart={onDragStart}>
-              <canvas ref={waveformRef} width={480} height={64} style={{ width: "100%", height: 64, borderRadius: 6 }} />
+              <canvas ref={waveformRef} width={canvasWidth} height={64} style={{ width: "100%", height: 64, borderRadius: 6 }} />
             </div>
 
             {/* Controls: duration badge + play/stop */}

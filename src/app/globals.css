@@ -1216,6 +1216,13 @@ a:active {
 .glass-btn-primary {
   background: var(--os-accent);
   color: #fff;
+  border-radius: 14px;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
 }
 
 .glass-btn-primary:hover {

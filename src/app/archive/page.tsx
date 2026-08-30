@@ -11,22 +11,24 @@ interface ArchiveEntry {
   competition: string;
   competition_url: string;
   links: string[];
+  link_labels: string[];
   type: string;
   year: string;
 }
 
-function LinksInput({ links, setLinks }: { links: string[]; setLinks: (v: string[]) => void }) {
+function LinksInput({ links, labels, setLinks, setLabels }: { links: string[]; labels: string[]; setLinks: (v: string[]) => void; setLabels: (v: string[]) => void }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {links.map((link, i) => (
         <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input className="glass-input" value={link} onChange={(e) => { const updated = [...links]; updated[i] = e.target.value; setLinks(updated); }} placeholder={`Link ${i + 1} (optional)`} style={{ flex: 1, fontSize: 13 }} />
+          <input className="glass-input" value={labels[i] || ""} onChange={(e) => { const updated = [...labels]; updated[i] = e.target.value; setLabels(updated); }} placeholder={`Label ${i + 1}`} style={{ width: 100, fontSize: 13, flexShrink: 0 }} />
+          <input className="glass-input" value={link} onChange={(e) => { const updated = [...links]; updated[i] = e.target.value; setLinks(updated); }} placeholder={`Link ${i + 1}`} style={{ flex: 1, fontSize: 13 }} />
           {links.length > 1 && (
-            <button onClick={() => setLinks(links.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4, flexShrink: 0 }}><X size={14} /></button>
+            <button onClick={() => { setLinks(links.filter((_, j) => j !== i)); setLabels(labels.filter((_, j) => j !== i)); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 4, flexShrink: 0 }}><X size={14} /></button>
           )}
         </div>
       ))}
-      <button onClick={() => setLinks([...links, ""])} style={{ background: "none", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: 8, color: "var(--os-text-dim)", cursor: "pointer", padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, alignSelf: "flex-start" }}>
+      <button onClick={() => { setLinks([...links, ""]); setLabels([...labels, ""]); }} style={{ background: "none", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: 8, color: "var(--os-text-dim)", cursor: "pointer", padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, alignSelf: "flex-start" }}>
         <Plus size={12} /> Add Link
       </button>
     </div>
@@ -35,15 +37,26 @@ function LinksInput({ links, setLinks }: { links: string[]; setLinks: (v: string
 
 function renderLinks(entry: ArchiveEntry) {
   const allLinks: string[] = [];
-  if (entry.competition_url && !entry.links?.includes(entry.competition_url)) allLinks.push(entry.competition_url);
-  if (entry.links?.length) allLinks.push(...entry.links);
+  const allLabels: string[] = [];
+  if (entry.competition_url && !entry.links?.includes(entry.competition_url)) {
+    allLinks.push(entry.competition_url);
+    allLabels.push("");
+  }
+  if (entry.links?.length) {
+    entry.links.forEach((l, i) => {
+      if (!allLinks.includes(l)) {
+        allLinks.push(l);
+        allLabels.push(entry.link_labels?.[i] || "");
+      }
+    });
+  }
   const unique = [...new Set(allLinks)].filter(Boolean);
-
   if (unique.length === 0) return <span>{entry.competition}</span>;
   if (unique.length === 1) {
+    const label = allLabels[0];
     return (
       <a href={unique[0]} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-        {entry.competition} <ExternalLink size={12} />
+        {entry.competition} {label && <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>({label})</span>} <ExternalLink size={12} />
       </a>
     );
   }
@@ -51,11 +64,15 @@ function renderLinks(entry: ArchiveEntry) {
     <div>
       <p style={{ marginBottom: 4 }}>{entry.competition}</p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {unique.map((link, i) => (
-          <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, padding: "3px 10px", borderRadius: 6, background: "rgba(109,40,217,0.15)", border: "1px solid rgba(109,40,217,0.4)" }}>
-            <LinkIcon size={10} /> Link {i + 1}
-          </a>
-        ))}
+        {unique.map((link, i) => {
+          const idx = allLinks.indexOf(link);
+          const label = allLabels[idx] || `Link ${i + 1}`;
+          return (
+            <a key={i} href={link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--os-accent)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, padding: "3px 10px", borderRadius: 6, background: "rgba(109,40,217,0.15)", border: "1px solid rgba(109,40,217,0.4)" }}>
+              <LinkIcon size={10} /> {label}
+            </a>
+          );
+        })}
       </div>
     </div>
   );
@@ -68,6 +85,19 @@ function getAllLinks(entry: ArchiveEntry): string[] {
   return [...new Set(links)].filter(Boolean);
 }
 
+function getAllLabels(entry: ArchiveEntry): string[] {
+  const labels: string[] = [];
+  if (entry.competition_url && !entry.links?.includes(entry.competition_url)) labels.push("");
+  if (entry.links?.length) entry.links.forEach((l, i) => {
+    if (!labels.includes(l)) labels.push(entry.link_labels?.[i] || "");
+  });
+  const links = getAllLinks(entry);
+  return links.map((l) => {
+    const idx = entry.links?.indexOf(l);
+    return idx !== undefined && idx >= 0 ? (entry.link_labels?.[idx] || "") : "";
+  });
+}
+
 export default function ArchivePage() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
@@ -77,8 +107,10 @@ export default function ArchivePage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newEntry, setNewEntry] = useState({ competition: "", type: "", year: "" });
   const [newLinks, setNewLinks] = useState<string[]>([""]);
+  const [newLabels, setNewLabels] = useState<string[]>([""]);
   const [editValues, setEditValues] = useState({ competition: "", type: "", year: "" });
   const [editLinks, setEditLinks] = useState<string[]>([]);
+  const [editLabels, setEditLabels] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"year" | "type" | "">("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -96,6 +128,7 @@ export default function ArchivePage() {
     const mapped = (data || []).map((e: any) => ({
       ...e,
       links: e.links || (e.competition_url ? [e.competition_url] : []),
+      link_labels: e.link_labels || [],
     }));
     setEntries(mapped);
     setLoading(false);
@@ -110,16 +143,19 @@ export default function ArchivePage() {
     if (!newEntry.competition.trim()) return;
     const supabase = getSupabase();
     const filteredLinks = newLinks.filter((l) => l.trim());
+    const filteredLabels = newLabels.slice(0, filteredLinks.length);
     const { error } = await supabase.from("archive_entries").insert({
       competition: newEntry.competition,
       competition_url: filteredLinks[0] || "",
       links: filteredLinks,
+      link_labels: filteredLabels,
       type: newEntry.type,
       year: newEntry.year,
     });
     if (!error) {
       setNewEntry({ competition: "", type: "", year: "" });
       setNewLinks([""]);
+      setNewLabels([""]);
       setShowAddForm(false);
       loadEntries();
     }
@@ -136,16 +172,20 @@ export default function ArchivePage() {
     setEditingId(entry.id);
     setEditValues({ competition: entry.competition, type: entry.type, year: entry.year });
     const allLinks = getAllLinks(entry);
+    const allLabels = getAllLabels(entry);
     setEditLinks(allLinks.length > 0 ? allLinks : [""]);
+    setEditLabels(allLabels.length > 0 ? allLabels : [""]);
   };
 
   const saveEdit = async (id: string) => {
     const supabase = getSupabase();
     const filteredLinks = editLinks.filter((l) => l.trim());
+    const filteredLabels = editLabels.slice(0, filteredLinks.length);
     await supabase.from("archive_entries").update({
       competition: editValues.competition,
       competition_url: filteredLinks[0] || "",
       links: filteredLinks,
+      link_labels: filteredLabels,
       type: editValues.type,
       year: editValues.year,
     }).eq("id", id);
@@ -158,7 +198,7 @@ export default function ArchivePage() {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortBy(field);
-      setSortDir(field === "year" ? "desc" : "asc");
+      setSortDir("asc");
     }
   };
 
@@ -216,7 +256,7 @@ export default function ArchivePage() {
           </div>
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Links</label>
-            <LinksInput links={newLinks} setLinks={setNewLinks} />
+            <LinksInput links={newLinks} labels={newLabels} setLinks={setNewLinks} setLabels={setNewLabels} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={addEntry} className="glass-btn glass-btn-primary">Add</button>
@@ -237,15 +277,15 @@ export default function ArchivePage() {
         </div>
       ) : (
         <div className="glass-panel" style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
                 <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={() => handleSort("type")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}>
-                  Type {sortBy === "type" ? (sortDir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} style={{ opacity: 0.4 }} />}
+                <th onClick={() => handleSort("type")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "160px" }}>
+                  Type{sortBy === "type" ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
                 </th>
-                <th onClick={() => handleSort("year")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}>
-                  Year {sortBy === "year" ? (sortDir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} style={{ opacity: 0.4 }} />}
+                <th onClick={() => handleSort("year")} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "120px" }}>
+                  Year{sortBy === "year" ? <span style={{ marginLeft: 4 }}>{sortDir === "asc" ? "↑" : "↓"}</span> : <span style={{ marginLeft: 4, opacity: 0.4 }}>↕</span>}
                 </th>
                 {isAdmin && <th style={{ width: 80 }}></th>}
               </tr>

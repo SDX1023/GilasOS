@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
-import { Brain, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { Brain, Trash2, ChevronRight, ChevronDown, Plus } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -50,6 +50,10 @@ export default function FlashcardsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [openCourses, setOpenCourses] = useState<Set<string>>(new Set());
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
+  const [showCreateDeck, setShowCreateDeck] = useState(false);
+  const [newDeckName, setNewDeckName] = useState("");
+  const [newDeckModule, setNewDeckModule] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -122,6 +126,22 @@ export default function FlashcardsPage() {
     });
   };
 
+  const createDeck = async () => {
+    if (!newDeckName.trim() || !userId) return;
+    setCreating(true);
+    const courseId = newDeckModule.trim() || "My Decks";
+    const moduleId = "custom";
+    const reviewerId = `${courseId}/${moduleId}/${Date.now()}`;
+    const reviewer = { id: reviewerId, title: newDeckName.trim(), cards: [] };
+    await saveReviewerToSupabase(courseId, moduleId, reviewer);
+    const cloudReviewers = await loadReviewersFromSupabase();
+    setAllReviewers(cloudReviewers);
+    setNewDeckName("");
+    setNewDeckModule("");
+    setShowCreateDeck(false);
+    setCreating(false);
+  };
+
   if (!mounted) {
     return (
       <div className="page-container">
@@ -148,11 +168,16 @@ export default function FlashcardsPage() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1 className="page-title"><Brain size={28} /> Flash Cards</h1>
-        <p className="page-subtitle">
-          {allReviewers.length} decks across {grouped.length} courses
-        </p>
+      <div className="page-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <h1 className="page-title"><Brain size={28} /> Flash Cards</h1>
+          <p className="page-subtitle">
+            {allReviewers.length} decks across {grouped.length} courses
+          </p>
+        </div>
+        <button onClick={() => setShowCreateDeck(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <Plus size={16} /> Create Deck
+        </button>
       </div>
 
       {allReviewers.length === 0 ? (
@@ -161,7 +186,15 @@ export default function FlashcardsPage() {
             <Brain size={32} style={{ color: "var(--os-text-dim)" }} />
           </div>
           <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No flash cards yet</h2>
-          <p className="text-secondary text-sm">Create decks from the PDF tool or study sections.</p>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Create a deck manually or generate from a PDF.</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <button onClick={() => setShowCreateDeck(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Plus size={14} /> Create Deck
+            </button>
+            <Link href="/pdf-to-cards" className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Brain size={14} /> Generate from PDF
+            </Link>
+          </div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -251,6 +284,22 @@ export default function FlashcardsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showCreateDeck && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div className="glass-panel" style={{ maxWidth: 380, width: "100%", margin: "0 16px" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Create New Deck</h3>
+            <input className="glass-input" value={newDeckName} onChange={(e) => setNewDeckName(e.target.value)} placeholder="Deck name" autoFocus style={{ width: "100%", marginBottom: 10 }} onKeyDown={(e) => { if (e.key === "Enter") createDeck(); }} />
+            <input className="glass-input" value={newDeckModule} onChange={(e) => setNewDeckModule(e.target.value)} placeholder="Course (optional, defaults to My Decks)" style={{ width: "100%", marginBottom: 16 }} onKeyDown={(e) => { if (e.key === "Enter") createDeck(); }} />
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button onClick={() => { setShowCreateDeck(false); setNewDeckName(""); setNewDeckModule(""); }} className="glass-btn glass-btn-ghost">Cancel</button>
+              <button onClick={createDeck} disabled={!newDeckName.trim() || creating} className="glass-btn glass-btn-primary" style={{ opacity: !newDeckName.trim() || creating ? 0.5 : 1 }}>
+                {creating ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
