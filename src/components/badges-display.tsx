@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BADGES, getEarnedBadges, type Badge } from "@/lib/badges";
+import { BADGES, getEarnedBadges, retroactiveBadgeCheck, type Badge } from "@/lib/badges";
+import { useAuth } from "@/lib/auth-context";
 import { Award, Lock } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -20,10 +21,20 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function BadgesDisplay() {
   const [earnedIds, setEarnedIds] = useState<string[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     setEarnedIds(getEarnedBadges());
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    retroactiveBadgeCheck(user.id).then((newlyEarned) => {
+      if (newlyEarned.length > 0) {
+        setEarnedIds(getEarnedBadges());
+      }
+    }).catch(() => {});
+  }, [user]);
 
   const earnedCount = earnedIds.length;
   const totalCount = BADGES.length;

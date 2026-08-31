@@ -14,16 +14,28 @@ const wallpapers = [
   { name: "Ocean Deep", colors: ["#042f2e", "#0a3d3d"] },
   { name: "Sunset", colors: ["#1a0000", "#4a1a1a"] },
   { name: "Forest", colors: ["#0a1a0a", "#1a3a1a"] },
+  { name: "Lavender", colors: ["#1a0a2e", "#3b1f6e"] },
+  { name: "Rose", colors: ["#1a0a14", "#4a1a2e"] },
+  { name: "Cyberpunk", colors: ["#0a0a1a", "#1a0a3a"] },
+  { name: "Arctic", colors: ["#0a1a2a", "#1a3a5a"] },
+  { name: "Ember", colors: ["#1a0e05", "#3a2010"] },
+  { name: "Mint", colors: ["#051a15", "#0a3a2e"] },
 ];
 
 const accentColors = [
   { name: "Blue", color: "#2563eb", rgb: "37,99,235" },
   { name: "Purple", color: "#7c3aed", rgb: "124,58,237" },
   { name: "Violet", color: "#6d28d9", rgb: "109,40,217" },
+  { name: "Indigo", color: "#4f46e5", rgb: "79,70,229" },
   { name: "Pink", color: "#ec4899", rgb: "236,72,153" },
+  { name: "Rose", color: "#f43f5e", rgb: "244,63,94" },
   { name: "Red", color: "#ef4444", rgb: "239,68,68" },
   { name: "Orange", color: "#f97316", rgb: "249,115,22" },
+  { name: "Amber", color: "#f59e0b", rgb: "245,158,11" },
+  { name: "Yellow", color: "#eab308", rgb: "234,179,8" },
+  { name: "Lime", color: "#84cc16", rgb: "132,204,22" },
   { name: "Green", color: "#10b981", rgb: "16,185,129" },
+  { name: "Teal", color: "#14b8a6", rgb: "20,184,166" },
   { name: "Cyan", color: "#06b6d4", rgb: "6,182,212" },
 ];
 
@@ -33,6 +45,7 @@ const defaultAccent = { color: "#2563eb", rgb: "37,99,235" };
 export default function CustomizationPanel({ isOpen, onClose }: CustomizationPanelProps) {
   const [selectedWallpaper, setSelectedWallpaper] = useState<number>(0);
   const [selectedAccent, setSelectedAccent] = useState<number>(0);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const savedWallpaper = localStorage.getItem("gilasos-wallpaper");
@@ -67,12 +80,22 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
 
   const handleSelectWallpaper = (index: number) => {
     setSelectedWallpaper(index);
-    localStorage.setItem("gilasos-wallpaper", wallpapers[index].colors[0]);
+    setSaved(false);
   };
 
   const handleSelectAccent = (index: number) => {
     setSelectedAccent(index);
-    localStorage.setItem("gilasos-accent", accentColors[index].color);
+    setSaved(false);
+  };
+
+  const handleSave = () => {
+    localStorage.setItem("gilasos-wallpaper", wallpapers[selectedWallpaper].colors[0]);
+    localStorage.setItem("gilasos-accent", accentColors[selectedAccent].color);
+    setSaved(true);
+    setTimeout(() => {
+      onClose();
+      setSaved(false);
+    }, 600);
   };
 
   const handleReset = () => {
@@ -86,6 +109,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
     );
     document.documentElement.style.setProperty("--os-accent", defaultAccent.color);
     document.documentElement.style.setProperty("--os-accent-rgb", defaultAccent.rgb);
+    setSaved(false);
   };
 
   if (!isOpen) return null;
@@ -108,8 +132,8 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         onClick={(e) => e.stopPropagation()}
         style={{
           position: "relative",
-          width: "420px",
-          maxHeight: "80vh",
+          width: "460px",
+          maxHeight: "85vh",
           overflowY: "auto",
           background: "var(--os-glass-bg)",
           border: "1px solid var(--os-glass-border)",
@@ -173,7 +197,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           >
             Wallpaper
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
             {wallpapers.map((wp, index) => (
               <button
                 key={wp.name}
@@ -182,11 +206,11 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  padding: "6px",
+                  padding: "5px",
                   borderRadius: "10px",
                   transition: "background 0.2s",
                 }}
@@ -199,20 +223,21 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
               >
                 <div
                   style={{
-                    width: "60px",
-                    height: "60px",
+                    width: "52px",
+                    height: "52px",
                     borderRadius: "10px",
                     background: `linear-gradient(135deg, ${wp.colors[0]}, ${wp.colors[1]})`,
                     border: selectedWallpaper === index ? "2px solid var(--os-accent)" : "2px solid var(--os-glass-border)",
-                    transition: "border-color 0.2s",
-                    boxShadow: selectedWallpaper === index ? "0 0 8px var(--os-accent-rgb)" : "none",
+                    transition: "border-color 0.2s, box-shadow 0.2s",
+                    boxShadow: selectedWallpaper === index ? `0 0 10px var(--os-accent-rgb)` : "none",
                   }}
                 />
                 <span
                   style={{
-                    fontSize: "11px",
+                    fontSize: "10px",
                     color: selectedWallpaper === index ? "var(--os-text-primary)" : "var(--os-text-secondary)",
                     fontFamily: "var(--os-font-body)",
+                    lineHeight: 1.2,
                   }}
                 >
                   {wp.name}
@@ -237,7 +262,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           >
             Accent Color
           </h3>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
             {accentColors.map((ac, index) => (
               <button
                 key={ac.name}
@@ -253,9 +278,10 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
                   transition: "transform 0.15s, box-shadow 0.15s",
                   boxShadow: selectedAccent === index ? `0 0 0 3px ${ac.color}40` : "none",
                   padding: 0,
+                  justifySelf: "center",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.1)";
+                  e.currentTarget.style.transform = "scale(1.15)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "scale(1)";
@@ -263,16 +289,19 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
               />
             ))}
           </div>
+          <p style={{ fontSize: "11px", color: "var(--os-text-dim)", marginTop: "8px", textAlign: "center" }}>
+            {accentColors[selectedAccent].name}
+          </p>
         </div>
 
-        {/* Reset Section */}
-        <div>
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={handleReset}
             style={{
-              width: "100%",
+              flex: 1,
               padding: "10px",
-              borderRadius: "8px",
+              borderRadius: "10px",
               background: "rgba(255,255,255,0.06)",
               border: "1px solid var(--os-glass-border)",
               color: "var(--os-text-secondary)",
@@ -291,7 +320,28 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
               e.currentTarget.style.color = "var(--os-text-secondary)";
             }}
           >
-            Reset to Defaults
+            Reset
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              flex: 2,
+              padding: "10px",
+              borderRadius: "10px",
+              background: saved ? "#22c55e" : "var(--os-accent)",
+              border: "none",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              fontFamily: "var(--os-font-body)",
+              cursor: "pointer",
+              transition: "background 0.2s, transform 0.1s",
+              boxShadow: saved ? "0 4px 16px rgba(34,197,94,0.3)" : "0 4px 16px rgba(var(--os-accent-rgb), 0.3)",
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+          >
+            {saved ? "✓ Saved!" : "Save"}
           </button>
         </div>
       </div>

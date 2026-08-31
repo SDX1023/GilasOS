@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { getSupabase } from "./supabase";
 import { migrateLocalStorageToSupabase } from "./custom-content";
+import { retroactiveBadgeCheck } from "./badges";
 import { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchUsername(session.user.id, session.user.email || "");
         checkAdmin(session.user.id, session.user.email || "");
+        retroactiveBadgeCheck(session.user.id).catch(() => {});
       }
       setLoading(false);
     }).catch(() => {
