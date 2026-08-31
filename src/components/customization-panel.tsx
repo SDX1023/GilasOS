@@ -147,7 +147,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+      style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "5vh", backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
       onClick={onClose}
     >
       <div
@@ -166,13 +166,13 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         </div>
 
         {/* Wallpaper Tabs — fixed, not scrollable */}
-        <div style={{ display: "flex", gap: "2px", margin: "12px 20px 0", background: "rgba(255,255,255,0.04)", borderRadius: "8px", padding: "2px", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: "3px", margin: "12px 20px 0", background: "rgba(255,255,255,0.04)", borderRadius: "8px", padding: "3px", flexShrink: 0 }}>
           {WALLPAPER_TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setWallpaperTab(tab)}
               style={{
-                flex: 1, padding: "6px 0", borderRadius: "6px", border: "none", fontSize: "11px", fontWeight: 500, cursor: "pointer",
+                flex: 1, padding: "7px 0", borderRadius: "6px", border: "none", fontSize: "12px", fontWeight: 600, cursor: "pointer",
                 background: wallpaperTab === tab ? "var(--os-accent)" : "transparent",
                 color: wallpaperTab === tab ? "#fff" : "var(--os-text-dim)",
                 transition: "all 0.15s", fontFamily: "var(--os-font-body)",
