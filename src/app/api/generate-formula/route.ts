@@ -16,9 +16,13 @@ export async function POST(req: NextRequest) {
     const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it describes or implies a mathematical formula, equation, or scientific expression. If it does, return a valid LaTeX formula that represents the concept. If no formula applies, return exactly "NONE".
 
 Rules:
-- Return ONLY the LaTeX formula (no explanation, no markdown, no $ delimiters)
+- Return ONLY the LaTeX formula (no explanation, no markdown, no $ delimiters, no \\( \\) or \\[ \\] wrappers)
 - Use standard LaTeX notation (e.g., \\frac{}{}, \\sqrt{}, \\sum, \\int, \\alpha, \\beta, etc.)
-- For simple concept mappings, be accurate (e.g., "speed equals distance divided by time" → "v = \\frac{d}{t}")
+- Cover math, physics, and chemistry:
+  * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, etc.
+  * Physics: F=ma, E=mc^2, v=d/t, kinetic energy KE=1/2mv^2, Ohm's law V=IR, etc.
+  * Chemistry: pH=-log[H+], PV=nRT, molarity M=n/V, dilution M1V1=M2V2, etc.
+- For word problems, extract the underlying formula (e.g., "simple interest" -> I=Prt, "discount rate" -> d=\\frac{l-n}{l})
 - If the text is not related to math/science, return "NONE"
 
 Text: ${text}
@@ -50,7 +54,14 @@ Formula:`;
       return NextResponse.json({ formula: null, detected: false });
     }
 
-    const cleaned = raw.replace(/^\$+|\$+$/g, "").replace(/^```latex\n?|```$/g, "").trim();
+    const cleaned = raw
+      .replace(/^\$+|\$+$/g, "")
+      .replace(/^```latex\n?|```$/g, "")
+      .replace(/^\\?\(/, "")
+      .replace(/\\?\)$/, "")
+      .replace(/^\\?\[/, "")
+      .replace(/\\?\]$/, "")
+      .trim();
     return NextResponse.json({ formula: cleaned, detected: true });
   } catch {
     return NextResponse.json({ formula: null, detected: false });

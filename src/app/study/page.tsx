@@ -13,6 +13,51 @@ import { earnBadge } from "@/lib/badges";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
 
+const formulaCacheGlobal: Record<string, string> = {};
+
+async function fetchFormulaGlobal(text: string): Promise<string | null> {
+  if (formulaCacheGlobal[text] !== undefined) return formulaCacheGlobal[text] || null;
+  if (/\$|\\|\\\\|frac|sqrt|sum|int|alpha|beta|gamma|sigma|omega|theta|delta|epsilon|pi\b/i.test(text)) {
+    return null;
+  }
+  try {
+    const res = await fetch("/api/generate-formula", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (data.detected && data.formula) {
+      formulaCacheGlobal[text] = data.formula;
+      return data.formula;
+    }
+  } catch {}
+  formulaCacheGlobal[text] = "";
+  return null;
+}
+
+function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boolean }) {
+  const [formula, setFormula] = useState<string | null>(null);
+  useEffect(() => {
+    if (!showFormulas) return;
+    if (formulaCacheGlobal[text] !== undefined) {
+      setFormula(formulaCacheGlobal[text] || null);
+      return;
+    }
+    fetchFormulaGlobal(text).then((f) => { if (f) setFormula(f); });
+  }, [showFormulas, text]);
+  return (
+    <>
+      <MathRenderer content={text} />
+      {showFormulas && formula && (
+        <span style={{ display: "block", marginTop: 6, padding: "6px 10px", borderRadius: 8, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
+          <MathRenderer content={`$${formula}$`} />
+        </span>
+      )}
+    </>
+  );
+}
+
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("flashcards");
   const [mounted, setMounted] = useState(false);
@@ -381,46 +426,6 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renamingTitle, setRenamingTitle] = useState("");
   const [showFormulas, setShowFormulas] = useState(false);
-  const [formulaCache, setFormulaCache] = useState<Record<string, string>>({});
-
-  async function fetchFormula(text: string): Promise<string | null> {
-    if (formulaCache[text] !== undefined) return formulaCache[text] || null;
-    if (/\$|\\|\\\\|frac|sqrt|sum|int|alpha|beta|gamma|sigma|omega|theta|delta|epsilon|pi\b/i.test(text)) {
-      return null;
-    }
-    try {
-      const res = await fetch("/api/generate-formula", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const data = await res.json();
-      if (data.detected && data.formula) {
-        setFormulaCache((prev) => ({ ...prev, [text]: data.formula }));
-        return data.formula;
-      }
-    } catch {}
-    setFormulaCache((prev) => ({ ...prev, [text]: "" }));
-    return null;
-  }
-
-  function FormulaLine({ text }: { text: string }) {
-    const [formula, setFormula] = useState<string | null>(null);
-    useEffect(() => {
-      if (!showFormulas) return;
-      fetchFormula(text).then((f) => { if (f) setFormula(f); });
-    }, [showFormulas, text]);
-    return (
-      <>
-        <MathRenderer content={text} />
-        {showFormulas && formula && (
-          <span style={{ display: "block", marginTop: 6, padding: "6px 10px", borderRadius: 8, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
-            <MathRenderer content={`$${formula}$`} />
-          </span>
-        )}
-      </>
-    );
-  }
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -654,7 +659,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                 borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
                 background: isCorrect ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
               }}>
-                <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. <FormulaLine text={q.question} /></p>
+                <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. <FormulaLine text={q.question} showFormulas={showFormulas} /></p>
                 {q.type === "mc" && q.options && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "16px" }}>
                     {q.options.map((opt: string, j: number) => {
@@ -665,7 +670,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                           color: isCorrectOpt ? "#16a34a" : isUserChoice && !isCorrectOpt ? "#dc2626" : "var(--os-text-secondary)",
                           fontWeight: isCorrectOpt ? 500 : 400,
                         }}>
-                          {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} /> {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
+                          {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /> {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
                         </p>
                       );
                     })}
@@ -736,7 +741,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                   <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", flex: 1 }}><FormulaLine text={q.question} /></p>
+                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", flex: 1 }}><FormulaLine text={q.question} showFormulas={showFormulas} /></p>
                       <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "9999px", background: q.type === "mc" ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)", color: q.type === "mc" ? "#2563eb" : "#9333ea" }}>
                         {q.type === "mc" ? "MC" : "ID"}
                       </span>
@@ -745,7 +750,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
                         {q.options.map((opt: string, j: number) => (
                           <p key={j} className="text-xs" style={{ color: showAnswers && String(j) === correctIdx ? "#16a34a" : "var(--os-text-secondary)", fontWeight: showAnswers && String(j) === correctIdx ? 500 : 400 }}>
-                            {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} /> {showAnswers && String(j) === correctIdx ? "✓" : ""}
+                            {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /> {showAnswers && String(j) === correctIdx ? "✓" : ""}
                           </p>
                         ))}
                       </div>
@@ -817,7 +822,7 @@ function QuizTab({ userId }: { userId: string | null }) {
           }}>
             {isMc ? "Multiple Choice" : "Identification"}
           </span>
-          <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}><FormulaLine text={q.question} /></p>
+          <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}><FormulaLine text={q.question} showFormulas={showFormulas} /></p>
         </div>
 
         {isMc ? (
@@ -846,7 +851,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                     opacity: showFeedback && !isCorrectOpt && !isChosen ? 0.5 : 1,
                   }}>
                   <span style={{ fontWeight: 500, marginRight: "10px", color: txtColor }}>{String.fromCharCode(65 + j)}.</span>
-                  <span style={{ color: txtColor }}><FormulaLine text={stripOptionPrefix(opt)} /></span>
+                  <span style={{ color: txtColor }}><FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /></span>
                   {showFeedback && isCorrectOpt && <span style={{ marginLeft: 8, color: "#16a34a" }}>✓</span>}
                   {showFeedback && isChosen && !isCorrectOpt && <span style={{ marginLeft: 8, color: "#ef4444" }}>✗</span>}
                 </button>
