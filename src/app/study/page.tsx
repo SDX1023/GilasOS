@@ -116,7 +116,7 @@ export default function StudyPage() {
         <PenTool style={{ width: "28px", height: "28px" }} /> Study
       </h1>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", width: "fit-content", overflowX: "auto", userSelect: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", overflowX: "auto", userSelect: "none", WebkitOverflowScrolling: "touch" }}>
         {([
           ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],

@@ -277,7 +277,7 @@ export default function ArchivePage() {
           <p className="text-secondary text-sm">Competition records will appear here.</p>
         </div>
       ) : (
-        <div className="glass-panel" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="glass-panel archive-table-wrap" style={{ padding: 0, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>

@@ -228,11 +228,14 @@ export function Navbar() {
       </div>
 
       {showMobile && (
-        <div style={{
-          borderTop: "1px solid rgba(255,255,255,0.35)",
-          background: "rgba(15,21,35,0.95)", padding: 12,
-          maxHeight: "calc(100vh - 200px)", overflowY: "auto",
-        }}>
+        <>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 49 }} onClick={() => setShowMobile(false)} />
+          <div style={{
+            borderTop: "1px solid var(--os-glass-border)",
+            background: "var(--os-glass)", backdropFilter: "blur(30px)", WebkitBackdropFilter: "blur(30px)",
+            padding: 12, position: "relative", zIndex: 50,
+            maxHeight: "calc(100vh - 60px)", overflowY: "auto",
+          }}>
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -300,7 +303,8 @@ export function Navbar() {
             )}
             {(resolvedTheme || theme) === "dark" ? "Light Mode" : "Dark Mode"}
           </button>
-        </div>
+          </div>
+        </>
       )}
     </nav>
   );

@@ -1374,6 +1374,12 @@ a:active {
   .taskbar-time { display: none; }
   .module-layout { flex-direction: column !important; }
   .module-sidebar { width: 100% !important; }
+  .archive-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .archive-table-wrap table { min-width: 480px; }
+  .nav-desktop { display: none !important; }
+  .nav-mobile-btn { display: flex !important; }
+  .page-header { margin-bottom: 20px; }
+  .page-title { font-size: 22px; }
 }
 
 @media (max-width: 480px) {
