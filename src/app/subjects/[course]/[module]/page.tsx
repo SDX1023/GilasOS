@@ -98,7 +98,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
               <Brain size={20} /> Flash Cards
-              <Link href={`/editor/reviewer?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-text-dim)", textDecoration: "none" }}>
+              <Link href={`/editor/reviewer?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-accent)", textDecoration: "none" }}>
                 <Plus size={12} /> New
               </Link>
             </h2>
