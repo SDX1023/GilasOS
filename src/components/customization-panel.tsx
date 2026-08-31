@@ -127,6 +127,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
   const handleSave = () => {
     localStorage.setItem("gilasos-wallpaper", allWallpapers[selectedWallpaper].colors[0]);
     localStorage.setItem("gilasos-accent", accentColors[selectedAccent].color);
+    window.dispatchEvent(new Event("gilasos-theme-change"));
     setSaved(true);
     setTimeout(() => { onClose(); setSaved(false); }, 600);
   };

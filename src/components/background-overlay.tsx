@@ -51,11 +51,12 @@ export default function BackgroundOverlay() {
         zIndex: 0,
         pointerEvents: "none",
         overflow: "hidden",
+        opacity: 0.15,
       }}
     >
       <ThemeOverlay
         theme={theme}
-        style={{ opacity: 1, borderRadius: 0 }}
+        style={{ borderRadius: 0 }}
       />
     </div>
   );
