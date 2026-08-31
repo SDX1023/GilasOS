@@ -11,11 +11,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No search query provided" }, { status: 400 });
     }
 
+    const clientId = (process.env.SPOTIFY_CLIENT_ID || "").trim();
+    const clientSecret = (process.env.SPOTIFY_CLIENT_SECRET || "").trim();
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
       },
       body: "grant_type=client_credentials",
     });
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest) {
     const searchUrl = new URL("https://api.spotify.com/v1/search");
     searchUrl.searchParams.set("q", query);
     searchUrl.searchParams.set("type", "track");
-    searchUrl.searchParams.set("limit", "20");
+    searchUrl.searchParams.set("limit", "5");
     searchUrl.searchParams.set("offset", offset);
     const searchResponse = await fetch(searchUrl.toString(), {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
@@ -39,7 +41,7 @@ export async function GET(req: NextRequest) {
     const data = await searchResponse.json();
 
     if (!data.tracks || data.tracks.items.length === 0) {
-      return NextResponse.json({ tracks: [], message: "No results found", _debug: { searchStatus: searchResponse.status, hasTracks: !!data.tracks, itemsLen: data.tracks?.items?.length, spotifyErr: data.error || null, query, url: searchUrl.toString(), tokenOk: !!tokenData.access_token } });
+      return NextResponse.json({ tracks: [], message: "No results found" });
     }
 
     const tracks = data.tracks.items.map((track: any) => ({
