@@ -53,12 +53,10 @@ export default function BackgroundOverlay() {
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "absolute", inset: 0, transform: "scale(3)", transformOrigin: "center center" }}>
-        <ThemeOverlay
-          theme={theme}
-          style={{ opacity: 0.5, borderRadius: 0 }}
-        />
-      </div>
+      <ThemeOverlay
+        theme={theme}
+        style={{ opacity: 1, borderRadius: 0 }}
+      />
     </div>
   );
 }
