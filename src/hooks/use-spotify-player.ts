@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 declare global {
   interface Window {
     Spotify: any;
+    onSpotifyWebPlaybackSDKReady: () => void;
   }
 }
 
