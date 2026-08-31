@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ThemeOverlay from "./theme-overlay";
 
 interface CustomizationPanelProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ const wallpaperGroups: Record<WallpaperTab, { name: string; colors: string[] }[]
     { name: "Matrix", colors: ["#000a02", "#001a08"] },
     { name: "Steampunk", colors: ["#1a1008", "#2d1b0d"] },
     { name: "Cyberpunk 2077", colors: ["#0a0a05", "#1a1a05"] },
+    { name: "Detroit: BH", colors: ["#050a12", "#0a1a2a"] },
   ],
   Pastel: [
     { name: "Lilac Dream", colors: ["#1a1025", "#2d1a40"] },
@@ -212,8 +214,9 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
                       : "0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
                     transition: "all 0.2s", position: "relative", overflow: "hidden",
                   }}>
+                    {wallpaperTab === "Themed" && <ThemeOverlay theme={wp.name} />}
                     {/* Inner shine */}
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)", borderRadius: "8px 8px 0 0", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)", borderRadius: "8px 8px 0 0", pointerEvents: "none", zIndex: 1 }} />
                   </div>
                   <span style={{
                     fontSize: "9px", fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%",
