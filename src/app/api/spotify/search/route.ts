@@ -26,8 +26,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to get Spotify access token" }, { status: 500 });
     }
 
+    const offset = searchParams.get("offset") || "0";
     const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}`,
       { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
     );
 

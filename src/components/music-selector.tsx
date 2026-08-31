@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, X, Music, Square } from "lucide-react";
+import { Play, Pause, Music, Square } from "lucide-react";
 import { useSpotifyPlayer } from "@/hooks/use-spotify-player";
 
 interface Track {
@@ -31,26 +31,28 @@ function getBars() {
 }
 
 export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
-  const player = useSpotifyPlayer();
+  const spotify = useSpotifyPlayer();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-  const [clipDuration, setClipDuration] = useState(30);
+  const [clipDuration, setClipDuration] = useState(15);
   const [selectionStart, setSelectionStart] = useState(0);
   const [searchPage, setSearchPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [authRequired, setAuthRequired] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [sdkConnecting, setSdkConnecting] = useState(false);
   const waveformRef = useRef<HTMLCanvasElement>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(400);
   const isDraggingRef = useRef(false);
   const dragStartX = useRef(0);
   const dragStartSel = useRef(0);
-  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const positionIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const trackDuration = selectedTrack?.duration_ms ? selectedTrack.duration_ms / 1000 : 30;
   const maxStart = Math.max(0, trackDuration - clipDuration);
+  const isCurrentlyPlaying = spotify.isPlaying && spotify.currentTrack?.uri === selectedTrack?.uri;
 
   useEffect(() => {
     const measure = () => {
@@ -61,12 +63,17 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     return () => window.removeEventListener("resize", measure);
   }, [selectedTrack]);
 
+  // Track playback position
   useEffect(() => {
-    if (player.isReady === false && !authRequired) {
-      const timer = setTimeout(() => { if (!player.isReady) setAuthRequired(true); }, 5000);
-      return () => clearTimeout(timer);
+    if (isCurrentlyPlaying && spotify.isReady) {
+      positionIntervalRef.current = setInterval(() => {
+        setPlaybackPosition(spotify.position);
+      }, 250);
+    } else {
+      if (positionIntervalRef.current) clearInterval(positionIntervalRef.current);
     }
-  }, [player.isReady, authRequired]);
+    return () => { if (positionIntervalRef.current) clearInterval(positionIntervalRef.current); };
+  }, [isCurrentlyPlaying, spotify.isReady, spotify.position]);
 
   const searchTracks = async (page = 0) => {
     if (!searchQuery.trim()) return;
@@ -84,34 +91,63 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     finally { setLoading(false); }
   };
 
-  const handleSelectTrack = async (track: Track) => {
+  const handleSelectTrack = (track: Track) => {
     generatedBars = [];
     setSelectedTrack(track);
     setSelectionStart(0);
-    setClipDuration(Math.min(30, Math.floor(track.duration_ms ? track.duration_ms / 1000 : 30)));
-    if (track.uri && player.isReady) {
-      player.playTrack(track.uri, 0);
+    const dur = track.duration_ms ? track.duration_ms / 1000 : 30;
+    setClipDuration(Math.min(15, Math.floor(dur)));
+    setPlaybackPosition(0);
+    // Stop any current playback
+    if (spotify.isPlaying) spotify.pause();
+  };
+
+  const togglePlay = async () => {
+    if (!selectedTrack) return;
+
+    if (isCurrentlyPlaying) {
+      spotify.pause();
+      return;
+    }
+
+    if (!spotify.isReady) {
+      setSdkConnecting(true);
+      await spotify.initPlayer();
+      setSdkConnecting(false);
+      return;
+    }
+
+    if (selectedTrack.uri) {
+      const positionMs = Math.round(selectionStart * 1000);
+      await spotify.playTrack(selectedTrack.uri, positionMs);
     }
   };
 
-  const handlePlayPreview = () => {
-    if (!selectedTrack?.uri || !player.isReady) return;
-    const startMs = Math.round(selectionStart * 1000);
-    player.playTrack(selectedTrack.uri, startMs);
+  const stopPlayback = () => {
+    spotify.pause();
+    setPlaybackPosition(0);
   };
 
   useEffect(() => {
-    if (player.isPlaying && player.duration > 0) {
-      const endMs = (selectionStart + clipDuration) * 1000;
-      const timer = setInterval(() => {
-        if (player.position >= endMs / 1000) {
-          player.pause();
-          clearInterval(timer);
-        }
-      }, 200);
-      return () => clearInterval(timer);
+    return () => { spotify.pause(); };
+  }, []);
+
+  // Resume playback when SDK becomes ready after connect
+  useEffect(() => {
+    if (spotify.isReady && sdkConnecting && selectedTrack?.uri) {
+      const positionMs = Math.round(selectionStart * 1000);
+      spotify.playTrack(selectedTrack.uri, positionMs);
+      setSdkConnecting(false);
     }
-  }, [player.isPlaying, player.position, selectionStart, clipDuration, player.duration, player.pause]);
+  }, [spotify.isReady, sdkConnecting]);
+
+  const onDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    dragStartX.current = clientX;
+    dragStartSel.current = selectionStart;
+  }, [selectionStart]);
 
   useEffect(() => {
     const onMove = (e: MouseEvent | TouchEvent) => {
@@ -136,14 +172,6 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     };
   }, [maxStart, trackDuration]);
 
-  const onDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    isDraggingRef.current = true;
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    dragStartX.current = clientX;
-    dragStartSel.current = selectionStart;
-  }, [selectionStart]);
-
   useEffect(() => {
     const canvas = waveformRef.current;
     if (!canvas || !selectedTrack) return;
@@ -157,6 +185,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     const gap = Math.max(1, barW * 0.25);
     const selStartPct = selectionStart / trackDuration;
     const selEndPct = (selectionStart + clipDuration) / trackDuration;
+    const playPct = isCurrentlyPlaying ? playbackPosition / trackDuration : -1;
     for (let i = 0; i < bars.length; i++) {
       const pct = bars[i];
       const bh = h * pct * 0.85;
@@ -164,12 +193,21 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       const y = (h - bh) / 2;
       const barPct = (i + 0.5) / bars.length;
       const inSel = barPct >= selStartPct && barPct <= selEndPct;
-      if (inSel) {
+      const played = playPct >= 0 && barPct <= playPct;
+      if (inSel && played) {
         const gradPct = (barPct - selStartPct) / (selEndPct - selStartPct);
         const r = Math.round(255 * (1 - gradPct * 0.4));
         const g = Math.round(180 * gradPct + 80);
         const b = Math.round(50 + 200 * gradPct);
-        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+      } else if (inSel) {
+        const gradPct = (barPct - selStartPct) / (selEndPct - selStartPct);
+        const r = Math.round(255 * (1 - gradPct * 0.4));
+        const g = Math.round(180 * gradPct + 80);
+        const b = Math.round(50 + 200 * gradPct);
+        ctx.fillStyle = `rgba(${r},${g},${b},0.55)`;
+      } else if (played) {
+        ctx.fillStyle = "rgba(255,255,255,0.65)";
       } else {
         ctx.fillStyle = "rgba(255,255,255,0.35)";
       }
@@ -186,12 +224,13 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       ctx.closePath();
       ctx.fill();
     }
-  }, [selectedTrack, selectionStart, clipDuration, trackDuration]);
+  }, [selectedTrack, selectionStart, clipDuration, trackDuration, playbackPosition, isCurrentlyPlaying]);
 
   const cycleDuration = () => {
     const maxDur = Math.floor(trackDuration);
-    const steps = [15, 20, 25, 30, 45, 60, 90, 120, maxDur];
-    const unique = [...new Set(steps)].filter((s) => s <= maxDur && s > 0).sort((a, b) => a - b);
+    const steps = [5, 10, 15, 20, 25, 30, 45, 60];
+    const unique = [...new Set(steps)].filter((s) => s <= maxDur).sort((a, b) => a - b);
+    if (unique.length === 0) return;
     const idx = unique.indexOf(clipDuration);
     const next = unique[(idx + 1) % unique.length];
     setClipDuration(next);
@@ -215,67 +254,59 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
         </div>
 
         {!selectedTrack && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 20px 12px" }}>
-            <span style={{ fontSize: 18, fontWeight: 600, color: "#fff" }}>New song</span>
-            <button onClick={onClose} style={{ background: "none", border: "none", color: "#1DB954", fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>Finished</button>
-          </div>
-        )}
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 20px 12px" }}>
+              <span style={{ fontSize: 18, fontWeight: 600, color: "#fff" }}>New song</span>
+              <button onClick={onClose} style={{ background: "none", border: "none", color: "#1DB954", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>Finished</button>
+            </div>
 
-        {!selectedTrack && (
-          <div style={{ padding: "0 20px 12px" }}>
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") searchTracks(0); }}
-              placeholder="Search for a song..." autoFocus
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif", boxSizing: "border-box" }} />
-          </div>
-        )}
+            <div style={{ padding: "0 20px 12px" }}>
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") searchTracks(0); }}
+                placeholder="Search for a song..." autoFocus
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+            </div>
 
-        {!selectedTrack && (
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px", maxHeight: "60vh" }}>
-            {authRequired && (
-              <div style={{ textAlign: "center", padding: "16px", marginBottom: 12, borderRadius: 10, background: "rgba(29,185,84,0.1)", border: "1px solid rgba(29,185,84,0.3)" }}>
-                <p style={{ fontSize: 13, color: "#1DB954", margin: 0 }}>Connect your Spotify Premium account to play full tracks</p>
-                <button onClick={() => player.initPlayer()} style={{ marginTop: 8, padding: "6px 16px", borderRadius: 8, background: "#1DB954", border: "none", color: "#000", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Connect Spotify</button>
-              </div>
-            )}
-            {results.length === 0 && !loading && (
-              <div style={{ textAlign: "center", padding: "48px 0", color: "rgba(255,255,255,0.3)" }}>
-                <Music size={36} style={{ margin: "0 auto 10px" }} />
-                <p style={{ fontSize: 14 }}>Search for a song</p>
-              </div>
-            )}
-            {results.map((track) => (
-              <div key={track.id} onClick={() => handleSelectTrack(track)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 4px", borderRadius: 8, cursor: "pointer", transition: "background 0.15s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-                {track.albumArt ? (
-                  <img src={track.albumArt} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover" }} />
-                ) : (
-                  <div style={{ width: 48, height: 48, borderRadius: 6, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Music size={20} style={{ color: "rgba(255,255,255,0.3)" }} />
-                  </div>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{track.name}</p>
-                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0" }}>{track.artist}</p>
+            <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px", maxHeight: "60vh" }}>
+              {results.length === 0 && !loading && (
+                <div style={{ textAlign: "center", padding: "48px 0", color: "rgba(255,255,255,0.3)" }}>
+                  <Music size={36} style={{ margin: "0 auto 10px" }} />
+                  <p style={{ fontSize: 14 }}>Search for a song</p>
                 </div>
-                {track.duration_ms && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{formatTime(track.duration_ms / 1000)}</span>}
-              </div>
-            ))}
-            {hasMore && (
-              <button onClick={() => searchTracks(searchPage + 1)} disabled={loading} style={{ width: "100%", padding: 10, marginTop: 8, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "none", color: "#fff", fontSize: 13, cursor: "pointer" }}>
-                {loading ? "Loading..." : "Load More"}
-              </button>
-            )}
-          </div>
+              )}
+              {results.map((track) => (
+                <div key={track.id} onClick={() => handleSelectTrack(track)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 4px", borderRadius: 8, cursor: "pointer", transition: "background 0.15s" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                  {track.albumArt ? (
+                    <img src={track.albumArt} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: 48, height: 48, borderRadius: 6, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Music size={20} style={{ color: "rgba(255,255,255,0.3)" }} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{track.name}</p>
+                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "2px 0 0" }}>{track.artist}</p>
+                  </div>
+                  {track.duration_ms && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>{formatTime(track.duration_ms / 1000)}</span>}
+                </div>
+              ))}
+              {hasMore && (
+                <button onClick={() => searchTracks(searchPage + 1)} disabled={loading} style={{ width: "100%", padding: 10, marginTop: 8, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "none", color: "#fff", fontSize: 13, cursor: "pointer" }}>
+                  {loading ? "Loading..." : "Load More"}
+                </button>
+              )}
+            </div>
+          </>
         )}
 
         {selectedTrack && (
           <div style={{ padding: "8px 20px 24px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <span style={{ fontSize: 18, fontWeight: 600, color: "#fff" }}>New song</span>
-              <button onClick={() => { player.pause(); onSelect({ name: selectedTrack.name, artist: selectedTrack.artist, url: selectedTrack.url, albumArt: selectedTrack.albumArt || "", preview: selectedTrack.preview }, selectionStart); onClose(); }}
+              <button onClick={() => { stopPlayback(); onSelect({ name: selectedTrack.name, artist: selectedTrack.artist, url: selectedTrack.url, albumArt: selectedTrack.albumArt || "", preview: selectedTrack.preview }, selectionStart); onClose(); }}
                 style={{ background: "none", border: "none", color: "#1DB954", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>Finished</button>
             </div>
 
@@ -289,9 +320,19 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
               )}
               <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", margin: 0, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{selectedTrack.name}</p>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", margin: "3px 0 0", textAlign: "center" }}>{selectedTrack.artist}</p>
-              {!player.isReady && <p style={{ fontSize: 11, color: "#f59e0b", margin: "4px 0 0" }}>Connecting to Spotify...</p>}
-              {player.isReady && <p style={{ fontSize: 11, color: "#1DB954", margin: "4px 0 0" }}>Connected to Spotify</p>}
             </div>
+
+            {!spotify.isReady && (
+              <div onClick={togglePlay} style={{ marginBottom: 16, padding: "10px 16px", borderRadius: 10, background: "#1DB954", color: "#000", fontSize: 13, fontWeight: 600, textAlign: "center", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "opacity 0.15s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}>
+                {sdkConnecting ? (
+                  <>Connecting to Spotify...</>
+                ) : (
+                  <>Connect with Spotify to play full track</>
+                )}
+              </div>
+            )}
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", minWidth: 32, textAlign: "right" }}>{formatTime(selectionStart)}</span>
@@ -314,9 +355,9 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
                 {clipDuration}s
               </button>
 
-              <button onClick={player.isPlaying ? player.pause : handlePlayPreview}
-                style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", border: "none", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                {player.isPlaying ? <Square size={16} fill="#000" /> : <Play size={18} fill="#000" style={{ marginLeft: 2 }} />}
+              <button onClick={togglePlay}
+                style={{ width: 44, height: 44, borderRadius: "50%", background: "#fff", border: "none", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: sdkConnecting ? 0.5 : 1 }}>
+                {isCurrentlyPlaying ? <Square size={16} fill="#000" /> : <Play size={18} fill="#000" style={{ marginLeft: 2 }} />}
               </button>
             </div>
           </div>
