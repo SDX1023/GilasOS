@@ -112,6 +112,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
     document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${allWallpapers[selectedWallpaper].colors[0]}, ${allWallpapers[selectedWallpaper].colors[1]})`);
     document.documentElement.style.setProperty("--os-accent", accentColors[selectedAccent].color);
     document.documentElement.style.setProperty("--os-accent-rgb", accentColors[selectedAccent].rgb);
+    window.dispatchEvent(new Event("gilasos-theme-change"));
   }, [selectedWallpaper, selectedAccent, isOpen]);
 
   function getGlobalIndex(groupIndex: number) {
