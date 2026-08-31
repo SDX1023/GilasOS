@@ -27,15 +27,19 @@ export async function GET(req: NextRequest) {
     }
 
     const offset = searchParams.get("offset") || "0";
-    const searchResponse = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=20&offset=${offset}`,
-      { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
-    );
+    const searchUrl = new URL("https://api.spotify.com/v1/search");
+    searchUrl.searchParams.set("q", query);
+    searchUrl.searchParams.set("type", "track");
+    searchUrl.searchParams.set("limit", "20");
+    searchUrl.searchParams.set("offset", offset);
+    const searchResponse = await fetch(searchUrl.toString(), {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
 
     const data = await searchResponse.json();
 
     if (!data.tracks || data.tracks.items.length === 0) {
-      return NextResponse.json({ tracks: [], message: "No results found", _debug: { status: searchResponse.status, hasTracks: !!data.tracks, itemsLen: data.tracks?.items?.length, spotifyErr: data.error || null } });
+      return NextResponse.json({ tracks: [], message: "No results found" });
     }
 
     const tracks = data.tracks.items.map((track: any) => ({
