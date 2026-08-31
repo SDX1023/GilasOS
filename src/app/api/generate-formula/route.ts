@@ -23,8 +23,9 @@ CRITICAL RULES — read these first:
 
 WHEN you DO detect a calculation problem, return JSON: {"formula": "...", "explanation": "..."}
 - Formula: raw LaTeX only, no delimiters, no \\( \\) or \\[ \\] wrappers
-- Explanation: 1-2 sentences explaining the STEPS to solve (not what the formula means)
-- Example: "What is the simple interest on P15,000 at 10% for 3 years?" → {"formula": "I = Prt", "explanation": "Substitute P=15000, r=0.10, t=3 into I=Prt to get I = 15000(0.10)(3) = 4500. Total amount = P + I = 19500."}
+- Explanation: Show the FULL solution step-by-step, including all arithmetic. Do not just say "solve for x" — actually solve it and show the final answer.
+- Example 1: "What is the simple interest on P15,000 at 10% for 3 years?" → {"formula": "I = Prt", "explanation": "I = 15000(0.10)(3) = 4500. Total = 15000 + 4500 = P19,500."}
+- Example 2: Age problems → show the full equation, solve for x, then state the final answer clearly.
 
 ONLY these types get formulas:
 - Interest/discount/markup/profit calculations
@@ -74,6 +75,12 @@ JSON:`;
           .replace(/\\?\]$/, "")
           .trim();
         formula = formula.replace(/(\d+)\s*\/\s*(\d+)/g, "\\frac{$1}{$2}");
+        const opens = (formula.match(/\(/g) || []).length;
+        const closes = (formula.match(/\)/g) || []).length;
+        if (opens > closes) formula += ")".repeat(opens - closes);
+        const braceOpens = (formula.match(/\{/g) || []).length;
+        const braceCloses = (formula.match(/\}/g) || []).length;
+        if (braceOpens > braceCloses) formula += "}".repeat(braceOpens - braceCloses);
         const explanation = (parsed.explanation || "").trim();
         if (formula) {
           return NextResponse.json({ formula, explanation, detected: true });
