@@ -702,15 +702,17 @@ function QuizTab({ userId }: { userId: string | null }) {
               </button>
             ))}
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: "var(--os-text-secondary)", padding: "7px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
-            <input type="checkbox" checked={showAnswers} onChange={(e) => setShowAnswers(e.target.checked)} style={{ accentColor: "var(--os-accent)" }} />
-            Show Answers
-          </label>
-          <button onClick={() => setShowFormulas(!showFormulas)} onMouseDown={(e) => e.preventDefault()}
-            className="glass-btn"
-            style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}>
-            {showFormulas ? "Σ On" : "Σ Off"}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: "var(--os-text-secondary)", padding: "7px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)" }}>
+              <input type="checkbox" checked={showAnswers} onChange={(e) => setShowAnswers(e.target.checked)} style={{ accentColor: "var(--os-accent)" }} />
+              Show Answers
+            </label>
+            <button onClick={() => setShowFormulas(!showFormulas)} onMouseDown={(e) => e.preventDefault()}
+              className="glass-btn"
+              style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}>
+              {showFormulas ? "Σ On" : "Σ Off"}
+            </button>
+          </div>
           <div style={{ flex: 1 }} />
           <button onClick={handleStartQuiz} onMouseDown={(e) => e.preventDefault()} className="glass-btn glass-btn-primary" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
             <Play size={14} /> Start Quiz
