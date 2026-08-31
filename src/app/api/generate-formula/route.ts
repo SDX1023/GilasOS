@@ -18,11 +18,13 @@ export async function POST(req: NextRequest) {
 Rules:
 - Return ONLY the LaTeX formula (no explanation, no markdown, no $ delimiters, no \\( \\) or \\[ \\] wrappers)
 - Use standard LaTeX notation (e.g., \\frac{}{}, \\sqrt{}, \\sum, \\int, \\alpha, \\beta, etc.)
-- Cover math, physics, and chemistry:
+- Cover math, physics, chemistry, and molecular formulas:
   * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, etc.
-  * Physics: F=ma, E=mc^2, v=d/t, kinetic energy KE=1/2mv^2, Ohm's law V=IR, etc.
-  * Chemistry: pH=-log[H+], PV=nRT, molarity M=n/V, dilution M1V1=M2V2, etc.
+  * Physics: F=ma, E=mc^2, v=d/t, KE=1/2mv^2, V=IR, projectile motion (x=v_0cos(theta)t, y=v_0sin(theta)t-1/2gt^2, R=v_0^2sin(2theta)/g, H=v_0^2sin^2(theta)/(2g)), work W=Fd, power P=W/t, momentum p=mv, etc.
+  * Chemistry: pH=-log[H+], PV=nRT, M=n/V, M1V1=M2V2, etc.
+  * Molecular: render molecular formulas in LaTeX (e.g., H_2O, CO_2, H_2SO_4, C_6H_{12}O_6, NaCl, CH_3COOH, Ca(OH)_2)
 - For word problems, extract the underlying formula (e.g., "simple interest" -> I=Prt, "discount rate" -> d=\\frac{l-n}{l})
+- For molecular formulas, always use underscores for subscripts (e.g., H_2O not H2O)
 - If the text is not related to math/science, return "NONE"
 
 Text: ${text}
