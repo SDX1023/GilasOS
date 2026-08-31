@@ -69,18 +69,12 @@ JSON:`;
         const parsed = JSON.parse(jsonMatch[0]);
         let formula = (parsed.formula || "")
           .replace(/^\$+|\$+$/g, "")
-          .replace(/^\\?\(/, "")
-          .replace(/\\?\)$/, "")
-          .replace(/^\\?\[/, "")
-          .replace(/\\?\]$/, "")
+          .replace(/^\\\(/, "")
+          .replace(/\\\)$/, "")
+          .replace(/^\\\[/, "")
+          .replace(/\\\]$/, "")
           .trim();
         formula = formula.replace(/(\d+)\s*\/\s*(\d+)/g, "\\frac{$1}{$2}");
-        const opens = (formula.match(/\(/g) || []).length;
-        const closes = (formula.match(/\)/g) || []).length;
-        if (opens > closes) formula += ")".repeat(opens - closes);
-        const braceOpens = (formula.match(/\{/g) || []).length;
-        const braceCloses = (formula.match(/\}/g) || []).length;
-        if (braceOpens > braceCloses) formula += "}".repeat(braceOpens - braceCloses);
         const explanation = (parsed.explanation || "").trim();
         if (formula) {
           return NextResponse.json({ formula, explanation, detected: true });
