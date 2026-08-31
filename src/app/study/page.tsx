@@ -13,11 +13,12 @@ import { earnBadge } from "@/lib/badges";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
 
-const formulaCacheGlobal: Record<string, string> = {};
+const formulaCacheGlobal: Record<string, { formula: string; explanation: string } | null> = {};
 
-async function fetchFormulaGlobal(text: string): Promise<string | null> {
-  if (formulaCacheGlobal[text] !== undefined) return formulaCacheGlobal[text] || null;
+async function fetchFormulaGlobal(text: string): Promise<{ formula: string; explanation: string } | null> {
+  if (text in formulaCacheGlobal) return formulaCacheGlobal[text];
   if (/\$|\\|\\\\|\\frac|\\sqrt|\\sum|\\int|\\alpha|\\beta|\\gamma|\\sigma|\\omega|\\theta|\\delta|\\epsilon|\\pi\b/i.test(text)) {
+    formulaCacheGlobal[text] = null;
     return null;
   }
   try {
@@ -28,30 +29,36 @@ async function fetchFormulaGlobal(text: string): Promise<string | null> {
     });
     const data = await res.json();
     if (data.detected && data.formula) {
-      formulaCacheGlobal[text] = data.formula;
-      return data.formula;
+      const result = { formula: data.formula, explanation: data.explanation || "" };
+      formulaCacheGlobal[text] = result;
+      return result;
     }
   } catch {}
-  formulaCacheGlobal[text] = "";
+  formulaCacheGlobal[text] = null;
   return null;
 }
 
 function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boolean }) {
-  const [formula, setFormula] = useState<string | null>(null);
+  const [result, setResult] = useState<{ formula: string; explanation: string } | null>(null);
   useEffect(() => {
     if (!showFormulas) return;
-    if (formulaCacheGlobal[text] !== undefined) {
-      setFormula(formulaCacheGlobal[text] || null);
+    if (text in formulaCacheGlobal) {
+      setResult(formulaCacheGlobal[text]);
       return;
     }
-    fetchFormulaGlobal(text).then((f) => { if (f) setFormula(f); });
+    fetchFormulaGlobal(text).then((r) => setResult(r));
   }, [showFormulas, text]);
   return (
     <>
       <MathRenderer content={text} />
-      {showFormulas && formula && (
+      {showFormulas && result && (
         <span style={{ display: "block", marginTop: 6, padding: "6px 10px", borderRadius: 8, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
-          <MathRenderer content={`$${formula}$`} />
+          <MathRenderer content={`$${result.formula}$`} />
+          {result.explanation && (
+            <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "#8b5cf6", fontStyle: "italic" }}>
+              {result.explanation}
+            </span>
+          )}
         </span>
       )}
     </>

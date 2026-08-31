@@ -13,23 +13,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ formula: null, detected: false });
     }
 
-    const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it describes or implies a mathematical formula, equation, or scientific expression. If it does, return a valid LaTeX formula that represents the concept. If no formula applies, return exactly "NONE".
+    const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it describes or implies a mathematical formula, equation, or scientific expression. If it does, return a JSON object with the formula and a short explanation. If no formula applies, return exactly "NONE".
 
 Rules:
-- Return ONLY the single LaTeX formula on one line. No explanation, no text, no markdown, no $ delimiters, no \( \) or \[ \] wrappers, no words before or after. Just the raw formula like "M_1V_1 + M_2V_2 = M_f(V_1 + V_2)"
-- Use standard LaTeX notation (e.g., \\frac{}{}, \\sqrt{}, \\sum, \\int, \\alpha, \\beta, etc.)
-- Cover math, physics, chemistry, and molecular formulas:
-  * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, etc.
-  * Physics: F=ma, E=mc^2, v=d/t, KE=1/2mv^2, V=IR, projectile motion (x=v_0cos(theta)t, y=v_0sin(theta)t-1/2gt^2, R=v_0^2sin(2theta)/g, H=v_0^2sin^2(theta)/(2g)), work W=Fd, power P=W/t, momentum p=mv, etc.
-  * Chemistry: pH=-log[H+], PV=nRT, M=n/V, M1V1=M2V2, etc.
-  * Molecular: render molecular formulas in LaTeX (e.g., H_2O, CO_2, H_2SO_4, C_6H_{12}O_6, NaCl, CH_3COOH, Ca(OH)_2)
-- For word problems, extract the underlying formula (e.g., "simple interest" -> I=Prt, "discount rate" -> d=\\frac{l-n}{l})
-- For molecular formulas, always use underscores for subscripts (e.g., H_2O not H2O)
+- Return a JSON object: {"formula": "...", "explanation": "..."}
+- Formula: ONLY the raw LaTeX formula on one line, no $ delimiters, no \\( \\) or \\[ \\] wrappers
+- Explanation: 1 short sentence (max 15 words) explaining what the formula represents
+- Use standard LaTeX notation with backslashes escaped (e.g., \\\\frac{}{}, \\\\sqrt{}, \\\\sum, \\\\int, \\\\alpha, \\\\beta)
+- Cover math, physics, chemistry, molecular, and projectile motion formulas:
+  * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, markup, profit/loss, etc.
+  * Physics: F=ma, E=mc^2, v=d/t, KE=1/2mv^2, V=IR, projectile motion, work, power, momentum, etc.
+  * Chemistry: pH=-log[H+], PV=nRT, M=n/V, M1V1=M2V2, molecular formulas (H_2O, CO_2, H_2SO_4), etc.
+- For word problems, always extract the underlying formula
 - If the text is not related to math/science, return "NONE"
 
 Text: ${text}
 
-Formula:`;
+Return JSON:`;
 
     const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -56,15 +56,37 @@ Formula:`;
       return NextResponse.json({ formula: null, detected: false });
     }
 
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const formula = (parsed.formula || "")
+          .replace(/^\$+|\$+$/g, "")
+          .replace(/^\\?\(/, "")
+          .replace(/\\?\)$/, "")
+          .replace(/^\\?\[/, "")
+          .replace(/\\?\]$/, "")
+          .trim();
+        const explanation = (parsed.explanation || "").trim();
+        if (formula) {
+          return NextResponse.json({ formula, explanation, detected: true });
+        }
+      }
+    } catch {}
+
     const cleaned = raw
       .replace(/^\$+|\$+$/g, "")
-      .replace(/^```latex\n?|```$/g, "")
+      .replace(/^```json\n?|```$/g, "")
       .replace(/^\\?\(/, "")
       .replace(/\\?\)$/, "")
       .replace(/^\\?\[/, "")
       .replace(/\\?\]$/, "")
       .trim();
-    return NextResponse.json({ formula: cleaned, detected: true });
+    if (cleaned) {
+      return NextResponse.json({ formula: cleaned, explanation: "", detected: true });
+    }
+
+    return NextResponse.json({ formula: null, detected: false });
   } catch {
     return NextResponse.json({ formula: null, detected: false });
   }
