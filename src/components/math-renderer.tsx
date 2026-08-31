@@ -17,45 +17,42 @@ export function MathRenderer({ content, inline = false }: MathRendererProps) {
     while (remaining.length > 0) {
       const doubleDollar = remaining.indexOf("$$");
       const singleDollar = remaining.indexOf("$");
+      const doubleBracket = remaining.indexOf("\\[");
+      const singleParen = remaining.indexOf("\\(");
 
-      if (doubleDollar === -1 && singleDollar === -1) {
+      if (doubleDollar === -1 && singleDollar === -1 && doubleBracket === -1 && singleParen === -1) {
         segments.push({ text: remaining });
         break;
       }
 
-      let nextIndex: number;
-      let isDisplay: boolean;
+      const candidates: { index: number; isDisplay: boolean; delimLen: number; endDelim: string }[] = [];
+      if (doubleDollar !== -1) candidates.push({ index: doubleDollar, isDisplay: true, delimLen: 2, endDelim: "$$" });
+      if (doubleBracket !== -1) candidates.push({ index: doubleBracket, isDisplay: true, delimLen: 2, endDelim: "\\]" });
+      if (singleDollar !== -1) candidates.push({ index: singleDollar, isDisplay: false, delimLen: 1, endDelim: "$" });
+      if (singleParen !== -1) candidates.push({ index: singleParen, isDisplay: false, delimLen: 2, endDelim: "\\)" });
 
-      if (
-        doubleDollar !== -1 &&
-        (singleDollar === -1 || doubleDollar <= singleDollar)
-      ) {
-        nextIndex = doubleDollar;
-        isDisplay = true;
-      } else {
-        nextIndex = singleDollar;
-        isDisplay = false;
+      candidates.sort((a, b) => a.index - b.index);
+      const next = candidates[0];
+
+      if (next.index > 0) {
+        segments.push({ text: remaining.slice(0, next.index) });
       }
 
-      if (nextIndex > 0) {
-        segments.push({ text: remaining.slice(0, nextIndex) });
-      }
+      const mathStart = next.index + next.delimLen;
+      const endIdx = remaining.indexOf(next.endDelim, mathStart);
 
-      const delimiter = isDisplay ? "$$" : "$";
-      const end = remaining.indexOf(delimiter, nextIndex + delimiter.length);
-
-      if (end === -1) {
+      if (endIdx === -1) {
         segments.push({ text: remaining });
         break;
       }
 
       segments.push({
         text: "",
-        math: remaining.slice(nextIndex + delimiter.length, end),
-        display: isDisplay,
+        math: remaining.slice(mathStart, endIdx),
+        display: next.isDisplay,
       });
 
-      remaining = remaining.slice(end + delimiter.length);
+      remaining = remaining.slice(endIdx + next.endDelim.length);
     }
 
     return segments;

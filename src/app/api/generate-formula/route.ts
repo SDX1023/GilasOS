@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it describes or implies a mathematical formula, equation, or scientific expression. If it does, return a valid LaTeX formula that represents the concept. If no formula applies, return exactly "NONE".
 
 Rules:
-- Return ONLY the LaTeX formula (no explanation, no markdown, no $ delimiters, no \\( \\) or \\[ \\] wrappers)
+- Return ONLY the single LaTeX formula on one line. No explanation, no text, no markdown, no $ delimiters, no \( \) or \[ \] wrappers, no words before or after. Just the raw formula like "M_1V_1 + M_2V_2 = M_f(V_1 + V_2)"
 - Use standard LaTeX notation (e.g., \\frac{}{}, \\sqrt{}, \\sum, \\int, \\alpha, \\beta, etc.)
 - Cover math, physics, chemistry, and molecular formulas:
   * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, etc.

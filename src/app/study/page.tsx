@@ -17,7 +17,7 @@ const formulaCacheGlobal: Record<string, string> = {};
 
 async function fetchFormulaGlobal(text: string): Promise<string | null> {
   if (formulaCacheGlobal[text] !== undefined) return formulaCacheGlobal[text] || null;
-  if (/\$|\\|\\\\|frac|sqrt|sum|int|alpha|beta|gamma|sigma|omega|theta|delta|epsilon|pi\b/i.test(text)) {
+  if (/\$|\\|\\\\|\\frac|\\sqrt|\\sum|\\int|\\alpha|\\beta|\\gamma|\\sigma|\\omega|\\theta|\\delta|\\epsilon|\\pi\b/i.test(text)) {
     return null;
   }
   try {
