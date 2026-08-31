@@ -11,13 +11,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "No search query provided" }, { status: 400 });
     }
 
-    const clientId = (process.env.SPOTIFY_CLIENT_ID || "").trim();
-    const clientSecret = (process.env.SPOTIFY_CLIENT_SECRET || "").trim();
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        Authorization: `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
       },
       body: "grant_type=client_credentials",
     });
@@ -25,18 +23,14 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      return NextResponse.json({ error: "Failed to get Spotify access token", details: tokenData }, { status: 500 });
+      return NextResponse.json({ error: "Failed to get Spotify access token" }, { status: 500 });
     }
 
     const offset = searchParams.get("offset") || "0";
-    const searchUrl = new URL("https://api.spotify.com/v1/search");
-    searchUrl.searchParams.set("q", query);
-    searchUrl.searchParams.set("type", "track");
-    searchUrl.searchParams.set("limit", "5");
-    searchUrl.searchParams.set("offset", offset);
-    const searchResponse = await fetch(searchUrl.toString(), {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
+    const searchResponse = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
+    );
 
     const data = await searchResponse.json();
 
