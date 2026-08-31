@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     const data = await searchResponse.json();
 
     if (!data.tracks || data.tracks.items.length === 0) {
-      return NextResponse.json({ tracks: [], message: "No results found" });
+      return NextResponse.json({ tracks: [], message: "No results found", _debug: { searchStatus: searchResponse.status, hasTracks: !!data.tracks, itemsLen: data.tracks?.items?.length, spotifyErr: data.error || null, query, url: searchUrl.toString(), tokenOk: !!tokenData.access_token } });
     }
 
     const tracks = data.tracks.items.map((track: any) => ({
