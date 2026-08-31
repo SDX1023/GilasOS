@@ -156,7 +156,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           position: "relative", width: "480px", maxHeight: "92vh", display: "flex", flexDirection: "column",
           background: "var(--os-glass-bg)", border: "1px solid var(--os-glass-border)", borderRadius: "16px",
           backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)", color: "var(--os-text-primary)", fontFamily: "var(--os-font-body)", overflow: "hidden",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)", color: "var(--os-text-primary)", fontFamily: "var(--os-font-body)",
         }}
       >
         {/* Header */}
@@ -184,7 +184,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         </div>
 
         {/* Scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 0" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "12px 20px 0" }}>
 
           {/* Wallpaper Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "5px", marginBottom: "20px" }}>
