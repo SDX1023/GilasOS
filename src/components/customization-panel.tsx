@@ -109,10 +109,19 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
 
   useEffect(() => {
     if (!isOpen) return;
-    document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${allWallpapers[selectedWallpaper].colors[0]}, ${allWallpapers[selectedWallpaper].colors[1]})`);
+    const wp = allWallpapers[selectedWallpaper];
+    document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${wp.colors[0]}, ${wp.colors[1]})`);
     document.documentElement.style.setProperty("--os-accent", accentColors[selectedAccent].color);
     document.documentElement.style.setProperty("--os-accent-rgb", accentColors[selectedAccent].rgb);
-    window.dispatchEvent(new Event("gilasos-theme-change"));
+    const colorToTheme: Record<string, string> = {
+      "#1a0205": "Spiderman", "#0a0a0f": "Batman", "#1a1205": "Greek Myth",
+      "#05001a": "Galaxy", "#0a0018": "Neon Tokyo", "#1a1005": "Sahara",
+      "#0a1525": "Nordic Frost", "#1a0505": "Volcanic", "#1a000a": "Cherry Coke",
+      "#000a02": "Matrix", "#1a1008": "Steampunk", "#0a0a05": "Cyberpunk 2077",
+      "#050a12": "Detroit: BH",
+    };
+    const themeName = colorToTheme[wp.colors[0]] || null;
+    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: themeName } }));
   }, [selectedWallpaper, selectedAccent, isOpen]);
 
   function getGlobalIndex(groupIndex: number) {

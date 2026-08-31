@@ -22,7 +22,7 @@ const colorToTheme: Record<string, string> = {
 export default function BackgroundOverlay() {
   const [theme, setTheme] = useState<string | null>(null);
 
-  function checkTheme() {
+  function checkThemeFromStorage() {
     const saved = localStorage.getItem("gilasos-wallpaper");
     if (saved && colorToTheme[saved]) {
       setTheme(colorToTheme[saved]);
@@ -31,13 +31,22 @@ export default function BackgroundOverlay() {
     }
   }
 
+  function handleThemeChange(e: Event) {
+    const detail = (e as CustomEvent).detail;
+    if (detail && "theme" in detail) {
+      setTheme(detail.theme);
+    } else {
+      checkThemeFromStorage();
+    }
+  }
+
   useEffect(() => {
-    checkTheme();
-    window.addEventListener("storage", checkTheme);
-    window.addEventListener("gilasos-theme-change", checkTheme);
+    checkThemeFromStorage();
+    window.addEventListener("storage", checkThemeFromStorage);
+    window.addEventListener("gilasos-theme-change", handleThemeChange);
     return () => {
-      window.removeEventListener("storage", checkTheme);
-      window.removeEventListener("gilasos-theme-change", checkTheme);
+      window.removeEventListener("storage", checkThemeFromStorage);
+      window.removeEventListener("gilasos-theme-change", handleThemeChange);
     };
   }, []);
 
@@ -45,6 +54,7 @@ export default function BackgroundOverlay() {
 
   return (
     <div
+      key={theme}
       style={{
         position: "fixed",
         inset: 0,
