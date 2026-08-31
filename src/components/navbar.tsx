@@ -38,6 +38,19 @@ export function Navbar() {
   useEffect(() => { setShowMobile(false); setShowTools(false); }, [pathname]);
 
   useEffect(() => {
+    if (showMobile) {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+    }
+    return () => { document.body.style.overflow = ""; document.body.style.position = ""; document.body.style.width = ""; };
+  }, [showMobile]);
+
+  useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
       if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setShowTools(false);
@@ -61,7 +74,7 @@ export function Navbar() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 16, textDecoration: "none", color: "var(--os-text-primary)", flexShrink: 0 }}>
-              <img src="/logo.png" alt="GilasOS" style={{ height: 28, width: 28, objectFit: "contain" }} />
+              <img src="/logo.png" alt="GilasOS" style={{ height: 28, width: 28, objectFit: "contain", filter: (resolvedTheme || theme) === "light" ? "invert(1)" : "none" }} />
               <span>GilasOS</span>
             </Link>
             <div style={{ display: "flex", alignItems: "center", gap: 2 }} className="nav-desktop">

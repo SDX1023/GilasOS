@@ -281,14 +281,14 @@ export default function ArchivePage() {
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
-                <th style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "160px" }}>
-                  Type {typeSort === "asc" ? "A→Z ↑" : typeSort === "desc" ? "Z→A ↓" : "↕"}
+                <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
+                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "90px" }}>
+                  Type {typeSort === "asc" ? "↑" : typeSort === "desc" ? "↓" : "↕"}
                 </th>
-                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 20px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "120px" }}>
-                  Year {yearSort === "asc" ? "Oldest ↑" : yearSort === "desc" ? "Newest ↓" : "↕"}
+                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "70px" }}>
+                  Year {yearSort === "asc" ? "↑" : yearSort === "desc" ? "↓" : "↕"}
                 </th>
-                {isAdmin && <th style={{ width: 80 }}></th>}
+                {isAdmin && <th style={{ width: 60 }}></th>}
               </tr>
             </thead>
             <tbody>

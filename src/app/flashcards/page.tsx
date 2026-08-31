@@ -394,7 +394,7 @@ export default function FlashcardsPage() {
                         <button
                           onClick={() => setAddingModuleTo(course.courseId)}
                           className="btn-tab"
-                          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 12, borderRadius: 8 }}
+                          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", fontSize: 12, borderRadius: 8, color: "var(--os-accent)" }}
                         >
                           <Plus size={12} /> Add Module
                         </button>

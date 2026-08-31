@@ -159,7 +159,7 @@ function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: st
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }} onClick={onClose}>
-      <div style={{ background: "var(--os-bg-secondary)", borderRadius: 12, padding: 24, maxWidth: 460, width: "100%", margin: "0 16px" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: "var(--os-bg-secondary)", borderRadius: 12, padding: 24, maxWidth: 460, width: "100%", margin: "0 16px", maxHeight: "90vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ fontWeight: 600, marginBottom: 16, fontSize: 16, color: "var(--os-text-primary)" }}>Crop Profile Picture</h3>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <canvas
