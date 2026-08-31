@@ -4,51 +4,32 @@ import { useState, useEffect } from "react";
 import ThemeOverlay from "./theme-overlay";
 import { getSupabase } from "@/lib/supabase";
 
-const colorToTheme: Record<string, string> = {
+export const THEME_MAP: Record<string, string> = {
   "#1a0205": "Spiderman",
-  "#0a0a0f": "Batman",
-  "#1a1205": "Greek Myth",
   "#05001a": "Galaxy",
-  "#0a0018": "Neon Tokyo",
-  "#1a1005": "Sahara",
-  "#0a1525": "Nordic Frost",
-  "#1a0505": "Volcanic",
-  "#1a000a": "Cherry Coke",
-  "#000a02": "Matrix",
-  "#1a1008": "Steampunk",
-  "#0a0a05": "Cyberpunk 2077",
-  "#050a12": "Detroit: BH",
+  "#0a0008": "Resident Evil",
 };
 
 function themeFromColor(color: string | null): string | null {
   if (!color) return null;
-  return colorToTheme[color] || null;
+  return THEME_MAP[color] || null;
 }
 
 export default function BackgroundOverlay() {
   const [theme, setTheme] = useState<string | null>(null);
 
-  async function loadFromSupabase() {
+  async function loadTheme() {
+    let color: string | null = null;
     try {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return loadFromStorage();
-      const { data } = await supabase.from("user_profiles").select("wallpaper").eq("user_id", user.id).maybeSingle();
-      if (data?.wallpaper) {
-        const t = themeFromColor(data.wallpaper);
-        setTheme(t);
-        localStorage.setItem("gilasos-wallpaper", data.wallpaper);
-      } else {
-        loadFromStorage();
+      if (user) {
+        const { data } = await supabase.from("user_profiles").select("wallpaper").eq("user_id", user.id).maybeSingle();
+        if (data?.wallpaper) color = data.wallpaper;
       }
-    } catch {
-      loadFromStorage();
-    }
-  }
-
-  function loadFromStorage() {
-    const saved = localStorage.getItem("gilasos-wallpaper");
-    setTheme(themeFromColor(saved));
+    } catch {}
+    if (!color) color = localStorage.getItem("gilasos-wallpaper");
+    setTheme(themeFromColor(color));
   }
 
   function handleThemeChange(e: Event) {
@@ -56,16 +37,16 @@ export default function BackgroundOverlay() {
     if (detail && "theme" in detail) {
       setTheme(detail.theme);
     } else {
-      loadFromStorage();
+      loadTheme();
     }
   }
 
   useEffect(() => {
-    loadFromSupabase();
-    window.addEventListener("storage", loadFromStorage);
+    loadTheme();
+    window.addEventListener("storage", loadTheme);
     window.addEventListener("gilasos-theme-change", handleThemeChange);
     return () => {
-      window.removeEventListener("storage", loadFromStorage);
+      window.removeEventListener("storage", loadTheme);
       window.removeEventListener("gilasos-theme-change", handleThemeChange);
     };
   }, []);
@@ -85,10 +66,7 @@ export default function BackgroundOverlay() {
         opacity: 0.15,
       }}
     >
-      <ThemeOverlay
-        theme={theme}
-        style={{ borderRadius: 0 }}
-      />
+      <ThemeOverlay theme={theme} />
     </div>
   );
 }

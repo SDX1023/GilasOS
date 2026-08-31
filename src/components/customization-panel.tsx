@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ThemeOverlay from "./theme-overlay";
+import { THEME_MAP } from "./background-overlay";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 
@@ -34,18 +35,8 @@ const wallpaperGroups: Record<WallpaperTab, { name: string; colors: string[] }[]
   ],
   Themed: [
     { name: "Spiderman", colors: ["#1a0205", "#001040"] },
-    { name: "Batman", colors: ["#0a0a0f", "#1a1a2a"] },
-    { name: "Greek Myth", colors: ["#1a1205", "#2d1b05"] },
     { name: "Galaxy", colors: ["#05001a", "#1a003a"] },
-    { name: "Neon Tokyo", colors: ["#0a0018", "#1a0035"] },
-    { name: "Sahara", colors: ["#1a1005", "#3a2005"] },
-    { name: "Nordic Frost", colors: ["#0a1525", "#1a2a3f"] },
-    { name: "Volcanic", colors: ["#1a0505", "#3a0a05"] },
-    { name: "Cherry Coke", colors: ["#1a000a", "#3a0018"] },
-    { name: "Matrix", colors: ["#000a02", "#001a08"] },
-    { name: "Steampunk", colors: ["#1a1008", "#2d1b0d"] },
-    { name: "Cyberpunk 2077", colors: ["#0a0a05", "#1a1a05"] },
-    { name: "Detroit: BH", colors: ["#050a12", "#0a1a2a"] },
+    { name: "Resident Evil", colors: ["#0a0008", "#1a0010"] },
   ],
   Pastel: [
     { name: "Lilac Dream", colors: ["#1a1025", "#2d1a40"] },
@@ -82,9 +73,14 @@ const accentColors = [
 
 const defaultWallpaper = ["#0a0e18", "#1a1a2e"];
 const defaultAccent = { color: "#2563eb", rgb: "37,99,235" };
+const RE_EMAIL = "si.davidsdx@gmail.com";
 
 function getAllWallpapers() {
   return Object.values(wallpaperGroups).flat();
+}
+
+function getThemeName(color: string): string | null {
+  return THEME_MAP[color] || null;
 }
 
 export default function CustomizationPanel({ isOpen, onClose }: CustomizationPanelProps) {
@@ -96,21 +92,26 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
 
   const allWallpapers = getAllWallpapers();
   const currentGroup = wallpaperGroups[wallpaperTab];
+  const isReUnlocked = user?.email === RE_EMAIL;
+
+  const visibleThemed = wallpaperGroups.Themed.filter((wp) => wp.name !== "Resident Evil" || isReUnlocked);
 
   useEffect(() => {
     async function loadTheme() {
       if (user) {
-        const supabase = getSupabase();
-        const { data } = await supabase.from("user_profiles").select("wallpaper, accent").eq("user_id", user.id).maybeSingle();
-        if (data?.wallpaper) {
-          const index = allWallpapers.findIndex((w) => w.colors[0] === data.wallpaper);
-          if (index !== -1) { setSelectedWallpaper(index); localStorage.setItem("gilasos-wallpaper", data.wallpaper); }
-        }
-        if (data?.accent) {
-          const index = accentColors.findIndex((a) => a.color === data.accent);
-          if (index !== -1) { setSelectedAccent(index); localStorage.setItem("gilasos-accent", data.accent); }
-        }
-        return;
+        try {
+          const supabase = getSupabase();
+          const { data } = await supabase.from("user_profiles").select("wallpaper, accent").eq("user_id", user.id).maybeSingle();
+          if (data?.wallpaper) {
+            const index = allWallpapers.findIndex((w) => w.colors[0] === data.wallpaper);
+            if (index !== -1) { setSelectedWallpaper(index); localStorage.setItem("gilasos-wallpaper", data.wallpaper); }
+          }
+          if (data?.accent) {
+            const index = accentColors.findIndex((a) => a.color === data.accent);
+            if (index !== -1) { setSelectedAccent(index); localStorage.setItem("gilasos-accent", data.accent); }
+          }
+          return;
+        } catch {}
       }
       const savedWallpaper = localStorage.getItem("gilasos-wallpaper");
       if (savedWallpaper) {
@@ -132,15 +133,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
     document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${wp.colors[0]}, ${wp.colors[1]})`);
     document.documentElement.style.setProperty("--os-accent", accentColors[selectedAccent].color);
     document.documentElement.style.setProperty("--os-accent-rgb", accentColors[selectedAccent].rgb);
-    const colorToTheme: Record<string, string> = {
-      "#1a0205": "Spiderman", "#0a0a0f": "Batman", "#1a1205": "Greek Myth",
-      "#05001a": "Galaxy", "#0a0018": "Neon Tokyo", "#1a1005": "Sahara",
-      "#0a1525": "Nordic Frost", "#1a0505": "Volcanic", "#1a000a": "Cherry Coke",
-      "#000a02": "Matrix", "#1a1008": "Steampunk", "#0a0a05": "Cyberpunk 2077",
-      "#050a12": "Detroit: BH",
-    };
-    const themeName = colorToTheme[wp.colors[0]] || null;
-    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: themeName } }));
+    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: getThemeName(wp.colors[0]) } }));
   }, [selectedWallpaper, selectedAccent, isOpen]);
 
   function getGlobalIndex(groupIndex: number) {
@@ -161,14 +154,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
       const supabase = getSupabase();
       await supabase.from("user_profiles").upsert({ user_id: user.id, wallpaper: wpColor, accent: acColor }, { onConflict: "user_id" });
     }
-    const colorToTheme: Record<string, string> = {
-      "#1a0205": "Spiderman", "#0a0a0f": "Batman", "#1a1205": "Greek Myth",
-      "#05001a": "Galaxy", "#0a0018": "Neon Tokyo", "#1a1005": "Sahara",
-      "#0a1525": "Nordic Frost", "#1a0505": "Volcanic", "#1a000a": "Cherry Coke",
-      "#000a02": "Matrix", "#1a1008": "Steampunk", "#0a0a05": "Cyberpunk 2077",
-      "#050a12": "Detroit: BH",
-    };
-    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: colorToTheme[wpColor] || null } }));
+    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: getThemeName(wpColor) } }));
     setSaved(true);
     setTimeout(() => { onClose(); setSaved(false); }, 600);
   };
@@ -208,7 +194,6 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           color: "#e2e8f0", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        {/* Top shine */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)", pointerEvents: "none" }} />
 
         {/* Header */}
@@ -240,7 +225,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
 
           {/* Wallpaper Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginBottom: "20px" }}>
-            {currentGroup.map((wp, i) => {
+            {(wallpaperTab === "Themed" ? visibleThemed : currentGroup).map((wp, i) => {
               const globalIdx = getGlobalIndex(i);
               const isSelected = selectedWallpaper === globalIdx;
               return (
@@ -263,7 +248,6 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
                     transition: "all 0.2s", position: "relative", overflow: "hidden",
                   }}>
                     {wallpaperTab === "Themed" && <ThemeOverlay theme={wp.name} />}
-                    {/* Inner shine */}
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)", borderRadius: "8px 8px 0 0", pointerEvents: "none", zIndex: 1 }} />
                   </div>
                   <span style={{
@@ -289,7 +273,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
                     boxShadow: selectedAccent === i
                       ? `0 0 0 2px ${ac.color}50, 0 2px 8px ${ac.color}40`
                       : `0 2px 6px ${ac.color}30`,
-                    transition: "all 0.2s", flexShrink: 0, position: "relative",
+                    transition: "all 0.2s", flexShrink: 0,
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.18)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
@@ -301,30 +285,15 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", gap: "8px", padding: "14px 22px 18px", borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, background: "rgba(0,0,0,0.15)" }}>
-          <button onClick={handleReset}
-            style={{
-              flex: 1, padding: "10px", borderRadius: "10px",
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-              color: "#94a3b8", fontSize: "12px", fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#e2e8f0"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+        <div style={{ display: "flex", gap: "8px", padding: "14px 22px 18px", borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
+          <button onClick={handleReset} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#94a3b8", fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
           >Reset</button>
-          <button onClick={handleSave}
-            style={{
-              flex: 2, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontFamily: "inherit",
-              background: saved ? "linear-gradient(135deg, #22c55e, #16a34a)" : "linear-gradient(135deg, var(--os-accent), color-mix(in srgb, var(--os-accent) 80%, white))",
-              color: "#fff", fontSize: "12px", fontWeight: 600, letterSpacing: "0.01em",
-              boxShadow: saved ? "0 4px 16px rgba(34,197,94,0.4), inset 0 1px 0 rgba(255,255,255,0.15)" : "0 4px 16px rgba(var(--os-accent-rgb), 0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
-              transition: "all 0.2s", position: "relative", overflow: "hidden",
-            }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            {saved ? "✓ Saved!" : "Save"}
-          </button>
+          <button onClick={handleSave} style={{ flex: 2, padding: "10px", borderRadius: "10px", border: "none", background: saved ? "#22c55e" : "var(--os-accent)", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit" }}
+            onMouseEnter={(e) => { if (!saved) e.currentTarget.style.opacity = "0.9"; }}
+            onMouseLeave={(e) => { if (!saved) e.currentTarget.style.opacity = "1"; }}
+          >{saved ? "Saved!" : "Save"}</button>
         </div>
       </div>
     </div>
