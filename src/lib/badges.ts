@@ -280,12 +280,21 @@ export async function retroactiveBadgeCheck(userId: string): Promise<string[]> {
   // Decks created (reviewers)
   const { data: reviewers } = await supabase
     .from("reviewers")
-    .select("id")
+    .select("id, course_id")
     .eq("user_id", userId);
 
-  if (reviewers && reviewers.length >= 10 && earnBadge("deck-creator")) {
-    newlyEarned.push("deck-creator");
-  } else if (reviewers) {
+  if (reviewers) {
+    const totalDecks = reviewers.length;
+    if (totalDecks >= 10 && earnBadge("deck-creator")) {
+      newlyEarned.push("deck-creator");
+    }
+
+    // PDF generations: count decks in pdf-generated course
+    const pdfDecks = reviewers.filter((r) => r.course_id === "pdf-generated");
+    if (pdfDecks.length >= 5 && earnBadge("pdf-master")) {
+      newlyEarned.push("pdf-master");
+    }
+
     // Also count local custom decks
     if (typeof window !== "undefined") {
       try {
@@ -296,8 +305,14 @@ export async function retroactiveBadgeCheck(userId: string): Promise<string[]> {
             (acc: number, c: any) => acc + (c.modules || []).reduce((acc2: number, m: any) => acc2 + (m.reviewers || []).length, 0),
             0
           );
-          if ((reviewers.length + localDeckCount) >= 10 && earnBadge("deck-creator")) {
+          const localPdfDecks = (data.courses || [])
+            .filter((c: any) => c.id === "pdf-generated")
+            .reduce((acc: number, c: any) => acc + (c.modules || []).reduce((acc2: number, m: any) => acc2 + (m.reviewers || []).length, 0), 0);
+          if ((totalDecks + localDeckCount) >= 10 && earnBadge("deck-creator")) {
             newlyEarned.push("deck-creator");
+          }
+          if ((pdfDecks.length + localPdfDecks) >= 5 && earnBadge("pdf-master")) {
+            newlyEarned.push("pdf-master");
           }
         }
       } catch {}

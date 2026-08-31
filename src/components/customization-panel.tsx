@@ -20,6 +20,14 @@ const wallpapers = [
   { name: "Arctic", colors: ["#0a1a2a", "#1a3a5a"] },
   { name: "Ember", colors: ["#1a0e05", "#3a2010"] },
   { name: "Mint", colors: ["#051a15", "#0a3a2e"] },
+  { name: "Obsidian", colors: ["#080808", "#1a1a1a"] },
+  { name: "Storm", colors: ["#0d1117", "#21262d"] },
+  { name: "Neon Night", colors: ["#0a001a", "#1a0040"] },
+  { name: "Blood Moon", colors: ["#1a0505", "#3a0a0a"] },
+  { name: "Deep Sea", colors: ["#001020", "#002040"] },
+  { name: "Golden Hour", colors: ["#1a1200", "#3a2800"] },
+  { name: "Cherry Blossom", colors: ["#1a0a18", "#3a1a30"] },
+  { name: "Toxic", colors: ["#0a1a00", "#1a3a00"] },
 ];
 
 const accentColors = [
@@ -35,8 +43,14 @@ const accentColors = [
   { name: "Yellow", color: "#eab308", rgb: "234,179,8" },
   { name: "Lime", color: "#84cc16", rgb: "132,204,22" },
   { name: "Green", color: "#10b981", rgb: "16,185,129" },
+  { name: "Emerald", color: "#059669", rgb: "5,150,105" },
   { name: "Teal", color: "#14b8a6", rgb: "20,184,166" },
   { name: "Cyan", color: "#06b6d4", rgb: "6,182,212" },
+  { name: "Sky", color: "#0ea5e9", rgb: "14,165,233" },
+  { name: "Fuchsia", color: "#d946ef", rgb: "217,70,239" },
+  { name: "Coral", color: "#fb7185", rgb: "251,113,133" },
+  { name: "Peach", color: "#fb923c", rgb: "251,146,60" },
+  { name: "Gold", color: "#fbbf24", rgb: "251,191,36" },
 ];
 
 const defaultWallpaper = ["#0a0e18", "#1a1a2e"];
@@ -262,15 +276,15 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           >
             Accent Color
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "4px" }}>
             {accentColors.map((ac, index) => (
               <button
                 key={ac.name}
                 onClick={() => handleSelectAccent(index)}
                 title={ac.name}
                 style={{
-                  width: "36px",
-                  height: "36px",
+                  width: "32px",
+                  height: "32px",
                   borderRadius: "50%",
                   background: ac.color,
                   border: selectedAccent === index ? "3px solid var(--os-text-primary)" : "3px solid transparent",
