@@ -30,6 +30,27 @@ export function useSpotifyPlayer() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const tokenRef = useRef<string>("");
 
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    const refreshToken = localStorage.getItem("spotify_refresh_token");
+    if (!refreshToken) return null;
+    try {
+      const res = await fetch("/api/spotify/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem("spotify_access_token", data.access_token);
+        localStorage.setItem("spotify_token_expiry", String(Date.now() + data.expires_in * 1000));
+        if (data.refresh_token) localStorage.setItem("spotify_refresh_token", data.refresh_token);
+        tokenRef.current = data.access_token;
+        return data.access_token;
+      }
+    } catch { }
+    return null;
+  }, []);
+
   const getAccessToken = useCallback(async (): Promise<string | null> => {
     const stored = localStorage.getItem("spotify_access_token");
     const expiry = localStorage.getItem("spotify_token_expiry");
@@ -37,14 +58,16 @@ export function useSpotifyPlayer() {
       tokenRef.current = stored;
       return stored;
     }
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return refreshed;
     const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
     if (!clientId) return null;
     const scopes = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
     const redirectUri = `${window.location.origin}/spotify-callback`;
-    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=false`;
+    const url = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=false`;
     window.location.href = url;
     return null;
-  }, []);
+  }, [refreshAccessToken]);
 
   const initPlayer = useCallback(async () => {
     if (playerRef[0]) return;
