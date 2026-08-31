@@ -677,7 +677,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                           color: isCorrectOpt ? "#16a34a" : isUserChoice && !isCorrectOpt ? "#dc2626" : "var(--os-text-secondary)",
                           fontWeight: isCorrectOpt ? 500 : 400,
                         }}>
-                          {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /> {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
+                          {String.fromCharCode(65 + j)}. <MathRenderer content={stripOptionPrefix(opt)} /> {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
                         </p>
                       );
                     })}
@@ -757,7 +757,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
                         {q.options.map((opt: string, j: number) => (
                           <p key={j} className="text-xs" style={{ color: showAnswers && String(j) === correctIdx ? "#16a34a" : "var(--os-text-secondary)", fontWeight: showAnswers && String(j) === correctIdx ? 500 : 400 }}>
-                            {String.fromCharCode(65 + j)}. <FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /> {showAnswers && String(j) === correctIdx ? "✓" : ""}
+                            {String.fromCharCode(65 + j)}. <MathRenderer content={stripOptionPrefix(opt)} /> {showAnswers && String(j) === correctIdx ? "✓" : ""}
                           </p>
                         ))}
                       </div>
@@ -858,7 +858,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                     opacity: showFeedback && !isCorrectOpt && !isChosen ? 0.5 : 1,
                   }}>
                   <span style={{ fontWeight: 500, marginRight: "10px", color: txtColor }}>{String.fromCharCode(65 + j)}.</span>
-                  <span style={{ color: txtColor }}><FormulaLine text={stripOptionPrefix(opt)} showFormulas={showFormulas} /></span>
+                  <span style={{ color: txtColor }}><MathRenderer content={stripOptionPrefix(opt)} /></span>
                   {showFeedback && isCorrectOpt && <span style={{ marginLeft: 8, color: "#16a34a" }}>✓</span>}
                   {showFeedback && isChosen && !isCorrectOpt && <span style={{ marginLeft: 8, color: "#ef4444" }}>✗</span>}
                 </button>

@@ -13,19 +13,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ formula: null, detected: false });
     }
 
-    const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it describes or implies a mathematical formula, equation, or scientific expression. If it does, return a JSON object with the formula and a short explanation. If no formula applies, return exactly "NONE".
+    const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it is a MATH or SCIENCE problem that requires a specific formula to solve. If it does, return a JSON object with the formula and a short explanation. If no formula applies, return exactly "NONE".
 
 Rules:
 - Return a JSON object: {"formula": "...", "explanation": "..."}
 - Formula: ONLY the raw LaTeX formula on one line, no $ delimiters, no \\( \\) or \\[ \\] wrappers
-- Explanation: 1 short sentence (max 15 words) explaining what the formula represents
+- Explanation: 1 short sentence (max 20 words) explaining HOW to solve the problem using this formula, not just what the formula means
 - Use standard LaTeX notation with backslashes escaped (e.g., \\\\frac{}{}, \\\\sqrt{}, \\\\sum, \\\\int, \\\\alpha, \\\\beta)
-- Cover math, physics, chemistry, molecular, and projectile motion formulas:
-  * Math: simple interest I=Prt, compound amount A=P(1+r)^n, discount d=(l-n)/l, markup, profit/loss, etc.
-  * Physics: F=ma, E=mc^2, v=d/t, KE=1/2mv^2, V=IR, projectile motion, work, power, momentum, etc.
-  * Chemistry: pH=-log[H+], PV=nRT, M=n/V, M1V1=M2V2, molecular formulas (H_2O, CO_2, H_2SO_4), etc.
-- For word problems, always extract the underlying formula
-- If the text is not related to math/science, return "NONE"
+- ONLY return a formula for actual math/science CALCULATION problems:
+  * Math: interest, discount, markup, profit, compound amount, area, perimeter, Pythagorean theorem, etc.
+  * Physics: force, energy, velocity, momentum, projectile motion, circuits, etc.
+  * Chemistry: molarity, pH, gas laws, dilution, reaction balancing, molecular formulas, etc.
+- DO NOT return formulas for:
+  * General knowledge or trivia questions (who discovered, what is, multiple choice facts)
+  * Biology, astronomy, history, or non-calculation questions
+  * Questions that just mention a concept name without needing to calculate anything
+- For word problems, explain the solution steps briefly (e.g., "Substitute P=15000, r=0.10, t=3 into I=Prt, then add to principal")
+- If the text is not a math/science calculation problem, return "NONE"
 
 Text: ${text}
 
