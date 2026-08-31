@@ -23,9 +23,8 @@ CRITICAL RULES — read these first:
 
 WHEN you DO detect a calculation problem, return JSON: {"formula": "...", "explanation": "..."}
 - Formula: raw LaTeX only, no delimiters, no \\( \\) or \\[ \\] wrappers
-- Explanation: Show the FULL solution step-by-step, including all arithmetic. Do not just say "solve for x" — actually solve it and show the final answer.
-- Example 1: "What is the simple interest on P15,000 at 10% for 3 years?" → {"formula": "I = Prt", "explanation": "I = 15000(0.10)(3) = 4500. Total = 15000 + 4500 = P19,500."}
-- Example 2: Age problems → show the full equation, solve for x, then state the final answer clearly.
+- Explanation: Show the COMPLETE worked solution with every step and the final numerical answer. Never say "solve for x" without actually solving it. Every explanation must end with the final answer.
+- Example: For "Julie is 14 years older than her niece..." → {"formula": "x + 23 = 2(x + 9)", "explanation": "Let x = niece's age. Julie = x + 14. In 9 years: Julie = x + 23, niece = x + 9. x + 23 = 2(x + 9) → x + 23 = 2x + 18 → x = 5. The niece is 5 years old."}
 
 ONLY these types get formulas:
 - Interest/discount/markup/profit calculations
