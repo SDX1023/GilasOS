@@ -20,14 +20,17 @@ Rules:
 - Formula: ONLY the raw LaTeX formula on one line, no $ delimiters, no \\( \\) or \\[ \\] wrappers
 - Explanation: 1 short sentence (max 20 words) explaining HOW to solve the problem using this formula, not just what the formula means
 - Use standard LaTeX notation with backslashes escaped (e.g., \\\\frac{}{}, \\\\sqrt{}, \\\\sum, \\\\int, \\\\alpha, \\\\beta)
-- ONLY return a formula for actual math/science CALCULATION problems:
-  * Math: interest, discount, markup, profit, compound amount, area, perimeter, Pythagorean theorem, etc.
-  * Physics: force, energy, velocity, momentum, projectile motion, circuits, etc.
-  * Chemistry: molarity, pH, gas laws, dilution, reaction balancing, molecular formulas, etc.
-- DO NOT return formulas for:
-  * General knowledge or trivia questions (who discovered, what is, multiple choice facts)
-  * Biology, astronomy, history, or non-calculation questions
-  * Questions that just mention a concept name without needing to calculate anything
+- ONLY return a formula when the question explicitly asks you to CALCULATE a numerical answer using a formula:
+  * "How much interest..." → I=Prt
+  * "What is the discount..." → d=(l-n)/l  
+  * "Find the force..." → F=ma
+  * "What is the pH..." → pH=-log[H+]
+- Return "NONE" for ALL of these:
+  * "Who discovered / Who formulated / Who proposed..."
+  * "What is the name of..."
+  * Fill-in-the-blank trivia (e.g., "The scientist who... was ____")
+  * Definitions, identifications, multiple choice facts
+  * Any question where the answer is a person's name, a term, or a concept — not a number
 - For word problems, explain the solution steps briefly (e.g., "Substitute P=15000, r=0.10, t=3 into I=Prt, then add to principal")
 - If the text is not a math/science calculation problem, return "NONE"
 

@@ -48,20 +48,21 @@ function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boole
     }
     fetchFormulaGlobal(text).then((r) => setResult(r));
   }, [showFormulas, text]);
+  if (!showFormulas || !result) {
+    return <MathRenderer content={text} />;
+  }
   return (
-    <>
-      <MathRenderer content={text} />
-      {showFormulas && result && (
-        <span style={{ display: "block", marginTop: 6, padding: "6px 10px", borderRadius: 8, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
-          <MathRenderer content={`$${result.formula}$`} />
-          {result.explanation && (
-            <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "#8b5cf6", fontStyle: "italic" }}>
-              {result.explanation}
-            </span>
-          )}
-        </span>
-      )}
-    </>
+    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+      <div style={{ flex: 1, minWidth: 0 }}><MathRenderer content={text} /></div>
+      <div style={{ flexShrink: 0, maxWidth: "45%", padding: "8px 12px", borderRadius: 10, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
+        <div><MathRenderer content={`$${result.formula}$`} /></div>
+        {result.explanation && (
+          <div style={{ marginTop: 4, fontSize: 11, color: "#8b5cf6", fontStyle: "italic", lineHeight: 1.4 }}>
+            {result.explanation}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
