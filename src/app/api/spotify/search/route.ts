@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
       albumArt: track.album.images[0]?.url || null,
       url: track.external_urls.spotify,
       preview: track.preview_url,
+      uri: track.uri,
+      duration_ms: track.duration_ms,
     }));
 
     return NextResponse.json({ tracks });
