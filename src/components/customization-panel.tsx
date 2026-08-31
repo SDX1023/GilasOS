@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import ThemeOverlay from "./theme-overlay";
+import { useAuth } from "@/lib/auth-context";
+import { getSupabase } from "@/lib/supabase";
 
 interface CustomizationPanelProps {
   isOpen: boolean;
@@ -90,22 +92,39 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
   const [selectedAccent, setSelectedAccent] = useState(0);
   const [wallpaperTab, setWallpaperTab] = useState<WallpaperTab>("Standard");
   const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
 
   const allWallpapers = getAllWallpapers();
   const currentGroup = wallpaperGroups[wallpaperTab];
 
   useEffect(() => {
-    const savedWallpaper = localStorage.getItem("gilasos-wallpaper");
-    if (savedWallpaper) {
-      const index = allWallpapers.findIndex((w) => w.colors[0] === savedWallpaper);
-      if (index !== -1) setSelectedWallpaper(index);
+    async function loadTheme() {
+      if (user) {
+        const supabase = getSupabase();
+        const { data } = await supabase.from("user_profiles").select("wallpaper, accent").eq("user_id", user.id).maybeSingle();
+        if (data?.wallpaper) {
+          const index = allWallpapers.findIndex((w) => w.colors[0] === data.wallpaper);
+          if (index !== -1) { setSelectedWallpaper(index); localStorage.setItem("gilasos-wallpaper", data.wallpaper); }
+        }
+        if (data?.accent) {
+          const index = accentColors.findIndex((a) => a.color === data.accent);
+          if (index !== -1) { setSelectedAccent(index); localStorage.setItem("gilasos-accent", data.accent); }
+        }
+        return;
+      }
+      const savedWallpaper = localStorage.getItem("gilasos-wallpaper");
+      if (savedWallpaper) {
+        const index = allWallpapers.findIndex((w) => w.colors[0] === savedWallpaper);
+        if (index !== -1) setSelectedWallpaper(index);
+      }
+      const savedAccent = localStorage.getItem("gilasos-accent");
+      if (savedAccent) {
+        const index = accentColors.findIndex((a) => a.color === savedAccent);
+        if (index !== -1) setSelectedAccent(index);
+      }
     }
-    const savedAccent = localStorage.getItem("gilasos-accent");
-    if (savedAccent) {
-      const index = accentColors.findIndex((a) => a.color === savedAccent);
-      if (index !== -1) setSelectedAccent(index);
-    }
-  }, []);
+    loadTheme();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -133,22 +152,40 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
     return offset + groupIndex;
   }
 
-  const handleSave = () => {
-    localStorage.setItem("gilasos-wallpaper", allWallpapers[selectedWallpaper].colors[0]);
-    localStorage.setItem("gilasos-accent", accentColors[selectedAccent].color);
-    window.dispatchEvent(new Event("gilasos-theme-change"));
+  const handleSave = async () => {
+    const wpColor = allWallpapers[selectedWallpaper].colors[0];
+    const acColor = accentColors[selectedAccent].color;
+    localStorage.setItem("gilasos-wallpaper", wpColor);
+    localStorage.setItem("gilasos-accent", acColor);
+    if (user) {
+      const supabase = getSupabase();
+      await supabase.from("user_profiles").upsert({ user_id: user.id, wallpaper: wpColor, accent: acColor }, { onConflict: "user_id" });
+    }
+    const colorToTheme: Record<string, string> = {
+      "#1a0205": "Spiderman", "#0a0a0f": "Batman", "#1a1205": "Greek Myth",
+      "#05001a": "Galaxy", "#0a0018": "Neon Tokyo", "#1a1005": "Sahara",
+      "#0a1525": "Nordic Frost", "#1a0505": "Volcanic", "#1a000a": "Cherry Coke",
+      "#000a02": "Matrix", "#1a1008": "Steampunk", "#0a0a05": "Cyberpunk 2077",
+      "#050a12": "Detroit: BH",
+    };
+    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: colorToTheme[wpColor] || null } }));
     setSaved(true);
     setTimeout(() => { onClose(); setSaved(false); }, 600);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setSelectedWallpaper(0);
     setSelectedAccent(0);
     localStorage.removeItem("gilasos-wallpaper");
     localStorage.removeItem("gilasos-accent");
+    if (user) {
+      const supabase = getSupabase();
+      await supabase.from("user_profiles").upsert({ user_id: user.id, wallpaper: "", accent: "" }, { onConflict: "user_id" });
+    }
     document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${defaultWallpaper[0]}, ${defaultWallpaper[1]})`);
     document.documentElement.style.setProperty("--os-accent", defaultAccent.color);
     document.documentElement.style.setProperty("--os-accent-rgb", defaultAccent.rgb);
+    window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: null } }));
     setSaved(false);
   };
 
