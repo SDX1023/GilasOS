@@ -75,10 +75,14 @@ export function useSpotifyPlayer() {
     if (!token) return;
 
     if (!window.Spotify) {
-      const script = document.createElement("script");
-      script.src = "https://sdk.scdn.co/spotify-player.js";
-      document.body.appendChild(script);
-      await new Promise<void>((resolve) => { script.onload = () => resolve(); });
+      await new Promise<void>((resolve) => {
+        window.onSpotifyWebPlaybackSDKReady = () => resolve();
+        const script = document.createElement("script");
+        script.src = "https://sdk.scdn.co/spotify-player.js";
+        document.body.appendChild(script);
+        // fallback resolve if SDK loads fast
+        script.onload = () => { if (window.Spotify) resolve(); };
+      });
     }
 
     const player = new window.Spotify.Player({
