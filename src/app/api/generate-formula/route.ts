@@ -66,13 +66,14 @@ JSON:`;
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        const formula = (parsed.formula || "")
+        let formula = (parsed.formula || "")
           .replace(/^\$+|\$+$/g, "")
           .replace(/^\\?\(/, "")
           .replace(/\\?\)$/, "")
           .replace(/^\\?\[/, "")
           .replace(/\\?\]$/, "")
           .trim();
+        formula = formula.replace(/(\d+)\s*\/\s*(\d+)/g, "\\frac{$1}{$2}");
         const explanation = (parsed.explanation || "").trim();
         if (formula) {
           return NextResponse.json({ formula, explanation, detected: true });
