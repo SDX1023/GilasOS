@@ -19,7 +19,7 @@ interface MusicSelectorProps {
 }
 
 const WAVEFORM_BARS = 100;
-const TRACK_DURATION = 60;
+const DEFAULT_DURATION = 60;
 
 let generatedBars: number[] = [];
 function getBars() {
@@ -44,6 +44,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
   const waveformRef = useRef<HTMLCanvasElement>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(400);
+  const [trackDuration, setTrackDuration] = useState(DEFAULT_DURATION);
   const isDraggingRef = useRef(false);
   const dragStartX = useRef(0);
   const dragStartSel = useRef(0);
@@ -59,7 +60,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     return () => window.removeEventListener("resize", measure);
   }, [selectedTrack]);
 
-  const maxStart = Math.max(0, TRACK_DURATION - clipDuration);
+  const maxStart = Math.max(0, trackDuration - clipDuration);
 
   const searchTracks = async (page = 0) => {
     if (!searchQuery.trim()) return;
@@ -91,6 +92,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     generatedBars = [];
     setSelectedTrack(track);
     setSelectionStart(0);
+    setTrackDuration(DEFAULT_DURATION);
     setIsPlaying(false);
     if (audio) { audio.pause(); setAudio(null); }
     if (!track.preview) {
@@ -108,6 +110,12 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     if (audio) { audio.pause(); audio.src = ""; }
     const a = new Audio(url);
     a.addEventListener("ended", () => setIsPlaying(false));
+    a.addEventListener("loadedmetadata", () => {
+      const dur = a.duration;
+      if (dur && isFinite(dur) && dur > 0) {
+        setTrackDuration(Math.ceil(dur));
+      }
+    });
     setAudio(a);
     setIsPlaying(false);
   };
@@ -160,7 +168,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       const rect = container.getBoundingClientRect();
       const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
       const dx = clientX - dragStartX.current;
-      const dSeconds = (dx / rect.width) * TRACK_DURATION;
+      const dSeconds = (dx / rect.width) * trackDuration;
       const newStart = Math.max(0, Math.min(maxStart, dragStartSel.current + dSeconds));
       setSelectionStart(Math.round(newStart * 10) / 10);
     };
@@ -175,7 +183,7 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onUp);
     };
-  }, [maxStart]);
+  }, [maxStart, trackDuration]);
 
   useEffect(() => {
     const canvas = waveformRef.current;
@@ -188,8 +196,8 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     const bars = getBars();
     const barW = w / bars.length;
     const gap = Math.max(1, barW * 0.25);
-    const selStartPct = selectionStart / TRACK_DURATION;
-    const selEndPct = (selectionStart + clipDuration) / TRACK_DURATION;
+    const selStartPct = selectionStart / trackDuration;
+    const selEndPct = (selectionStart + clipDuration) / trackDuration;
 
     for (let i = 0; i < bars.length; i++) {
       const pct = bars[i];
@@ -221,19 +229,24 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
       ctx.closePath();
       ctx.fill();
     }
-  }, [selectedTrack, selectionStart, clipDuration]);
+  }, [selectedTrack, selectionStart, clipDuration, trackDuration]);
 
   const cycleDuration = () => {
-    const steps = [15, 20, 25, 30, 45, 60];
-    const idx = steps.indexOf(clipDuration);
-    const next = steps[(idx + 1) % steps.length];
+    const steps = [15, 20, 25, 30, 45, 60, Math.min(90, trackDuration)];
+    const unique = [...new Set(steps)].filter((s) => s <= trackDuration).sort((a, b) => a - b);
+    const idx = unique.indexOf(clipDuration);
+    const next = unique[(idx + 1) % unique.length];
     setClipDuration(next);
-    if (selectionStart > Math.max(0, TRACK_DURATION - next)) {
-      setSelectionStart(Math.max(0, TRACK_DURATION - next));
+    if (selectionStart > Math.max(0, trackDuration - next)) {
+      setSelectionStart(Math.max(0, trackDuration - next));
     }
   };
 
-  const formatTime = (s: number) => `${Math.floor(s)}:${Math.floor((s % 1) * 60).toString().padStart(2, "0")}`;
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
@@ -347,9 +360,9 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", minWidth: 32, textAlign: "right" }}>{formatTime(selectionStart)}</span>
               <div style={{ flex: 1, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.15)", position: "relative" }}>
-                <div style={{ position: "absolute", left: `${(selectionStart / TRACK_DURATION) * 100}%`, width: `${(clipDuration / TRACK_DURATION) * 100}%`, height: "100%", borderRadius: 2, background: "rgba(29,185,84,0.4)" }} />
-                <div style={{ position: "absolute", left: `${(selectionStart / TRACK_DURATION) * 100}%`, top: -4, width: 11, height: 11, borderRadius: "50%", background: "#fff", transform: "translateX(-50%)" }} />
-                <div style={{ position: "absolute", left: `${((selectionStart + clipDuration) / TRACK_DURATION) * 100}%`, top: -4, width: 11, height: 11, borderRadius: "50%", background: "#ef4444", transform: "translateX(-50%)" }} />
+                <div style={{ position: "absolute", left: `${(selectionStart / trackDuration) * 100}%`, width: `${(clipDuration / trackDuration) * 100}%`, height: "100%", borderRadius: 2, background: "rgba(29,185,84,0.4)" }} />
+                <div style={{ position: "absolute", left: `${(selectionStart / trackDuration) * 100}%`, top: -4, width: 11, height: 11, borderRadius: "50%", background: "#fff", transform: "translateX(-50%)" }} />
+                <div style={{ position: "absolute", left: `${((selectionStart + clipDuration) / trackDuration) * 100}%`, top: -4, width: 11, height: 11, borderRadius: "50%", background: "#ef4444", transform: "translateX(-50%)" }} />
               </div>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", minWidth: 32 }}>{formatTime(selectionStart + clipDuration)}</span>
             </div>
