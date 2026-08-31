@@ -7,217 +7,697 @@ interface ThemeOverlayProps {
   style?: React.CSSProperties;
 }
 
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
 export default function ThemeOverlay({ theme, style }: ThemeOverlayProps) {
   const base: React.CSSProperties = {
     position: "absolute",
     inset: 0,
     pointerEvents: "none",
     overflow: "hidden",
-    borderRadius: "inherit",
     ...style,
   };
+
+  const rng = seededRandom(theme.length * 137);
 
   switch (theme) {
     case "Spiderman":
       return (
         <div style={base}>
+          {/* NYC Skyline */}
+          <svg width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+            <rect x="50" y="350" width="60" height="450" fill="#1a1a2e" />
+            <rect x="55" y="360" width="10" height="12" fill="#ff4444" opacity="0.3" />
+            <rect x="75" y="360" width="10" height="12" fill="#ff4444" opacity="0.2" />
+            <rect x="55" y="385" width="10" height="12" fill="#ff4444" opacity="0.4" />
+            <rect x="75" y="385" width="10" height="12" fill="#ff4444" opacity="0.15" />
+            <rect x="130" y="280" width="80" height="520" fill="#1a1a2e" />
+            <rect x="140" y="290" width="12" height="14" fill="#ff4444" opacity="0.25" />
+            <rect x="165" y="290" width="12" height="14" fill="#ff4444" opacity="0.35" />
+            <rect x="190" y="290" width="12" height="14" fill="#ff4444" opacity="0.2" />
+            <rect x="140" y="320" width="12" height="14" fill="#ff4444" opacity="0.4" />
+            <rect x="165" y="320" width="12" height="14" fill="#ff4444" opacity="0.15" />
+            <rect x="190" y="320" width="12" height="14" fill="#ff4444" opacity="0.3" />
+            <rect x="250" y="200" width="100" height="600" fill="#1a1a2e" />
+            <rect x="265" y="210" width="14" height="16" fill="#ff4444" opacity="0.3" />
+            <rect x="290" y="210" width="14" height="16" fill="#ff4444" opacity="0.2" />
+            <rect x="315" y="210" width="14" height="16" fill="#ff4444" opacity="0.4" />
+            <rect x="370" y="320" width="70" height="480" fill="#1a1a2e" />
+            <rect x="460" y="250" width="90" height="550" fill="#1a1a2e" />
+            <rect x="570" y="380" width="65" height="420" fill="#1a1a2e" />
+            <rect x="660" y="300" width="85" height="500" fill="#1a1a2e" />
+            <rect x="770" y="220" width="110" height="580" fill="#1a1a2e" />
+            <rect x="900" y="340" width="75" height="460" fill="#1a1a2e" />
+            <rect x="1000" y="280" width="95" height="520" fill="#1a1a2e" />
+            <rect x="1110" y="360" width="90" height="440" fill="#1a1a2e" />
+          </svg>
+          {/* Web pattern overlay */}
           <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
             <defs>
-              <pattern id="web" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                <circle cx="20" cy="20" r="18" fill="none" stroke="#ff4444" strokeWidth="0.5" />
-                <circle cx="20" cy="20" r="12" fill="none" stroke="#ff4444" strokeWidth="0.3" />
-                <circle cx="20" cy="20" r="6" fill="none" stroke="#ff4444" strokeWidth="0.3" />
-                <line x1="20" y1="2" x2="20" y2="38" stroke="#ff4444" strokeWidth="0.3" />
-                <line x1="2" y1="20" x2="38" y2="20" stroke="#ff4444" strokeWidth="0.3" />
-                <line x1="5" y1="5" x2="35" y2="35" stroke="#ff4444" strokeWidth="0.2" />
-                <line x1="35" y1="5" x2="5" y2="35" stroke="#ff4444" strokeWidth="0.2" />
+              <pattern id="spiderweb-full" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+                <circle cx="100" cy="100" r="95" fill="none" stroke="#ff2222" strokeWidth="0.8" />
+                <circle cx="100" cy="100" r="75" fill="none" stroke="#ff2222" strokeWidth="0.6" />
+                <circle cx="100" cy="100" r="55" fill="none" stroke="#ff2222" strokeWidth="0.5" />
+                <circle cx="100" cy="100" r="35" fill="none" stroke="#ff2222" strokeWidth="0.4" />
+                <circle cx="100" cy="100" r="15" fill="none" stroke="#ff2222" strokeWidth="0.3" />
+                <line x1="100" y1="5" x2="100" y2="195" stroke="#ff2222" strokeWidth="0.4" />
+                <line x1="5" y1="100" x2="195" y2="100" stroke="#ff2222" strokeWidth="0.4" />
+                <line x1="30" y1="30" x2="170" y2="170" stroke="#ff2222" strokeWidth="0.35" />
+                <line x1="170" y1="30" x2="30" y2="170" stroke="#ff2222" strokeWidth="0.35" />
+                <line x1="100" y1="5" x2="30" y2="170" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="100" y1="5" x2="170" y2="170" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="5" y1="100" x2="170" y2="30" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="5" y1="100" x2="170" y2="170" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="195" y1="100" x2="30" y2="30" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="195" y1="100" x2="30" y2="170" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="100" y1="195" x2="30" y2="30" stroke="#ff2222" strokeWidth="0.2" />
+                <line x1="100" y1="195" x2="170" y2="30" stroke="#ff2222" strokeWidth="0.2" />
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#web)" />
+            <rect width="100%" height="100%" fill="url(#spiderweb-full)" />
           </svg>
-          <div style={{ position: "absolute", bottom: "8%", right: "8%", fontSize: "28px", opacity: 0.12, filter: "drop-shadow(0 0 8px #ff4444)" }}>🕷️</div>
+          {/* Spider silhouettes */}
+          {[
+            { x: "15%", y: "20%", size: 32, rot: 0 },
+            { x: "80%", y: "35%", size: 24, rot: 45 },
+            { x: "45%", y: "65%", size: 28, rot: -30 },
+            { x: "70%", y: "80%", size: 20, rot: 15 },
+            { x: "25%", y: "75%", size: 26, rot: -15 },
+          ].map((sp, i) => (
+            <svg key={i} width={sp.size} height={sp.size} viewBox="0 0 40 40" style={{ position: "absolute", left: sp.x, top: sp.y, opacity: 0.12, transform: `rotate(${sp.rot}deg)` }}>
+              <ellipse cx="20" cy="18" rx="5" ry="6" fill="#ff2222" />
+              <circle cx="20" cy="10" r="4" fill="#ff2222" />
+              <line x1="15" y1="14" x2="4" y2="6" stroke="#ff2222" strokeWidth="1" />
+              <line x1="16" y1="16" x2="4" y2="12" stroke="#ff2222" strokeWidth="1" />
+              <line x1="17" y1="18" x2="5" y2="20" stroke="#ff2222" strokeWidth="1" />
+              <line x1="18" y1="20" x2="6" y2="28" stroke="#ff2222" strokeWidth="1" />
+              <line x1="25" y1="14" x2="36" y2="6" stroke="#ff2222" strokeWidth="1" />
+              <line x1="24" y1="16" x2="36" y2="12" stroke="#ff2222" strokeWidth="1" />
+              <line x1="23" y1="18" x2="35" y2="20" stroke="#ff2222" strokeWidth="1" />
+              <line x1="22" y1="20" x2="34" y2="28" stroke="#ff2222" strokeWidth="1" />
+            </svg>
+          ))}
+          {/* Web strands hanging from top */}
+          <svg width="100%" height="40%" style={{ position: "absolute", top: 0, left: 0, opacity: 0.08 }}>
+            {[10, 25, 45, 65, 85].map((x) => (
+              <path key={x} d={`M${x}% 0 Q${x + 3}% ${20 + rng() * 15}% ${x - 2}% ${35 + rng() * 10}%`} fill="none" stroke="#ff4444" strokeWidth="1" />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 100%, rgba(255,34,34,0.08), transparent 50%)" }} />
         </div>
       );
 
     case "Batman":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
-            <path d="M50 15 C45 15 35 25 30 35 C25 25 15 20 10 25 C15 35 20 40 25 45 C20 50 15 60 20 70 C25 65 35 55 50 50 C65 55 75 65 80 70 C85 60 80 50 75 45 C80 40 85 35 90 25 C85 20 75 25 70 35 C65 25 55 15 50 15Z" fill="#a0a0a0" />
+          {/* Gotham skyline */}
+          <svg width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
+            <rect x="30" y="300" width="70" height="500" fill="#0a0a12" />
+            <rect x="120" y="220" width="90" height="580" fill="#0a0a12" />
+            <polygon points="120,220 165,180 210,220" fill="#0a0a12" />
+            <rect x="230" y="350" width="60" height="450" fill="#0a0a12" />
+            <rect x="310" y="180" width="100" height="620" fill="#0a0a12" />
+            <polygon points="310,180 360,120 410,180" fill="#0a0a12" />
+            <rect x="430" y="280" width="80" height="520" fill="#0a0a12" />
+            <rect x="530" y="350" width="70" height="450" fill="#0a0a12" />
+            <rect x="620" y="200" width="110" height="600" fill="#0a0a12" />
+            <polygon points="620,200 675,140 730,200" fill="#0a0a12" />
+            <rect x="750" y="300" width="85" height="500" fill="#0a0a12" />
+            <rect x="860" y="250" width="95" height="550" fill="#0a0a12" />
+            <rect x="980" y="320" width="75" height="480" fill="#0a0a12" />
+            <rect x="1070" y="280" width="130" height="520" fill="#0a0a12" />
+            <polygon points="1070,280 1135,210 1200,280" fill="#0a0a12" />
           </svg>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "radial-gradient(ellipse at 50% 0%, rgba(100,100,120,0.08), transparent 70%)" }} />
+          {/* Bat signal */}
+          <svg width="180" height="180" viewBox="0 0 100 100" style={{ position: "absolute", top: "8%", right: "15%", opacity: 0.1 }}>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#8888aa" strokeWidth="2" />
+            <circle cx="50" cy="50" r="42" fill="rgba(136,136,170,0.1)" />
+            <path d="M50 25 C42 25 30 38 22 50 C30 52 38 48 42 44 C40 55 42 70 50 75 C58 70 60 55 58 44 C62 48 70 52 78 50 C70 38 58 25 50 25Z" fill="#8888aa" />
+          </svg>
+          {/* Flying bats */}
+          {[
+            { x: "20%", y: "15%", s: 18 },
+            { x: "60%", y: "10%", s: 14 },
+            { x: "35%", y: "25%", s: 16 },
+            { x: "75%", y: "22%", s: 12 },
+            { x: "10%", y: "30%", s: 15 },
+            { x: "50%", y: "18%", s: 13 },
+          ].map((b, i) => (
+            <svg key={i} width={b.s} height={b.s * 0.6} viewBox="0 0 40 24" style={{ position: "absolute", left: b.x, top: b.y, opacity: 0.1 }}>
+              <path d="M20 12 C16 4 8 2 2 6 C6 8 10 10 14 12 C10 14 6 18 2 22 C8 20 16 18 20 12Z" fill="#666" />
+              <path d="M20 12 C24 4 32 2 38 6 C34 8 30 10 26 12 C30 14 34 18 38 22 C32 20 24 18 20 12Z" fill="#666" />
+            </svg>
+          ))}
+          {/* Rain */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            {Array.from({ length: 60 }, (_, i) => (
+              <line
+                key={i}
+                x1={`${rng() * 100}%`}
+                y1={`${rng() * 80}%`}
+                x2={`${rng() * 100}%`}
+                y2={`${rng() * 80 + 15}%`}
+                stroke="#8888aa"
+                strokeWidth="0.5"
+              />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(80,80,120,0.08), transparent 50%)" }} />
         </div>
       );
 
     case "Greek Myth":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, opacity: 0.1 }}>
-            {/* Columns */}
-            <rect x="10" y="30" width="4" height="60" rx="1" fill="#d4a847" />
-            <rect x="25" y="30" width="4" height="60" rx="1" fill="#d4a847" />
-            <rect x="70" y="30" width="4" height="60" rx="1" fill="#d4a847" />
-            <rect x="85" y="30" width="4" height="60" rx="1" fill="#d4a847" />
-            {/* Pediment */}
-            <polygon points="5,30 50,8 95,30" fill="none" stroke="#d4a847" strokeWidth="1.5" />
-            <rect x="5" y="28" width="90" height="4" rx="1" fill="#d4a847" />
+          {/* Divine lightning from Zeus */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
+            {/* Main bolt */}
+            <polyline points="48%,5% 44%,18% 50%,22% 42%,38% 48%,42% 40%,60%" fill="none" stroke="#ffdd44" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            <polyline points="52%,8% 56%,20% 50%,24% 58%,40% 52%,44% 60%,58%" fill="none" stroke="#ffdd44" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Smaller bolts */}
+            <polyline points="20%,10% 17%,18% 22%,22% 16%,32%" fill="none" stroke="#ffdd44" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+            <polyline points="80%,12% 83%,22% 78%,26% 84%,36%" fill="none" stroke="#ffdd44" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+            <polyline points="65%,5% 62%,14% 68%,18% 60%,28%" fill="none" stroke="#ffdd44" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
           </svg>
-          {/* Laurel wreath */}
-          <svg width="30" height="30" viewBox="0 0 30 30" style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", opacity: 0.08 }}>
-            <path d="M15 5 C10 5 5 10 5 15 C5 22 10 27 15 27" fill="none" stroke="#d4a847" strokeWidth="1.5" />
-            <path d="M15 5 C20 5 25 10 25 15 C25 22 20 27 15 27" fill="none" stroke="#d4a847" strokeWidth="1.5" />
-            <circle cx="12" cy="8" r="1.5" fill="#d4a847" /><circle cx="8" cy="12" r="1.5" fill="#d4a847" />
-            <circle cx="8" cy="18" r="1.5" fill="#d4a847" /><circle cx="12" cy="22" r="1.5" fill="#d4a847" />
-            <circle cx="18" cy="8" r="1.5" fill="#d4a847" /><circle cx="22" cy="12" r="1.5" fill="#d4a847" />
-            <circle cx="22" cy="18" r="1.5" fill="#d4a847" /><circle cx="18" cy="22" r="1.5" fill="#d4a847" />
+          {/* Divine light rays from Olympus */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
+            {Array.from({ length: 12 }, (_, i) => {
+              const angle = (i / 12) * 60 - 30;
+              return (
+                <line
+                  key={i}
+                  x1="50%"
+                  y1="0%"
+                  x2={`${50 + Math.tan(angle * Math.PI / 180) * 100}%`}
+                  y2="100%"
+                  stroke="#ffdd44"
+                  strokeWidth="1"
+                />
+              );
+            })}
           </svg>
+          {/* Poseidon's trident */}
+          <svg width="80" height="160" viewBox="0 0 80 160" style={{ position: "absolute", bottom: "10%", left: "8%", opacity: 0.08, transform: "rotate(-15deg)" }}>
+            <line x1="40" y1="30" x2="40" y2="155" stroke="#4488cc" strokeWidth="4" />
+            <line x1="40" y1="30" x2="40" y2="5" stroke="#4488cc" strokeWidth="3" />
+            <line x1="40" y1="30" x2="15" y2="5" stroke="#4488cc" strokeWidth="3" />
+            <line x1="40" y1="30" x2="65" y2="5" stroke="#4488cc" strokeWidth="3" />
+            <circle cx="40" cy="5" r="3" fill="#4488cc" />
+            <circle cx="15" cy="5" r="3" fill="#4488cc" />
+            <circle cx="65" cy="5" r="3" fill="#4488cc" />
+          </svg>
+          {/* Hades flames */}
+          <svg width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            {Array.from({ length: 20 }, (_, i) => {
+              const x = 50 + rng() * 1100;
+              const h = 30 + rng() * 80;
+              return (
+                <path
+                  key={i}
+                  d={`M${x} 800 Q${x - 10} ${800 - h * 0.6} ${x} ${800 - h} Q${x + 10} ${800 - h * 0.6} ${x} 800`}
+                  fill="#8844aa"
+                  opacity={rng() * 0.5 + 0.3}
+                />
+              );
+            })}
+          </svg>
+          {/* Athena's owl */}
+          <svg width="100" height="100" viewBox="0 0 100 100" style={{ position: "absolute", top: "12%", right: "10%", opacity: 0.07 }}>
+            <ellipse cx="50" cy="45" rx="25" ry="30" fill="none" stroke="#c9a84c" strokeWidth="2" />
+            <circle cx="40" cy="38" r="8" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+            <circle cx="60" cy="38" r="8" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+            <circle cx="40" cy="38" r="3" fill="#c9a84c" />
+            <circle cx="60" cy="38" r="3" fill="#c9a84c" />
+            <path d="M45 48 L50 52 L55 48" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+            <path d="M30 25 L40 32" stroke="#c9a84c" strokeWidth="2" />
+            <path d="M70 25 L60 32" stroke="#c9a84c" strokeWidth="2" />
+            <path d="M35 75 L30 95" stroke="#c9a84c" strokeWidth="2" />
+            <path d="M65 75 L70 95" stroke="#c9a84c" strokeWidth="2" />
+            <path d="M25 55 L10 50 L15 60" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+            <path d="M75 55 L90 50 L85 60" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+          </svg>
+          {/* Pegasus silhouette */}
+          <svg width="160" height="120" viewBox="0 0 160 120" style={{ position: "absolute", top: "30%", left: "60%", opacity: 0.06 }}>
+            <path d="M80 80 Q60 60 50 50 Q40 40 45 30 Q50 20 60 25 Q65 28 68 35 Q70 40 75 50 L80 55 Q85 50 90 45 Q95 35 100 30 Q110 25 115 30 Q120 35 115 45 Q110 55 100 60 Q95 65 90 70 L85 80 Z" fill="#c9a84c" />
+            <path d="M60 25 Q45 10 30 5 Q40 15 55 20" fill="#c9a84c" />
+            <path d="M100 30 Q115 15 130 10 Q120 20 105 25" fill="#c9a84c" />
+            <line x1="65" y1="80" x2="55" y2="110" stroke="#c9a84c" strokeWidth="2.5" />
+            <line x1="75" y1="80" x2="68" y2="112" stroke="#c9a84c" strokeWidth="2.5" />
+            <line x1="90" y1="75" x2="98" y2="110" stroke="#c9a84c" strokeWidth="2.5" />
+            <line x1="95" y1="72" x2="108" y2="108" stroke="#c9a84c" strokeWidth="2.5" />
+          </svg>
+          {/* Medusa snakes border */}
+          <svg width="100%" height="60" style={{ position: "absolute", bottom: "20%", left: 0, opacity: 0.05 }}>
+            {Array.from({ length: 20 }, (_, i) => (
+              <path
+                key={i}
+                d={`M${i * 60} 30 Q${i * 60 + 15} ${10 + rng() * 40} ${i * 60 + 30} 30 Q${i * 60 + 45} ${10 + rng() * 40} ${i * 60 + 60} 30`}
+                fill="none"
+                stroke="#44aa66"
+                strokeWidth="1.5"
+              />
+            ))}
+          </svg>
+          {/* Greek key border */}
+          <svg width="100%" height="30" style={{ position: "absolute", bottom: "8%", left: 0, opacity: 0.06 }}>
+            <defs>
+              <pattern id="greek-key" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M0 15 L8 15 L8 8 L15 8 L15 0 L30 0 L30 30 L15 30 L15 22 L8 22 L8 15" fill="none" stroke="#c9a84c" strokeWidth="1.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="30" fill="url(#greek-key)" />
+          </svg>
+          {/* Divine glow */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(255,220,60,0.08), transparent 35%)" }} />
         </div>
       );
 
     case "Galaxy":
       return (
         <div style={base}>
-          {/* Stars */}
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.4 }}>
-            {Array.from({ length: 40 }, (_, i) => (
-              <circle key={i} cx={`${Math.random() * 100}%`} cy={`${Math.random() * 100}%`} r={Math.random() * 1.2 + 0.3} fill="white" opacity={Math.random() * 0.7 + 0.3} />
+          {/* Nebula clouds */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 30%, rgba(100,40,180,0.2), transparent 45%), radial-gradient(ellipse at 70% 50%, rgba(40,80,200,0.18), transparent 40%), radial-gradient(ellipse at 50% 80%, rgba(180,40,160,0.12), transparent 35%), radial-gradient(ellipse at 20% 70%, rgba(40,120,200,0.1), transparent 30%)" }} />
+          {/* Star field */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.7 }}>
+            {Array.from({ length: 200 }, (_, i) => (
+              <circle
+                key={i}
+                cx={`${rng() * 100}%`}
+                cy={`${rng() * 100}%`}
+                r={rng() > 0.9 ? rng() * 2 + 1 : rng() * 1.2 + 0.2}
+                fill="white"
+                opacity={rng() * 0.8 + 0.2}
+              />
             ))}
           </svg>
-          {/* Nebula */}
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 40%, rgba(120,60,200,0.12), transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(60,100,200,0.1), transparent 50%)" }} />
+          {/* Galaxy spiral hint */}
+          <svg width="100%" height="100%" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            <path d="M400 400 Q420 350 460 340 Q520 330 540 370 Q560 420 520 450 Q470 480 440 440 Q410 390 450 360 Q490 330 530 360" fill="none" stroke="#a080ff" strokeWidth="2" />
+            <path d="M400 400 Q380 450 340 460 Q280 470 260 430 Q240 380 280 350 Q330 320 360 360 Q390 410 350 440 Q310 470 270 440" fill="none" stroke="#8060ff" strokeWidth="1.5" />
+          </svg>
+          {/* Shooting stars */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
+            <line x1="20%" y1="15%" x2="35%" y2="25%" stroke="white" strokeWidth="1.5" />
+            <line x1="35%" y1="25%" x2="36%" y2="26%" stroke="white" strokeWidth="0.5" opacity="0.3" />
+            <line x1="65%" y1="60%" x2="78%" y2="70%" stroke="white" strokeWidth="1" />
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,10,40,0.3), transparent 20%, transparent 80%, rgba(20,10,40,0.2))" }} />
         </div>
       );
 
     case "Neon Tokyo":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
-            {/* Grid lines */}
-            {Array.from({ length: 8 }, (_, i) => (
-              <line key={`h${i}`} x1="0" y1={`${(i + 1) * 12}%`} x2="100%" y2={`${(i + 1) * 12}%`} stroke="#ff00ff" strokeWidth="0.3" />
+          {/* City grid */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
+            {Array.from({ length: 25 }, (_, i) => (
+              <React.Fragment key={`h${i}`}>
+                <line x1="0" y1={`${(i + 1) * 4}%`} x2="100%" y2={`${(i + 1) * 4}%`} stroke="#ff00ff" strokeWidth="0.5" />
+                <line x1="0" y1={`${(i + 1) * 4}%`} x2="100%" y2={`${(i + 1) * 4}%`} stroke="#00ffff" strokeWidth="0.3" />
+              </React.Fragment>
             ))}
-            {Array.from({ length: 6 }, (_, i) => (
-              <line key={`v${i}`} x1={`${(i + 1) * 16}%`} y1="0" x2={`${(i + 1) * 16}%`} y2="100%" stroke="#00ffff" strokeWidth="0.3" />
+            {Array.from({ length: 20 }, (_, i) => (
+              <React.Fragment key={`v${i}`}>
+                <line x1={`${(i + 1) * 5}%`} y1="0" x2={`${(i + 1) * 5}%`} y2="100%" stroke="#ff00ff" strokeWidth="0.5" />
+                <line x1={`${(i + 1) * 5}%`} y1="0" x2={`${(i + 1) * 5}%`} y2="100%" stroke="#00ffff" strokeWidth="0.3" />
+              </React.Fragment>
             ))}
           </svg>
-          <div style={{ position: "absolute", bottom: "15%", left: "10%", fontSize: "10px", color: "#ff00ff", opacity: 0.2, fontFamily: "monospace", letterSpacing: "2px", textShadow: "0 0 6px #ff00ff" }}>東京</div>
-          <div style={{ position: "absolute", top: "20%", right: "12%", fontSize: "10px", color: "#00ffff", opacity: 0.15, fontFamily: "monospace", letterSpacing: "2px", textShadow: "0 0 6px #00ffff" }}>ネオン</div>
+          {/* Neon signs */}
+          {[
+            { x: "8%", y: "20%", text: "ネオン", color: "#ff00ff", size: 28 },
+            { x: "75%", y: "15%", text: "東京", color: "#00ffff", size: 36 },
+            { x: "15%", y: "70%", text: "ゲーム", color: "#ff0066", size: 22 },
+            { x: "80%", y: "65%", text: "24h", color: "#ffff00", size: 32 },
+            { x: "45%", y: "85%", text: "カフェ", color: "#ff6600", size: 24 },
+          ].map((sign, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              left: sign.x,
+              top: sign.y,
+              fontSize: sign.size,
+              color: sign.color,
+              opacity: 0.1,
+              fontFamily: "monospace",
+              textShadow: `0 0 20px ${sign.color}, 0 0 40px ${sign.color}`,
+              letterSpacing: "4px",
+            }}>{sign.text}</div>
+          ))}
+          {/* Rain */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.04 }}>
+            {Array.from({ length: 80 }, (_, i) => (
+              <line
+                key={i}
+                x1={`${rng() * 100}%`}
+                y1={`${rng() * 90}%`}
+                x2={`${rng() * 100 + 1}%`}
+                y2={`${rng() * 90 + 8}%`}
+                stroke="#00ffff"
+                strokeWidth="0.5"
+              />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 100%, rgba(255,0,255,0.06), transparent 50%)" }} />
         </div>
       );
 
     case "Sahara":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" viewBox="0 0 100 60" style={{ position: "absolute", bottom: 0, left: 0, opacity: 0.1 }}>
-            <path d="M0 60 Q15 30 30 45 Q45 20 60 40 Q75 15 90 35 Q100 25 100 60Z" fill="#d4a040" />
+          {/* Sand dunes */}
+          <svg width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
+            <path d="M0 800 Q100 600 250 650 Q400 500 550 580 Q700 400 850 520 Q1000 350 1100 480 Q1150 420 1200 500 L1200 800Z" fill="#c9a040" />
+            <path d="M0 800 Q150 650 300 700 Q450 550 600 630 Q750 450 900 560 Q1050 380 1150 500 L1200 550 L1200 800Z" fill="#b89030" opacity="0.7" />
+            <path d="M0 800 Q200 700 350 730 Q500 600 650 670 Q800 500 950 600 Q1100 450 1200 550 L1200 800Z" fill="#a88020" opacity="0.5" />
           </svg>
-          <div style={{ position: "absolute", top: "15%", right: "15%", width: "20px", height: "20px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,200,80,0.2), transparent 70%)" }} />
+          {/* Sun */}
+          <div style={{ position: "absolute", top: "8%", right: "15%", width: "120px", height: "120px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,200,60,0.3), rgba(255,160,20,0.1) 50%, transparent 70%)" }} />
+          {/* Heat shimmer lines */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.04 }}>
+            {Array.from({ length: 15 }, (_, i) => (
+              <path
+                key={i}
+                d={`M0 ${500 + i * 20} Q300 ${480 + i * 20 + Math.sin(i) * 15} 600 ${500 + i * 20} Q900 ${520 + i * 20 - Math.sin(i) * 15} 1200 ${500 + i * 20}`}
+                fill="none"
+                stroke="#d4a040"
+                strokeWidth="0.8"
+              />
+            ))}
+          </svg>
+          {/* Floating sand particles */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
+            {Array.from({ length: 40 }, (_, i) => (
+              <circle key={i} cx={`${rng() * 100}%`} cy={`${rng() * 70 + 20}%`} r={rng() * 2 + 0.5} fill="#d4a040" />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(180,140,60,0.05), transparent 30%, transparent 70%, rgba(180,140,60,0.08))" }} />
         </div>
       );
 
     case "Nordic Frost":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.1 }}>
-            {/* Snowflakes */}
-            {["M10,10 L10,30 M5,15 L15,25 M15,15 L5,25", "M30,5 L30,25 M25,10 L35,20 M35,10 L25,20", "M50,8 L50,28 M45,13 L55,23 M55,13 L45,23", "M70,12 L70,32 M65,17 L75,27 M75,17 L65,27", "M88,6 L88,26 M83,11 L93,21 M93,11 L83,21"].map((d, i) => (
-              <path key={i} d={d} stroke="#a0d0ff" strokeWidth="0.8" fill="none" />
-            ))}
+          {/* Aurora borealis */}
+          <svg width="100%" height="60%" style={{ position: "absolute", top: 0, left: 0, opacity: 0.15 }}>
+            <defs>
+              <linearGradient id="aurora1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00ff88" stopOpacity="0" />
+                <stop offset="30%" stopColor="#00ff88" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#00aaff" stopOpacity="0.8" />
+                <stop offset="70%" stopColor="#8800ff" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#8800ff" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="aurora2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00ffaa" stopOpacity="0" />
+                <stop offset="40%" stopColor="#00ffaa" stopOpacity="0.4" />
+                <stop offset="60%" stopColor="#0088ff" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#6600ff" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M0 100 Q200 40 400 80 Q600 120 800 60 Q1000 0 1200 50 L1200 0 L0 0Z" fill="url(#aurora1)" />
+            <path d="M0 150 Q300 80 500 120 Q700 160 900 100 Q1100 40 1200 80 L1200 0 L0 0Z" fill="url(#aurora2)" />
           </svg>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(160,200,255,0.06), transparent 60%)" }} />
+          {/* Snowflakes */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
+            {Array.from({ length: 50 }, (_, i) => {
+              const cx = rng() * 100;
+              const cy = rng() * 100;
+              const s = rng() * 10 + 5;
+              return (
+                <g key={i} transform={`translate(${cx},${cy})`} opacity={rng() * 0.5 + 0.3}>
+                  <line x1={-s} y1="0" x2={s} y2="0" stroke="#c0e0ff" strokeWidth="1" />
+                  <line x1="0" y1={-s} x2="0" y2={s} stroke="#c0e0ff" strokeWidth="1" />
+                  <line x1={-s * 0.7} y1={-s * 0.7} x2={s * 0.7} y2={s * 0.7} stroke="#c0e0ff" strokeWidth="0.7" />
+                  <line x1={s * 0.7} y1={-s * 0.7} x2={-s * 0.7} y2={s * 0.7} stroke="#c0e0ff" strokeWidth="0.7" />
+                  <circle cx="0" cy="0" r="2" fill="#c0e0ff" opacity="0.5" />
+                </g>
+              );
+            })}
+          </svg>
+          {/* Ice crystals */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            {Array.from({ length: 20 }, (_, i) => {
+              const x = rng() * 100;
+              const y = rng() * 100;
+              return (
+                <polygon
+                  key={i}
+                  points={`${x},${y - 8} ${x + 4},${y} ${x},${y + 8} ${x - 4},${y}`}
+                  fill="none"
+                  stroke="#a0d0ff"
+                  strokeWidth="0.5"
+                />
+              );
+            })}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%, rgba(100,180,255,0.06), transparent 40%)" }} />
         </div>
       );
 
     case "Volcanic":
       return (
         <div style={base}>
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(0deg, rgba(255,60,20,0.1), transparent)" }} />
-          <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
-            <circle cx="50" cy="85" r="30" fill="none" stroke="#ff4420" strokeWidth="0.5" />
-            <circle cx="50" cy="85" r="20" fill="none" stroke="#ff6640" strokeWidth="0.3" />
+          {/* Lava glow from below */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(0deg, rgba(255,40,0,0.2), rgba(255,80,0,0.1) 40%, transparent)" }} />
+          {/* Lava flows */}
+          <svg width="100%" height="100%" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+            <path d="M400 800 Q420 700 450 650 Q480 580 500 500 Q520 420 540 350" fill="none" stroke="#ff4400" strokeWidth="8" />
+            <path d="M500 800 Q530 720 560 660 Q590 580 610 500 Q630 420 650 340" fill="none" stroke="#ff6600" strokeWidth="6" />
+            <path d="M600 800 Q620 740 640 680 Q660 600 680 520 Q700 440 720 360" fill="none" stroke="#ff3300" strokeWidth="5" />
+            <path d="M350 800 Q370 750 390 700 Q410 640 430 580 Q450 520 470 460" fill="none" stroke="#ff5500" strokeWidth="4" />
           </svg>
-          {/* Ember particles */}
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.2 }}>
-            {Array.from({ length: 8 }, (_, i) => (
-              <circle key={i} cx={`${20 + Math.random() * 60}%`} cy={`${50 + Math.random() * 40}%`} r={Math.random() * 1.5 + 0.5} fill="#ff6633" opacity={Math.random() * 0.6 + 0.2} />
+          {/* Embers/sparks */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.3 }}>
+            {Array.from({ length: 50 }, (_, i) => (
+              <circle
+                key={i}
+                cx={`${20 + rng() * 60}%`}
+                cy={`${40 + rng() * 55}%`}
+                r={rng() * 3 + 0.5}
+                fill="#ff6633"
+                opacity={rng() * 0.8 + 0.2}
+              />
             ))}
           </svg>
+          {/* Smoke */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.04 }}>
+            {Array.from({ length: 8 }, (_, i) => (
+              <circle
+                key={i}
+                cx={`${35 + rng() * 30}%`}
+                cy={`${20 + rng() * 30}%`}
+                r={rng() * 60 + 30}
+                fill="#333"
+              />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 100%, rgba(255,60,0,0.1), transparent 40%)" }} />
         </div>
       );
 
     case "Cherry Coke":
       return (
         <div style={base}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 80%, rgba(200,20,60,0.1), transparent 60%)" }} />
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
-            {Array.from({ length: 12 }, (_, i) => (
-              <circle key={i} cx={`${Math.random() * 100}%`} cy={`${60 + Math.random() * 35}%`} r={Math.random() * 3 + 1} fill="none" stroke="#ff3060" strokeWidth="0.4" />
+          {/* Bubbles */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+            {Array.from({ length: 80 }, (_, i) => (
+              <circle
+                key={i}
+                cx={`${rng() * 100}%`}
+                cy={`${rng() * 100}%`}
+                r={rng() * 12 + 3}
+                fill="none"
+                stroke="#ff2050"
+                strokeWidth="0.8"
+              />
             ))}
           </svg>
+          {/* Cherry motifs */}
+          {[
+            { x: "10%", y: "15%", s: 40 },
+            { x: "85%", y: "20%", s: 35 },
+            { x: "75%", y: "75%", s: 38 },
+            { x: "20%", y: "80%", s: 32 },
+          ].map((c, i) => (
+            <svg key={i} width={c.s} height={c.s} viewBox="0 0 40 40" style={{ position: "absolute", left: c.x, top: c.y, opacity: 0.08 }}>
+              <circle cx="14" cy="22" r="8" fill="#cc1133" />
+              <circle cx="26" cy="22" r="8" fill="#cc1133" />
+              <path d="M14 14 Q20 4 26 14" fill="none" stroke="#228833" strokeWidth="2" />
+              <ellipse cx="20" cy="6" rx="6" ry="4" fill="#228833" />
+            </svg>
+          ))}
+          {/* Fizz lines */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            {Array.from({ length: 30 }, (_, i) => (
+              <line
+                key={i}
+                x1={`${rng() * 100}%`}
+                y1={`${50 + rng() * 50}%`}
+                x2={`${rng() * 100}%`}
+                y2={`${rng() * 40}%`}
+                stroke="#ff3060"
+                strokeWidth="0.5"
+              />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 80%, rgba(200,20,60,0.1), transparent 50%)" }} />
         </div>
       );
 
     case "Matrix":
       return (
         <div style={base}>
+          {/* Digital rain columns */}
           <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
-            {Array.from({ length: 12 }, (_, i) => (
-              <text key={i} x={`${8 + i * 8}%`} y={`${10 + Math.random() * 80}%`} fill="#00ff41" fontSize="8" fontFamily="monospace" opacity={Math.random() * 0.5 + 0.3}>
-                {String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96))}
-              </text>
-            ))}
+            {Array.from({ length: 35 }, (_, col) => {
+              const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF";
+              const x = 2 + col * 2.8;
+              const yOffset = rng() * 30;
+              return (
+                <text key={col} x={`${x}%`} y={`${yOffset}%`} fill="#00ff41" fontSize="14" fontFamily="monospace" opacity={rng() * 0.5 + 0.3}>
+                  {Array.from({ length: 15 }, () => chars[Math.floor(rng() * chars.length)]).join("\n")}
+                </text>
+              );
+            })}
           </svg>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,255,65,0.03), transparent 30%, transparent 70%, rgba(0,255,65,0.05))" }} />
+          {/* Bright leading characters */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.2 }}>
+            {Array.from({ length: 12 }, (_, i) => {
+              const chars = "01";
+              return (
+                <text key={i} x={`${rng() * 95 + 2}%`} y={`${rng() * 90 + 5}%`} fill="#00ff41" fontSize="18" fontFamily="monospace">
+                  {chars[Math.floor(rng() * chars.length)]}
+                </text>
+              );
+            })}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,40,0,0.15), transparent 15%, transparent 85%, rgba(0,40,0,0.1))" }} />
         </div>
       );
 
     case "Steampunk":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
-            {/* Gears */}
-            <circle cx="20" cy="20" r="12" fill="none" stroke="#b8860b" strokeWidth="1" />
-            <circle cx="20" cy="20" r="8" fill="none" stroke="#b8860b" strokeWidth="0.5" />
-            <circle cx="20" cy="20" r="3" fill="#b8860b" />
-            <circle cx="75" cy="70" r="15" fill="none" stroke="#b8860b" strokeWidth="1" />
-            <circle cx="75" cy="70" r="10" fill="none" stroke="#b8860b" strokeWidth="0.5" />
-            <circle cx="75" cy="70" r="4" fill="#b8860b" />
-            <circle cx="55" cy="35" r="8" fill="none" stroke="#b8860b" strokeWidth="0.7" />
-            <circle cx="55" cy="35" r="5" fill="none" stroke="#b8860b" strokeWidth="0.4" />
-            <circle cx="55" cy="35" r="2" fill="#b8860b" />
+          {/* Large gears */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.08 }}>
+            {/* Main gear top-left */}
+            <g transform="translate(12%, 18%)">
+              <circle cx="0" cy="0" r="100" fill="none" stroke="#b8860b" strokeWidth="3" />
+              <circle cx="0" cy="0" r="80" fill="none" stroke="#b8860b" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="50" fill="none" stroke="#b8860b" strokeWidth="2" />
+              <circle cx="0" cy="0" r="20" fill="#b8860b" />
+              {Array.from({ length: 16 }, (_, i) => {
+                const a = (i / 16) * Math.PI * 2;
+                return <line key={i} x1={Math.cos(a) * 50} y1={Math.sin(a) * 50} x2={Math.cos(a) * 100} y2={Math.sin(a) * 100} stroke="#b8860b" strokeWidth="2" />;
+              })}
+            </g>
+            {/* Medium gear bottom-right */}
+            <g transform="translate(85%, 78%)">
+              <circle cx="0" cy="0" r="120" fill="none" stroke="#b8860b" strokeWidth="3" />
+              <circle cx="0" cy="0" r="95" fill="none" stroke="#b8860b" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="60" fill="none" stroke="#b8860b" strokeWidth="2" />
+              <circle cx="0" cy="0" r="25" fill="#b8860b" />
+              {Array.from({ length: 20 }, (_, i) => {
+                const a = (i / 20) * Math.PI * 2;
+                return <line key={i} x1={Math.cos(a) * 60} y1={Math.sin(a) * 60} x2={Math.cos(a) * 120} y2={Math.sin(a) * 120} stroke="#b8860b" strokeWidth="2" />;
+              })}
+            </g>
+            {/* Small gear center */}
+            <g transform="translate(50%, 50%)">
+              <circle cx="0" cy="0" r="60" fill="none" stroke="#b8860b" strokeWidth="2" />
+              <circle cx="0" cy="0" r="45" fill="none" stroke="#b8860b" strokeWidth="1" />
+              <circle cx="0" cy="0" r="30" fill="none" stroke="#b8860b" strokeWidth="1.5" />
+              <circle cx="0" cy="0" r="10" fill="#b8860b" />
+              {Array.from({ length: 12 }, (_, i) => {
+                const a = (i / 12) * Math.PI * 2;
+                return <line key={i} x1={Math.cos(a) * 30} y1={Math.sin(a) * 30} x2={Math.cos(a) * 60} y2={Math.sin(a) * 60} stroke="#b8860b" strokeWidth="1.5" />;
+              })}
+            </g>
           </svg>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% 20%, rgba(184,134,11,0.06), transparent 40%), radial-gradient(ellipse at 75% 70%, rgba(184,134,11,0.06), transparent 40%)" }} />
+          {/* Pipes */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06 }}>
+            <path d="M0 30% H25% Q30% 30% 30% 35% V50% Q30% 55% 35% 55% H60%" fill="none" stroke="#b8860b" strokeWidth="4" />
+            <path d="M100% 70% H75% Q70% 70% 70% 65% V45% Q70% 40% 65% 40% H40%" fill="none" stroke="#b8860b" strokeWidth="4" />
+            <circle cx="25%" cy="30%" r="6" fill="#b8860b" />
+            <circle cx="75%" cy="70%" r="6" fill="#b8860b" />
+          </svg>
+          {/* Steam wisps */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.04 }}>
+            {Array.from({ length: 10 }, (_, i) => (
+              <circle key={i} cx={`${rng() * 80 + 10}%`} cy={`${rng() * 40 + 10}%`} r={rng() * 40 + 20} fill="#b8860b" />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 12% 18%, rgba(184,134,11,0.06), transparent 25%), radial-gradient(ellipse at 85% 78%, rgba(184,134,11,0.06), transparent 25%)" }} />
         </div>
       );
 
     case "Cyberpunk 2077":
       return (
         <div style={base}>
-          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.15 }}>
-            {/* Diagonal lines */}
-            <line x1="0" y1="100%" x2="100%" y2="0" stroke="#fcee09" strokeWidth="0.5" />
-            <line x1="10%" y1="100%" x2="100%" y2="10%" stroke="#fcee09" strokeWidth="0.3" />
-            <line x1="0" y1="90%" x2="90%" y2="0" stroke="#fcee09" strokeWidth="0.3" />
+          {/* Diagonal glitch lines */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+            <line x1="0" y1="100%" x2="100%" y2="0" stroke="#fcee09" strokeWidth="1.5" />
+            <line x1="10%" y1="100%" x2="100%" y2="10%" stroke="#fcee09" strokeWidth="0.8" />
+            <line x1="0" y1="90%" x2="90%" y2="0" stroke="#fcee09" strokeWidth="0.8" />
+            <line x1="20%" y1="100%" x2="100%" y2="20%" stroke="#ff003c" strokeWidth="0.6" />
+            <line x1="0" y1="80%" x2="80%" y2="0" stroke="#00f0ff" strokeWidth="0.6" />
           </svg>
-          <div style={{ position: "absolute", top: "10%", left: "8%", fontSize: "9px", color: "#fcee09", opacity: 0.2, fontFamily: "monospace", fontWeight: 700, letterSpacing: "3px", textShadow: "0 0 8px #fcee09" }}>2077</div>
-          <div style={{ position: "absolute", bottom: "12%", right: "8%", fontSize: "8px", color: "#ff003c", opacity: 0.15, fontFamily: "monospace", fontWeight: 700, letterSpacing: "2px", textShadow: "0 0 6px #ff003c" }}>NC</div>
+          {/* Neon grid floor */}
+          <svg width="100%" height="50%" viewBox="0 0 800 400" preserveAspectRatio="xMidYMax slice" style={{ position: "absolute", bottom: 0, left: 0, opacity: 0.06 }}>
+            {Array.from({ length: 15 }, (_, i) => (
+              <React.Fragment key={i}>
+                <line x1="0" y1={i * 28} x2="800" y2={i * 28} stroke="#fcee09" strokeWidth="0.8" />
+                <line x1={i * 57} y1="0" x2={400 - (400 - i * 57) * 0.3} y2="400" stroke="#fcee09" strokeWidth="0.5" />
+                <line x1={800 - i * 57} y1="0" x2={400 + (400 - i * 57) * 0.3} y2="400" stroke="#fcee09" strokeWidth="0.5" />
+              </React.Fragment>
+            ))}
+          </svg>
+          {/* Big text */}
+          <div style={{ position: "absolute", top: "8%", left: "6%", fontSize: "80px", color: "#fcee09", opacity: 0.07, fontFamily: "monospace", fontWeight: 900, letterSpacing: "10px", textShadow: "0 0 40px #fcee09" }}>2077</div>
+          <div style={{ position: "absolute", bottom: "10%", right: "6%", fontSize: "52px", color: "#ff003c", opacity: 0.06, fontFamily: "monospace", fontWeight: 900, letterSpacing: "8px", textShadow: "0 0 30px #ff003c" }}>NC</div>
+          {/* Glitch bars */}
+          <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.05 }}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <rect key={i} x={`${rng() * 80}%`} y={`${rng() * 90}%`} width={`${rng() * 15 + 5}%`} height="3" fill={rng() > 0.5 ? "#fcee09" : "#ff003c"} />
+            ))}
+          </svg>
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 50%, rgba(252,238,9,0.03), transparent 50%)" }} />
         </div>
       );
 
     case "Detroit: BH":
       return (
         <div style={base}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 30%, rgba(0,150,255,0.12), transparent 50%)" }} />
-          <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ position: "absolute", inset: 0, opacity: 0.14 }}>
-            <circle cx="50" cy="30" r="6" fill="none" stroke="#00aaff" strokeWidth="1.5" />
-            <circle cx="50" cy="30" r="3" fill="#00aaff" opacity="0.6" />
-            <line x1="50" y1="36" x2="50" y2="65" stroke="#00aaff" strokeWidth="0.5" />
-            <circle cx="50" cy="50" r="35" fill="none" stroke="#00aaff" strokeWidth="0.4" />
-            <circle cx="50" cy="50" r="25" fill="none" stroke="#00aaff" strokeWidth="0.3" />
-            <circle cx="50" cy="50" r="15" fill="none" stroke="#00aaff" strokeWidth="0.3" />
-            <circle cx="50" cy="50" r="5" fill="none" stroke="#00aaff" strokeWidth="0.2" />
+          {/* Blue glow */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 30%, rgba(0,150,255,0.2), transparent 50%)" }} />
+          {/* Concentric LED rings */}
+          <svg width="100%" height="100%" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, opacity: 0.1 }}>
+            <circle cx="400" cy="250" r="30" fill="#00aaff" opacity="0.6" />
+            <circle cx="400" cy="250" r="15" fill="#00ddff" opacity="0.8" />
+            <line x1="400" y1="280" x2="400" y2="500" stroke="#00aaff" strokeWidth="2" />
+            {[80, 140, 200, 260, 320].map((r) => (
+              <circle key={r} cx="400" cy="400" r={r} fill="none" stroke="#00aaff" strokeWidth="0.8" opacity={0.3 + (r / 320) * 0.3} />
+            ))}
+            {/* Circuit lines */}
+            <path d="M100 400 H200 V300 H350" fill="none" stroke="#00aaff" strokeWidth="0.8" opacity="0.4" />
+            <path d="M700 400 H600 V500 H450" fill="none" stroke="#00aaff" strokeWidth="0.8" opacity="0.4" />
+            <path d="M400 100 V200 H300 V350" fill="none" stroke="#00aaff" strokeWidth="0.8" opacity="0.4" />
+            <path d="M400 700 V600 H500 V450" fill="none" stroke="#00aaff" strokeWidth="0.8" opacity="0.4" />
+            {/* Node dots */}
+            {[
+              [200, 400], [350, 300], [600, 400], [450, 500], [300, 350], [500, 450],
+              [150, 350], [650, 450], [350, 150], [450, 650],
+            ].map(([x, y], i) => (
+              <circle key={i} cx={x} cy={y} r="4" fill="#00aaff" opacity="0.5" />
+            ))}
           </svg>
-          <div style={{ position: "absolute", bottom: "10%", left: "50%", transform: "translateX(-50%)", fontSize: "7px", color: "#00aaff", opacity: 0.2, fontFamily: "monospace", letterSpacing: "4px", textTransform: "uppercase", textShadow: "0 0 8px #00aaff", whiteSpace: "nowrap" }}>Become Human</div>
+          <div style={{ position: "absolute", bottom: "8%", left: "50%", transform: "translateX(-50%)", fontSize: "30px", color: "#00aaff", opacity: 0.1, fontFamily: "monospace", letterSpacing: "12px", textTransform: "uppercase", textShadow: "0 0 25px #00aaff", whiteSpace: "nowrap" }}>Become Human</div>
         </div>
       );
 
