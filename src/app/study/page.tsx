@@ -805,7 +805,7 @@ function QuizTab({ userId }: { userId: string | null }) {
           </div>
           <button onClick={() => setShowFormulas(!showFormulas)} onMouseDown={(e) => e.preventDefault()}
             className="glass-btn"
-            style={{ padding: "5px 12px", fontSize: 11, ...showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}>
+            style={{ padding: "5px 12px", fontSize: 11, background: showFormulas ? "rgba(109,40,217,0.15)" : undefined, color: showFormulas ? "#a78bfa" : undefined, borderColor: showFormulas ? "rgba(109,40,217,0.3)" : undefined }}>
             {showFormulas ? "Σ On" : "Σ Off"}
           </button>
         </div>
