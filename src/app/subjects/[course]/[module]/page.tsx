@@ -40,7 +40,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
         <p className="text-secondary">{mod.description}</p>
       </div>
 
-      <div style={{ display: "flex", gap: 32 }}>
+      <div className="module-layout" style={{ display: "flex", gap: 32 }}>
         {/* Left: Content (admin only) */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {admin && (
@@ -70,7 +70,7 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
         </div>
 
         {/* Right: Notes + Flashcards */}
-        <div style={{ width: 320, flexShrink: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div className="module-sidebar" style={{ width: 320, flexShrink: 0, display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Notes */}
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>

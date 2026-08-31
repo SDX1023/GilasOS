@@ -102,13 +102,19 @@ function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: st
     });
   }, [crop, cs]);
 
-  const gp = (e: React.MouseEvent) => {
+  const gpMouse = (e: React.MouseEvent) => {
     const r = canvasRef.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
 
+  const gpTouch = (e: React.TouchEvent) => {
+    const r = canvasRef.current!.getBoundingClientRect();
+    const t = e.touches[0] || e.changedTouches[0];
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  };
+
   const hc = (p: { x: number; y: number }): "tl" | "tr" | "bl" | "br" | null => {
-    const m = 12;
+    const m = 16;
     if (Math.abs(p.x - crop.x) < m && Math.abs(p.y - crop.y) < m) return "tl";
     if (Math.abs(p.x - (crop.x + crop.w)) < m && Math.abs(p.y - crop.y) < m) return "tr";
     if (Math.abs(p.x - crop.x) < m && Math.abs(p.y - (crop.y + crop.h)) < m) return "bl";
@@ -116,8 +122,7 @@ function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: st
     return null;
   };
 
-  const md = (e: React.MouseEvent) => {
-    const p = gp(e);
+  const startDrag = (p: { x: number; y: number }) => {
     const c = hc(p);
     if (c) { setAction(c); sr.current = { mx: p.x, my: p.y, c: { ...crop } }; }
     else if (p.x >= crop.x && p.x <= crop.x + crop.w && p.y >= crop.y && p.y <= crop.y + crop.h) {
@@ -126,9 +131,8 @@ function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: st
     }
   };
 
-  const mm = (e: React.MouseEvent) => {
+  const moveDrag = (p: { x: number; y: number }) => {
     if (!action) return;
-    const p = gp(e);
     const s = sr.current;
     const min = 30;
     let c = { ...s.c };
@@ -160,11 +164,14 @@ function AvatarCropModal({ src, onCrop, onClose }: { src: string; onCrop: (d: st
         <div style={{ display: "flex", justifyContent: "center" }}>
           <canvas
             ref={canvasRef}
-            style={{ borderRadius: 10, cursor: action === "move" ? "move" : action ? "nwse-resize" : "default", maxWidth: "100%" }}
-            onMouseDown={md}
-            onMouseMove={mm}
+            style={{ borderRadius: 10, cursor: action === "move" ? "move" : action ? "nwse-resize" : "default", maxWidth: "100%", touchAction: "none" }}
+            onMouseDown={(e) => { e.preventDefault(); startDrag(gpMouse(e)); }}
+            onMouseMove={(e) => moveDrag(gpMouse(e))}
             onMouseUp={() => setAction(null)}
             onMouseLeave={() => setAction(null)}
+            onTouchStart={(e) => { e.preventDefault(); startDrag(gpTouch(e)); }}
+            onTouchMove={(e) => { e.preventDefault(); moveDrag(gpTouch(e)); }}
+            onTouchEnd={() => setAction(null)}
           />
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>

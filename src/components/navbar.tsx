@@ -231,6 +231,7 @@ export function Navbar() {
         <div style={{
           borderTop: "1px solid rgba(255,255,255,0.35)",
           background: "rgba(15,21,35,0.95)", padding: 12,
+          maxHeight: "calc(100vh - 200px)", overflowY: "auto",
         }}>
           {navItems.map((item) => (
             <Link
