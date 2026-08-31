@@ -147,26 +147,28 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         style={{
           position: "relative",
           width: "460px",
-          maxHeight: "85vh",
-          overflowY: "auto",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
           background: "var(--os-glass-bg)",
           border: "1px solid var(--os-glass-border)",
           borderRadius: "16px",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          padding: "24px",
           color: "var(--os-text-primary)",
           fontFamily: "var(--os-font-body)",
+          overflow: "hidden",
         }}
       >
-        {/* Header */}
+        {/* Sticky Header */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: "24px",
+            padding: "20px 24px 16px",
+            flexShrink: 0,
           }}
         >
           <h2
@@ -196,120 +198,142 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
           </button>
         </div>
 
-        {/* Wallpaper Section */}
-        <div style={{ marginBottom: "28px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "var(--os-text-secondary)",
-              fontFamily: "var(--os-font-heading)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Wallpaper
-          </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-            {wallpapers.map((wp, index) => (
-              <button
-                key={wp.name}
-                onClick={() => handleSelectWallpaper(index)}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "5px",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "5px",
-                  borderRadius: "10px",
-                  transition: "background 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none";
-                }}
-              >
-                <div
+        {/* Scrollable Content */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "0 24px",
+          }}
+        >
+          {/* Wallpaper Section */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3
+              style={{
+                margin: "0 0 10px",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "var(--os-text-dim)",
+                fontFamily: "var(--os-font-heading)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Wallpaper
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+              {wallpapers.map((wp, index) => (
+                <button
+                  key={wp.name}
+                  onClick={() => handleSelectWallpaper(index)}
                   style={{
-                    width: "52px",
-                    height: "52px",
-                    borderRadius: "10px",
-                    background: `linear-gradient(135deg, ${wp.colors[0]}, ${wp.colors[1]})`,
-                    border: selectedWallpaper === index ? "2px solid var(--os-accent)" : "2px solid var(--os-glass-border)",
-                    transition: "border-color 0.2s, box-shadow 0.2s",
-                    boxShadow: selectedWallpaper === index ? `0 0 10px var(--os-accent-rgb)` : "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "8px",
+                    transition: "background 0.2s",
                   }}
-                />
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: selectedWallpaper === index ? "var(--os-text-primary)" : "var(--os-text-secondary)",
-                    fontFamily: "var(--os-font-body)",
-                    lineHeight: 1.2,
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "none";
                   }}
                 >
-                  {wp.name}
-                </span>
-              </button>
-            ))}
+                  <div
+                    style={{
+                      width: "100%",
+                      aspectRatio: "1",
+                      borderRadius: "8px",
+                      background: `linear-gradient(135deg, ${wp.colors[0]}, ${wp.colors[1]})`,
+                      border: selectedWallpaper === index ? "2px solid var(--os-accent)" : "2px solid var(--os-glass-border)",
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                      boxShadow: selectedWallpaper === index ? `0 0 8px var(--os-accent-rgb)` : "none",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      color: selectedWallpaper === index ? "var(--os-text-primary)" : "var(--os-text-dim)",
+                      fontFamily: "var(--os-font-body)",
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {wp.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Accent Color Section */}
+          <div style={{ marginBottom: "20px" }}>
+            <h3
+              style={{
+                margin: "0 0 10px",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "var(--os-text-dim)",
+                fontFamily: "var(--os-font-heading)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Accent Color
+            </h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center" }}>
+              {accentColors.map((ac, index) => (
+                <button
+                  key={ac.name}
+                  onClick={() => handleSelectAccent(index)}
+                  title={ac.name}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    background: ac.color,
+                    border: selectedAccent === index ? "3px solid var(--os-text-primary)" : "3px solid transparent",
+                    cursor: "pointer",
+                    transition: "transform 0.15s, box-shadow 0.15s",
+                    boxShadow: selectedAccent === index ? `0 0 0 2px ${ac.color}50` : "none",
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                />
+              ))}
+            </div>
+            <p style={{ fontSize: "11px", color: "var(--os-text-dim)", marginTop: "8px", textAlign: "center" }}>
+              {accentColors[selectedAccent].name}
+            </p>
           </div>
         </div>
 
-        {/* Accent Color Section */}
-        <div style={{ marginBottom: "28px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "var(--os-text-secondary)",
-              fontFamily: "var(--os-font-heading)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Accent Color
-          </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "4px" }}>
-            {accentColors.map((ac, index) => (
-              <button
-                key={ac.name}
-                onClick={() => handleSelectAccent(index)}
-                title={ac.name}
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  background: ac.color,
-                  border: selectedAccent === index ? "3px solid var(--os-text-primary)" : "3px solid transparent",
-                  cursor: "pointer",
-                  transition: "transform 0.15s, box-shadow 0.15s",
-                  boxShadow: selectedAccent === index ? `0 0 0 3px ${ac.color}40` : "none",
-                  padding: 0,
-                  justifySelf: "center",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                }}
-              />
-            ))}
-          </div>
-          <p style={{ fontSize: "11px", color: "var(--os-text-dim)", marginTop: "8px", textAlign: "center" }}>
-            {accentColors[selectedAccent].name}
-          </p>
-        </div>
-
-        {/* Buttons */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        {/* Sticky Footer Buttons */}
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            padding: "16px 24px 20px",
+            borderTop: "1px solid var(--os-glass-border)",
+            flexShrink: 0,
+            background: "var(--os-glass-bg)",
+          }}
+        >
           <button
             onClick={handleReset}
             style={{
