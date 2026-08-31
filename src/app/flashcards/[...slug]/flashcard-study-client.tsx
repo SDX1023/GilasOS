@@ -659,6 +659,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             <p className="text-secondary" style={{ marginTop: "0.5rem" }}>{cards.length} cards</p>
           </div>
           <div className="flashcard-actions">
+            <button onClick={() => setShowFormulas(!showFormulas)}
+              className="glass-btn"
+              style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}
+            >
+              {showFormulas ? "Σ On" : "Σ Off"}
+            </button>
             <button onClick={() => setShuffled(!shuffled)}
               className="glass-btn"
               style={shuffled ? { background: "rgba(0,212,255,0.1)", color: "var(--os-accent)", borderColor: "rgba(0,212,255,0.3)" } : {}}
@@ -938,8 +944,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                     <button onClick={() => deleteCard(realIndex)}
                       className="glass-btn-ghost" style={{ padding: "0.375rem", borderRadius: "0.5rem" }}><Trash2 style={{ width: 16, height: 16 }} /></button>
                   </div>
-                  <p style={{ fontWeight: 500, wordBreak: "break-word" }}>Q: <MathRenderer content={card.front} /></p>
-                  <p style={{ marginTop: "0.5rem", wordBreak: "break-word" }} className="text-secondary">A: <MathRenderer content={card.back} /></p>
+                  <p style={{ fontWeight: 500, wordBreak: "break-word" }}>Q: <FlashFormulaLine text={card.front} showFormulas={showFormulas} /></p>
+                  <p style={{ marginTop: "0.5rem", wordBreak: "break-word" }} className="text-secondary">A: <FlashFormulaLine text={card.back} showFormulas={showFormulas} /></p>
                   {card.hint && <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", fontStyle: "italic" }} className="text-secondary">Hint: {card.hint}</p>}
                 </div>
               )}
