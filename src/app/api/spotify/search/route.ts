@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      return NextResponse.json({ error: "Failed to get Spotify access token" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to get Spotify access token", details: tokenData }, { status: 500 });
     }
 
     const offset = searchParams.get("offset") || "0";
