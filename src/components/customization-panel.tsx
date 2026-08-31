@@ -160,31 +160,31 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 0", flexShrink: 0 }}>
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 600, fontFamily: "var(--os-font-heading)" }}>Customize Appearance</h2>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: "18px", padding: "4px", lineHeight: 1 }}>✕</button>
         </div>
 
-        {/* Scrollable */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+        {/* Wallpaper Tabs — fixed, not scrollable */}
+        <div style={{ display: "flex", gap: "2px", margin: "12px 20px 0", background: "rgba(255,255,255,0.04)", borderRadius: "8px", padding: "2px", flexShrink: 0 }}>
+          {WALLPAPER_TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setWallpaperTab(tab)}
+              style={{
+                flex: 1, padding: "6px 0", borderRadius: "6px", border: "none", fontSize: "11px", fontWeight: 500, cursor: "pointer",
+                background: wallpaperTab === tab ? "var(--os-accent)" : "transparent",
+                color: wallpaperTab === tab ? "#fff" : "var(--os-text-dim)",
+                transition: "all 0.15s", fontFamily: "var(--os-font-body)",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
-          {/* Wallpaper Tabs */}
-          <div style={{ display: "flex", gap: "2px", marginBottom: "10px", background: "rgba(255,255,255,0.04)", borderRadius: "8px", padding: "2px" }}>
-            {WALLPAPER_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setWallpaperTab(tab)}
-                style={{
-                  flex: 1, padding: "6px 0", borderRadius: "6px", border: "none", fontSize: "11px", fontWeight: 500, cursor: "pointer",
-                  background: wallpaperTab === tab ? "var(--os-accent)" : "transparent",
-                  color: wallpaperTab === tab ? "#fff" : "var(--os-text-dim)",
-                  transition: "all 0.15s", fontFamily: "var(--os-font-body)",
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+        {/* Scrollable */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 0" }}>
 
           {/* Wallpaper Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "5px", marginBottom: "20px" }}>
