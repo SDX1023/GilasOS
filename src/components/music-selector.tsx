@@ -110,12 +110,20 @@ export function MusicSelector({ onSelect, onClose }: MusicSelectorProps) {
     if (audio) { audio.pause(); audio.src = ""; }
     const a = new Audio(url);
     a.addEventListener("ended", () => setIsPlaying(false));
-    a.addEventListener("loadedmetadata", () => {
+    let gotValidDur = false;
+    const onDur = () => {
       const dur = a.duration;
-      if (dur && isFinite(dur) && dur > 0) {
+      if (!gotValidDur && dur && isFinite(dur) && dur > 0 && dur < 300) {
+        gotValidDur = true;
         setTrackDuration(Math.ceil(dur));
       }
-    });
+    };
+    a.addEventListener("loadedmetadata", onDur);
+    a.addEventListener("canplay", onDur);
+    a.addEventListener("durationchange", onDur);
+    a.addEventListener("error", () => { if (!gotValidDur) setTrackDuration(30); });
+    // Fallback: if duration never loads, assume Spotify preview = 30s
+    setTimeout(() => { if (!gotValidDur) setTrackDuration(30); }, 2000);
     setAudio(a);
     setIsPlaying(false);
   };
