@@ -8,6 +8,7 @@ import { PomodoroProvider } from "@/components/pomodoro/pomodoro-context";
 import { FloatingTimer } from "@/components/pomodoro/floating-timer";
 import { PetProvider } from "@/components/pixel-pet/pet-context";
 import PixelPet from "@/components/pixel-pet/pixel-pet";
+import CustomizationLoader from "@/components/customization-loader";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
               <PetProvider>
                 <div className="app-shell">
                   <ScrollToTop />
+                  <CustomizationLoader />
                   <Navbar />
                   <main className="app-main">{children}</main>
                   <Taskbar />

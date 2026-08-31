@@ -8,6 +8,8 @@ import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, B
 import { useAuth } from "@/lib/auth-context";
 import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession } from "@/lib/user-data";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
+import { MathRenderer } from "@/components/math-renderer";
+import { earnBadge } from "@/lib/badges";
 import jsPDF from "jspdf";
 
 function exportFlashcardsToPdf(title: string, cards: any[]) {
@@ -104,11 +106,52 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
   const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in">("flip");
+  const [showFormulas, setShowFormulas] = useState(false);
+  const [formulaCache, setFormulaCache] = useState<Record<string, string>>({});
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
 
   const sessionKey = `flash-session-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
   const levelsKey = `flash-levels-${courseSlug}-${moduleSlug}-${reviewerSlug}`;
+
+  async function fetchFormula(text: string): Promise<string | null> {
+    if (formulaCache[text]) return formulaCache[text];
+    if (/\$|\\|\\\\|frac|sqrt|sum|int|alpha|beta|gamma|sigma|omega|theta|delta|epsilon|pi\b/i.test(text)) {
+      return null;
+    }
+    try {
+      const res = await fetch("/api/generate-formula", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.detected && data.formula) {
+        setFormulaCache((prev) => ({ ...prev, [text]: data.formula }));
+        return data.formula;
+      }
+    } catch {}
+    setFormulaCache((prev) => ({ ...prev, [text]: "" }));
+    return null;
+  }
+
+  function FormulaLine({ text }: { text: string }) {
+    const [formula, setFormula] = useState<string | null>(null);
+    useEffect(() => {
+      if (!showFormulas) return;
+      fetchFormula(text).then((f) => { if (f) setFormula(f); });
+    }, [showFormulas, text]);
+    return (
+      <>
+        <MathRenderer content={text} />
+        {showFormulas && formula && (
+          <span style={{ display: "block", marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 14, color: "#a78bfa" }}>
+            <MathRenderer content={`$${formula}$`} />
+          </span>
+        )}
+      </>
+    );
+  }
 
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
@@ -249,6 +292,13 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         dont_know: dontKnowCount,
       }).catch(() => {});
     }
+    earnBadge("first-study");
+    if (total >= 10) earnBadge("cards-10");
+    if (total >= 100) earnBadge("cards-100");
+    if (total >= 500) earnBadge("cards-500");
+    const hour = new Date().getHours();
+    if (hour < 7) earnBadge("early-bird");
+    if (hour >= 23) earnBadge("night-owl");
   }, [reviewComplete, knownCount, forgotCount, dontKnowCount]);
 
   useEffect(() => {
@@ -675,6 +725,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               >
                 {reviewStudyMode === "flip" ? "📝 Type-in" : "🔄 Flip"}
               </button>
+              <button onClick={() => setShowFormulas(!showFormulas)}
+                className="glass-btn"
+                style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}
+              >
+                {showFormulas ? "Σ On" : "Σ Off"}
+              </button>
               <button onClick={exitReview} className="glass-btn">
                 Exit
               </button>
@@ -710,7 +766,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                       style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div>
                         <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
-                          {reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)}
+                          <FormulaLine text={reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)} />
                         </p>
                         {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                       </div>
@@ -745,7 +801,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                       style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ width: "100%" }}>
                         <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)", marginBottom: "1.5rem" }}>
-                          {swapped ? queue[queueIndex].back : queue[queueIndex].front}
+                          <FormulaLine text={swapped ? queue[queueIndex].back : queue[queueIndex].front} />
                         </p>
                         {!swapped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginBottom: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                         {!answerChecked ? (
@@ -878,8 +934,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                     <button onClick={() => deleteCard(realIndex)}
                       className="glass-btn-ghost" style={{ padding: "0.375rem", borderRadius: "0.5rem" }}><Trash2 style={{ width: 16, height: 16 }} /></button>
                   </div>
-                  <p style={{ fontWeight: 500, wordBreak: "break-word" }}>Q: {card.front}</p>
-                  <p style={{ marginTop: "0.5rem", wordBreak: "break-word" }} className="text-secondary">A: {card.back}</p>
+                  <p style={{ fontWeight: 500, wordBreak: "break-word" }}>Q: <MathRenderer content={card.front} /></p>
+                  <p style={{ marginTop: "0.5rem", wordBreak: "break-word" }} className="text-secondary">A: <MathRenderer content={card.back} /></p>
                   {card.hint && <p style={{ marginTop: "0.25rem", fontSize: "0.875rem", fontStyle: "italic" }} className="text-secondary">Hint: {card.hint}</p>}
                 </div>
               )}

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Archive } from "lucide-react";
+import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Archive, Palette, Award } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
+import CustomizationPanel from "@/components/customization-panel";
 
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
@@ -29,6 +30,7 @@ export function Navbar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showMobile, setShowMobile] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
   const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
@@ -143,6 +145,22 @@ export function Navbar() {
                   <Shield size={15} /> <span>Admin</span>
                 </Link>
               )}
+              <Link href="/badges" className={`nav-link${isActive("/badges") ? " nav-active" : ""}`} style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
+                fontSize: 13, fontWeight: 500, textDecoration: "none",
+              }}>
+                <Award size={15} />
+              </Link>
+              <button onClick={() => setShowCustomize(true)}
+                className="nav-link"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
+                  fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <Palette size={15} />
+              </button>
             </div>
           </div>
 
@@ -319,6 +337,7 @@ export function Navbar() {
           </div>
         </>
       )}
+      <CustomizationPanel isOpen={showCustomize} onClose={() => setShowCustomize(false)} />
     </nav>
   );
 }

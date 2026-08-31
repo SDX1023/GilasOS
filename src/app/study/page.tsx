@@ -6,13 +6,17 @@ import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteRev
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical } from "lucide-react";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap } from "lucide-react";
+import { MathRenderer } from "@/components/math-renderer";
+import FocusMode from "@/components/focus-mode";
+import { earnBadge } from "@/lib/badges";
 
 type Tab = "flashcards" | "quiz" | "history" | "log";
 
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("flashcards");
   const [mounted, setMounted] = useState(false);
+  const [showFocusMode, setShowFocusMode] = useState(false);
   const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -112,9 +116,15 @@ export default function StudyPage() {
 
   return (
     <div className="page-container" style={{ paddingBottom: "24px" }}>
-      <h1 className="page-title">
-        <PenTool style={{ width: "28px", height: "28px" }} /> Study
-      </h1>
+      <FocusMode isOpen={showFocusMode} onClose={() => setShowFocusMode(false)} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>
+          <PenTool style={{ width: "28px", height: "28px" }} /> Study
+        </h1>
+        <button onClick={() => setShowFocusMode(true)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "6px 14px" }}>
+          <Zap size={15} /> Focus Mode
+        </button>
+      </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", overflowX: "auto", userSelect: "none", WebkitOverflowScrolling: "touch" }}>
         {([
@@ -370,6 +380,7 @@ function QuizTab({ userId }: { userId: string | null }) {
   const quizStartRef = useRef<number>(0);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renamingTitle, setRenamingTitle] = useState("");
+  const [showFormulas, setShowFormulas] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -490,6 +501,8 @@ function QuizTab({ userId }: { userId: string | null }) {
             total_questions: quizQuestions.length,
           }).catch(() => {});
         }
+        earnBadge("first-study");
+        if (s === quizQuestions.length) earnBadge("quiz-ace");
       }
     }
   }
@@ -601,7 +614,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                 borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
                 background: isCorrect ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)",
               }}>
-                <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. {q.question}</p>
+                <p style={{ fontWeight: 500, marginBottom: "8px", color: "var(--os-text-primary)" }}>{i + 1}. <MathRenderer content={q.question} /></p>
                 {q.type === "mc" && q.options && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "16px" }}>
                     {q.options.map((opt: string, j: number) => {
@@ -612,7 +625,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                           color: isCorrectOpt ? "#16a34a" : isUserChoice && !isCorrectOpt ? "#dc2626" : "var(--os-text-secondary)",
                           fontWeight: isCorrectOpt ? 500 : 400,
                         }}>
-                          {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
+                          {String.fromCharCode(65 + j)}. <MathRenderer content={stripOptionPrefix(opt)} /> {isCorrectOpt ? " ✓" : isUserChoice && !isCorrectOpt ? " ✗" : ""}
                         </p>
                       );
                     })}
@@ -676,7 +689,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                   <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--os-accent)", minWidth: "20px" }}>{i + 1}.</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", flex: 1 }}>{q.question}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 500, color: "var(--os-text-primary)", flex: 1 }}><MathRenderer content={q.question} /></p>
                       <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "9999px", background: q.type === "mc" ? "rgba(59,130,246,0.1)" : "rgba(168,85,247,0.1)", color: q.type === "mc" ? "#2563eb" : "#9333ea" }}>
                         {q.type === "mc" ? "MC" : "ID"}
                       </span>
@@ -685,7 +698,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginLeft: "4px" }}>
                         {q.options.map((opt: string, j: number) => (
                           <p key={j} className="text-xs" style={{ color: showAnswers && String(j) === correctIdx ? "#16a34a" : "var(--os-text-secondary)", fontWeight: showAnswers && String(j) === correctIdx ? 500 : 400 }}>
-                            {String.fromCharCode(65 + j)}. {stripOptionPrefix(opt)} {showAnswers && String(j) === correctIdx ? "✓" : ""}
+                            {String.fromCharCode(65 + j)}. <MathRenderer content={stripOptionPrefix(opt)} /> {showAnswers && String(j) === correctIdx ? "✓" : ""}
                           </p>
                         ))}
                       </div>
@@ -752,7 +765,7 @@ function QuizTab({ userId }: { userId: string | null }) {
           }}>
             {isMc ? "Multiple Choice" : "Identification"}
           </span>
-          <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}>{q.question}</p>
+          <p style={{ fontSize: "18px", fontWeight: 500, marginTop: "8px", color: "var(--os-text-primary)" }}><MathRenderer content={q.question} /></p>
         </div>
 
         {isMc ? (
@@ -781,7 +794,7 @@ function QuizTab({ userId }: { userId: string | null }) {
                     opacity: showFeedback && !isCorrectOpt && !isChosen ? 0.5 : 1,
                   }}>
                   <span style={{ fontWeight: 500, marginRight: "10px", color: txtColor }}>{String.fromCharCode(65 + j)}.</span>
-                  <span style={{ color: txtColor }}>{stripOptionPrefix(opt)}</span>
+                  <span style={{ color: txtColor }}><MathRenderer content={stripOptionPrefix(opt)} /></span>
                   {showFeedback && isCorrectOpt && <span style={{ marginLeft: 8, color: "#16a34a" }}>✓</span>}
                   {showFeedback && isChosen && !isCorrectOpt && <span style={{ marginLeft: 8, color: "#ef4444" }}>✗</span>}
                 </button>
