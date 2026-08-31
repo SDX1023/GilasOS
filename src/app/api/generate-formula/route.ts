@@ -13,30 +13,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ formula: null, detected: false });
     }
 
-    const prompt = `You are a LaTeX formula assistant. Given the following text, determine if it is a MATH or SCIENCE problem that requires a specific formula to solve. If it does, return a JSON object with the formula and a short explanation. If no formula applies, return exactly "NONE".
+    const prompt = `You are a math formula detector. ONLY detect formulas for calculation problems. Return "NONE" for everything else.
 
-Rules:
-- Return a JSON object: {"formula": "...", "explanation": "..."}
-- Formula: ONLY the raw LaTeX formula on one line, no $ delimiters, no \\( \\) or \\[ \\] wrappers
-- Explanation: 1 short sentence (max 20 words) explaining HOW to solve the problem using this formula, not just what the formula means
-- Use standard LaTeX notation with backslashes escaped (e.g., \\\\frac{}{}, \\\\sqrt{}, \\\\sum, \\\\int, \\\\alpha, \\\\beta)
-- ONLY return a formula when the question explicitly asks you to CALCULATE a numerical answer using a formula:
-  * "How much interest..." → I=Prt
-  * "What is the discount..." → d=(l-n)/l  
-  * "Find the force..." → F=ma
-  * "What is the pH..." → pH=-log[H+]
-- Return "NONE" for ALL of these:
-  * "Who discovered / Who formulated / Who proposed..."
-  * "What is the name of..."
-  * Fill-in-the-blank trivia (e.g., "The scientist who... was ____")
-  * Definitions, identifications, multiple choice facts
-  * Any question where the answer is a person's name, a term, or a concept — not a number
-- For word problems, explain the solution steps briefly (e.g., "Substitute P=15000, r=0.10, t=3 into I=Prt, then add to principal")
-- If the text is not a math/science calculation problem, return "NONE"
+CRITICAL RULES — read these first:
+1. If the question contains "who", "whose", "which scientist", "which researcher", or asks to NAME/FILL IN A PERSON → return "NONE"
+2. If the answer choices are names (Galileo, Copernicus, Newton, etc.) → return "NONE"
+3. If the question asks "what is", "what are", "define", "identify", "name the" → return "NONE"
+4. ONLY return a formula if the question requires you to CALCULATE a number using math
+
+WHEN you DO detect a calculation problem, return JSON: {"formula": "...", "explanation": "..."}
+- Formula: raw LaTeX only, no delimiters, no \\( \\) or \\[ \\] wrappers
+- Explanation: 1-2 sentences explaining the STEPS to solve (not what the formula means)
+- Example: "What is the simple interest on P15,000 at 10% for 3 years?" → {"formula": "I = Prt", "explanation": "Substitute P=15000, r=0.10, t=3 into I=Prt to get I = 15000(0.10)(3) = 4500. Total amount = P + I = 19500."}
+
+ONLY these types get formulas:
+- Interest/discount/markup/profit calculations
+- Area, perimeter, volume calculations
+- Physics problems with numbers (force, energy, velocity, etc.)
+- Chemistry calculations (molarity, pH, gas laws, dilution)
+- Word problems that need a numeric answer
 
 Text: ${text}
 
-Return JSON:`;
+JSON:`;
 
     const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -47,7 +46,7 @@ Return JSON:`;
       body: JSON.stringify({
         model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 256,
+        max_tokens: 512,
         temperature: 0.1,
       }),
     });
@@ -80,18 +79,6 @@ Return JSON:`;
         }
       }
     } catch {}
-
-    const cleaned = raw
-      .replace(/^\$+|\$+$/g, "")
-      .replace(/^```json\n?|```$/g, "")
-      .replace(/^\\?\(/, "")
-      .replace(/\\?\)$/, "")
-      .replace(/^\\?\[/, "")
-      .replace(/\\?\]$/, "")
-      .trim();
-    if (cleaned) {
-      return NextResponse.json({ formula: cleaned, explanation: "", detected: true });
-    }
 
     return NextResponse.json({ formula: null, detected: false });
   } catch {
