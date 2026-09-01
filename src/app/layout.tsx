@@ -10,11 +10,14 @@ import { PetProvider } from "@/components/pixel-pet/pet-context";
 import PixelPet from "@/components/pixel-pet/pixel-pet";
 import CustomizationLoader from "@/components/customization-loader";
 import BackgroundOverlay from "@/components/background-overlay";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "GilasOS - The Ultimate GILAS Reviewer",
   description: "Guts. Instincts. Luck. Attitude. Skill.",
+  manifest: "/manifest.json",
+  themeColor: "#6d28d9",
 };
 
 export default function RootLayout({
@@ -39,6 +42,7 @@ export default function RootLayout({
                 </div>
                 <FloatingTimer />
                 <PixelPet />
+                <ServiceWorkerRegistration />
               </PetProvider>
             </PomodoroProvider>
           </AuthWrapper>
