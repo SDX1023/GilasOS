@@ -158,7 +158,7 @@ export function deleteNote(courseId: string, moduleId: string, noteId: string) {
   }
 }
 
-// Reviewer operations
+// Reviewer operations (local storage only)
 export function addReviewer(courseId: string, moduleId: string, reviewer: Omit<CustomReviewer, "id" | "courseId" | "moduleId">) {
   const store = loadCustomContent();
   let course = store.courses.find((c) => c.id === courseId);
@@ -242,7 +242,8 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
   }));
 }
 
-export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: CustomReviewer) {
+// Simplified save function - only uses custom_decks and custom_deck_cards
+export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: any) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -250,8 +251,11 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   // Generate a unique ID for the deck
   const deckId = `${courseId}/${moduleId}/${reviewer.id}`;
 
+  console.log("Saving deck with ID:", deckId);
+  console.log("Reviewer data:", reviewer);
+
   // Save to custom_decks table
-  const { error: deckError } = await supabase
+  const { data: deckData, error: deckError } = await supabase
     .from("custom_decks")
     .upsert({
       id: deckId,
@@ -261,12 +265,15 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       card_count: reviewer.cards ? reviewer.cards.length : 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    })
+    .select();
 
   if (deckError) {
     console.error("Deck save error:", deckError);
     throw deckError;
   }
+
+  console.log("Deck saved successfully:", deckData);
 
   // Save the cards
   if (reviewer.cards && reviewer.cards.length > 0) {
@@ -279,35 +286,28 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       created_at: new Date().toISOString(),
     }));
 
-    // Delete existing cards first
+    // Delete existing cards first (to avoid duplicates)
     await supabase
       .from("custom_deck_cards")
       .delete()
       .eq("deck_id", deckId);
 
     // Insert new cards
-    const { error: cardsError } = await supabase
+    const { data: cardsData, error: cardsError } = await supabase
       .from("custom_deck_cards")
-      .insert(cards);
+      .insert(cards)
+      .select();
 
     if (cardsError) {
       console.error("Cards save error:", cardsError);
       throw cardsError;
     }
+
+    console.log("Cards saved successfully:", cardsData?.length || cards.length);
   }
 
-  // Also save to reviewers table for backward compatibility
-  const { error: revError } = await supabase.from("reviewers").upsert({
-    id: reviewer.id,
-    user_id: user.id,
-    course_id: courseId,
-    module_id: moduleId,
-    title: reviewer.title,
-  }, { onConflict: "id" });
-  
-  if (revError) {
-    console.error("Failed to save reviewer to Supabase:", revError);
-  }
+  // NOTE: We're NOT saving to the "reviewers" table to avoid RLS issues
+  // The deck is stored in custom_decks and custom_deck_cards
 
   // Trigger event to refresh decks
   if (typeof window !== "undefined") {
