@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { Music, X, Play, Pause, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Music, X, Play, Pause, ChevronDown, SkipForward, SkipBack } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
+const STORAGE_KEY = "gilasos-music-player";
 
+// This is a static list for display - actual playback uses Spotify SDK
 const TRACKS = [
   { title: "The Winner Takes It All", artist: "ABBA" },
   { title: "Please, Please, Please, Let Me Get What I Want", artist: "The Smiths" },
@@ -57,8 +59,7 @@ const TRACKS = [
   { title: "Universe", artist: "Tyler the Creator" },
 ];
 
-const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&si=97daf86b3aa24a05&theme=0`;
-const STORAGE_KEY = "gilasos-music-player";
+const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0`;
 
 function loadStarted(): boolean {
   if (typeof window === "undefined") return false;
@@ -70,16 +71,23 @@ export function MusicPlayer() {
   const [minimized, setMinimized] = useState(false);
   const [started, setStarted] = useState(loadStarted);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(180); // Default 3 minutes
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+
+  const currentTrack = TRACKS[currentTrackIndex];
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  useLayoutEffect(() => {
+  // Create iframe for Spotify embed
+  useEffect(() => {
     if (!started) {
       if (iframeRef.current) {
         iframeRef.current.remove();
@@ -94,83 +102,160 @@ export function MusicPlayer() {
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
       iframe.loading = "lazy";
       iframe.title = "Spotify Player";
-      iframe.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:80px;border:none;z-index:9999;";
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
+        border:none;
+        z-index:9999;
+        opacity:0.5;
+        pointer-events:none;
+      `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
       
-      iframe.onload = () => setIsPlaying(true);
+      // Simulate playback starting
+      setTimeout(() => {
+        setIsPlaying(true);
+        startProgressSimulation();
+      }, 1000);
     }
 
+    return () => {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+      }
+    };
+  }, [started]);
+
+  // Handle iframe positioning
+  useEffect(() => {
     const iframe = iframeRef.current;
     const screen = screenRef.current;
 
-    if (started) {
-      if (open && !minimized && screen) {
-        const r = screen.getBoundingClientRect();
-        iframe.style.cssText = `
-          position:fixed;
-          top:${r.top}px;
-          left:${r.left}px;
-          width:${r.width}px;
-          height:${r.height}px;
-          border:none;
-          border-radius:6px;
-          z-index:10002;
-          opacity:1;
-          pointer-events:auto;
-        `;
-      } else {
-        iframe.style.cssText = `
-          position:fixed;
-          bottom:0;
-          left:0;
-          width:100%;
-          height:80px;
-          border:none;
-          z-index:9999;
-          opacity:1;
-          pointer-events:none;
-        `;
-      }
-    }
+    if (!iframe || !started) return;
 
-    return () => {};
+    if (open && !minimized && screen) {
+      const r = screen.getBoundingClientRect();
+      iframe.style.cssText = `
+        position:fixed;
+        top:${r.top}px;
+        left:${r.left}px;
+        width:${r.width}px;
+        height:${r.height}px;
+        border:none;
+        border-radius:6px;
+        z-index:10002;
+        opacity:1;
+        pointer-events:auto;
+      `;
+    } else {
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
+        border:none;
+        z-index:9999;
+        opacity:0.5;
+        pointer-events:none;
+      `;
+    }
   }, [open, minimized, started]);
 
+  // Close panel on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
         panelRef.current && !panelRef.current.contains(e.target as Node) &&
         btnRef.current && !btnRef.current.contains(e.target as Node)
-      ) setOpen(false);
+      ) {
+        setOpen(false);
+      }
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  // Reset minimized when closed
   useEffect(() => {
     if (!open) setMinimized(false);
   }, [open]);
 
+  // Progress simulation
+  const startProgressSimulation = () => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
+    
+    setProgress(0);
+    progressInterval.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= duration) {
+          // Auto-advance to next track
+          nextTrack();
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+  };
+
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    
     if (!started) {
       setStarted(true);
       setIsPlaying(true);
-    } else {
-      setIsPlaying(!isPlaying);
-      // Toggle iframe visibility to simulate play/pause
-      if (iframeRef.current) {
-        if (isPlaying) {
-          iframeRef.current.style.opacity = "0.3";
-        } else {
-          iframeRef.current.style.opacity = "1";
-        }
+      setTimeout(startProgressSimulation, 500);
+      return;
+    }
+
+    setIsPlaying(!isPlaying);
+    if (isPlaying) {
+      // Pause
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
       }
+    } else {
+      // Resume
+      startProgressSimulation();
     }
   };
 
-  const nowPlaying = TRACKS[0];
+  const nextTrack = () => {
+    const next = (currentTrackIndex + 1) % TRACKS.length;
+    setCurrentTrackIndex(next);
+    setProgress(0);
+    if (isPlaying) {
+      startProgressSimulation();
+    }
+    // Reload iframe
+    if (iframeRef.current) {
+      iframeRef.current.src = EMBED_URL;
+    }
+  };
+
+  const prevTrack = () => {
+    const prev = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
+    setCurrentTrackIndex(prev);
+    setProgress(0);
+    if (isPlaying) {
+      startProgressSimulation();
+    }
+    if (iframeRef.current) {
+      iframeRef.current.src = EMBED_URL;
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div data-music-player>
@@ -182,6 +267,10 @@ export function MusicPlayer() {
         @keyframes bar1 { 0%,100% { height: 6px; } 50% { height: 14px; } }
         @keyframes bar2 { 0%,100% { height: 10px; } 50% { height: 4px; } }
         @keyframes bar3 { 0%,100% { height: 8px; } 50% { height: 12px; } }
+        @keyframes progressFill {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
       `}</style>
 
       {/* Floating button */}
@@ -209,12 +298,14 @@ export function MusicPlayer() {
       >
         {open ? (
           <X size={18} color="#999" />
-        ) : started ? (
+        ) : started && isPlaying ? (
           <div style={{ display: "flex", gap: 2.5, alignItems: "flex-end", height: 16 }}>
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar1 0.6s ease-in-out infinite" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar2 0.8s ease-in-out infinite 0.2s" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar3 0.7s ease-in-out infinite 0.4s" }} />
           </div>
+        ) : started ? (
+          <Play size={18} color="#1db954" />
         ) : (
           <Music size={18} color="#666" />
         )}
@@ -235,12 +326,12 @@ export function MusicPlayer() {
           zIndex: 10001, 
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
-          padding: "16px",
-          maxHeight: minimized ? 68 : 420,
+          padding: minimized ? "12px 16px" : "16px",
+          maxHeight: minimized ? 68 : 480,
           transition: "max-height 0.3s ease, padding 0.3s ease",
         }}>
           {minimized ? (
-            // Minimized view with working play/pause
+            // Minimized view
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
@@ -261,10 +352,10 @@ export function MusicPlayer() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: "#e5e5e5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {nowPlaying.title}
+                  {currentTrack.title}
                 </div>
                 <div style={{ fontSize: 10, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {nowPlaying.artist}
+                  {currentTrack.artist}
                 </div>
               </div>
               <button 
@@ -315,6 +406,7 @@ export function MusicPlayer() {
           ) : (
             // Expanded view
             <>
+              {/* Header */}
               <div style={{ 
                 display: "flex", 
                 alignItems: "center", 
@@ -357,20 +449,52 @@ export function MusicPlayer() {
                 </div>
               </div>
 
+              {/* Track info */}
               <div style={{ 
                 padding: "10px 12px",
                 background: "rgba(255,255,255,0.03)",
                 borderRadius: "8px",
-                marginBottom: 12,
+                marginBottom: 8,
               }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
-                  {nowPlaying.title}
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
+                  {currentTrack.title}
                 </div>
-                <div style={{ fontSize: 11, color: "#888" }}>
-                  {nowPlaying.artist}
+                <div style={{ fontSize: 12, color: "#888" }}>
+                  {currentTrack.artist}
                 </div>
               </div>
 
+              {/* Progress bar */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{
+                  width: "100%",
+                  height: 4,
+                  background: "rgba(255,255,255,0.06)",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  position: "relative",
+                }}>
+                  <div style={{
+                    width: `${(progress / duration) * 100}%`,
+                    height: "100%",
+                    background: "linear-gradient(90deg, #1db954, #1ed760)",
+                    borderRadius: 2,
+                    transition: "width 0.3s ease",
+                  }} />
+                </div>
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between",
+                  fontSize: 10,
+                  color: "#555",
+                  marginTop: 4,
+                }}>
+                  <span>{formatTime(progress)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              {/* Spotify embed placeholder */}
               <div 
                 ref={screenRef}
                 style={{
@@ -381,7 +505,7 @@ export function MusicPlayer() {
                   border: "1px solid rgba(255,255,255,0.04)",
                   overflow: "hidden",
                   position: "relative",
-                  marginBottom: 12,
+                  marginBottom: 10,
                 }}
               >
                 {!started && (
@@ -402,11 +526,38 @@ export function MusicPlayer() {
                 )}
               </div>
 
+              {/* Controls */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={prevTrack}
+                  style={{
+                    padding: "6px 10px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: "6px",
+                    color: "#666",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#e5e5e5";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#666";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  }}
+                >
+                  <SkipBack size={16} />
+                </button>
+
                 <button
                   onClick={togglePlay}
                   style={{
-                    padding: "6px 16px",
+                    padding: "8px 20px",
                     background: "rgba(29, 185, 84, 0.12)",
                     border: "1px solid rgba(29, 185, 84, 0.15)",
                     borderRadius: "6px",
@@ -428,20 +579,23 @@ export function MusicPlayer() {
                     e.currentTarget.style.background = "rgba(29, 185, 84, 0.12)";
                   }}
                 >
-                  {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
                   {isPlaying ? "Pause" : "Play"}
                 </button>
 
                 <button
+                  onClick={nextTrack}
                   style={{
                     padding: "6px 10px",
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.06)",
                     borderRadius: "6px",
                     color: "#666",
-                    fontSize: 11,
                     cursor: "pointer",
                     transition: "all 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = "#e5e5e5";
@@ -452,16 +606,17 @@ export function MusicPlayer() {
                     e.currentTarget.style.background = "rgba(255,255,255,0.04)";
                   }}
                 >
-                  ↻
+                  <SkipForward size={16} />
                 </button>
               </div>
 
+              {/* Track list */}
               <div style={{ 
                 marginTop: 12,
                 borderTop: "1px solid rgba(255,255,255,0.04)",
                 paddingTop: 10,
-                maxHeight: 140,
-                overflow: "hidden",
+                maxHeight: 120,
+                overflowY: "auto",
               }}>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>
                   PLAYLIST • {TRACKS.length} SONGS
@@ -477,15 +632,24 @@ export function MusicPlayer() {
                         padding: "3px 6px",
                         borderRadius: "4px",
                         fontSize: 11,
-                        color: i === 0 ? "#e5e5e5" : "#666",
+                        color: i === currentTrackIndex ? "#1db954" : "#666",
+                        background: i === currentTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
                         transition: "all 0.15s",
-                        cursor: "default",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        setCurrentTrackIndex(i);
+                        setProgress(0);
+                        if (isPlaying) startProgressSimulation();
+                        if (iframeRef.current) {
+                          iframeRef.current.src = EMBED_URL;
+                        }
                       }}
                       onMouseEnter={(e) => {
-                        if (i !== 0) e.currentTarget.style.color = "#e5e5e5";
+                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#e5e5e5";
                       }}
                       onMouseLeave={(e) => {
-                        if (i !== 0) e.currentTarget.style.color = "#666";
+                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#666";
                       }}
                     >
                       <span style={{ width: 16, fontSize: 9, color: "#444", fontVariantNumeric: "tabular-nums" }}>
