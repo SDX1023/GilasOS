@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
-import { Settings, Lock, User, Check, ArrowLeft } from "lucide-react";
+import { Settings, Lock, User, Check, ArrowLeft, Bell } from "lucide-react";
 import Link from "next/link";
+import { StudyReminders } from "@/components/study-reminders";
 
 export default function SettingsPage() {
   const { user, username, changePassword, refreshProfile } = useAuth();
@@ -174,6 +175,18 @@ export default function SettingsPage() {
             {loading ? "Changing..." : "Change Password"}
           </button>
         </form>
+      </div>
+
+      {/* Study Reminders */}
+      <div className="glass-panel">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <Bell size={16} />
+          <h2 style={{ fontWeight: 600 }}>Study Reminders</h2>
+        </div>
+        <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>
+          Get browser notifications to remind you to study
+        </p>
+        <StudyReminders />
       </div>
     </div>
   );

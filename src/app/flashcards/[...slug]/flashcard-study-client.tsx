@@ -149,7 +149,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
-  const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in">("flip");
+  const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in" | "image-label">("flip");
+  const [labelAnswers, setLabelAnswers] = useState<string[]>([]);
+  const [labelsRevealed, setLabelsRevealed] = useState(false);
   const [showFormulas, setShowFormulas] = useState(false);
   const { user } = useAuth();
   const pomodoro = usePomodoroSafe();
@@ -201,6 +203,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   back: c.back,
                   hint: c.hint || "",
                   card_type: c.card_type || "standard",
+                  image_url: c.image_url || "",
+                  labels: c.labels || [],
                 })),
               });
               setCards((r.flashcards || []).map((c: any) => ({
@@ -208,6 +212,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                 back: c.back,
                 hint: c.hint || "",
                 card_type: c.card_type || "standard",
+                image_url: c.image_url || "",
+                labels: c.labels || [],
               })));
               found = true;
               break;
@@ -442,6 +448,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
     setTypedAnswer(""); setAnswerChecked(false);
+    setLabelsRevealed(false); setLabelAnswers([]);
   }
 
   function handleDontKnow() {
@@ -454,6 +461,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
     setTypedAnswer(""); setAnswerChecked(false);
+    setLabelsRevealed(false); setLabelAnswers([]);
   }
 
   function handleForgot() {
@@ -466,6 +474,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     else { setQueue(newQueue); setQueueIndex(queueIndex >= newQueue.length ? 0 : queueIndex); }
     setReviewFlipped(false);
     setTypedAnswer(""); setAnswerChecked(false);
+    setLabelsRevealed(false); setLabelAnswers([]);
   }
 
   async function syncToCloud(updatedCards: any[]) {
@@ -729,11 +738,19 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               >
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
-              <button onClick={() => { setReviewStudyMode(reviewStudyMode === "flip" ? "type-in" : "flip"); setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); }}
+              <button onClick={() => {
+                const next = reviewStudyMode === "flip" ? "type-in" : reviewStudyMode === "type-in" ? "image-label" : "flip";
+                setReviewStudyMode(next);
+                setReviewFlipped(false);
+                setTypedAnswer("");
+                setAnswerChecked(false);
+                setLabelsRevealed(false);
+                setLabelAnswers([]);
+              }}
                 className="glass-btn"
-                style={reviewStudyMode === "type-in" ? { background: "var(--os-accent)", color: "#fff" } : {}}
+                style={reviewStudyMode !== "flip" ? { background: "var(--os-accent)", color: "#fff" } : {}}
               >
-                {reviewStudyMode === "flip" ? "📝 Type-in" : "🔄 Flip"}
+                {reviewStudyMode === "flip" ? "🔄 Flip" : reviewStudyMode === "type-in" ? "📝 Type-in" : "🏷️ Image Label"}
               </button>
               <button onClick={() => setShowFormulas(!showFormulas)}
                 className="glass-btn"
@@ -768,7 +785,6 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               </div>
             ) : (
               <>
-                {/* Standard card: flip to reveal */}
                 {reviewStudyMode === "flip" ? (
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
@@ -804,7 +820,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                       )}
                     </div>
                   </>
-                ) : (
+                ) : reviewStudyMode === "type-in" ? (
                   /* Identification card: type answer */
                   <>
                     <div className="flashcard-study-card"
@@ -852,6 +868,41 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                       {!answerChecked ? "Type answer, then press Enter or click Check" : "1 = Forgot  2 = Don't Know  3 = Know"}
                     </div>
                     {answerChecked && (
+                      <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+                        <button id="btn-forgot" onClick={handleForgot} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Forgot
+                        </button>
+                        <button id="btn-dontknow" onClick={handleDontKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Don&apos;t Know
+                        </button>
+                        <button id="btn-know" onClick={handleKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
+                          I Know
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Image label card */
+                  <>
+                    {queue[queueIndex]?.image_url ? (
+                      <ImageLabelStudy
+                        image_url={queue[queueIndex].image_url}
+                        labels={queue[queueIndex].labels || []}
+                        onComplete={(correct) => {
+                          setLabelsRevealed(true);
+                          setAnswerCorrect(correct);
+                          setAnswerChecked(true);
+                          setReviewFlipped(true);
+                        }}
+                        revealed={labelsRevealed}
+                      />
+                    ) : (
+                      <div style={{ textAlign: "center", color: "var(--os-text-dim)" }}>No image on this card</div>
+                    )}
+                    <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                      {!labelsRevealed ? "Type labels for each marker, then click Check" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                    </div>
+                    {labelsRevealed && (
                       <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
                         <button id="btn-forgot" onClick={handleForgot} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
                           I Forgot
@@ -954,6 +1005,76 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         })}
         {filteredCards.length === 0 && searchQuery && <p style={{ textAlign: "center" }} className="text-secondary">No cards match &quot;{searchQuery}&quot;</p>}
       </div>
+    </div>
+  );
+}
+
+function ImageLabelStudy({ image_url, labels, onComplete, revealed }: {
+  image_url: string;
+  labels: { x: number; y: number; text: string }[];
+  onComplete: (correct: boolean) => void;
+  revealed: boolean;
+}) {
+  const [answers, setAnswers] = useState<string[]>(() => labels.map(() => ""));
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  const checkAnswers = () => {
+    const allCorrect = labels.every((label, i) =>
+      answers[i].trim().toLowerCase() === label.text.toLowerCase()
+    );
+    onComplete(allCorrect);
+  };
+
+  const updateAnswer = (i: number, val: string) => {
+    const next = [...answers];
+    next[i] = val;
+    setAnswers(next);
+  };
+
+  return (
+    <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div ref={imgRef} style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <img src={image_url} alt="Label quiz" style={{ width: "100%", display: "block", maxHeight: 400, objectFit: "contain", background: "#0a0e18" }} />
+        {labels.map((label, i) => (
+          <div key={i} style={{
+            position: "absolute", left: `${label.x}%`, top: `${label.y}%`,
+            transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 2,
+          }}>
+            <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--os-accent)", border: "2px solid #fff", boxShadow: "0 1px 6px rgba(0,0,0,0.6)" }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.7)", padding: "1px 5px", borderRadius: 4 }}>{i + 1}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 400 }}>
+        {labels.map((label, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--os-accent)", width: 20, textAlign: "center" }}>{i + 1}</span>
+            {revealed ? (
+              <span style={{ flex: 1, fontSize: 14, color: answers[i].trim().toLowerCase() === label.text.toLowerCase() ? "#4ade80" : "#f87171" }}>
+                {answers[i] || <span style={{ fontStyle: "italic", opacity: 0.5 }}>(empty)</span>}
+                {answers[i].trim().toLowerCase() !== label.text.toLowerCase() && (
+                  <span style={{ marginLeft: 8, color: "#4ade80", fontWeight: 600 }}>→ {label.text}</span>
+                )}
+              </span>
+            ) : (
+              <input
+                type="text"
+                value={answers[i]}
+                onChange={(e) => updateAnswer(i, e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") checkAnswers(); }}
+                placeholder={`Label ${i + 1}...`}
+                autoFocus={i === 0}
+                style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif" }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      {!revealed && (
+        <button onClick={checkAnswers} disabled={answers.every(a => !a.trim())} className="glass-btn-primary" style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: answers.every(a => !a.trim()) ? 0.4 : 1 }}>
+          Check Labels
+        </button>
+      )}
     </div>
   );
 }

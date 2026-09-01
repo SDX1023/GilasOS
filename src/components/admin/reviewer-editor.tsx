@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   Save,
   ArrowLeft,
@@ -17,7 +17,9 @@ interface FlashcardData {
   front: string;
   back: string;
   hint?: string;
-  card_type?: "standard" | "identification";
+  card_type?: "standard" | "identification" | "image_label";
+  image_url?: string;
+  labels?: { x: number; y: number; text: string }[];
 }
 
 interface ReviewerEditorProps {
@@ -76,7 +78,7 @@ export function ReviewerEditor({
     else if (expandedCard !== null && expandedCard > index) setExpandedCard(expandedCard - 1);
   };
 
-  const updateCard = (index: number, field: keyof FlashcardData, value: string) => {
+  const updateCard = (index: number, field: keyof FlashcardData, value: any) => {
     const newCards = [...cards];
     newCards[index] = { ...newCards[index], [field]: value };
     setCards(newCards);
@@ -219,8 +221,8 @@ export function ReviewerEditor({
                     <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
                       Card Type
                     </label>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      {(["standard", "identification"] as const).map((type) => (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {(["standard", "identification", "image_label"] as const).map((type) => (
                         <button
                           key={type}
                           onClick={() => updateCard(index, "card_type", type)}
@@ -232,12 +234,21 @@ export function ReviewerEditor({
                             fontFamily: "Inter, sans-serif",
                           }}
                         >
-                          {type === "standard" ? "Flip Card" : "Type Answer"}
+                          {type === "standard" ? "Flip Card" : type === "identification" ? "Type Answer" : "Image Label"}
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Image Label Editor */}
+                  {(card.card_type || "standard") === "image_label" ? (
+                    <ImageLabelEditor
+                      image_url={card.image_url || ""}
+                      labels={card.labels || []}
+                      onImageChange={(url) => updateCard(index, "image_url", url)}
+                      onLabelsChange={(labels) => updateCard(index, "labels", labels)}
+                    />
+                  ) : (<>
                   <div>
                     <label style={{ fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }}>
                       Front (Question)
@@ -275,6 +286,8 @@ export function ReviewerEditor({
                       style={{ width: "100%", fontSize: 13 }}
                     />
                   </div>
+                  </>)}
+
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <button
@@ -320,6 +333,90 @@ export function ReviewerEditor({
           Add Card
         </button>
       </div>
+    </div>
+  );
+}
+
+function ImageLabelEditor({ image_url, labels, onImageChange, onLabelsChange }: {
+  image_url: string;
+  labels: { x: number; y: number; text: string }[];
+  onImageChange: (url: string) => void;
+  onLabelsChange: (labels: { x: number; y: number; text: string }[]) => void;
+}) {
+  const [placing, setPlacing] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  const handleImageUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => onImageChange(reader.result as string);
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!placing || !imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const text = prompt("Enter the label text:");
+    if (text && text.trim()) {
+      onLabelsChange([...labels, { x, y, text: text.trim() }]);
+    }
+    setPlacing(false);
+  };
+
+  const updateLabel = (i: number, text: string) => {
+    const next = labels.map((l, idx) => idx === i ? { ...l, text } : l);
+    onLabelsChange(next);
+  };
+
+  const removeLabel = (i: number) => {
+    onLabelsChange(labels.filter((_, idx) => idx !== i));
+  };
+
+  if (!image_url) {
+    return (
+      <div onClick={handleImageUpload} style={{ padding: 24, border: "2px dashed var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer", textAlign: "center" }}>
+        Click to upload an image for labeling
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <button onClick={handleImageUpload} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>Change Image</button>
+        <button onClick={() => setPlacing(!placing)} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11, ...(placing ? { background: "var(--os-accent)", color: "#fff" } : {}) }}>
+          {placing ? "Click image to place..." : "+ Add Label"}
+        </button>
+        <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{labels.length} labels</span>
+      </div>
+      <div ref={imgRef} onClick={handleImageClick} style={{ position: "relative", cursor: placing ? "crosshair" : "default", borderRadius: 8, overflow: "hidden", border: "1px solid var(--os-glass-border)" }}>
+        <img src={image_url} alt="Label" style={{ width: "100%", display: "block", maxHeight: 350, objectFit: "contain", background: "#000" }} />
+        {labels.map((label, i) => (
+          <div key={i} style={{ position: "absolute", left: `${label.x}%`, top: `${label.y}%`, transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", gap: 4, zIndex: 2 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--os-accent)", border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,0.5)" }} />
+          </div>
+        ))}
+      </div>
+      {labels.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {labels.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--os-accent)", flexShrink: 0 }} />
+              <input value={label.text} onChange={(e) => updateLabel(i, e.target.value)} style={{ flex: 1, padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 6, color: "var(--os-text-primary)", fontSize: 12, outline: "none" }} />
+              <button onClick={() => removeLabel(i)} style={{ padding: 3, background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
