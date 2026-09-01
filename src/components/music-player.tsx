@@ -73,8 +73,8 @@ export function MusicPlayer() {
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
-  const holderRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const showInScreen = open && !minimized && started;
 
@@ -82,33 +82,98 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  useEffect(() => {
-    if (!started || !holderRef.current) return;
+  // Create and manage the iframe
+  useLayoutEffect(() => {
+    if (!started) {
+      // Remove iframe if exists when not started
+      if (iframeRef.current) {
+        iframeRef.current.remove();
+        iframeRef.current = null;
+      }
+      return;
+    }
+
+    // Create iframe if it doesn't exist
     if (!iframeRef.current) {
       const iframe = document.createElement("iframe");
       iframe.src = EMBED_URL;
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
       iframe.loading = "lazy";
       iframe.title = "Spotify Player";
-      iframe.style.cssText = "width:100%;height:100%;border:none;display:block;border-radius:8px;";
-      holderRef.current.appendChild(iframe);
+      iframe.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:80px;border:none;z-index:9999;";
+      document.body.appendChild(iframe);
       iframeRef.current = iframe;
     }
-  }, [started]);
 
-  useLayoutEffect(() => {
     const iframe = iframeRef.current;
-    const holder = holderRef.current;
     const screen = screenRef.current;
-    if (!iframe || !holder || !screen) return;
 
-    if (showInScreen) {
-      const r = screen.getBoundingClientRect();
-      iframe.style.cssText = `position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px;border:2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"};border-radius:10px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);z-index:10002;display:block;`;
-    } else {
-      iframe.style.cssText = "width:100%;height:100%;border:none;display:block;border-radius:8px;";
+    // Always keep iframe visible for background playback
+    if (started) {
+      if (showInScreen && screen) {
+        // Position iframe inside the screen when panel is open and not minimized
+        const r = screen.getBoundingClientRect();
+        iframe.style.cssText = `
+          position:fixed;
+          top:${r.top}px;
+          left:${r.left}px;
+          width:${r.width}px;
+          height:${r.height}px;
+          border:2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"};
+          border-radius:10px;
+          box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);
+          z-index:10002;
+          opacity:1;
+          pointer-events:auto;
+        `;
+      } else {
+        // Keep it at the bottom for background playback when minimized or panel closed
+        iframe.style.cssText = `
+          position:fixed;
+          bottom:0;
+          left:0;
+          width:100%;
+          height:80px;
+          border:none;
+          z-index:9999;
+          opacity:1;
+          pointer-events:none;
+        `;
+      }
     }
-  }, [showInScreen, open, minimized, color]);
+
+    return () => {
+      // Don't remove iframe on cleanup - we want it to persist
+    };
+  }, [showInScreen, open, minimized, color, started]);
+
+  // Handle page navigation - keep iframe persistent
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Keep iframe alive during navigation
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  // Clean up on component unmount (only when app closes)
+  useEffect(() => {
+    return () => {
+      // Only remove iframe if the component is actually unmounting
+      // and not just navigating
+      if (iframeRef.current) {
+        // Check if we're actually closing the app
+        const isClosing = !document.querySelector('[data-music-player]');
+        if (isClosing) {
+          iframeRef.current.remove();
+          iframeRef.current = null;
+        }
+      }
+    };
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -139,7 +204,7 @@ export function MusicPlayer() {
   };
 
   return (
-    <>
+    <div data-music-player>
       <style>{`
         @keyframes ipodSlideUp { from { opacity: 0; transform: translateY(30px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .ipod-color-btn { transition: all 0.2s; }
@@ -148,9 +213,6 @@ export function MusicPlayer() {
         .track-scroll::-webkit-scrollbar-track { background: transparent; }
         .track-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
       `}</style>
-
-      {/* Permanent holder — NEVER unmounts, iframe lives here when not in screen */}
-      <div ref={holderRef} style={{ position: "fixed", bottom: -9999, right: -9999, width: 320, height: 80, opacity: 0, pointerEvents: "none", zIndex: -1, overflow: "hidden" }} />
 
       {/* Bubble */}
       <button ref={btnRef} onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
@@ -185,7 +247,6 @@ export function MusicPlayer() {
           maxHeight: minimized ? 80 : 560,
           transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
         }}>
-
           {minimized && (
             <div style={{
               display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
@@ -214,7 +275,7 @@ export function MusicPlayer() {
                 boxShadow: "inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.4)",
                 border: `1px solid ${color === "white" ? "rgba(255,255,255,0.6)" : color === "black" ? "rgba(60,60,60,0.5)" : "rgba(200,180,255,0.6)"}`,
               }}>
-                {/* Screen — always rendered, iframe overlays via position:fixed when active */}
+                {/* Screen - acts as a placeholder for the iframe */}
                 <div ref={screenRef} style={screenStyle}>
                   {!started && (
                     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#555" }}>
@@ -274,6 +335,6 @@ export function MusicPlayer() {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
