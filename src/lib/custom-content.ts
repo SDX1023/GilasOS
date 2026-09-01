@@ -220,26 +220,64 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
     .select("*, flashcards(*)")
     .eq("user_id", user.id);
 
-  if (!reviewers) return [];
+  const { data: customDecks } = await supabase
+    .from("custom_decks")
+    .select("*, custom_deck_cards(*)")
+    .eq("user_id", user.id);
 
-  return reviewers.map((r: any) => ({
-    courseId: r.course_id,
-    moduleId: r.module_id,
-    reviewer: {
-      id: r.id,
-      courseId: r.course_id,
-      moduleId: r.module_id,
-      title: r.title,
-      cards: (r.flashcards || []).map((c: any) => ({
-        front: c.front,
-        back: c.back,
-        hint: c.hint || "",
-        card_type: c.card_type || "standard",
-        image_url: c.image_url || "",
-        labels: c.labels || [],
-      })),
-    },
-  }));
+  const seenIds = new Set<string>();
+  const result: { courseId: string; moduleId: string; reviewer: CustomReviewer }[] = [];
+
+  if (reviewers) {
+    for (const r of reviewers) {
+      seenIds.add(r.id);
+      result.push({
+        courseId: r.course_id,
+        moduleId: r.module_id,
+        reviewer: {
+          id: r.id,
+          courseId: r.course_id,
+          moduleId: r.module_id,
+          title: r.title,
+          cards: (r.flashcards || []).map((c: any) => ({
+            front: c.front,
+            back: c.back,
+            hint: c.hint || "",
+            card_type: c.card_type || "standard",
+            image_url: c.image_url || "",
+            labels: c.labels || [],
+          })),
+        },
+      });
+    }
+  }
+
+  if (customDecks) {
+    for (const d of customDecks) {
+      if (seenIds.has(d.id)) continue;
+      seenIds.add(d.id);
+      result.push({
+        courseId: d.title || "My Decks",
+        moduleId: "custom",
+        reviewer: {
+          id: d.id,
+          courseId: d.title || "My Decks",
+          moduleId: "custom",
+          title: d.title,
+          cards: (d.custom_deck_cards || []).map((c: any) => ({
+            front: c.front,
+            back: c.back,
+            hint: c.hint || "",
+            card_type: "standard",
+            image_url: "",
+            labels: [],
+          })),
+        },
+      });
+    }
+  }
+
+  return result;
 }
 
 export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: any) {
@@ -350,6 +388,41 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("decksUpdated"));
     localStorage.setItem("decks_updated", Date.now().toString());
+  }
+
+  // Also save to reviewers/flashcards tables so the Study page can load them
+  const { error: reviewerError } = await supabase
+    .from("reviewers")
+    .upsert({
+      id: deckId,
+      user_id: user.id,
+      course_id: courseId,
+      module_id: moduleId,
+      title: reviewer.title || "Untitled Deck",
+    }, { onConflict: "id" });
+
+  if (reviewerError) {
+    console.error("Reviewers table save error:", reviewerError);
+  }
+
+  await supabase.from("flashcards").delete().eq("reviewer_id", deckId);
+
+  if (reviewer.cards && reviewer.cards.length > 0) {
+    const timestamp = Date.now();
+    const flashcardRows = reviewer.cards.map((card: any, index: number) => ({
+      id: `${deckId.replace(/\//g, "-")}-card-${timestamp}-${index}`,
+      reviewer_id: deckId,
+      user_id: user.id,
+      front: String(card.front || ""),
+      back: String(card.back || ""),
+      hint: String(card.hint || ""),
+    }));
+    const { error: fcError } = await supabase.from("flashcards").insert(flashcardRows);
+    if (fcError) {
+      console.error("Flashcards table save error:", fcError);
+    } else {
+      console.log("Also saved to flashcards table:", flashcardRows.length, "cards");
+    }
   }
 
   return { success: true, deckId };
