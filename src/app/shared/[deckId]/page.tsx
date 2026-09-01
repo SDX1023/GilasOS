@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import { saveReviewerToSupabase } from "@/lib/custom-content";
 import { User, ArrowLeft, BookOpen, Save, Check, Trash2 } from "lucide-react";
 import Link from "next/link";
 
@@ -92,19 +93,18 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
   const handleSave = async () => {
     if (!user || !deck) return;
     setSaving(true);
-    const supabase = getSupabase();
     const slug = deck.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    const reviewerId = `pdf/${user.id}/${slug}`;
-    await supabase.from("reviewers").upsert({
-      id: reviewerId, user_id: user.id, course_id: "pdf", module_id: user.id, title: deck.title,
-    }, { onConflict: "id" });
-    if (cards.length > 0) {
-      const rows = cards.map((c, i) => ({
-        id: `${reviewerId}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id,
-        front: c.front, back: c.back, hint: c.hint || "", sort_order: i,
-      }));
-      await supabase.from("flashcards").insert(rows);
-    }
+    const courseId = deck.course_id || "My Decks";
+    const moduleId = deck.module_id || "shared";
+    const reviewerId = `${courseId}/${moduleId}/${slug}`;
+    const reviewer = {
+      id: reviewerId,
+      courseId,
+      moduleId,
+      title: deck.title,
+      cards: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+    };
+    await saveReviewerToSupabase(courseId, moduleId, reviewer);
     setSaving(false);
     setSaved(true);
   };
