@@ -59,15 +59,18 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
       const supabase = getSupabase();
       const { data: sharedDeck, error } = await supabase
         .from("shared_decks")
-        .select("*")
+        .select("id, user_id, title, card_count, course_id, module_id, reviewer_id, created_at, cards_json, shared_with_user_id")
         .eq("id", deckId)
         .maybeSingle();
-      
+
       if (error || !sharedDeck) {
+        console.error("Shared deck fetch error:", error);
         setNotFound(true);
         setLoading(false);
         return;
       }
+
+      console.log("Shared deck loaded:", sharedDeck.id, "cards_json type:", typeof sharedDeck.cards_json, "cards_json:", sharedDeck.cards_json);
       
       if (
         sharedDeck.shared_with_user_id &&
@@ -83,15 +86,22 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
       let loadedCards: DeckCard[] = [];
 
-      if (sharedDeck.cards_json && Array.isArray(sharedDeck.cards_json) && sharedDeck.cards_json.length > 0) {
-        loadedCards = sharedDeck.cards_json;
+      let rawJson = sharedDeck.cards_json;
+      if (typeof rawJson === "string") {
+        try { rawJson = JSON.parse(rawJson); } catch { rawJson = null; }
+      }
+      if (rawJson && Array.isArray(rawJson) && rawJson.length > 0) {
+        loadedCards = rawJson.map((c: any) => ({
+          front: String(c.front || ""),
+          back: String(c.back || ""),
+          hint: String(c.hint || ""),
+        }));
       } else if (sharedDeck.reviewer_id) {
         const { data: flashcards } = await supabase
           .from("flashcards")
           .select("front, back, hint")
-          .eq("reviewer_id", sharedDeck.reviewer_id)
-          .order("sort_order");
-        
+          .eq("reviewer_id", sharedDeck.reviewer_id);
+
         if (flashcards && flashcards.length > 0) {
           loadedCards = flashcards.map((c: any) => ({
             front: c.front,
