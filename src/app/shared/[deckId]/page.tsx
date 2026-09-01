@@ -174,10 +174,9 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
       window.dispatchEvent(new CustomEvent("decksUpdated"));
 
-      // Redirect to the flashcard study page
+      // Redirect to the flashcard study page using the actual reviewer_id that was saved
       setTimeout(() => {
-        const rid = deck.reviewer_id || deck.id;
-        router.push(`/flashcards/${rid}`);
+        router.push(`/flashcards/${result.deckId}`);
       }, 800);
     } catch (error) {
       console.error("Error saving deck:", error);
