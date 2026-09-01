@@ -276,6 +276,9 @@ export function MusicPlayer() {
         .ipod-color-btn:hover { transform: scale(1.15); }
         .track-row { transition: background 0.15s; cursor: pointer; }
         .track-row:hover { background: rgba(255,255,255,0.04) !important; }
+        .track-scroll::-webkit-scrollbar { width: 4px; }
+        .track-scroll::-webkit-scrollbar-track { background: transparent; }
+        .track-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
       `}</style>
 
       {/* Bubble */}
@@ -316,7 +319,7 @@ export function MusicPlayer() {
             boxShadow: "0 32px 100px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06)",
             zIndex: 10001, overflow: "hidden",
             animation: "ipodSlideUp 0.35s cubic-bezier(0.16,1,0.3,1)",
-            maxHeight: minimized ? 80 : 640,
+            maxHeight: minimized ? 80 : 700,
             transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
@@ -479,8 +482,8 @@ export function MusicPlayer() {
                   </div>
                 </div>
 
-                <div style={{ maxHeight: 180, overflowY: "auto", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 10px 4px" }}>
+                <div className="track-scroll" style={{ maxHeight: 260, overflowY: "auto", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 10px 4px", position: "sticky", top: 0, background: "rgba(12,17,28,0.98)", zIndex: 1 }}>
                     All Songs ({tracks.length})
                   </div>
                   {tracks.map((track, i) => {
@@ -495,16 +498,20 @@ export function MusicPlayer() {
                           background: isCurrent ? `rgba(${color === "black" ? "29,185,84" : "109,40,217"},0.08)` : "transparent",
                         }}
                       >
-                        <div style={{ width: 16, textAlign: "center", fontSize: 10, color: isCurrent ? c.accent : "var(--os-text-dim)", fontWeight: isCurrent ? 700 : 400 }}>
-                          {isCurrent && isPlaying ? "\u266A" : i + 1}
-                        </div>
+                        {track.image ? (
+                          <img src={track.image} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: 32, height: 32, borderRadius: 4, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Music size={12} color="#555" />
+                          </div>
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 11, color: isCurrent ? c.accent : "var(--os-text-primary)", fontWeight: isCurrent ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {track.name}
                           </div>
-                          <div style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{track.artist}</div>
+                          <div style={{ fontSize: 9, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
                         </div>
-                        <span style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{fmtTime(track.duration_ms)}</span>
+                        <span style={{ fontSize: 9, color: "var(--os-text-dim)", flexShrink: 0 }}>{fmtTime(track.duration_ms)}</span>
                       </div>
                     );
                   })}
