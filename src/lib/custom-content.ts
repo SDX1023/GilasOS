@@ -256,17 +256,31 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
 
   if (reviewer.cards.length > 0) {
     const ts = Date.now();
-    const rows = reviewer.cards.map((card, i) => ({
+    const rows = reviewer.cards.map((card: any, i: number) => ({
       id: `${reviewer.id.replace(/\//g, "-")}-card-${ts}-${i}`,
       reviewer_id: reviewer.id,
       user_id: user.id,
       front: card.front,
       back: card.back,
       hint: card.hint || "",
+      card_type: card.card_type || "standard",
+      image_url: card.image_url || "",
+      labels: card.labels || [],
     }));
     const { error: cardError } = await supabase.from("flashcards").insert(rows);
     if (cardError) {
       console.error("Failed to save flashcards to Supabase:", JSON.stringify(cardError));
+      // Retry without new columns in case they don't exist yet
+      const fallbackRows = reviewer.cards.map((card: any, i: number) => ({
+        id: `${reviewer.id.replace(/\//g, "-")}-card-${ts}-${i}`,
+        reviewer_id: reviewer.id,
+        user_id: user.id,
+        front: card.front,
+        back: card.back,
+        hint: card.hint || "",
+      }));
+      const { error: retryError } = await supabase.from("flashcards").insert(fallbackRows);
+      if (retryError) console.error("Retry also failed:", JSON.stringify(retryError));
     }
   }
 }
