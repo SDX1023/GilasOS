@@ -1,10 +1,12 @@
+// app/decks/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { Layers, Plus, Trash2, Pencil, Check, X, Play, Search } from "lucide-react";
+import { Layers, Plus, Trash2, Pencil, Check, Play, Search } from "lucide-react";
 
 interface CustomDeck {
   id: string;
@@ -26,36 +28,104 @@ export default function DecksPage() {
   const [editDesc, setEditDesc] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const fetchDecks = async () => {
+    if (!user) return;
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("custom_decks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching decks:", error);
+        setDecks([]);
+      } else {
+        console.log("Fetched decks:", data);
+        setDecks(data || []);
+      }
+    } catch (error) {
+      console.error("Error in fetchDecks:", error);
+      setDecks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user) { 
+      setLoading(false); 
+      return; 
+    }
     fetchDecks();
   }, [user]);
 
-  const fetchDecks = async () => {
-    if (!user) return;
-    const supabase = getSupabase();
-    const { data } = await supabase.from("custom_decks").select("*").eq("user_id", user.id).order("updated_at", { ascending: false });
-    setDecks(data || []);
-    setLoading(false);
-  };
+  // Listen for deck updates from shared deck import
+  useEffect(() => {
+    const handleDeckUpdate = () => {
+      console.log("Deck update event received, refreshing...");
+      fetchDecks();
+    };
+    
+    window.addEventListener("decksUpdated", handleDeckUpdate);
+    
+    // Also listen for storage events (for cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "decks_updated") {
+        console.log("Storage event detected, refreshing...");
+        fetchDecks();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("decksUpdated", handleDeckUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [user]);
 
   const handleCreate = async () => {
     if (!newTitle.trim() || !user) return;
     const supabase = getSupabase();
-    const { data } = await supabase.from("custom_decks").insert({
+    const { data, error } = await supabase.from("custom_decks").insert({
       user_id: user.id,
       title: newTitle.trim(),
       description: newDesc.trim(),
       card_count: 0,
     }).select().single();
-    if (data) setDecks([data, ...decks]);
-    setNewTitle(""); setNewDesc(""); setCreating(false);
+    
+    if (error) {
+      console.error("Error creating deck:", error);
+      return;
+    }
+    
+    if (data) {
+      setDecks([data, ...decks]);
+      console.log("Deck created:", data);
+    }
+    setNewTitle("");
+    setNewDesc("");
+    setCreating(false);
   };
 
   const handleUpdate = async (id: string) => {
     if (!editTitle.trim()) return;
     const supabase = getSupabase();
-    await supabase.from("custom_decks").update({ title: editTitle.trim(), description: editDesc.trim(), updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase
+      .from("custom_decks")
+      .update({ 
+        title: editTitle.trim(), 
+        description: editDesc.trim(), 
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", id);
+    
+    if (error) {
+      console.error("Error updating deck:", error);
+      return;
+    }
+    
     setDecks(decks.map(d => d.id === id ? { ...d, title: editTitle.trim(), description: editDesc.trim() } : d));
     setEditingId(null);
   };
@@ -101,11 +171,26 @@ export default function DecksPage() {
         {/* Create form */}
         {creating && (
           <div className="glass-panel" style={{ marginBottom: 20 }}>
-            <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Deck name..." autoFocus style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, marginBottom: 10, outline: "none" }} />
-            <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description (optional)..." style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, marginBottom: 12, outline: "none" }} />
+            <input 
+              value={newTitle} 
+              onChange={(e) => setNewTitle(e.target.value)} 
+              placeholder="Deck name..." 
+              autoFocus 
+              style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, marginBottom: 10, outline: "none" }} 
+            />
+            <input 
+              value={newDesc} 
+              onChange={(e) => setNewDesc(e.target.value)} 
+              placeholder="Description (optional)..." 
+              style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, marginBottom: 12, outline: "none" }} 
+            />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={handleCreate} className="glass-btn glass-btn-primary" style={{ padding: "8px 16px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><Check size={14} /> Create</button>
-              <button onClick={() => { setCreating(false); setNewTitle(""); setNewDesc(""); }} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>Cancel</button>
+              <button onClick={handleCreate} className="glass-btn glass-btn-primary" style={{ padding: "8px 16px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} /> Create
+              </button>
+              <button onClick={() => { setCreating(false); setNewTitle(""); setNewDesc(""); }} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>
+                Cancel
+              </button>
             </div>
           </div>
         )}
@@ -114,7 +199,12 @@ export default function DecksPage() {
         {decks.length > 0 && (
           <div style={{ position: "relative", marginBottom: 16 }}>
             <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search decks..." style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
+            <input 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              placeholder="Search decks..." 
+              style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} 
+            />
           </div>
         )}
 
@@ -136,11 +226,24 @@ export default function DecksPage() {
             <div key={deck.id} className="glass-card" style={{ padding: "16px 20px" }}>
               {editingId === deck.id ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, outline: "none" }} />
-                  <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description..." style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
+                  <input 
+                    value={editTitle} 
+                    onChange={(e) => setEditTitle(e.target.value)} 
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, outline: "none" }} 
+                  />
+                  <input 
+                    value={editDesc} 
+                    onChange={(e) => setEditDesc(e.target.value)} 
+                    placeholder="Description..." 
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} 
+                  />
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => handleUpdate(deck.id)} className="glass-btn glass-btn-primary" style={{ padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><Check size={12} /> Save</button>
-                    <button onClick={() => setEditingId(null)} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Cancel</button>
+                    <button onClick={() => handleUpdate(deck.id)} className="glass-btn glass-btn-primary" style={{ padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Check size={12} /> Save
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>
+                      Cancel
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -158,8 +261,18 @@ export default function DecksPage() {
                     <Link href={`/decks/${deck.id}`} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
                       <Play size={13} /> Study
                     </Link>
-                    <button onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description); }} style={{ padding: 6, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={14} /></button>
-                    <button onClick={() => handleDelete(deck.id)} style={{ padding: 6, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
+                    <button 
+                      onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description); }} 
+                      style={{ padding: 6, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer" }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(deck.id)} 
+                      style={{ padding: 6, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               )}

@@ -1,3 +1,5 @@
+// lib/custom-content.ts
+
 "use client";
 
 import { getSupabase } from "./supabase";
@@ -169,7 +171,12 @@ export function addReviewer(courseId: string, moduleId: string, reviewer: Omit<C
     mod = { id: moduleId, courseId, title: moduleId, description: "", notes: [], reviewers: [] };
     course.modules.push(mod);
   }
-  const newReviewer: CustomReviewer = { ...reviewer, courseId, moduleId, id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` };
+  const newReviewer: CustomReviewer = { 
+    ...reviewer, 
+    courseId, 
+    moduleId, 
+    id: `${courseId}/${moduleId}/${reviewer.title.toLowerCase().replace(/\s+/g, "-")}` 
+  };
   mod.reviewers.push(newReviewer);
   saveCustomContent(store);
 }
@@ -238,9 +245,58 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
 export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: CustomReviewer) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) throw new Error("Not authenticated");
 
-  // Upsert reviewer row
+  // Generate a unique ID for the deck
+  const deckId = `${courseId}/${moduleId}/${reviewer.id}`;
+
+  // Save to custom_decks table
+  const { error: deckError } = await supabase
+    .from("custom_decks")
+    .upsert({
+      id: deckId,
+      user_id: user.id,
+      title: reviewer.title || "Untitled Deck",
+      description: "Imported from shared deck",
+      card_count: reviewer.cards ? reviewer.cards.length : 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (deckError) {
+    console.error("Deck save error:", deckError);
+    throw deckError;
+  }
+
+  // Save the cards
+  if (reviewer.cards && reviewer.cards.length > 0) {
+    const cards = reviewer.cards.map((card: any, index: number) => ({
+      deck_id: deckId,
+      front: card.front,
+      back: card.back,
+      hint: card.hint || "",
+      sort_order: index,
+      created_at: new Date().toISOString(),
+    }));
+
+    // Delete existing cards first
+    await supabase
+      .from("custom_deck_cards")
+      .delete()
+      .eq("deck_id", deckId);
+
+    // Insert new cards
+    const { error: cardsError } = await supabase
+      .from("custom_deck_cards")
+      .insert(cards);
+
+    if (cardsError) {
+      console.error("Cards save error:", cardsError);
+      throw cardsError;
+    }
+  }
+
+  // Also save to reviewers table for backward compatibility
   const { error: revError } = await supabase.from("reviewers").upsert({
     id: reviewer.id,
     user_id: user.id,
@@ -248,44 +304,18 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     module_id: moduleId,
     title: reviewer.title,
   }, { onConflict: "id" });
+  
   if (revError) {
-    console.error("Failed to save reviewer to Supabase:", JSON.stringify(revError));
-    return;
+    console.error("Failed to save reviewer to Supabase:", revError);
   }
 
-  // Delete old flashcards and re-insert
-  const { error: delError } = await supabase.from("flashcards").delete().eq("reviewer_id", reviewer.id);
-  if (delError) console.error("Failed to delete old flashcards:", JSON.stringify(delError));
-
-  if (reviewer.cards.length > 0) {
-    const ts = Date.now();
-    const rows = reviewer.cards.map((card: any, i: number) => ({
-      id: `${reviewer.id.replace(/\//g, "-")}-card-${ts}-${i}`,
-      reviewer_id: reviewer.id,
-      user_id: user.id,
-      front: card.front,
-      back: card.back,
-      hint: card.hint || "",
-      card_type: card.card_type || "standard",
-      image_url: card.image_url || "",
-      labels: card.labels || [],
-    }));
-    const { error: cardError } = await supabase.from("flashcards").insert(rows);
-    if (cardError) {
-      console.error("Failed to save flashcards to Supabase:", JSON.stringify(cardError));
-      // Retry without new columns in case they don't exist yet
-      const fallbackRows = reviewer.cards.map((card: any, i: number) => ({
-        id: `${reviewer.id.replace(/\//g, "-")}-card-${ts}-${i}`,
-        reviewer_id: reviewer.id,
-        user_id: user.id,
-        front: card.front,
-        back: card.back,
-        hint: card.hint || "",
-      }));
-      const { error: retryError } = await supabase.from("flashcards").insert(fallbackRows);
-      if (retryError) console.error("Retry also failed:", JSON.stringify(retryError));
-    }
+  // Trigger event to refresh decks
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("decksUpdated"));
+    localStorage.setItem("decks_updated", Date.now().toString());
   }
+
+  return { success: true, deckId };
 }
 
 export async function deleteReviewerFromSupabase(reviewerId: string) {
@@ -306,4 +336,20 @@ export async function migrateLocalStorageToSupabase() {
       }
     }
   }
+}
+
+// Helper function to fetch deck cards
+export async function fetchDeckCards(deckId: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("custom_deck_cards")
+    .select("*")
+    .eq("deck_id", deckId)
+    .order("sort_order", { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching deck cards:", error);
+    return [];
+  }
+  return data || [];
 }
