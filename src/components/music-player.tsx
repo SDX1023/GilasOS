@@ -131,7 +131,28 @@ export function MusicPlayer() {
         )}
       </button>
 
-      {/* iPod Player Panel */}
+      {/* Always-mounted Spotify embed — never unmounts */}
+      {hasStarted && (
+        <iframe
+          src={embedUrl}
+          width="320"
+          height="80"
+          frameBorder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          title="Spotify Player"
+          style={{
+            position: "fixed",
+            bottom: open ? -9999 : 90,
+            right: open ? -9999 : 76,
+            opacity: open ? 0 : 1,
+            pointerEvents: open ? "none" : "auto",
+            zIndex: open ? -1 : 10000,
+            borderRadius: 12,
+          }}
+        />
+      )}
+
+      {/* Player panel */}
       {open && (
         <div
           ref={panelRef}
@@ -139,7 +160,7 @@ export function MusicPlayer() {
             position: "fixed",
             bottom: minimized ? 150 : 148,
             right: 20,
-            width: 340,
+            width: 360,
             background: "rgba(12, 17, 28, 0.98)",
             backdropFilter: "blur(40px)",
             WebkitBackdropFilter: "blur(40px)",
@@ -149,7 +170,7 @@ export function MusicPlayer() {
             zIndex: 10001,
             overflow: "hidden",
             animation: "ipodSlideUp 0.35s cubic-bezier(0.16,1,0.3,1)",
-            maxHeight: minimized ? 64 : 620,
+            maxHeight: minimized ? 80 : 640,
             transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
@@ -163,60 +184,76 @@ export function MusicPlayer() {
             .ipod-color-btn.active { box-shadow: 0 0 0 2px ${c.accent}; }
           `}</style>
 
-          {/* Header bar */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "10px 14px",
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* ============ MINI iPod BAR ============ */}
+          {minimized && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+              background: c.body, borderRadius: 20,
+              margin: 6,
+              boxShadow: `inset 0 1px 3px rgba(255,255,255,0.3), inset 0 -1px 3px rgba(0,0,0,0.1)`,
+              border: `1px solid ${color === "white" ? "rgba(255,255,255,0.5)" : color === "black" ? "rgba(60,60,60,0.4)" : "rgba(200,180,255,0.5)"}`,
+            }}>
+              {/* Mini screen */}
               <div style={{
-                width: 28, height: 28, borderRadius: 7,
-                background: `linear-gradient(135deg, ${c.accent}, ${c.accent}cc)`,
+                width: 40, height: 40, borderRadius: 8, flexShrink: 0,
+                background: c.screen,
+                border: `1.5px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "inset 0 1px 4px rgba(0,0,0,0.4)",
+              }}>
+                <Music size={14} color={c.accent} />
+              </div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: color === "white" ? "#333" : color === "black" ? "#ddd" : c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  GILAS Playlist
+                </div>
+                <div style={{ fontSize: 9, color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8" }}>
+                  {TRACKS.length} songs
+                </div>
+              </div>
+              {/* Mini click wheel */}
+              <div style={{
+                width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                background: `radial-gradient(circle at 40% 35%, ${c.wheel}, ${c.wheelRing})`,
+                boxShadow: `inset 0 1px 3px rgba(255,255,255,0.3), inset 0 -1px 3px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.15)`,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Music size={13} color="#fff" />
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%",
+                  background: `radial-gradient(circle at 40% 35%, ${color === "white" ? "#f5f5f5" : color === "black" ? "#333" : "#b8a9f0"}, ${color === "white" ? "#ddd" : color === "black" ? "#222" : "#a78bfa"})`,
+                  boxShadow: `inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.1)`,
+                }} />
               </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--os-text-primary)" }}>GILAS Playlist</div>
-                <div style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{TRACKS.length} songs</div>
+              {/* Controls */}
+              <div style={{ display: "flex", gap: 2 }}>
+                <button onClick={() => setMinimized(false)} style={{
+                  padding: 6, background: "none", border: "none", cursor: "pointer",
+                  color: color === "white" ? "#666" : color === "black" ? "#888" : "#6b21a8",
+                  display: "flex", alignItems: "center",
+                }}>
+                  <ChevronUp size={14} />
+                </button>
+                <button onClick={() => setOpen(false)} style={{
+                  padding: 6, background: "none", border: "none", cursor: "pointer",
+                  color: color === "white" ? "#666" : color === "black" ? "#888" : "#6b21a8",
+                  display: "flex", alignItems: "center",
+                }}>
+                  <X size={14} />
+                </button>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {/* Color picker */}
-              {(["white", "black", "purple"] as const).map((col) => (
-                <button key={col} onClick={() => setColor(col)} className={`ipod-color-btn${color === col ? " active" : ""}`}
-                  style={{
-                    width: 16, height: 16, borderRadius: "50%", border: "none", cursor: "pointer",
-                    background: col === "white" ? "#e8e8e8" : col === "black" ? "#1a1a1a" : "#c4b5fd",
-                    boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
-                  }} />
-              ))}
-              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.08)", margin: "0 2px" }} />
-              <button onClick={() => setMinimized(!minimized)} style={{
-                padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6,
-                color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center",
-              }}>
-                {minimized ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-              </button>
-              <button onClick={() => setOpen(false)} style={{
-                padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6,
-                color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center",
-              }}>
-                <X size={12} />
-              </button>
-            </div>
-          </div>
+          )}
 
-          {/* iPod Body */}
+          {/* ============ FULL iPod ============ */}
           {!minimized && (
-            <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
               {/* iPod外壳 */}
               <div style={{
-                width: 260,
+                width: 280,
                 background: c.body,
                 borderRadius: 28,
-                padding: "16px 16px 20px",
+                padding: "14px 14px 18px",
                 boxShadow: `
                   inset 0 2px 4px rgba(255,255,255,0.4),
                   inset 0 -2px 4px rgba(0,0,0,0.1),
@@ -228,24 +265,22 @@ export function MusicPlayer() {
                 {/* Screen */}
                 <div style={{
                   width: "100%",
-                  height: 160,
+                  height: 200,
                   background: c.screen,
                   borderRadius: 10,
                   overflow: "hidden",
                   border: `2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"}`,
                   boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)",
-                  position: "relative",
                 }}>
-                  {/* Spotify embed inside screen */}
                   {hasStarted ? (
                     <iframe
                       src={embedUrl}
                       width="100%"
-                      height="160"
+                      height="200"
                       frameBorder="0"
                       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                       loading="lazy"
-                      style={{ border: "none", borderRadius: 8 }}
+                      style={{ border: "none" }}
                       title="Spotify Player"
                     />
                   ) : (
@@ -263,11 +298,7 @@ export function MusicPlayer() {
                 </div>
 
                 {/* Click Wheel area */}
-                <div style={{
-                  display: "flex", flexDirection: "column", alignItems: "center",
-                  marginTop: 14, position: "relative",
-                }}>
-                  {/* MUSIC label */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14 }}>
                   <div style={{
                     fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase",
                     color: color === "white" ? "#999" : color === "black" ? "#555" : "#7c3aed",
@@ -275,8 +306,6 @@ export function MusicPlayer() {
                   }}>
                     MUSIC
                   </div>
-
-                  {/* Click wheel */}
                   <div style={{
                     width: 120, height: 120, borderRadius: "50%",
                     background: `radial-gradient(circle at 40% 35%, ${c.wheel}, ${c.wheelRing})`,
@@ -288,80 +317,69 @@ export function MusicPlayer() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     position: "relative",
                   }}>
-                    {/* Center button */}
                     <div style={{
                       width: 48, height: 48, borderRadius: "50%",
                       background: `radial-gradient(circle at 40% 35%, ${color === "white" ? "#f5f5f5" : color === "black" ? "#333" : "#b8a9f0"}, ${color === "white" ? "#ddd" : color === "black" ? "#222" : "#a78bfa"})`,
-                      boxShadow: `
-                        inset 0 1px 3px rgba(255,255,255,0.4),
-                        inset 0 -1px 3px rgba(0,0,0,0.1),
-                        0 2px 6px rgba(0,0,0,0.15)
-                      `,
+                      boxShadow: `inset 0 1px 3px rgba(255,255,255,0.4), inset 0 -1px 3px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.15)`,
                     }} />
-
-                    {/* Wheel buttons: prev, play/pause, next */}
-                    <button onClick={() => {}} style={{
-                      position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
-                      background: "none", border: "none", cursor: "pointer", padding: 8,
-                      color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8",
-                      fontSize: 14, lineHeight: 1,
-                    }} title="Previous">
-                      {"◀◀"}
-                    </button>
-                    <button onClick={() => {}} style={{
-                      position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
-                      background: "none", border: "none", cursor: "pointer", padding: 8,
-                      color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8",
-                      fontSize: 14, lineHeight: 1,
-                    }} title="Next">
-                      {"▶▶"}
-                    </button>
-                    <button onClick={() => {}} style={{
-                      position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)",
-                      background: "none", border: "none", cursor: "pointer", padding: 4,
-                      color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8",
-                      fontSize: 11, lineHeight: 1,
-                    }} title="Play / Pause">
-                      {"▶‖"}
-                    </button>
+                    <button style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 8, color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8", fontSize: 14, lineHeight: 1 }}>{"◀◀"}</button>
+                    <button style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 8, color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8", fontSize: 14, lineHeight: 1 }}>{"▶▶"}</button>
+                    <button style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", background: "none", border: "none", cursor: "pointer", padding: 4, color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8", fontSize: 11, lineHeight: 1 }}>{"▶‖"}</button>
                   </div>
                 </div>
               </div>
 
-              {/* Track list below iPod */}
-              <div style={{ width: 260, marginTop: 16, maxHeight: 200, overflowY: "auto" }}>
-                <div style={{
-                  fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)",
-                  textTransform: "uppercase", letterSpacing: "0.08em",
-                  padding: "0 4px 6px",
-                }}>
-                  All Songs
-                </div>
-                {TRACKS.map((track, i) => (
-                  <div key={`${track.title}-${i}`} style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "5px 6px",
-                    borderRadius: 6, cursor: "default", transition: "background 0.15s",
-                  }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <div style={{
-                      width: 16, textAlign: "center", fontSize: 10,
-                      color: "var(--os-text-dim)", fontVariantNumeric: "tabular-nums",
-                    }}>
-                      {i + 1}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 11, color: "var(--os-text-primary)",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {track.title}
-                      </div>
-                      <div style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{track.artist}</div>
-                    </div>
+              {/* Header + controls below iPod */}
+              <div style={{ width: 280, marginTop: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--os-text-primary)" }}>GILAS Playlist</div>
+                    <div style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{TRACKS.length} songs</div>
                   </div>
-                ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {(["white", "black", "purple"] as const).map((col) => (
+                      <button key={col} onClick={() => setColor(col)} className={`ipod-color-btn${color === col ? " active" : ""}`}
+                        style={{
+                          width: 14, height: 14, borderRadius: "50%", border: "none", cursor: "pointer",
+                          background: col === "white" ? "#e8e8e8" : col === "black" ? "#1a1a1a" : "#c4b5fd",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                        }} />
+                    ))}
+                    <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)", margin: "0 2px" }} />
+                    <button onClick={() => setMinimized(true)} style={{ padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                      <ChevronDown size={12} />
+                    </button>
+                    <button onClick={() => setOpen(false)} style={{ padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Track list */}
+                <div style={{ maxHeight: 220, overflowY: "auto", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 10px 4px" }}>
+                    All Songs
+                  </div>
+                  {TRACKS.map((track, i) => (
+                    <div key={`${track.title}-${i}`} style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "5px 10px",
+                      borderRadius: 6, cursor: "default", transition: "background 0.15s",
+                    }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <div style={{ width: 16, textAlign: "center", fontSize: 10, color: "var(--os-text-dim)", fontVariantNumeric: "tabular-nums" }}>
+                        {i + 1}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {track.title}
+                        </div>
+                        <div style={{ fontSize: 9, color: "var(--os-text-dim)" }}>{track.artist}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
