@@ -147,7 +147,7 @@ export function MusicPlayer() {
     const verifier = generateRandomString(64);
     const challenge = base64urlencode(await sha256(verifier));
     sessionStorage.setItem("spotify_pkce_verifier", verifier);
-    const redirectUri = `${window.location.origin}/spotify-callback`;
+    const redirectUri = "https://gilasos.onrender.com/";
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "code",
@@ -166,6 +166,29 @@ export function MusicPlayer() {
       }
     }
     window.addEventListener("message", onMessage);
+
+    // Handle OAuth redirect callback on main page
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      const verifier = sessionStorage.getItem("spotify_pkce_verifier");
+      if (verifier) {
+        fetch("/api/spotify/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, verifier, redirect_uri: "https://gilasos.onrender.com/" }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.access_token) {
+              initPlayer(data.access_token);
+              window.history.replaceState({}, "", window.location.pathname);
+            }
+          })
+          .catch(console.error);
+      }
+    }
+
     return () => window.removeEventListener("message", onMessage);
   }, [initPlayer]);
 
