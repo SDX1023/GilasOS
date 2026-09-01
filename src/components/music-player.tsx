@@ -79,7 +79,7 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  // Create persistent iframe for background playback
+  // Create persistent iframe
   useEffect(() => {
     if (!started) {
       if (iframeRef.current) {
@@ -95,23 +95,18 @@ export function MusicPlayer() {
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
       iframe.loading = "lazy";
       iframe.title = "Spotify Player";
+      // Position at bottom of screen - below taskbar
       iframe.style.cssText = `
         position:fixed;
-        bottom:20px;
-        left:50%;
-        transform:translateX(-50%);
-        width:90%;
-        max-width:420px;
-        height:72px;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
         border:none;
-        border-radius:14px;
         z-index:9999;
-        opacity:0.85;
+        opacity:0.9;
         pointer-events:auto;
-        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(10px);
-        transition: opacity 0.3s ease;
+        background: transparent;
       `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
@@ -143,57 +138,25 @@ export function MusicPlayer() {
           pointer-events:auto;
           box-shadow: 0 4px 20px rgba(0,0,0,0.4);
           border: 1px solid rgba(255,255,255,0.06);
-          transition: none;
+          background: transparent;
         `;
       }
     } else {
-      // When closed, show at bottom with glass effect
+      // When closed, stay at bottom below taskbar
       iframe.style.cssText = `
         position:fixed;
-        bottom:20px;
-        left:50%;
-        transform:translateX(-50%);
-        width:90%;
-        max-width:420px;
-        height:72px;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
         border:none;
-        border-radius:14px;
         z-index:9999;
-        opacity:0.85;
+        opacity:0.9;
         pointer-events:auto;
-        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(10px);
-        transition: opacity 0.3s ease;
+        background: transparent;
       `;
     }
   }, [open, started]);
-
-  // Hover effect for iframe
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const handleMouseEnter = () => {
-      if (!open) {
-        iframe.style.opacity = "1";
-      }
-    };
-
-    const handleMouseLeave = () => {
-      if (!open) {
-        iframe.style.opacity = "0.85";
-      }
-    };
-
-    iframe.addEventListener('mouseenter', handleMouseEnter);
-    iframe.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      iframe.removeEventListener('mouseenter', handleMouseEnter);
-      iframe.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [open]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -230,13 +193,13 @@ export function MusicPlayer() {
         }
       `}</style>
 
-      {/* Floating button */}
+      {/* Floating button - moved up significantly */}
       <button 
         ref={btnRef} 
         onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
         style={{
           position: "fixed", 
-          bottom: 100, 
+          bottom: 110, 
           right: 24, 
           width: 44, 
           height: 44, 
