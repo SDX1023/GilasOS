@@ -6,7 +6,6 @@ import { Music, X, Play, Pause, ChevronDown, SkipForward, SkipBack } from "lucid
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
 
-// This is a static list for display - actual playback uses Spotify SDK
 const TRACKS = [
   { title: "The Winner Takes It All", artist: "ABBA" },
   { title: "Please, Please, Please, Let Me Get What I Want", artist: "The Smiths" },
@@ -73,7 +72,6 @@ export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(180); // Default 3 minutes
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
@@ -86,7 +84,7 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  // Create iframe for Spotify embed
+  // Create and manage iframe
   useEffect(() => {
     if (!started) {
       if (iframeRef.current) {
@@ -110,17 +108,17 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:0.5;
-        pointer-events:none;
+        opacity:1;
+        pointer-events:auto;
       `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
       
-      // Simulate playback starting
-      setTimeout(() => {
+      // Auto-play when iframe loads
+      iframe.onload = () => {
         setIsPlaying(true);
         startProgressSimulation();
-      }, 1000);
+      };
     }
 
     return () => {
@@ -130,7 +128,7 @@ export function MusicPlayer() {
     };
   }, [started]);
 
-  // Handle iframe positioning
+  // Position iframe
   useEffect(() => {
     const iframe = iframeRef.current;
     const screen = screenRef.current;
@@ -152,6 +150,7 @@ export function MusicPlayer() {
         pointer-events:auto;
       `;
     } else {
+      // Keep iframe visible at bottom for background playback
       iframe.style.cssText = `
         position:fixed;
         bottom:0;
@@ -160,7 +159,7 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:0.5;
+        opacity:1;
         pointer-events:none;
       `;
     }
@@ -180,12 +179,10 @@ export function MusicPlayer() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  // Reset minimized when closed
   useEffect(() => {
     if (!open) setMinimized(false);
   }, [open]);
 
-  // Progress simulation
   const startProgressSimulation = () => {
     if (progressInterval.current) {
       clearInterval(progressInterval.current);
@@ -194,9 +191,13 @@ export function MusicPlayer() {
     setProgress(0);
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= duration) {
+        if (prev >= 180) { // 3 minutes
           // Auto-advance to next track
-          nextTrack();
+          const next = (currentTrackIndex + 1) % TRACKS.length;
+          setCurrentTrackIndex(next);
+          if (iframeRef.current) {
+            iframeRef.current.src = EMBED_URL;
+          }
           return 0;
         }
         return prev + 1;
@@ -210,19 +211,51 @@ export function MusicPlayer() {
     if (!started) {
       setStarted(true);
       setIsPlaying(true);
-      setTimeout(startProgressSimulation, 500);
+      // Create iframe with autoplay
+      if (!iframeRef.current) {
+        const iframe = document.createElement("iframe");
+        iframe.src = EMBED_URL;
+        iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+        iframe.loading = "lazy";
+        iframe.title = "Spotify Player";
+        iframe.style.cssText = `
+          position:fixed;
+          bottom:0;
+          left:0;
+          width:100%;
+          height:80px;
+          border:none;
+          z-index:9999;
+          opacity:1;
+          pointer-events:auto;
+        `;
+        document.body.appendChild(iframe);
+        iframeRef.current = iframe;
+        iframe.onload = () => {
+          startProgressSimulation();
+        };
+      }
       return;
     }
 
     setIsPlaying(!isPlaying);
     if (isPlaying) {
-      // Pause
+      // Pause - hide iframe
+      if (iframeRef.current) {
+        iframeRef.current.style.opacity = "0.3";
+      }
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
     } else {
-      // Resume
-      startProgressSimulation();
+      // Resume - show iframe and reload
+      if (iframeRef.current) {
+        iframeRef.current.style.opacity = "1";
+        iframeRef.current.src = EMBED_URL;
+        setTimeout(() => {
+          startProgressSimulation();
+        }, 500);
+      }
     }
   };
 
@@ -230,12 +263,9 @@ export function MusicPlayer() {
     const next = (currentTrackIndex + 1) % TRACKS.length;
     setCurrentTrackIndex(next);
     setProgress(0);
-    if (isPlaying) {
-      startProgressSimulation();
-    }
-    // Reload iframe
-    if (iframeRef.current) {
+    if (isPlaying && iframeRef.current) {
       iframeRef.current.src = EMBED_URL;
+      setTimeout(startProgressSimulation, 500);
     }
   };
 
@@ -243,11 +273,9 @@ export function MusicPlayer() {
     const prev = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
     setCurrentTrackIndex(prev);
     setProgress(0);
-    if (isPlaying) {
-      startProgressSimulation();
-    }
-    if (iframeRef.current) {
+    if (isPlaying && iframeRef.current) {
       iframeRef.current.src = EMBED_URL;
+      setTimeout(startProgressSimulation, 500);
     }
   };
 
@@ -267,10 +295,6 @@ export function MusicPlayer() {
         @keyframes bar1 { 0%,100% { height: 6px; } 50% { height: 14px; } }
         @keyframes bar2 { 0%,100% { height: 10px; } 50% { height: 4px; } }
         @keyframes bar3 { 0%,100% { height: 8px; } 50% { height: 12px; } }
-        @keyframes progressFill {
-          from { width: 0%; }
-          to { width: 100%; }
-        }
       `}</style>
 
       {/* Floating button */}
@@ -406,7 +430,6 @@ export function MusicPlayer() {
           ) : (
             // Expanded view
             <>
-              {/* Header */}
               <div style={{ 
                 display: "flex", 
                 alignItems: "center", 
@@ -449,7 +472,6 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Track info */}
               <div style={{ 
                 padding: "10px 12px",
                 background: "rgba(255,255,255,0.03)",
@@ -464,7 +486,7 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Progress bar */}
+              {/* Progress */}
               <div style={{ marginBottom: 10 }}>
                 <div style={{
                   width: "100%",
@@ -472,12 +494,11 @@ export function MusicPlayer() {
                   background: "rgba(255,255,255,0.06)",
                   borderRadius: 2,
                   overflow: "hidden",
-                  position: "relative",
                 }}>
                   <div style={{
-                    width: `${(progress / duration) * 100}%`,
+                    width: `${(progress / 180) * 100}%`,
                     height: "100%",
-                    background: "linear-gradient(90deg, #1db954, #1ed760)",
+                    background: "#1db954",
                     borderRadius: 2,
                     transition: "width 0.3s ease",
                   }} />
@@ -490,7 +511,7 @@ export function MusicPlayer() {
                   marginTop: 4,
                 }}>
                   <span>{formatTime(progress)}</span>
-                  <span>{formatTime(duration)}</span>
+                  <span>3:00</span>
                 </div>
               </div>
 
@@ -640,9 +661,9 @@ export function MusicPlayer() {
                       onClick={() => {
                         setCurrentTrackIndex(i);
                         setProgress(0);
-                        if (isPlaying) startProgressSimulation();
-                        if (iframeRef.current) {
+                        if (isPlaying && iframeRef.current) {
                           iframeRef.current.src = EMBED_URL;
+                          setTimeout(startProgressSimulation, 500);
                         }
                       }}
                       onMouseEnter={(e) => {
