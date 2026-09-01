@@ -1,3 +1,4 @@
+ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS card_type TEXT DEFAULT 'standard';
 ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS labels JSONB DEFAULT '[]'::jsonb;
 

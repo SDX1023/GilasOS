@@ -483,7 +483,6 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   async function syncToCloud(updatedCards: any[]) {
     if (user && reviewer) {
       await saveUserFlashcard(user.id, courseSlug, moduleSlug, reviewerSlug, reviewer.title, updatedCards);
-      // Also save to Supabase reviewers/flashcards tables
       const supabase = getSupabase();
       const reviewerId = reviewer.id;
       await supabase.from("reviewers").upsert({
@@ -495,8 +494,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       }, { onConflict: "id" });
       await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId);
       if (updatedCards.length > 0) {
+        const timestamp = Date.now();
         const rows = updatedCards.map((card, i) => ({
-          id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`,
+          id: `${reviewerId.replace(/\//g, "-")}-card-${timestamp}-${i}`,
           reviewer_id: reviewerId,
           user_id: user.id,
           front: card.front,
@@ -506,7 +506,11 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           image_url: card.image_url || "",
           labels: card.labels || [],
         }));
-        await supabase.from("flashcards").insert(rows);
+        const { error } = await supabase.from("flashcards").insert(rows);
+        if (error) {
+          const fallbackRows = rows.map(({ card_type: _ct, image_url: _iu, labels: _l, ...rest }) => rest);
+          await supabase.from("flashcards").insert(fallbackRows);
+        }
       }
     }
   }
