@@ -83,28 +83,101 @@ function SpidermanOverlay() {
 
 function GalaxyOverlay() {
   const stars = React.useMemo(() =>
-    Array.from({ length: 180 }, (_, i) => ({
+    Array.from({ length: 250 }, (_, i) => ({
       x: (Math.sin(i * 127.1) * 0.5 + 0.5) * 100,
       y: (Math.sin(i * 311.7) * 0.5 + 0.5) * 100,
-      r: i % 13 === 0 ? 1.8 : i % 5 === 0 ? 1.1 : 0.5,
-      o: (Math.sin(i * 73.3) * 0.5 + 0.5) * 0.6 + 0.3,
+      r: i % 17 === 0 ? 2.2 : i % 11 === 0 ? 1.4 : i % 5 === 0 ? 0.9 : 0.4,
+      o: (Math.sin(i * 73.3) * 0.5 + 0.5) * 0.7 + 0.2,
+      twinkleDur: 2 + (i % 7) * 0.8,
+      twinkleDelay: (i % 13) * 0.3,
+      color: i % 23 === 0 ? "#a5b4fc" : i % 19 === 0 ? "#fde68a" : i % 17 === 0 ? "#c4b5fd" : "#ffffff",
     })), []);
+
+  const clusters = React.useMemo(() => [
+    { x: 25, y: 35, r: 60, stars: 12 },
+    { x: 72, y: 60, r: 45, stars: 8 },
+    { x: 50, y: 20, r: 30, stars: 6 },
+  ], []);
 
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <style>{`
+        @keyframes twinkle { 0%,100% { opacity: var(--so); } 50% { opacity: 0.15; } }
+        @keyframes shoot1 { 0% { transform: translate(0,0) scaleX(1); opacity: 0; } 5% { opacity: 1; } 15% { opacity: 1; } 20% { transform: translate(120px,80px) scaleX(0.3); opacity: 0; } 100% { opacity: 0; } }
+        @keyframes shoot2 { 0% { transform: translate(0,0) scaleX(1); opacity: 0; } 8% { opacity: 0.8; } 18% { opacity: 0.8; } 25% { transform: translate(100px,60px) scaleX(0.2); opacity: 0; } 100% { opacity: 0; } }
+        @keyframes nebulaDrift { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.05) rotate(2deg); } }
+        @keyframes dustFloat { 0%,100% { opacity: 0.12; transform: translateX(0); } 50% { opacity: 0.18; transform: translateX(15px); } }
+        @keyframes corePulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.5; } }
+      `}</style>
+
+      {/* Deep space base gradient */}
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 50%, #0a0025 0%, #050014 40%, #020008 100%)" }} />
+
+      {/* Galaxy core glow */}
+      <div style={{ position: "absolute", left: "35%", top: "30%", width: "30%", height: "40%", background: "radial-gradient(ellipse, rgba(180,120,255,0.25), rgba(100,60,200,0.1) 40%, transparent 70%)", animation: "corePulse 8s ease-in-out infinite" }} />
+
+      {/* Spiral arm 1 */}
+      <div style={{ position: "absolute", inset: 0, background: "conic-gradient(from 30deg at 45% 45%, transparent 0deg, rgba(120,80,220,0.12) 30deg, rgba(80,140,255,0.08) 90deg, transparent 150deg, rgba(180,100,240,0.1) 210deg, transparent 270deg, rgba(100,160,255,0.06) 330deg, transparent 360deg)", animation: "nebulaDrift 20s ease-in-out infinite" }} />
+
+      {/* Spiral arm 2 */}
+      <div style={{ position: "absolute", inset: 0, background: "conic-gradient(from 210deg at 55% 55%, transparent 0deg, rgba(200,80,180,0.1) 40deg, rgba(100,60,200,0.07) 100deg, transparent 160deg, rgba(160,100,255,0.08) 220deg, transparent 280deg, rgba(80,140,220,0.05) 340deg, transparent 360deg)", animation: "nebulaDrift 25s ease-in-out infinite reverse" }} />
+
       {/* Nebula clouds */}
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 30%, rgba(100,40,180,0.28), transparent 45%), radial-gradient(ellipse at 70% 50%, rgba(40,80,200,0.22), transparent 40%), radial-gradient(ellipse at 50% 80%, rgba(180,40,160,0.15), transparent 35%)" }} />
-      {/* Stars */}
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 30%, rgba(100,40,180,0.22), transparent 40%), radial-gradient(ellipse at 70% 50%, rgba(40,80,200,0.18), transparent 35%), radial-gradient(ellipse at 50% 80%, rgba(180,40,160,0.12), transparent 30%), radial-gradient(ellipse at 80% 25%, rgba(60,120,220,0.15), transparent 30%), radial-gradient(ellipse at 20% 70%, rgba(140,60,200,0.1), transparent 25%)" }} />
+
+      {/* Dust lanes */}
+      <div style={{ position: "absolute", inset: 0, opacity: 0.12, background: "repeating-linear-gradient(135deg, transparent 0px, transparent 40px, rgba(0,0,0,0.4) 41px, transparent 42px, transparent 80px)", animation: "dustFloat 15s ease-in-out infinite" }} />
+
+      {/* Star clusters */}
+      {clusters.map((c, ci) => (
+        <div key={ci} style={{ position: "absolute", left: `${c.x}%`, top: `${c.y}%`, width: c.r * 2, height: c.r * 2, transform: "translate(-50%,-50%)", borderRadius: "50%", background: `radial-gradient(circle, rgba(200,180,255,0.15), transparent 70%)` }}>
+          {Array.from({ length: c.stars }, (_, i) => (
+            <div key={i} style={{ position: "absolute", left: `${50 + Math.cos(i * 2.4) * (20 + i * 3)}%`, top: `${50 + Math.sin(i * 2.4) * (20 + i * 3)}%`, width: 2, height: 2, borderRadius: "50%", background: "#e0d0ff", boxShadow: "0 0 4px 1px rgba(200,180,255,0.6)", transform: "translate(-50%,-50%)" }} />
+          ))}
+        </div>
+      ))}
+
+      {/* Stars with twinkling */}
       <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
         {stars.map((s, i) => (
-          <circle key={i} cx={`${s.x}%`} cy={`${s.y}%`} r={s.r} fill="white" opacity={s.o} />
+          <circle key={i} cx={`${s.x}%`} cy={`${s.y}%`} r={s.r} fill={s.color}
+            style={{ opacity: s.o, animation: `twinkle ${s.twinkleDur}s ease-in-out ${s.twinkleDelay}s infinite`, ["--so" as any]: s.o }} />
         ))}
       </svg>
-      {/* Shooting star */}
-      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.25 }}>
-        <line x1="22%" y1="18%" x2="35%" y2="27%" stroke="white" strokeWidth="1.5" />
-        <line x1="68%" y1="58%" x2="78%" y2="65%" stroke="white" strokeWidth="1" />
+
+      {/* Shooting stars */}
+      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+        <defs>
+          <linearGradient id="shootGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="white" stopOpacity="0" />
+            <stop offset="40%" stopColor="white" stopOpacity="1" />
+            <stop offset="100%" stopColor="#c4b5fd" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="shootGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="white" stopOpacity="0" />
+            <stop offset="50%" stopColor="#a5b4fc" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* Shooting star 1 - long trail */}
+        <g style={{ animation: "shoot1 7s ease-in infinite 2s" }}>
+          <line x1="15%" y1="12%" x2="28%" y2="22%" stroke="url(#shootGrad1)" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="28%" cy="22%" r="2" fill="white" opacity="0.8" />
+        </g>
+        {/* Shooting star 2 - short fast */}
+        <g style={{ animation: "shoot2 9s ease-in infinite 5s" }}>
+          <line x1="65%" y1="45%" x2="75%" y2="52%" stroke="url(#shootGrad2)" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="75%" cy="52%" r="1.5" fill="#a5b4fc" opacity="0.7" />
+        </g>
+        {/* Shooting star 3 - diagonal */}
+        <g style={{ animation: "shoot1 11s ease-in infinite 8s" }}>
+          <line x1="80%" y1="15%" x2="88%" y2="30%" stroke="url(#shootGrad1)" strokeWidth="1" strokeLinecap="round" />
+          <circle cx="88%" cy="30%" r="1.5" fill="white" opacity="0.6" />
+        </g>
       </svg>
+
+      {/* Subtle color wash */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(100,60,180,0.06) 0%, transparent 50%, rgba(40,80,160,0.04) 100%)" }} />
     </div>
   );
 }
