@@ -551,7 +551,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       shared_with_user_id: sharedWithId,
     }).select().single();
     if (error || !data) {
-      const { data: fallbackData } = await supabase.from("shared_decks").insert({
+      console.error("Primary share failed:", error);
+      const { data: fallbackData, error: fallbackError } = await supabase.from("shared_decks").insert({
         user_id: user.id,
         reviewer_id: reviewerId,
         course_id: courseSlug,
@@ -560,6 +561,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         card_count: cards.length,
         cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
       }).select().single();
+      if (fallbackError) {
+        console.error("Fallback share also failed:", fallbackError);
+      }
       if (fallbackData) {
         const link = `${window.location.origin}/shared/${fallbackData.id}`;
         await navigator.clipboard.writeText(link);
