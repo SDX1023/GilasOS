@@ -391,21 +391,23 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   }
 
   // Also save to reviewers/flashcards tables so the Study page can load them
+  // Use insert (not upsert) to avoid conflicts with other users' rows
   const { error: reviewerError } = await supabase
     .from("reviewers")
-    .upsert({
+    .insert({
       id: deckId,
       user_id: user.id,
       course_id: courseId,
       module_id: moduleId,
       title: reviewer.title || "Untitled Deck",
-    }, { onConflict: "id" });
+    });
 
-  if (reviewerError) {
+  if (reviewerError && reviewerError.code !== "23505") {
     console.error("Reviewers table save error:", reviewerError);
   }
 
-  await supabase.from("flashcards").delete().eq("reviewer_id", deckId);
+  // Save flashcards for this user (even if reviewers row already existed for another user)
+  await supabase.from("flashcards").delete().eq("reviewer_id", deckId).eq("user_id", user.id);
 
   if (reviewer.cards && reviewer.cards.length > 0) {
     const timestamp = Date.now();

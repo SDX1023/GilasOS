@@ -234,7 +234,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
           if (customDecks) {
             for (const d of customDecks) {
-              if (d.id === expectedId || d.id.endsWith(`/${reviewerSlug}`)) {
+              const titleMatch = d.title?.toLowerCase().replace(/\s+/g, "-").includes(reviewerSlug);
+              if (d.id === expectedId || d.id.endsWith(`/${reviewerSlug}`) || titleMatch) {
                 const mapped = (d.custom_deck_cards || []).map((c: any) => ({
                   front: c.front,
                   back: c.back,
@@ -264,7 +265,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           const { data: flashcards } = await supabase
             .from("flashcards")
             .select("front, back, hint")
-            .eq("reviewer_id", expectedId);
+            .eq("reviewer_id", expectedId)
+            .eq("user_id", user.id);
 
           if (flashcards && flashcards.length > 0) {
             const mapped = flashcards.map((c: any) => ({
