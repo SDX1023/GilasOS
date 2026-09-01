@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Music, X } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
@@ -67,7 +67,6 @@ function loadStarted(): boolean {
 
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
-  const [minimized, setMinimized] = useState(false);
   const [started, setStarted] = useState(loadStarted);
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -98,14 +97,21 @@ export function MusicPlayer() {
       iframe.title = "Spotify Player";
       iframe.style.cssText = `
         position:fixed;
-        bottom:0;
-        left:0;
-        width:100%;
-        height:80px;
+        bottom:20px;
+        left:50%;
+        transform:translateX(-50%);
+        width:90%;
+        max-width:420px;
+        height:72px;
         border:none;
+        border-radius:14px;
         z-index:9999;
         opacity:0.85;
         pointer-events:auto;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(10px);
+        transition: opacity 0.3s ease;
       `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
@@ -119,8 +125,8 @@ export function MusicPlayer() {
     const iframe = iframeRef.current;
     if (!iframe || !started) return;
 
-    if (open && !minimized) {
-      // When expanded, position inside panel
+    if (open) {
+      // When panel is open, position inside panel
       const panel = panelRef.current;
       if (panel) {
         const rect = panel.getBoundingClientRect();
@@ -136,44 +142,58 @@ export function MusicPlayer() {
           opacity:1;
           pointer-events:auto;
           box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.06);
+          transition: none;
         `;
       }
-    } else if (minimized && open) {
-      // When minimized, show at bottom with glass effect
+    } else {
+      // When closed, show at bottom with glass effect
       iframe.style.cssText = `
         position:fixed;
-        bottom:16px;
+        bottom:20px;
         left:50%;
         transform:translateX(-50%);
         width:90%;
-        max-width:400px;
-        height:60px;
+        max-width:420px;
+        height:72px;
         border:none;
-        border-radius:12px;
+        border-radius:14px;
         z-index:9999;
-        opacity:0.6;
+        opacity:0.85;
         pointer-events:auto;
-        backdrop-filter:blur(20px);
         box-shadow: 0 4px 30px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.1);
-      `;
-    } else {
-      // When closed, keep at bottom with glass effect
-      iframe.style.cssText = `
-        position:fixed;
-        bottom:0;
-        left:0;
-        width:100%;
-        height:80px;
-        border:none;
-        z-index:9999;
-        opacity:0.6;
-        pointer-events:auto;
-        backdrop-filter:blur(20px);
-        border-top: 1px solid rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(10px);
+        transition: opacity 0.3s ease;
       `;
     }
-  }, [open, minimized, started]);
+  }, [open, started]);
+
+  // Hover effect for iframe
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const handleMouseEnter = () => {
+      if (!open) {
+        iframe.style.opacity = "1";
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (!open) {
+        iframe.style.opacity = "0.85";
+      }
+    };
+
+    iframe.addEventListener('mouseenter', handleMouseEnter);
+    iframe.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      iframe.removeEventListener('mouseenter', handleMouseEnter);
+      iframe.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [open]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -186,10 +206,6 @@ export function MusicPlayer() {
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) setMinimized(false);
   }, [open]);
 
   return (
@@ -220,7 +236,7 @@ export function MusicPlayer() {
         onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
         style={{
           position: "fixed", 
-          bottom: 24, 
+          bottom: 100, 
           right: 24, 
           width: 44, 
           height: 44, 
@@ -250,11 +266,11 @@ export function MusicPlayer() {
         )}
       </button>
 
-      {/* Panel */}
+      {/* Panel - only shows when open */}
       {open && (
         <div ref={panelRef} style={{
           position: "fixed", 
-          bottom: 80, 
+          bottom: 110, 
           right: 24, 
           width: 340,
           background: "rgba(28, 28, 30, 0.95)",
@@ -265,316 +281,192 @@ export function MusicPlayer() {
           zIndex: 10001, 
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
-          padding: minimized ? "12px 16px" : "16px",
-          maxHeight: minimized ? 68 : 560,
-          transition: "max-height 0.3s ease, padding 0.3s ease",
+          padding: "16px",
+          maxHeight: 520,
         }}>
-          {minimized ? (
-            // Minimized view - compact
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 10,
-            }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, #1db954, #1ed760)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(29, 185, 84, 0.3)",
-              }}>
-                <Music size={18} color="#fff" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ 
-                  fontSize: 12, 
-                  fontWeight: 500, 
-                  color: "#e5e5e5", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis", 
-                  whiteSpace: "nowrap",
-                  marginBottom: 1,
-                }}>
-                  {selectedTrack.title}
-                </div>
-                <div style={{ 
-                  fontSize: 10, 
-                  color: "#888", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis", 
-                  whiteSpace: "nowrap" 
-                }}>
-                  {selectedTrack.artist}
-                </div>
-              </div>
-              <button 
-                onClick={() => setMinimized(false)}
-                style={{
-                  padding: "5px 10px",
-                  background: "rgba(255,255,255,0.06)",
-                  border: "none",
-                  borderRadius: "6px",
-                  color: "#888",
-                  cursor: "pointer",
-                  fontSize: 10,
-                  transition: "all 0.15s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                  e.currentTarget.style.color = "#e5e5e5";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  e.currentTarget.style.color = "#888";
-                }}
-              >
-                <ChevronUp size={12} />
-                Expand
-              </button>
-              <button 
-                onClick={() => setOpen(false)}
-                style={{
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "#555",
-                  cursor: "pointer",
-                  display: "flex",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#888";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#555";
-                }}
-              >
-                <X size={14} />
-              </button>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Music size={14} color="#1db954" />
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#e5e5e5" }}>
+                GILAS Playlist
+              </span>
+              <span style={{ fontSize: 11, color: "#555" }}>
+                · {TRACKS.length} songs
+              </span>
             </div>
-          ) : (
-            // Expanded view
-            <>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Music size={14} color="#1db954" />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#e5e5e5" }}>
-                    GILAS Playlist
-                  </span>
-                  <span style={{ fontSize: 11, color: "#555" }}>
-                    · {TRACKS.length} songs
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button 
-                    onClick={() => setMinimized(true)}
-                    style={{ 
-                      padding: "4px 8px",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "none",
-                      borderRadius: "6px",
-                      cursor: "pointer", 
-                      color: "#666",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      fontSize: 10,
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-                      e.currentTarget.style.color = "#e5e5e5";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                      e.currentTarget.style.color = "#666";
-                    }}
-                  >
-                    <ChevronDown size={12} />
-                    Minimize
-                  </button>
-                  <button 
-                    onClick={() => setOpen(false)}
-                    style={{ 
-                      padding: 4, 
-                      background: "none", 
-                      border: "none", 
-                      cursor: "pointer", 
-                      color: "#666",
-                      display: "flex",
-                      borderRadius: "4px",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = "#e5e5e5";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#666";
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
+            <button 
+              onClick={() => setOpen(false)}
+              style={{ 
+                padding: 4, 
+                background: "none", 
+                border: "none", 
+                cursor: "pointer", 
+                color: "#666",
+                display: "flex",
+                borderRadius: "4px",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#e5e5e5";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#666";
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-              {/* Selected track display */}
-              <div style={{ 
-                padding: "10px 14px",
-                background: "rgba(255,255,255,0.03)",
-                borderRadius: "8px",
-                marginBottom: 12,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
-                  {selectedTrack.title}
-                </div>
-                <div style={{ fontSize: 12, color: "#888" }}>
-                  {selectedTrack.artist}
-                </div>
-              </div>
+          {/* Selected track display */}
+          <div style={{ 
+            padding: "10px 14px",
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: "8px",
+            marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
+              {selectedTrack.title}
+            </div>
+            <div style={{ fontSize: 12, color: "#888" }}>
+              {selectedTrack.artist}
+            </div>
+          </div>
 
-              {/* Spotify embed placeholder - actual iframe overlays this */}
+          {/* Spotify embed placeholder */}
+          <div style={{
+            width: "100%",
+            height: 152,
+            borderRadius: "12px",
+            overflow: "hidden",
+            marginBottom: 12,
+            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(0,0,0,0.3)",
+            position: "relative",
+          }}>
+            {!started && (
               <div style={{
                 width: "100%",
-                height: 152,
-                borderRadius: "12px",
-                overflow: "hidden",
-                marginBottom: 12,
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(0,0,0,0.3)",
-                position: "relative",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#444",
               }}>
-                {!started && (
-                  <div style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#444",
-                  }}>
-                    <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
-                    <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
-                      Click the music icon to start
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Track list */}
-              <div style={{ 
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                paddingTop: 10,
-              }}>
-                <div style={{ 
-                  fontSize: 10, 
-                  color: "#555", 
-                  marginBottom: 6, 
-                  letterSpacing: "0.05em",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}>
-                  <span>PLAYLIST</span>
-                  <span style={{ color: "#444" }}>Select a track</span>
+                <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
+                  Click the music icon to start
                 </div>
-                <div className="track-list-scroll" style={{ 
-                  maxHeight: 160,
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                }}>
-                  {TRACKS.slice(0, 8).map((track, i) => (
-                    <div 
-                      key={i}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "5px 8px",
-                        borderRadius: "6px",
-                        fontSize: 11,
-                        color: i === selectedTrackIndex ? "#1db954" : "#666",
-                        background: i === selectedTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
-                        border: i === selectedTrackIndex ? "1px solid rgba(29, 185, 84, 0.15)" : "1px solid transparent",
-                        transition: "all 0.15s",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setSelectedTrackIndex(i)}
-                      onMouseEnter={(e) => {
-                        if (i !== selectedTrackIndex) {
-                          e.currentTarget.style.color = "#e5e5e5";
-                          e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (i !== selectedTrackIndex) {
-                          e.currentTarget.style.color = "#666";
-                          e.currentTarget.style.background = "transparent";
-                        }
-                      }}
-                    >
-                      <span style={{ 
-                        width: 18, 
-                        fontSize: 9, 
-                        color: i === selectedTrackIndex ? "#1db954" : "#444",
-                        fontVariantNumeric: "tabular-nums",
-                        textAlign: "center",
-                      }}>
-                        {i + 1}
-                      </span>
-                      <span style={{ 
-                        flex: 1, 
-                        overflow: "hidden", 
-                        textOverflow: "ellipsis", 
-                        whiteSpace: "nowrap",
-                        fontWeight: i === selectedTrackIndex ? 500 : 400,
-                      }}>
-                        {track.title}
-                      </span>
-                      <span style={{ 
-                        fontSize: 9, 
-                        color: i === selectedTrackIndex ? "#1db954" : "#555",
-                      }}>
-                        {track.artist}
-                      </span>
-                      {i === selectedTrackIndex && (
-                        <span style={{
-                          fontSize: 8,
-                          color: "#1db954",
-                          marginLeft: 4,
-                        }}>
-                          ▶
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  {TRACKS.length > 8 && (
-                    <div style={{ 
-                      fontSize: 10, 
-                      color: "#444", 
-                      padding: "6px 8px",
-                      textAlign: "center",
-                      borderTop: "1px solid rgba(255,255,255,0.03)",
-                      marginTop: 2,
+              </div>
+            )}
+          </div>
+
+          {/* Track list */}
+          <div style={{ 
+            borderTop: "1px solid rgba(255,255,255,0.04)",
+            paddingTop: 10,
+          }}>
+            <div style={{ 
+              fontSize: 10, 
+              color: "#555", 
+              marginBottom: 6, 
+              letterSpacing: "0.05em",
+              display: "flex",
+              justifyContent: "space-between",
+            }}>
+              <span>PLAYLIST</span>
+              <span style={{ color: "#444" }}>Select a track</span>
+            </div>
+            <div className="track-list-scroll" style={{ 
+              maxHeight: 160,
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}>
+              {TRACKS.slice(0, 8).map((track, i) => (
+                <div 
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "5px 8px",
+                    borderRadius: "6px",
+                    fontSize: 11,
+                    color: i === selectedTrackIndex ? "#1db954" : "#666",
+                    background: i === selectedTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
+                    border: i === selectedTrackIndex ? "1px solid rgba(29, 185, 84, 0.15)" : "1px solid transparent",
+                    transition: "all 0.15s",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedTrackIndex(i)}
+                  onMouseEnter={(e) => {
+                    if (i !== selectedTrackIndex) {
+                      e.currentTarget.style.color = "#e5e5e5";
+                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (i !== selectedTrackIndex) {
+                      e.currentTarget.style.color = "#666";
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
+                >
+                  <span style={{ 
+                    width: 18, 
+                    fontSize: 9, 
+                    color: i === selectedTrackIndex ? "#1db954" : "#444",
+                    fontVariantNumeric: "tabular-nums",
+                    textAlign: "center",
+                  }}>
+                    {i + 1}
+                  </span>
+                  <span style={{ 
+                    flex: 1, 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap",
+                    fontWeight: i === selectedTrackIndex ? 500 : 400,
+                  }}>
+                    {track.title}
+                  </span>
+                  <span style={{ 
+                    fontSize: 9, 
+                    color: i === selectedTrackIndex ? "#1db954" : "#555",
+                  }}>
+                    {track.artist}
+                  </span>
+                  {i === selectedTrackIndex && (
+                    <span style={{
+                      fontSize: 8,
+                      color: "#1db954",
+                      marginLeft: 4,
                     }}>
-                      +{TRACKS.length - 8} more songs
-                    </div>
+                      ▶
+                    </span>
                   )}
                 </div>
-              </div>
-            </>
-          )}
+              ))}
+              {TRACKS.length > 8 && (
+                <div style={{ 
+                  fontSize: 10, 
+                  color: "#444", 
+                  padding: "6px 8px",
+                  textAlign: "center",
+                  borderTop: "1px solid rgba(255,255,255,0.03)",
+                  marginTop: 2,
+                }}>
+                  +{TRACKS.length - 8} more songs
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
