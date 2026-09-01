@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, X, Play, Pause, ChevronDown, SkipForward, SkipBack } from "lucide-react";
+import { Music, X, Play, Pause, ChevronDown, SkipForward, SkipBack, Volume2, VolumeX } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
@@ -72,11 +72,13 @@ export function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const spotifyContainerRef = useRef<HTMLDivElement>(null);
 
   const currentTrack = TRACKS[currentTrackIndex];
 
@@ -108,13 +110,12 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:1;
-        pointer-events:auto;
+        opacity:0;
+        pointer-events:none;
       `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
       
-      // Auto-play when iframe loads
       iframe.onload = () => {
         setIsPlaying(true);
         startProgressSimulation();
@@ -149,8 +150,8 @@ export function MusicPlayer() {
         opacity:1;
         pointer-events:auto;
       `;
-    } else {
-      // Keep iframe visible at bottom for background playback
+    } else if (minimized && open) {
+      // Hide iframe when minimized - we show custom controls
       iframe.style.cssText = `
         position:fixed;
         bottom:0;
@@ -159,13 +160,25 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:1;
+        opacity:0;
+        pointer-events:none;
+      `;
+    } else {
+      // Keep iframe hidden but playing in background
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
+        border:none;
+        z-index:9999;
+        opacity:0;
         pointer-events:none;
       `;
     }
   }, [open, minimized, started]);
 
-  // Close panel on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -191,8 +204,7 @@ export function MusicPlayer() {
     setProgress(0);
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 180) { // 3 minutes
-          // Auto-advance to next track
+        if (prev >= 180) {
           const next = (currentTrackIndex + 1) % TRACKS.length;
           setCurrentTrackIndex(next);
           if (iframeRef.current) {
@@ -211,7 +223,6 @@ export function MusicPlayer() {
     if (!started) {
       setStarted(true);
       setIsPlaying(true);
-      // Create iframe with autoplay
       if (!iframeRef.current) {
         const iframe = document.createElement("iframe");
         iframe.src = EMBED_URL;
@@ -226,8 +237,8 @@ export function MusicPlayer() {
           height:80px;
           border:none;
           z-index:9999;
-          opacity:1;
-          pointer-events:auto;
+          opacity:0;
+          pointer-events:none;
         `;
         document.body.appendChild(iframe);
         iframeRef.current = iframe;
@@ -240,22 +251,11 @@ export function MusicPlayer() {
 
     setIsPlaying(!isPlaying);
     if (isPlaying) {
-      // Pause - hide iframe
-      if (iframeRef.current) {
-        iframeRef.current.style.opacity = "0.3";
-      }
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
     } else {
-      // Resume - show iframe and reload
-      if (iframeRef.current) {
-        iframeRef.current.style.opacity = "1";
-        iframeRef.current.src = EMBED_URL;
-        setTimeout(() => {
-          startProgressSimulation();
-        }, 500);
-      }
+      startProgressSimulation();
     }
   };
 
@@ -263,9 +263,11 @@ export function MusicPlayer() {
     const next = (currentTrackIndex + 1) % TRACKS.length;
     setCurrentTrackIndex(next);
     setProgress(0);
-    if (isPlaying && iframeRef.current) {
+    if (isPlaying) {
+      startProgressSimulation();
+    }
+    if (iframeRef.current) {
       iframeRef.current.src = EMBED_URL;
-      setTimeout(startProgressSimulation, 500);
     }
   };
 
@@ -273,9 +275,11 @@ export function MusicPlayer() {
     const prev = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
     setCurrentTrackIndex(prev);
     setProgress(0);
-    if (isPlaying && iframeRef.current) {
+    if (isPlaying) {
+      startProgressSimulation();
+    }
+    if (iframeRef.current) {
       iframeRef.current.src = EMBED_URL;
-      setTimeout(startProgressSimulation, 500);
     }
   };
 
@@ -295,6 +299,14 @@ export function MusicPlayer() {
         @keyframes bar1 { 0%,100% { height: 6px; } 50% { height: 14px; } }
         @keyframes bar2 { 0%,100% { height: 10px; } 50% { height: 4px; } }
         @keyframes bar3 { 0%,100% { height: 8px; } 50% { height: 12px; } }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
       `}</style>
 
       {/* Floating button */}
@@ -341,47 +353,109 @@ export function MusicPlayer() {
           position: "fixed", 
           bottom: 80, 
           right: 24, 
-          width: 300,
-          background: "rgba(28, 28, 30, 0.92)",
+          width: 320,
+          background: "rgba(28, 28, 30, 0.95)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "12px",
+          borderRadius: "14px",
           boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
           zIndex: 10001, 
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
-          padding: minimized ? "12px 16px" : "16px",
-          maxHeight: minimized ? 68 : 480,
+          padding: minimized ? "14px 16px" : "16px",
+          maxHeight: minimized ? 72 : 480,
           transition: "max-height 0.3s ease, padding 0.3s ease",
         }}>
           {minimized ? (
-            // Minimized view
+            // Clean minimized player
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
-              gap: 10,
-              cursor: "pointer",
-            }} onClick={() => setMinimized(false)}>
+              gap: 12,
+            }}>
+              {/* Album art placeholder */}
               <div style={{
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 borderRadius: "8px",
-                background: "rgba(29, 185, 84, 0.12)",
+                background: "linear-gradient(135deg, #1db954, #1ed760)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                boxShadow: "0 2px 8px rgba(29, 185, 84, 0.3)",
               }}>
-                <Music size={16} color="#1db954" />
+                <Music size={20} color="#fff" />
               </div>
+
+              {/* Track info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: "#e5e5e5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ 
+                  fontSize: 13, 
+                  fontWeight: 500, 
+                  color: "#e5e5e5", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis", 
+                  whiteSpace: "nowrap",
+                  marginBottom: 2,
+                }}>
                   {currentTrack.title}
                 </div>
-                <div style={{ fontSize: 10, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ 
+                  fontSize: 11, 
+                  color: "#888", 
+                  overflow: "hidden", 
+                  textOverflow: "ellipsis", 
+                  whiteSpace: "nowrap" 
+                }}>
                   {currentTrack.artist}
                 </div>
               </div>
+
+              {/* Progress bar mini */}
+              <div style={{
+                width: 40,
+                height: 3,
+                background: "rgba(255,255,255,0.06)",
+                borderRadius: 2,
+                overflow: "hidden",
+                flexShrink: 0,
+              }}>
+                <div style={{
+                  width: `${(progress / 180) * 100}%`,
+                  height: "100%",
+                  background: "#1db954",
+                  borderRadius: 2,
+                  transition: "width 0.3s ease",
+                }} />
+              </div>
+
+              {/* Controls */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevTrack();
+                }}
+                style={{
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "#666",
+                  cursor: "pointer",
+                  display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#e5e5e5";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#666";
+                }}
+              >
+                <SkipBack size={16} />
+              </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -389,27 +463,53 @@ export function MusicPlayer() {
                 }}
                 style={{
                   padding: "6px",
-                  background: "rgba(29, 185, 84, 0.1)",
+                  background: "rgba(29, 185, 84, 0.15)",
                   border: "none",
-                  borderRadius: "6px",
+                  borderRadius: "8px",
                   color: "#1db954",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   transition: "all 0.15s",
-                  width: 28,
-                  height: 28,
+                  width: 32,
+                  height: 32,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.2)";
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.25)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.1)";
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.15)";
                 }}
               >
-                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
               </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextTrack();
+                }}
+                style={{
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "#666",
+                  cursor: "pointer",
+                  display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#e5e5e5";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#666";
+                }}
+              >
+                <SkipForward size={16} />
+              </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -422,13 +522,47 @@ export function MusicPlayer() {
                   color: "#555",
                   cursor: "pointer",
                   display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#888";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#555";
                 }}
               >
-                <X size={14} />
+                <X size={16} />
+              </button>
+
+              {/* Expand button */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMinimized(false);
+                }}
+                style={{
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "#555",
+                  cursor: "pointer",
+                  display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#888";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#555";
+                }}
+              >
+                <ChevronDown size={16} />
               </button>
             </div>
           ) : (
-            // Expanded view
+            // Expanded view (same as before)
             <>
               <div style={{ 
                 display: "flex", 
@@ -452,6 +586,14 @@ export function MusicPlayer() {
                       cursor: "pointer", 
                       color: "#666",
                       display: "flex",
+                      borderRadius: "4px",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#e5e5e5";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#666";
                     }}
                   >
                     <ChevronDown size={14} />
@@ -465,6 +607,14 @@ export function MusicPlayer() {
                       cursor: "pointer", 
                       color: "#666",
                       display: "flex",
+                      borderRadius: "4px",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#e5e5e5";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#666";
                     }}
                   >
                     <X size={14} />
@@ -473,12 +623,12 @@ export function MusicPlayer() {
               </div>
 
               <div style={{ 
-                padding: "10px 12px",
+                padding: "12px 14px",
                 background: "rgba(255,255,255,0.03)",
                 borderRadius: "8px",
-                marginBottom: 8,
+                marginBottom: 10,
               }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
                   {currentTrack.title}
                 </div>
                 <div style={{ fontSize: 12, color: "#888" }}>
@@ -486,7 +636,6 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Progress */}
               <div style={{ marginBottom: 10 }}>
                 <div style={{
                   width: "100%",
@@ -515,7 +664,6 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Spotify embed placeholder */}
               <div 
                 ref={screenRef}
                 style={{
@@ -547,7 +695,6 @@ export function MusicPlayer() {
                 )}
               </div>
 
-              {/* Controls */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   onClick={prevTrack}
@@ -631,7 +778,6 @@ export function MusicPlayer() {
                 </button>
               </div>
 
-              {/* Track list */}
               <div style={{ 
                 marginTop: 12,
                 borderTop: "1px solid rgba(255,255,255,0.04)",
@@ -643,7 +789,7 @@ export function MusicPlayer() {
                   PLAYLIST • {TRACKS.length} SONGS
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {TRACKS.slice(0, 4).map((track, i) => (
+                  {TRACKS.slice(0, 5).map((track, i) => (
                     <div 
                       key={i}
                       style={{
@@ -661,9 +807,11 @@ export function MusicPlayer() {
                       onClick={() => {
                         setCurrentTrackIndex(i);
                         setProgress(0);
-                        if (isPlaying && iframeRef.current) {
+                        if (isPlaying) {
+                          startProgressSimulation();
+                        }
+                        if (iframeRef.current) {
                           iframeRef.current.src = EMBED_URL;
-                          setTimeout(startProgressSimulation, 500);
                         }
                       }}
                       onMouseEnter={(e) => {
@@ -684,9 +832,9 @@ export function MusicPlayer() {
                       </span>
                     </div>
                   ))}
-                  {TRACKS.length > 4 && (
+                  {TRACKS.length > 5 && (
                     <div style={{ fontSize: 10, color: "#444", padding: "4px 6px" }}>
-                      +{TRACKS.length - 4} more
+                      +{TRACKS.length - 5} more
                     </div>
                   )}
                 </div>
