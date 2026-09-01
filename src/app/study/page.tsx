@@ -744,7 +744,7 @@ function QuizTab({ userId }: { userId: string | null }) {
               {showFormulas ? "Σ On" : "Σ Off"}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
-              {[0, 15, 30, 60].map((t) => (
+              {[0, 10, 15, 30, 45, 60].map((t) => (
                 <button key={t} onClick={() => setTimePerQuestion(t)} onMouseDown={(e) => e.preventDefault()}
                   className={`btn-mode ${timePerQuestion === t ? "active" : ""}`}
                   style={{ padding: "7px 10px", borderRadius: 8, fontSize: 11, fontWeight: 500 }}>
