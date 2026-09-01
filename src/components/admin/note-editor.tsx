@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Save, ArrowLeft, Eye, Edit3 } from "lucide-react";
+import { Save, ArrowLeft, Eye, Edit3, LayoutGrid, Type } from "lucide-react";
 import { InlineEditor, markdownToHtml } from "./inline-editor";
+import { BlockEditor } from "./block-editor";
 
 interface NoteEditorProps {
   courseId: string;
@@ -30,6 +31,7 @@ export function NoteEditor({
   const [content, setContent] = useState(initialContent);
   const [preview, setPreview] = useState("");
   const [mode, setMode] = useState<"edit" | "preview" | "split">("edit");
+  const [editorType, setEditorType] = useState<"block" | "inline">("block");
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -123,6 +125,14 @@ export function NoteEditor({
           )}
 
           <div style={{ display: "flex", alignItems: "center", gap: 2, padding: 2, borderRadius: 8, border: "1px solid var(--os-glass-border)" }}>
+            <button onClick={() => setEditorType("block")} style={modeBtnStyle(editorType === "block")} title="Block editor (Notion-style)">
+              <LayoutGrid size={14} />
+            </button>
+            <button onClick={() => setEditorType("inline")} style={modeBtnStyle(editorType === "inline")} title="Inline editor (Rich text)">
+              <Type size={14} />
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 2, padding: 2, borderRadius: 8, border: "1px solid var(--os-glass-border)" }}>
             <button onClick={() => setMode("edit")} style={modeBtnStyle(mode === "edit")} title="Edit">
               <Edit3 size={14} />
             </button>
@@ -175,7 +185,11 @@ export function NoteEditor({
               }}
             />
           </div>
-          <InlineEditor content={content} onChange={setContent} />
+          {editorType === "block" ? (
+            <BlockEditor content={content} onChange={setContent} />
+          ) : (
+            <InlineEditor content={content} onChange={setContent} />
+          )}
         </div>
 
         {/* Preview */}

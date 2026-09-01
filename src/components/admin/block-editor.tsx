@@ -1,25 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, KeyboardEvent } from "react";
-import {
-  GripVertical,
-  Plus,
-  Trash2,
-  ImageIcon,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Quote,
-  Minus,
-  Code,
-  Bold,
-  Italic,
-  AlertCircle,
-  Info,
-  CheckCircle,
-} from "lucide-react";
+import { GripVertical, Plus, Trash2, Image as ImageIcon, Bold, Italic, Code, Heading1, Heading2, Heading3, List, ListOrdered, Quote, Minus, AlertCircle, Info, CheckCircle } from "lucide-react";
 
 interface Block {
   id: string;
@@ -37,320 +19,210 @@ interface BlockEditorProps {
   onChange: (content: string) => void;
 }
 
-function generateId() {
+function uid() {
   return Math.random().toString(36).substring(2, 10);
 }
 
-function parseBlocks(markdown: string): Block[] {
-  const lines = markdown.split("\n");
+function parseBlocks(md: string): Block[] {
+  const lines = md.split("\n");
   const blocks: Block[] = [];
   let i = 0;
-
   while (i < lines.length) {
     const line = lines[i];
-
-    // Empty line
-    if (line.trim() === "") {
-      i++;
-      continue;
-    }
-
-    // Divider
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
-      blocks.push({ id: generateId(), type: "divider", content: "" });
-      i++;
-      continue;
-    }
-
-    // Image
-    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    if (imgMatch) {
-      blocks.push({ id: generateId(), type: "image", content: imgMatch[1], src: imgMatch[2], alt: imgMatch[1] });
-      i++;
-      continue;
-    }
-
-    // Heading 3
-    if (line.startsWith("### ")) {
-      blocks.push({ id: generateId(), type: "heading3", content: line.substring(4) });
-      i++;
-      continue;
-    }
-
-    // Heading 2
-    if (line.startsWith("## ")) {
-      blocks.push({ id: generateId(), type: "heading2", content: line.substring(3) });
-      i++;
-      continue;
-    }
-
-    // Heading 1
-    if (line.startsWith("# ")) {
-      blocks.push({ id: generateId(), type: "heading1", content: line.substring(2) });
-      i++;
-      continue;
-    }
-
-    // Checkbox
-    const checkMatch = line.match(/^(\s*)- \[([ x])\]\s(.*)$/);
-    if (checkMatch) {
-      const indent = Math.floor(checkMatch[1].length / 2);
-      blocks.push({
-        id: generateId(),
-        type: "checkbox",
-        content: checkMatch[3],
-        checked: checkMatch[2] === "x",
-        indent,
-      });
-      i++;
-      continue;
-    }
-
-    // Bullet list
-    const bulletMatch = line.match(/^(\s*)([-*+])\s(.*)$/);
-    if (bulletMatch) {
-      const indent = Math.floor(bulletMatch[1].length / 2);
-      blocks.push({ id: generateId(), type: "bullet", content: bulletMatch[3], indent });
-      i++;
-      continue;
-    }
-
-    // Numbered list
-    const numberMatch = line.match(/^(\s*)(\d+)\.\s(.*)$/);
-    if (numberMatch) {
-      const indent = Math.floor(numberMatch[1].length / 2);
-      blocks.push({ id: generateId(), type: "numbered", content: numberMatch[3], indent, numbering: parseInt(numberMatch[2]) });
-      i++;
-      continue;
-    }
-
-    // Quote
+    if (line.trim() === "") { i++; continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { blocks.push({ id: uid(), type: "divider", content: "" }); i++; continue; }
+    const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (img) { blocks.push({ id: uid(), type: "image", content: img[1], src: img[2], alt: img[1] }); i++; continue; }
+    if (line.startsWith("### ")) { blocks.push({ id: uid(), type: "heading3", content: line.substring(4) }); i++; continue; }
+    if (line.startsWith("## ")) { blocks.push({ id: uid(), type: "heading2", content: line.substring(3) }); i++; continue; }
+    if (line.startsWith("# ")) { blocks.push({ id: uid(), type: "heading1", content: line.substring(2) }); i++; continue; }
+    const ck = line.match(/^(\s*)- \[([ x])\]\s(.*)$/);
+    if (ck) { blocks.push({ id: uid(), type: "checkbox", content: ck[3], checked: ck[2] === "x", indent: Math.floor(ck[1].length / 2) }); i++; continue; }
+    const bl = line.match(/^(\s*)([-*+])\s(.*)$/);
+    if (bl) { blocks.push({ id: uid(), type: "bullet", content: bl[3], indent: Math.floor(bl[1].length / 2) }); i++; continue; }
+    const nl = line.match(/^(\s*)(\d+)\.\s(.*)$/);
+    if (nl) { blocks.push({ id: uid(), type: "numbered", content: nl[3], indent: Math.floor(nl[1].length / 2), numbering: parseInt(nl[2]) }); i++; continue; }
     if (line.startsWith("> ")) {
-      const quoteContent = line.substring(2);
-      // Check for callouts
-      if (quoteContent.startsWith("⚠️ ")) {
-        blocks.push({ id: generateId(), type: "callout", content: quoteContent.substring(3), src: "warning" });
-      } else if (quoteContent.startsWith("ℹ️ ")) {
-        blocks.push({ id: generateId(), type: "callout", content: quoteContent.substring(3), src: "info" });
-      } else if (quoteContent.startsWith("✅ ")) {
-        blocks.push({ id: generateId(), type: "callout", content: quoteContent.substring(3), src: "success" });
-      } else if (quoteContent.startsWith("💡 ")) {
-        blocks.push({ id: generateId(), type: "callout", content: quoteContent.substring(3), src: "tip" });
-      } else if (quoteContent.startsWith("📝 ")) {
-        blocks.push({ id: generateId(), type: "callout", content: quoteContent.substring(3), src: "note" });
-      } else {
-        blocks.push({ id: generateId(), type: "quote", content: quoteContent });
-      }
-      i++;
-      continue;
+      const qc = line.substring(2);
+      if (qc.startsWith("⚠️ ")) { blocks.push({ id: uid(), type: "callout", content: qc.substring(3), src: "warning" }); }
+      else if (qc.startsWith("ℹ️ ")) { blocks.push({ id: uid(), type: "callout", content: qc.substring(3), src: "info" }); }
+      else if (qc.startsWith("✅ ")) { blocks.push({ id: uid(), type: "callout", content: qc.substring(3), src: "success" }); }
+      else if (qc.startsWith("💡 ")) { blocks.push({ id: uid(), type: "callout", content: qc.substring(3), src: "tip" }); }
+      else if (qc.startsWith("📝 ")) { blocks.push({ id: uid(), type: "callout", content: qc.substring(3), src: "note" }); }
+      else { blocks.push({ id: uid(), type: "quote", content: qc }); }
+      i++; continue;
     }
-
-    // Code block
     if (line.startsWith("```")) {
       const lang = line.substring(3).trim();
-      const codeLines: string[] = [];
+      const code: string[] = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      i++; // skip closing ```
-      blocks.push({ id: generateId(), type: "code", content: codeLines.join("\n"), alt: lang });
+      while (i < lines.length && !lines[i].startsWith("```")) { code.push(lines[i]); i++; }
+      i++;
+      blocks.push({ id: uid(), type: "code", content: code.join("\n"), alt: lang });
       continue;
     }
-
-    // Default: paragraph
-    blocks.push({ id: generateId(), type: "paragraph", content: line });
+    blocks.push({ id: uid(), type: "paragraph", content: line });
     i++;
   }
-
   return blocks;
 }
 
-function blocksToMarkdown(blocks: Block[]): string {
-  const lines: string[] = [];
-
-  for (const block of blocks) {
-    const indent = "  ".repeat(block.indent || 0);
-
-    switch (block.type) {
-      case "paragraph":
-        lines.push(block.content);
-        break;
-      case "heading1":
-        lines.push(`# ${block.content}`);
-        break;
-      case "heading2":
-        lines.push(`## ${block.content}`);
-        break;
-      case "heading3":
-        lines.push(`### ${block.content}`);
-        break;
-      case "bullet":
-        lines.push(`${indent}- ${block.content}`);
-        break;
-      case "numbered":
-        lines.push(`${indent}${block.numbering || 1}. ${block.content}`);
-        break;
-      case "checkbox":
-        lines.push(`${indent}- [${block.checked ? "x" : " "}] ${block.content}`);
-        break;
-      case "quote":
-        lines.push(`> ${block.content}`);
-        break;
+function toMarkdown(blocks: Block[]): string {
+  return blocks.map(b => {
+    const ind = "  ".repeat(b.indent || 0);
+    switch (b.type) {
+      case "paragraph": return b.content;
+      case "heading1": return `# ${b.content}`;
+      case "heading2": return `## ${b.content}`;
+      case "heading3": return `### ${b.content}`;
+      case "bullet": return `${ind}- ${b.content}`;
+      case "numbered": return `${ind}${b.numbering || 1}. ${b.content}`;
+      case "checkbox": return `${ind}- [${b.checked ? "x" : " "}] ${b.content}`;
+      case "quote": return `> ${b.content}`;
       case "callout": {
-        const emojiMap: Record<string, string> = { warning: "⚠️", info: "ℹ️", success: "✅", tip: "💡", note: "📝" };
-        lines.push(`> ${emojiMap[block.src || "note"] || "📝"} ${block.content}`);
-        break;
+        const em: Record<string, string> = { warning: "⚠️", info: "ℹ️", success: "✅", tip: "💡", note: "📝" };
+        return `> ${em[b.src || "note"] || "📝"} ${b.content}`;
       }
-      case "divider":
-        lines.push("---");
-        break;
-      case "image":
-        lines.push(`![${block.alt || block.content}](${block.src})`);
-        break;
-      case "code":
-        lines.push(`\`\`\`${block.alt || ""}`);
-        lines.push(block.content);
-        lines.push("```");
-        break;
+      case "divider": return "---";
+      case "image": return `![${b.alt || b.content}](${b.src})`;
+      case "code": return `\`\`\`${b.alt || ""}\n${b.content}\n\`\`\``;
+      default: return b.content;
     }
-  }
-
-  return lines.join("\n");
+  }).join("\n");
 }
 
-function renderInlineMarkdown(text: string): string {
+function renderInline(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="bg-muted px-1 rounded text-pink-600 dark:text-pink-400">$1</code>')
-    .replace(/\[\[([^\]]+)\]\]/g, '<span class="text-primary underline decoration-dashed cursor-pointer">[[$1]]</span>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 underline">$1</a>');
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, '<code style="background:rgba(109,40,217,0.12);padding:1px 5px;border-radius:4px;color:#c084fc;font-size:0.9em">$1</code>')
+    .replace(/\[\[([^\]]+)\]\]/g, '<span style="color:var(--os-accent);text-decoration:underline;text-decoration-style:dashed;cursor:pointer">[[$1]]</span>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#60a5fa;text-decoration:underline">$1</a>');
 }
+
+const BLOCK_TYPES = [
+  { type: "paragraph" as const, icon: "¶", label: "Text", desc: "Plain text" },
+  { type: "heading1" as const, icon: "H1", label: "Heading 1", desc: "Large heading" },
+  { type: "heading2" as const, icon: "H2", label: "Heading 2", desc: "Medium heading" },
+  { type: "heading3" as const, icon: "H3", label: "Heading 3", desc: "Small heading" },
+  { type: "bullet" as const, icon: "•", label: "Bullet List", desc: "Unordered list" },
+  { type: "numbered" as const, icon: "1.", label: "Numbered List", desc: "Ordered list" },
+  { type: "checkbox" as const, icon: "☑", label: "Checkbox", desc: "Task list" },
+  { type: "quote" as const, icon: "\"", label: "Quote", desc: "Blockquote" },
+  { type: "callout" as const, icon: "💡", label: "Callout", desc: "Tip / Warning / Info" },
+  { type: "code" as const, icon: "</>", label: "Code", desc: "Code block" },
+  { type: "image" as const, icon: "🖼", label: "Image", desc: "Upload or embed" },
+  { type: "divider" as const, icon: "—", label: "Divider", desc: "Horizontal line" },
+];
 
 export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const [blocks, setBlocks] = useState<Block[]>(() => parseBlocks(content));
   const [activeBlock, setActiveBlock] = useState<string | null>(null);
-  const [showBlockMenu, setShowBlockMenu] = useState<string | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [showMenu, setShowMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuFilter, setMenuFilter] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
+  const refs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const menuInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync blocks back to markdown
   useEffect(() => {
-    const markdown = blocksToMarkdown(blocks);
-    if (markdown !== content) {
-      onChange(markdown);
-    }
+    const md = toMarkdown(blocks);
+    if (md !== content) onChange(md);
   }, [blocks]);
 
-  // Re-parse when content changes externally
   useEffect(() => {
-    const newBlocks = parseBlocks(content);
-    if (JSON.stringify(newBlocks.map(b => ({ type: b.type, content: b.content }))) !==
-        JSON.stringify(blocks.map(b => ({ type: b.type, content: b.content })))) {
-      setBlocks(newBlocks);
+    const nb = parseBlocks(content);
+    if (JSON.stringify(nb.map(b => ({ t: b.type, c: b.content }))) !== JSON.stringify(blocks.map(b => ({ t: b.type, c: b.content })))) {
+      setBlocks(nb);
     }
   }, [content]);
 
-  const updateBlock = useCallback((id: string, updates: Partial<Block>) => {
-    setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+  const update = useCallback((id: string, u: Partial<Block>) => {
+    setBlocks(p => p.map(b => b.id === id ? { ...b, ...u } : b));
   }, []);
 
-  const deleteBlock = useCallback((id: string) => {
-    setBlocks(prev => {
-      const idx = prev.findIndex(b => b.id === id);
-      if (prev.length <= 1) return prev;
-      const newBlocks = prev.filter(b => b.id !== id);
-      // Focus previous block
-      if (idx > 0) {
-        setTimeout(() => {
-          const prevBlock = blockRefs.current.get(newBlocks[Math.min(idx - 1, newBlocks.length - 1)].id);
-          prevBlock?.focus();
-        }, 0);
-      }
-      return newBlocks;
+  const remove = useCallback((id: string) => {
+    setBlocks(p => {
+      const idx = p.findIndex(b => b.id === id);
+      if (p.length <= 1) return p;
+      const next = p.filter(b => b.id !== id);
+      setTimeout(() => {
+        const el = refs.current.get(next[Math.min(idx - 1, next.length - 1)]?.id);
+        el?.focus();
+      }, 0);
+      return next;
     });
   }, []);
 
-  const addBlockAfter = useCallback((afterId: string, type: Block["type"] = "paragraph") => {
-    const newBlock: Block = { id: generateId(), type, content: "" };
-    setBlocks(prev => {
-      const idx = prev.findIndex(b => b.id === afterId);
-      const newBlocks = [...prev];
-      newBlocks.splice(idx + 1, 0, newBlock);
-      return newBlocks;
+  const addAfter = useCallback((afterId: string, type: Block["type"] = "paragraph") => {
+    const nb: Block = { id: uid(), type, content: "" };
+    setBlocks(p => {
+      const idx = p.findIndex(b => b.id === afterId);
+      const next = [...p];
+      next.splice(idx + 1, 0, nb);
+      return next;
     });
-    setTimeout(() => {
-      blockRefs.current.get(newBlock.id)?.focus();
-    }, 0);
+    setTimeout(() => refs.current.get(nb.id)?.focus(), 0);
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>, blockId: string) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) return;
 
-    // Enter: create new block
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-
-      // Empty block of certain types -> convert to paragraph or delete
       if (block.content === "" && ["bullet", "numbered", "checkbox", "quote"].includes(block.type)) {
-        updateBlock(blockId, { type: "paragraph" });
+        update(blockId, { type: "paragraph" });
         return;
       }
-
-      addBlockAfter(blockId);
+      addAfter(blockId);
       return;
     }
 
-    // Backspace on empty block: delete or convert to paragraph
     if (e.key === "Backspace" && block.content === "" && block.type !== "paragraph") {
       e.preventDefault();
-      updateBlock(blockId, { type: "paragraph" });
+      update(blockId, { type: "paragraph" });
       return;
     }
 
-    // Backspace at start of paragraph: delete block
     if (e.key === "Backspace" && block.type === "paragraph") {
       const sel = window.getSelection();
       if (sel && sel.getRangeAt(0).startOffset === 0 && blocks.findIndex(b => b.id === blockId) > 0) {
         e.preventDefault();
-        deleteBlock(blockId);
+        remove(blockId);
         return;
       }
     }
 
-    // Tab: indent
     if (e.key === "Tab") {
       e.preventDefault();
       if (["bullet", "numbered", "checkbox"].includes(block.type)) {
-        updateBlock(blockId, { indent: (block.indent || 0) + (e.shiftKey ? -1 : 1) });
+        update(blockId, { indent: Math.max(0, (block.indent || 0) + (e.shiftKey ? -1 : 1)) });
       }
     }
 
-    // Markdown shortcuts at start of line
-    if (block.content === "" || block.content === "#") {
-      const shortcuts: Record<string, Block["type"]> = {
-        "# ": "heading1",
-        "## ": "heading2",
-        "### ": "heading3",
-        "- ": "bullet",
-        "* ": "bullet",
-        "+ ": "bullet",
-        "1. ": "numbered",
-        "> ": "quote",
-        "[] ": "checkbox",
-      };
+    // Inline formatting shortcuts
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
+      if (e.key === "b") { e.preventDefault(); document.execCommand("bold"); }
+      if (e.key === "i") { e.preventDefault(); document.execCommand("italic"); }
+      if (e.key === "e") { e.preventDefault(); document.execCommand("insertHTML", false, `<code style="background:rgba(109,40,217,0.12);padding:1px 5px;border-radius:4px;color:#c084fc;font-size:0.9em">${window.getSelection()?.toString() || ""}</code>`); }
+    }
 
-      for (const [shortcut, type] of Object.entries(shortcuts)) {
-        if (block.content === shortcut.substring(0, block.content.length)) {
-          // If full shortcut typed, convert
-          if (block.content === shortcut) {
-            e.preventDefault();
-            updateBlock(blockId, { type, content: "" });
-            return;
-          }
+    // Markdown shortcuts
+    const content = block.content;
+    if (content === "" || content === "#") {
+      const shortcuts: Record<string, Block["type"]> = {
+        "# ": "heading1", "## ": "heading2", "### ": "heading3",
+        "- ": "bullet", "* ": "bullet", "+ ": "bullet",
+        "1. ": "numbered", "> ": "quote", "[] ": "checkbox",
+      };
+      for (const [sc, type] of Object.entries(shortcuts)) {
+        if (content === sc) {
+          e.preventDefault();
+          update(blockId, { type, content: "" });
+          return;
         }
       }
     }
@@ -358,367 +230,387 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
     // Slash command
     if (e.key === "/" && block.content === "") {
       e.preventDefault();
-      const el = blockRefs.current.get(blockId);
+      const el = refs.current.get(blockId);
       if (el) {
         const rect = el.getBoundingClientRect();
-        setMenuPosition({ top: rect.bottom + 4, left: rect.left });
-        setShowBlockMenu(blockId);
+        setMenuPos({ top: rect.bottom + 4, left: rect.left });
+        setShowMenu(blockId);
+        setMenuFilter("");
+        setTimeout(() => menuInputRef.current?.focus(), 0);
       }
     }
-  }, [blocks, addBlockAfter, deleteBlock, updateBlock]);
+  }, [blocks, addAfter, remove, update]);
+
+  // Floating toolbar on text selection
+  useEffect(() => {
+    const handler = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.toString().trim() === "") {
+        setFloatingToolbar(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setFloatingToolbar({ top: rect.top - 44, left: rect.left + rect.width / 2 - 80 });
+    };
+    document.addEventListener("mouseup", handler);
+    document.addEventListener("keyup", handler);
+    return () => {
+      document.removeEventListener("mouseup", handler);
+      document.removeEventListener("keyup", handler);
+    };
+  }, []);
+
+  // Image paste
+  const handlePaste = useCallback((e: React.ClipboardEvent, blockId: string) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          update(blockId, { type: "image", src: reader.result as string, alt: "pasted image" });
+          addAfter(blockId);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+  }, [update, addAfter]);
+
+  // Drag and drop
+  const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
+    setDragId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverId(id);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!dragId || dragId === targetId) { setDragId(null); setDragOverId(null); return; }
+    setBlocks(prev => {
+      const fromIdx = prev.findIndex(b => b.id === dragId);
+      const toIdx = prev.findIndex(b => b.id === targetId);
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
+    setDragId(null);
+    setDragOverId(null);
+  }, [dragId]);
 
   const insertBlock = useCallback((afterId: string, type: Block["type"]) => {
-    setShowBlockMenu(null);
-    const newBlock: Block = { id: generateId(), type, content: "" };
+    setShowMenu(null);
+    const nb: Block = { id: uid(), type, content: "" };
     setBlocks(prev => {
       const idx = prev.findIndex(b => b.id === afterId);
-      const newBlocks = [...prev];
-      newBlocks.splice(idx + 1, 0, newBlock);
-      return newBlocks;
+      const next = [...prev];
+      next.splice(idx + 1, 0, nb);
+      return next;
     });
-    setTimeout(() => {
-      blockRefs.current.get(newBlock.id)?.focus();
-    }, 0);
+    setTimeout(() => refs.current.get(nb.id)?.focus(), 0);
   }, []);
+
+  const filteredBlocks = BLOCK_TYPES.filter(b =>
+    b.label.toLowerCase().includes(menuFilter.toLowerCase()) ||
+    b.desc.toLowerCase().includes(menuFilter.toLowerCase())
+  );
 
   const renderBlock = (block: Block) => {
     const isActive = activeBlock === block.id;
-    const indentPadding = (block.indent || 0) * 24;
+    const indentPx = (block.indent || 0) * 24;
+    const isDragging = dragId === block.id;
+    const isOver = dragOverId === block.id;
 
-    const commonProps = {
-      ref: (el: HTMLDivElement | null) => {
-        if (el) blockRefs.current.set(block.id, el);
-      },
-      className: `group flex items-start gap-2 py-1 px-2 -mx-2 rounded-lg transition-colors ${isActive ? "bg-muted/50" : "hover:bg-muted/30"}`,
-      onClick: () => setActiveBlock(block.id),
-      onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => handleKeyDown(e, block.id),
+    const wrapperStyle: React.CSSProperties = {
+      display: "flex", alignItems: "flex-start", gap: 8, padding: "4px 8px",
+      marginLeft: indentPx, borderRadius: 8,
+      background: isActive ? "rgba(255,255,255,0.04)" : isOver ? "rgba(59,130,246,0.08)" : "transparent",
+      opacity: isDragging ? 0.4 : 1,
+      borderLeft: isOver ? "2px solid var(--os-accent)" : "2px solid transparent",
+      transition: "background 0.15s, border-color 0.15s",
     };
 
-    const dragHandle = (
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pt-1 shrink-0 cursor-grab">
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const el = blockRefs.current.get(block.id);
-            if (el) {
-              const rect = el.getBoundingClientRect();
-              setMenuPosition({ top: rect.bottom + 4, left: rect.left });
-              setShowBlockMenu(block.id);
-            }
-          }}
-          className="p-0.5 hover:bg-muted rounded"
-        >
-          <Plus className="h-3 w-3" />
+    const handle = (
+      <div draggable onDragStart={(e) => handleDragStart(e, block.id)} onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+        style={{ display: "flex", alignItems: "center", gap: 2, paddingTop: 4, flexShrink: 0, cursor: "grab", opacity: isActive ? 0.6 : 0, transition: "opacity 0.15s" }}
+        className="block-handle">
+        <GripVertical size={14} style={{ color: "var(--os-text-dim)" }} />
+        <button onClick={(e) => { e.stopPropagation(); const el = refs.current.get(block.id); if (el) { const r = el.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.left }); setShowMenu(block.id); setMenuFilter(""); } }}
+          style={{ padding: 2, borderRadius: 4, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", display: "flex" }}>
+          <Plus size={12} />
         </button>
       </div>
     );
 
-    const deleteBtn = (
-      <button
-        onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded shrink-0"
-      >
-        <Trash2 className="h-3 w-3 text-muted-foreground" />
+    const delBtn = (
+      <button onClick={(e) => { e.stopPropagation(); remove(block.id); }}
+        style={{ padding: 4, borderRadius: 4, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", opacity: isActive ? 0.6 : 0, transition: "opacity 0.15s", flexShrink: 0, display: "flex" }}
+        className="block-delete">
+        <Trash2 size={12} />
       </button>
     );
+
+    const editableProps = (cls: string) => ({
+      ref: (el: HTMLDivElement | null) => { if (el) refs.current.set(block.id, el); },
+      contentEditable: true,
+      suppressContentEditableWarning: true,
+      dangerouslySetInnerHTML: { __html: renderInline(block.content) },
+      className: cls,
+      style: { outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" } as React.CSSProperties,
+      onBlur: (e: React.FocusEvent<HTMLDivElement>) => update(block.id, { content: e.currentTarget.textContent || "" }),
+      onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => handleKeyDown(e, block.id),
+      onPaste: (e: React.ClipboardEvent) => handlePaste(e, block.id),
+      onFocus: () => setActiveBlock(block.id),
+    });
+
+    // Show/hide handles on hover
+    const hoverHandlers = {
+      onMouseEnter: () => { setActiveBlock(block.id); },
+    };
 
     switch (block.type) {
       case "heading1":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 text-3xl font-bold outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div {...editableProps("flex-1")} style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
+            {delBtn}
           </div>
         );
-
       case "heading2":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 text-2xl font-semibold outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div {...editableProps("flex-1")} style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
+            {delBtn}
           </div>
         );
-
       case "heading3":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 text-xl font-medium outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div {...editableProps("flex-1")} style={{ fontSize: 20, fontWeight: 500, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
+            {delBtn}
           </div>
         );
-
       case "bullet":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <span className="text-foreground/60 mt-0.5 shrink-0">•</span>
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <span style={{ color: "var(--os-text-dim)", marginTop: 4, flexShrink: 0 }}>•</span>
+            <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
+            {delBtn}
           </div>
         );
-
       case "numbered":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <span className="text-foreground/60 mt-0.5 shrink-0 w-5 text-right">{block.numbering || 1}.</span>
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <span style={{ color: "var(--os-text-dim)", marginTop: 4, flexShrink: 0, width: 20, textAlign: "right" }}>{block.numbering || 1}.</span>
+            <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
+            {delBtn}
           </div>
         );
-
       case "checkbox":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <input
-              type="checkbox"
-              checked={block.checked}
-              onChange={(e) => updateBlock(block.id, { checked: e.target.checked })}
-              className="mt-1 shrink-0"
-            />
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className={`flex-1 outline-none min-h-[1.5em] ${block.checked ? "line-through text-muted-foreground" : ""}`}
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <input type="checkbox" checked={block.checked} onChange={(e) => update(block.id, { checked: e.target.checked })}
+              style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--os-accent)" }} />
+            <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word", textDecoration: block.checked ? "line-through" : "none", opacity: block.checked ? 0.5 : 1 }} />
+            {delBtn}
           </div>
         );
-
       case "quote":
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div className="border-l-4 border-foreground/30 pl-4 flex-1 italic text-muted-foreground">
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="outline-none min-h-[1.5em]"
-                dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-                onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-              />
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div style={{ borderLeft: "3px solid var(--os-accent)", paddingLeft: 12, flex: 1, fontStyle: "italic", color: "var(--os-text-secondary)" }}>
+              <div {...editableProps("")} style={{ outline: "none", minHeight: "1.4em", wordBreak: "break-word" }} />
             </div>
-            {deleteBtn}
+            {delBtn}
           </div>
         );
-
       case "callout": {
-        const colors: Record<string, { border: string; bg: string; text: string; icon: any }> = {
-          warning: { border: "border-yellow-500", bg: "bg-yellow-500/10", text: "text-yellow-600", icon: AlertCircle },
-          info: { border: "border-blue-500", bg: "bg-blue-500/10", text: "text-blue-600", icon: Info },
-          success: { border: "border-green-500", bg: "bg-green-500/10", text: "text-green-600", icon: CheckCircle },
-          tip: { border: "border-purple-500", bg: "bg-purple-500/10", text: "text-purple-600", icon: Info },
-          note: { border: "border-gray-500", bg: "bg-gray-500/10", text: "text-gray-600", icon: Info },
+        const colors: Record<string, { border: string; bg: string; icon: any }> = {
+          warning: { border: "#eab308", bg: "rgba(234,179,8,0.08)", icon: AlertCircle },
+          info: { border: "#3b82f6", bg: "rgba(59,130,246,0.08)", icon: Info },
+          success: { border: "#22c55e", bg: "rgba(34,197,94,0.08)", icon: CheckCircle },
+          tip: { border: "#a855f7", bg: "rgba(168,85,247,0.08)", icon: Info },
+          note: { border: "#6b7280", bg: "rgba(107,114,128,0.08)", icon: Info },
         };
         const c = colors[block.src || "note"] || colors.note;
         const Icon = c.icon;
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div className={`border-l-4 ${c.border} ${c.bg} rounded-r-lg p-3 flex-1`}>
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className={`h-4 w-4 ${c.text}`} />
-                <span className={`text-sm font-semibold ${c.text} capitalize`}>{block.src || "note"}</span>
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div style={{ borderLeft: `3px solid ${c.border}`, background: c.bg, borderRadius: "0 8px 8px 0", padding: "10px 14px", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Icon size={14} style={{ color: c.border }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: c.border, textTransform: "capitalize" }}>{block.src || "note"}</span>
               </div>
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="outline-none min-h-[1.5em]"
-                dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-                onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-              />
+              <div {...editableProps("")} style={{ outline: "none", minHeight: "1.4em", wordBreak: "break-word" }} />
             </div>
-            {deleteBtn}
+            {delBtn}
           </div>
         );
       }
-
       case "divider":
         return (
-          <div {...commonProps}>
-            {dragHandle}
-            <hr className="flex-1 border-border my-2" />
-            {deleteBtn}
+          <div style={{ ...wrapperStyle, padding: "8px 8px" }} {...hoverHandlers}>
+            {handle}
+            <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--os-glass-border)", margin: "8px 0" }} />
+            {delBtn}
           </div>
         );
-
       case "image":
         return (
-          <div {...commonProps} className="flex-col items-stretch">
-            <div className="flex items-center gap-2">
-              {dragHandle}
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Image</span>
-              {deleteBtn}
+          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} {...hoverHandlers}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {handle}
+              <ImageIcon size={14} style={{ color: "var(--os-text-dim)" }} />
+              <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Image</span>
+              {delBtn}
             </div>
             {block.src ? (
-              <div className="ml-6 mt-2 relative group/img">
-                <img
-                  src={block.src}
-                  alt={block.alt || "image"}
-                  className="max-w-full max-h-96 rounded-lg shadow-md mx-auto block"
-                />
-                <div className="absolute top-2 right-2 opacity-0 group-hover/img:opacity-100 flex gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newAlt = prompt("Alt text:", block.alt || "");
-                      if (newAlt !== null) updateBlock(block.id, { alt: newAlt, content: newAlt });
-                    }}
-                    className="p-1 bg-background/80 rounded backdrop-blur text-xs"
-                  >
-                    Edit
-                  </button>
-                </div>
+              <div style={{ marginLeft: 30, marginTop: 8, position: "relative" }}>
+                <img src={block.src} alt={block.alt || ""} style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} />
               </div>
             ) : (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="ml-6 mt-1 text-muted-foreground text-sm outline-none empty:before:content-['Paste_an_image_URL...'] empty:before:text-muted-foreground/50"
-                onBlur={(e) => {
-                  const text = e.currentTarget.textContent || "";
-                  if (text.startsWith("http") || text.startsWith("data:image")) {
-                    updateBlock(block.id, { src: text, alt: block.content || "image" });
-                  }
-                }}
-              />
+              <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
+                onClick={() => {
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = "image/*";
+                  input.onchange = () => {
+                    const file = input.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => update(block.id, { src: reader.result as string, alt: file.name });
+                    reader.readAsDataURL(file);
+                  };
+                  input.click();
+                }}>
+                Click to upload or paste an image
+              </div>
             )}
           </div>
         );
-
       case "code":
         return (
-          <div {...commonProps} className="flex-col items-stretch">
-            <div className="flex items-center gap-2">
-              {dragHandle}
-              <Code className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{block.alt || "code"}</span>
-              {deleteBtn}
+          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} {...hoverHandlers}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {handle}
+              <Code size={14} style={{ color: "var(--os-text-dim)" }} />
+              <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>{block.alt || "code"}</span>
+              {delBtn}
             </div>
-            <textarea
-              value={block.content}
-              onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-              className="ml-6 mt-1 p-3 bg-muted rounded-lg font-mono text-sm outline-none resize-none min-h-[80px]"
-              spellCheck={false}
-            />
+            <textarea value={block.content} onChange={(e) => update(block.id, { content: e.target.value })}
+              style={{ marginLeft: 30, marginTop: 8, padding: 12, background: "rgba(0,0,0,0.3)", borderRadius: 8, fontFamily: "'SF Mono', monospace", fontSize: 13, color: "#c084fc", border: "1px solid var(--os-glass-border)", outline: "none", resize: "vertical", minHeight: 60, tabSize: 2 }}
+              spellCheck={false} />
           </div>
         );
-
-      case "paragraph":
       default:
         return (
-          <div {...commonProps} style={{ paddingLeft: indentPadding }}>
-            {dragHandle}
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              className="flex-1 outline-none min-h-[1.5em]"
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content) }}
-              onBlur={(e) => updateBlock(block.id, { content: e.currentTarget.textContent || "" })}
-              data-placeholder="Type '/' for commands..."
-            />
-            {deleteBtn}
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} data-placeholder="Type '/' for commands..." />
+            {delBtn}
           </div>
         );
     }
   };
 
   return (
-    <div className="relative">
-      <div className="space-y-0.5">
+    <div style={{ position: "relative", padding: "0 16px 120px" }}>
+      <style>{`
+        .block-handle, .block-delete { opacity: 0 !important; }
+        div:hover > .block-handle, div:hover > .block-delete { opacity: 0.5 !important; }
+        div:hover > .block-handle:hover, div:hover > .block-delete:hover { opacity: 1 !important; }
+        [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
+      `}</style>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {blocks.map((block) => (
-          <div key={block.id}>
+          <div key={block.id}
+            onDragOver={(e) => handleDragOver(e, block.id)}
+            onDrop={(e) => handleDrop(e, block.id)}>
             {renderBlock(block)}
           </div>
         ))}
       </div>
 
-      {/* Add block button at bottom */}
-      <button
-        onClick={() => {
-          const lastBlock = blocks[blocks.length - 1];
-          if (lastBlock && lastBlock.content === "" && lastBlock.type === "paragraph") {
-            blockRefs.current.get(lastBlock.id)?.focus();
-          } else {
-            addBlockAfter(blocks[blocks.length - 1]?.id || "", "paragraph");
-          }
-        }}
-        className="w-full py-3 text-muted-foreground hover:text-foreground text-sm flex items-center gap-2 transition-colors"
-      >
-        <Plus className="h-4 w-4" />
-        Add a block
+      <button onClick={() => {
+        const last = blocks[blocks.length - 1];
+        if (last && last.content === "" && last.type === "paragraph") refs.current.get(last.id)?.focus();
+        else addAfter(blocks[blocks.length - 1]?.id || "", "paragraph");
+      }}
+        style={{ width: "100%", padding: "12px 8px", background: "none", border: "none", color: "var(--os-text-dim)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
+        <Plus size={16} /> Add a block
       </button>
 
-      {/* Block type menu */}
-      {showBlockMenu && (
+      {/* Floating toolbar */}
+      {floatingToolbar && (
+        <div style={{
+          position: "fixed", top: floatingToolbar.top, left: floatingToolbar.left,
+          display: "flex", gap: 2, padding: 4, borderRadius: 8,
+          background: "var(--os-glass)", border: "1px solid var(--os-glass-border)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)", zIndex: 100,
+        }}>
+          {[
+            { icon: <Bold size={14} />, cmd: "bold", title: "Bold" },
+            { icon: <Italic size={14} />, cmd: "italic", title: "Italic" },
+            { icon: <Code size={14} />, cmd: "code", title: "Code" },
+          ].map((btn) => (
+            <button key={btn.cmd} title={btn.title}
+              onClick={() => {
+                if (btn.cmd === "code") {
+                  const sel = window.getSelection()?.toString() || "";
+                  document.execCommand("insertHTML", false, `<code style="background:rgba(109,40,217,0.12);padding:1px 5px;border-radius:4px;color:#c084fc;font-size:0.9em">${sel}</code>`);
+                } else {
+                  document.execCommand(btn.cmd);
+                }
+              }}
+              style={{ padding: "4px 8px", borderRadius: 4, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-primary)", display: "flex" }}>
+              {btn.icon}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Slash command menu */}
+      {showMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowBlockMenu(null)} />
-          <div
-            className="fixed z-50 bg-background border rounded-xl shadow-xl py-2 w-64"
-            style={{ top: menuPosition.top, left: menuPosition.left }}
-          >
-            {[
-              { type: "paragraph" as const, icon: "¶", label: "Text", desc: "Plain text" },
-              { type: "heading1" as const, icon: "H1", label: "Heading 1", desc: "Large heading" },
-              { type: "heading2" as const, icon: "H2", label: "Heading 2", desc: "Medium heading" },
-              { type: "heading3" as const, icon: "H3", label: "Heading 3", desc: "Small heading" },
-              { type: "bullet" as const, icon: "•", label: "Bullet List", desc: "Unordered list" },
-              { type: "numbered" as const, icon: "1.", label: "Numbered List", desc: "Ordered list" },
-              { type: "checkbox" as const, icon: "☑", label: "Checkbox", desc: "Task list" },
-              { type: "quote" as const, icon: "\"", label: "Quote", desc: "Blockquote" },
-              { type: "code" as const, icon: "</>", label: "Code", desc: "Code block" },
-              { type: "image" as const, icon: "🖼", label: "Image", desc: "Upload or embed" },
-              { type: "divider" as const, icon: "—", label: "Divider", desc: "Horizontal line" },
-            ].map((item) => (
-              <button
-                key={item.type}
-                onClick={() => insertBlock(showBlockMenu, item.type)}
-                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted text-left"
-              >
-                <span className="w-8 h-8 flex items-center justify-center bg-muted rounded text-sm font-mono">
-                  {item.icon}
-                </span>
+          <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setShowMenu(null)} />
+          <div style={{
+            position: "fixed", zIndex: 50, top: menuPos.top, left: menuPos.left,
+            background: "var(--os-glass)", border: "1px solid var(--os-glass-border)",
+            borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", padding: 8, width: 260,
+            maxHeight: 360, overflowY: "auto", backdropFilter: "blur(20px)",
+          }}>
+            <input ref={menuInputRef} value={menuFilter} onChange={(e) => setMenuFilter(e.target.value)}
+              placeholder="Filter blocks..."
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--os-glass-border)", background: "rgba(0,0,0,0.2)", color: "var(--os-text-primary)", fontSize: 13, outline: "none", marginBottom: 6 }} />
+            {filteredBlocks.map((item) => (
+              <button key={item.type} onClick={() => insertBlock(showMenu, item.type)}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 6, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-primary)", textAlign: "left" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "none"}>
+                <span style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, background: "rgba(255,255,255,0.06)", fontSize: 13, fontWeight: 600, fontFamily: "monospace", flexShrink: 0 }}>{item.icon}</span>
                 <div>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{item.desc}</div>
                 </div>
               </button>
             ))}
