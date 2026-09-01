@@ -70,7 +70,6 @@ export default function DecksPage() {
     
     window.addEventListener("decksUpdated", handleDeckUpdate);
     
-    // Also listen for storage events (for cross-tab sync)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "decks_updated") {
         console.log("Storage event detected, refreshing...");
@@ -168,7 +167,6 @@ export default function DecksPage() {
           )}
         </div>
 
-        {/* Create form */}
         {creating && (
           <div className="glass-panel" style={{ marginBottom: 20 }}>
             <input 
@@ -195,7 +193,6 @@ export default function DecksPage() {
           </div>
         )}
 
-        {/* Search */}
         {decks.length > 0 && (
           <div style={{ position: "relative", marginBottom: 16 }}>
             <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
@@ -208,10 +205,8 @@ export default function DecksPage() {
           </div>
         )}
 
-        {/* Loading */}
         {loading && <p className="text-secondary text-sm" style={{ textAlign: "center", padding: 40 }}>Loading decks...</p>}
 
-        {/* Empty */}
         {!loading && decks.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--os-text-dim)" }}>
             <Layers size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
@@ -220,7 +215,6 @@ export default function DecksPage() {
           </div>
         )}
 
-        {/* Deck list */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map((deck) => (
             <div key={deck.id} className="glass-card" style={{ padding: "16px 20px" }}>
@@ -229,4 +223,57 @@ export default function DecksPage() {
                   <input 
                     value={editTitle} 
                     onChange={(e) => setEditTitle(e.target.value)} 
-                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius:
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, outline: "none" }} 
+                  />
+                  <input 
+                    value={editDesc} 
+                    onChange={(e) => setEditDesc(e.target.value)} 
+                    placeholder="Description..." 
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} 
+                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => handleUpdate(deck.id)} className="glass-btn glass-btn-primary" style={{ padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                      <Check size={12} /> Save
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(109,40,217,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Layers size={20} style={{ color: "var(--os-accent)" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{deck.title}</div>
+                    <div style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 2 }}>
+                      {deck.card_count} cards · {new Date(deck.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <Link href={`/decks/${deck.id}`} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+                      <Play size={13} /> Study
+                    </Link>
+                    <button 
+                      onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description); }} 
+                      style={{ padding: 6, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer" }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(deck.id)} 
+                      style={{ padding: 6, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
