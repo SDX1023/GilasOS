@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { Music, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Music, X, ChevronUp, ChevronDown, Play, Pause } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 
@@ -68,13 +68,12 @@ function loadStarted(): boolean {
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const [color, setColor] = useState<"white" | "black" | "purple">("white");
   const [started, setStarted] = useState(loadStarted);
+  const [isPlaying, setIsPlaying] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const showInScreen = open && !minimized && started;
 
@@ -82,10 +81,8 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  // Create and manage the iframe
   useLayoutEffect(() => {
     if (!started) {
-      // Remove iframe if exists when not started
       if (iframeRef.current) {
         iframeRef.current.remove();
         iframeRef.current = null;
@@ -93,7 +90,6 @@ export function MusicPlayer() {
       return;
     }
 
-    // Create iframe if it doesn't exist
     if (!iframeRef.current) {
       const iframe = document.createElement("iframe");
       iframe.src = EMBED_URL;
@@ -103,15 +99,16 @@ export function MusicPlayer() {
       iframe.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:80px;border:none;z-index:9999;";
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
+      
+      // Auto-play when iframe loads
+      iframe.onload = () => setIsPlaying(true);
     }
 
     const iframe = iframeRef.current;
     const screen = screenRef.current;
 
-    // Always keep iframe visible for background playback
     if (started) {
       if (showInScreen && screen) {
-        // Position iframe inside the screen when panel is open and not minimized
         const r = screen.getBoundingClientRect();
         iframe.style.cssText = `
           position:fixed;
@@ -119,15 +116,13 @@ export function MusicPlayer() {
           left:${r.left}px;
           width:${r.width}px;
           height:${r.height}px;
-          border:2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"};
-          border-radius:10px;
-          box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);
+          border:2px solid rgba(255,255,255,0.1);
+          border-radius:8px;
           z-index:10002;
           opacity:1;
           pointer-events:auto;
         `;
       } else {
-        // Keep it at the bottom for background playback when minimized or panel closed
         iframe.style.cssText = `
           position:fixed;
           bottom:0;
@@ -142,38 +137,8 @@ export function MusicPlayer() {
       }
     }
 
-    return () => {
-      // Don't remove iframe on cleanup - we want it to persist
-    };
-  }, [showInScreen, open, minimized, color, started]);
-
-  // Handle page navigation - keep iframe persistent
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Keep iframe alive during navigation
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
-
-  // Clean up on component unmount (only when app closes)
-  useEffect(() => {
-    return () => {
-      // Only remove iframe if the component is actually unmounting
-      // and not just navigating
-      if (iframeRef.current) {
-        // Check if we're actually closing the app
-        const isClosing = !document.querySelector('[data-music-player]');
-        if (isClosing) {
-          iframeRef.current.remove();
-          iframeRef.current = null;
-        }
-      }
-    };
-  }, []);
+    return () => {};
+  }, [showInScreen, open, minimized, started]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -190,146 +155,303 @@ export function MusicPlayer() {
     if (!open) setMinimized(false);
   }, [open]);
 
-  const colorMap = {
-    white: { body: "#e8e8e8", accent: "#6d28d9", wheel: "#d4d4d4", wheelRing: "#c0c0c0" },
-    black: { body: "#1a1a1a", accent: "#1db954", wheel: "#2a2a2a", wheelRing: "#222" },
-    purple: { body: "#c4b5fd", accent: "#8b5cf6", wheel: "#a78bfa", wheelRing: "#9370db" },
-  };
-  const c = colorMap[color];
-
-  const screenStyle: React.CSSProperties = {
-    width: "100%", height: 200, background: "#0a0a14", borderRadius: 10, overflow: "hidden",
-    border: `2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"}`,
-    boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", position: "relative",
+  const togglePlay = () => {
+    if (!started) {
+      setStarted(true);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(!isPlaying);
+      // Toggle iframe visibility/playback
+      if (iframeRef.current) {
+        if (isPlaying) {
+          iframeRef.current.style.opacity = "0";
+        } else {
+          iframeRef.current.style.opacity = "1";
+        }
+      }
+    }
   };
 
   return (
     <div data-music-player>
       <style>{`
-        @keyframes ipodSlideUp { from { opacity: 0; transform: translateY(30px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .ipod-color-btn { transition: all 0.2s; }
-        .ipod-color-btn:hover { transform: scale(1.15); }
-        .track-scroll::-webkit-scrollbar { width: 4px; }
-        .track-scroll::-webkit-scrollbar-track { background: transparent; }
-        .track-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+        @keyframes slideUp { 
+          from { opacity: 0; transform: translateY(10px) scale(0.98); } 
+          to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        .os-scroll::-webkit-scrollbar { width: 4px; }
+        .os-scroll::-webkit-scrollbar-track { background: transparent; }
+        .os-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+        .os-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}</style>
 
-      {/* Bubble */}
-      <button ref={btnRef} onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
+      {/* Minimal OS-style button */}
+      <button 
+        ref={btnRef} 
+        onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
         style={{
-          position: "fixed", bottom: 90, right: 20, width: 50, height: 50, borderRadius: "50%",
-          background: started ? `linear-gradient(135deg, ${c.accent}, ${c.accent}dd)` : "rgba(12,17,28,0.95)",
-          border: `2px solid ${started ? c.accent + "80" : "rgba(29,185,84,0.3)"}`,
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: started ? `0 4px 24px ${c.accent}66, 0 0 0 3px ${c.accent}20` : "0 4px 20px rgba(0,0,0,0.4), 0 0 0 3px rgba(255,255,255,0.05)",
-          zIndex: 10000, transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
-          transform: open ? "scale(0.9) rotate(90deg)" : "scale(1)",
-        }}>
-        {open ? <X size={18} color={color === "white" ? "#333" : "#fff"} /> : started ? (
-          <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 16 }}>
-            <div style={{ width: 3, background: color === "white" ? "#333" : "#fff", borderRadius: 1, animation: "mpBar1 0.5s ease infinite" }} />
-            <div style={{ width: 3, background: color === "white" ? "#333" : "#fff", borderRadius: 1, animation: "mpBar2 0.7s ease infinite" }} />
-            <div style={{ width: 3, background: color === "white" ? "#333" : "#fff", borderRadius: 1, animation: "mpBar3 0.6s ease infinite" }} />
-            <style>{`@keyframes mpBar1{0%,100%{height:6px}50%{height:14px}}@keyframes mpBar2{0%,100%{height:10px}50%{height:5px}}@keyframes mpBar3{0%,100%{height:4px}50%{height:12px}}`}</style>
+          position: "fixed", 
+          bottom: 20, 
+          right: 20, 
+          width: 40, 
+          height: 40, 
+          borderRadius: "10px",
+          background: "rgba(18, 18, 18, 0.9)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          cursor: "pointer", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          zIndex: 10000, 
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(30, 30, 30, 0.95)";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(18, 18, 18, 0.9)";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+        }}
+      >
+        {open ? (
+          <X size={16} color="#fff" />
+        ) : started ? (
+          <div style={{ display: "flex", gap: 2, alignItems: "flex-end", height: 14 }}>
+            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "mpBar1 0.5s ease infinite" }} />
+            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "mpBar2 0.7s ease infinite" }} />
+            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "mpBar3 0.6s ease infinite" }} />
+            <style>{`@keyframes mpBar1{0%,100%{height:6px}50%{height:12px}}@keyframes mpBar2{0%,100%{height:8px}50%{height:4px}}@keyframes mpBar3{0%,100%{height:4px}50%{height:10px}}`}</style>
           </div>
-        ) : <Music size={18} color="#1db954" />}
+        ) : (
+          <Music size={16} color="#666" />
+        )}
       </button>
 
-      {/* Panel */}
+      {/* OS-style panel */}
       {open && (
         <div ref={panelRef} style={{
-          position: "fixed", bottom: minimized ? 150 : 148, right: 20, width: 360,
-          background: "rgba(12, 17, 28, 0.98)", backdropFilter: "blur(40px)",
-          border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24,
-          boxShadow: "0 32px 100px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06)",
-          zIndex: 10001, overflow: "hidden",
-          animation: "ipodSlideUp 0.35s cubic-bezier(0.16,1,0.3,1)",
-          maxHeight: minimized ? 80 : 560,
-          transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
+          position: "fixed", 
+          bottom: 70, 
+          right: 20, 
+          width: 320,
+          background: "rgba(22, 22, 22, 0.95)",
+          backdropFilter: "blur(40px)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: "12px",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+          zIndex: 10001, 
+          overflow: "hidden",
+          animation: "slideUp 0.25s cubic-bezier(0.16,1,0.3,1)",
+          maxHeight: minimized ? 60 : 480,
+          transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1)",
         }}>
-          {minimized && (
+          {minimized ? (
+            // Minimized view - compact OS style
             <div style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-              background: c.body, borderRadius: 20, margin: 6,
-              boxShadow: "inset 0 1px 3px rgba(255,255,255,0.3), inset 0 -1px 3px rgba(0,0,0,0.1)",
-              border: `1px solid ${color === "white" ? "rgba(255,255,255,0.5)" : color === "black" ? "rgba(60,60,60,0.4)" : "rgba(200,180,255,0.5)"}`,
-            }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, background: "#1a1a2e", display: "flex", alignItems: "center", justifyContent: "center", border: `1.5px solid ${color === "white" ? "#333" : "#111"}` }}>
-                <Music size={14} color={c.accent} />
+              display: "flex", 
+              alignItems: "center", 
+              gap: 10, 
+              padding: "10px 12px",
+              cursor: "pointer",
+            }} onClick={() => setMinimized(false)}>
+              <div style={{
+                width: 32, 
+                height: 32, 
+                borderRadius: "6px", 
+                background: "rgba(29, 185, 84, 0.15)",
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+              }}>
+                <Music size={14} color="#1db954" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: color === "white" ? "#333" : color === "black" ? "#ddd" : "#3b0764", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>GILAS Playlist</div>
-                <div style={{ fontSize: 9, color: color === "white" ? "#888" : color === "black" ? "#666" : "#6b21a8" }}>{TRACKS.length} songs</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: "#e0e0e0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  Now Playing
+                </div>
+                <div style={{ fontSize: 10, color: "#888" }}>GILAS Playlist • {TRACKS.length} songs</div>
               </div>
-              <div style={{ display: "flex", gap: 2 }}>
-                <button onClick={() => setMinimized(false)} style={{ padding: 6, background: "none", border: "none", cursor: "pointer", color: color === "white" ? "#666" : color === "black" ? "#888" : "#6b21a8", display: "flex" }}><ChevronUp size={14} /></button>
-                <button onClick={() => setOpen(false)} style={{ padding: 6, background: "none", border: "none", cursor: "pointer", color: color === "white" ? "#666" : color === "black" ? "#888" : "#6b21a8", display: "flex" }}><X size={14} /></button>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                  style={{ padding: 4, background: "none", border: "none", cursor: "pointer", color: "#888" }}
+                >
+                  {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+                  style={{ padding: 4, background: "none", border: "none", cursor: "pointer", color: "#666" }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             </div>
-          )}
-
-          {!minimized && (
-            <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{
-                width: 280, background: c.body, borderRadius: 28, padding: "14px 14px 18px",
-                boxShadow: "inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.4)",
-                border: `1px solid ${color === "white" ? "rgba(255,255,255,0.6)" : color === "black" ? "rgba(60,60,60,0.5)" : "rgba(200,180,255,0.6)"}`,
+          ) : (
+            // Expanded view
+            <div style={{ padding: "16px" }}>
+              {/* Header */}
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "space-between",
+                marginBottom: 12,
               }}>
-                {/* Screen - acts as a placeholder for the iframe */}
-                <div ref={screenRef} style={screenStyle}>
-                  {!started && (
-                    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#555" }}>
-                      <Music size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
-                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Press play</div>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: color === "white" ? "#999" : color === "black" ? "#555" : "#7c3aed", marginBottom: 10 }}>MUSIC</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{
-                    width: 120, height: 120, borderRadius: "50%",
-                    background: `radial-gradient(circle at 40% 35%, ${c.wheel}, ${c.wheelRing})`,
-                    boxShadow: "inset 0 2px 6px rgba(255,255,255,0.3), inset 0 -2px 6px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.2)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "6px",
+                    background: "rgba(29, 185, 84, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}>
-                    <div style={{
-                      width: 48, height: 48, borderRadius: "50%",
-                      background: `radial-gradient(circle at 40% 35%, ${color === "white" ? "#f5f5f5" : color === "black" ? "#333" : "#b8a9f0"}, ${color === "white" ? "#ddd" : color === "black" ? "#222" : "#a78bfa"})`,
-                      boxShadow: "inset 0 1px 3px rgba(255,255,255,0.4), inset 0 -1px 3px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.15)",
-                    }} />
+                    <Music size={14} color="#1db954" />
                   </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "#e0e0e0" }}>Music</div>
+                    <div style={{ fontSize: 10, color: "#666" }}>{TRACKS.length} tracks</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 2 }}>
+                  <button 
+                    onClick={() => setMinimized(true)}
+                    style={{ padding: 4, background: "none", border: "none", cursor: "pointer", color: "#666" }}
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                  <button 
+                    onClick={() => setOpen(false)}
+                    style={{ padding: 4, background: "none", border: "none", cursor: "pointer", color: "#666" }}
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               </div>
 
-              <div style={{ width: 280, marginTop: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--os-text-primary)" }}>GILAS Playlist</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {(["white", "black", "purple"] as const).map((col) => (
-                      <button key={col} onClick={() => setColor(col)} className={`ipod-color-btn${color === col ? " active" : ""}`}
-                        style={{ width: 14, height: 14, borderRadius: "50%", border: "none", cursor: "pointer", background: col === "white" ? "#e8e8e8" : col === "black" ? "#1a1a1a" : "#c4b5fd", boxShadow: `0 1px 3px rgba(0,0,0,0.3)${color === col ? `, 0 0 0 2px ${c.accent}` : ""}` }} />
-                    ))}
-                    <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.08)", margin: "0 2px" }} />
-                    <button onClick={() => setMinimized(true)} style={{ padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}><ChevronDown size={12} /></button>
-                    <button onClick={() => setOpen(false)} style={{ padding: 5, background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={12} /></button>
+              {/* Spotify embed placeholder */}
+              <div 
+                ref={screenRef}
+                style={{
+                  width: "100%",
+                  height: 160,
+                  background: "rgba(0,0,0,0.3)",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  overflow: "hidden",
+                  position: "relative",
+                  marginBottom: 12,
+                }}
+              >
+                {!started && (
+                  <div style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#555",
+                  }}>
+                    <Music size={24} style={{ opacity: 0.3, marginBottom: 6 }} />
+                    <div style={{ fontSize: 10, fontWeight: 400, letterSpacing: "0.05em" }}>
+                      Click play to start
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                <div className="track-scroll" style={{ maxHeight: 260, overflowY: "auto", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 10px 4px", position: "sticky", top: 0, background: "rgba(12,17,28,0.98)", zIndex: 1 }}>
-                    All Songs ({TRACKS.length})
-                  </div>
-                  {TRACKS.map((track, i) => (
-                    <div key={`${track.title}-${i}`} className="track-row" style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 6 }}>
-                      <div style={{ width: 16, textAlign: "center", fontSize: 10, color: "var(--os-text-dim)" }}>{i + 1}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.title}</div>
-                        <div style={{ fontSize: 9, color: "var(--os-text-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.artist}</div>
+              {/* Play button */}
+              <button
+                onClick={togglePlay}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  background: "rgba(29, 185, 84, 0.1)",
+                  border: "1px solid rgba(29, 185, 84, 0.2)",
+                  borderRadius: "6px",
+                  color: "#1db954",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.2s",
+                  marginBottom: 12,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.1)";
+                }}
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                {isPlaying ? "Pause" : "Play"}
+              </button>
+
+              {/* Track list - OS-style minimal */}
+              <div className="os-scroll" style={{ 
+                maxHeight: 180, 
+                overflowY: "auto",
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                paddingTop: 8,
+              }}>
+                {TRACKS.slice(0, 10).map((track, i) => (
+                  <div 
+                    key={`${track.title}-${i}`} 
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "4px 6px",
+                      borderRadius: "4px",
+                      transition: "background 0.15s",
+                      cursor: "default",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div style={{ 
+                      width: 16, 
+                      textAlign: "center", 
+                      fontSize: 9, 
+                      color: "#555",
+                      fontVariantNumeric: "tabular-nums",
+                    }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {track.title}
+                      </div>
+                      <div style={{ fontSize: 9, color: "#666", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {track.artist}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+                {TRACKS.length > 10 && (
+                  <div style={{ 
+                    fontSize: 10, 
+                    color: "#555", 
+                    textAlign: "center", 
+                    padding: "6px 0",
+                    borderTop: "1px solid rgba(255,255,255,0.03)",
+                    marginTop: 4,
+                  }}>
+                    +{TRACKS.length - 10} more songs
+                  </div>
+                )}
               </div>
             </div>
           )}
