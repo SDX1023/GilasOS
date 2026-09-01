@@ -1,163 +1,232 @@
-// app/decks/[deckId]/page.tsx
+// app/decks/page.tsx
 
 "use client";
 
 import { useState, useEffect } from "react";
-import { use } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { Layers, Plus, Trash2, Pencil, Check, Play, Search } from "lucide-react";
 
-interface DeckData {
+interface CustomDeck {
   id: string;
   title: string;
   description: string;
   card_count: number;
+  created_at: string;
 }
 
-interface CardData {
-  front: string;
-  back: string;
-  hint: string;
-}
-
-export default function DeckStudyPage({ params }: { params: Promise<{ deckId: string }> }) {
-  const { deckId } = use(params);
-  const router = useRouter();
+export default function DecksPage() {
   const { user } = useAuth();
-  const [deck, setDeck] = useState<DeckData | null>(null);
-  const [cards, setCards] = useState<CardData[]>([]);
+  const [decks, setDecks] = useState<CustomDeck[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fetchDecks = async () => {
+    if (!user) return;
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("custom_decks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching decks:", error);
+        setDecks([]);
+      } else {
+        console.log("Fetched decks:", data);
+        setDecks(data || []);
+      }
+    } catch (error) {
+      console.error("Error in fetchDecks:", error);
+      setDecks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
+    if (!user) { 
+      setLoading(false); 
+      return; 
+    }
+    fetchDecks();
+  }, [user]);
+
+  // Listen for deck updates from shared deck import
+  useEffect(() => {
+    const handleDeckUpdate = () => {
+      console.log("Deck update event received, refreshing...");
+      fetchDecks();
+    };
+    
+    window.addEventListener("decksUpdated", handleDeckUpdate);
+    
+    // Also listen for storage events (for cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "decks_updated") {
+        console.log("Storage event detected, refreshing...");
+        fetchDecks();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("decksUpdated", handleDeckUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [user]);
+
+  const handleCreate = async () => {
+    if (!newTitle.trim() || !user) return;
+    const supabase = getSupabase();
+    const { data, error } = await supabase.from("custom_decks").insert({
+      user_id: user.id,
+      title: newTitle.trim(),
+      description: newDesc.trim(),
+      card_count: 0,
+    }).select().single();
+    
+    if (error) {
+      console.error("Error creating deck:", error);
       return;
     }
-    (async () => {
-      try {
-        const supabase = getSupabase();
-        
-        // Fetch deck
-        const { data: deckData, error: deckError } = await supabase
-          .from("custom_decks")
-          .select("*")
-          .eq("id", deckId)
-          .eq("user_id", user.id)
-          .maybeSingle();
+    
+    if (data) {
+      setDecks([data, ...decks]);
+      console.log("Deck created:", data);
+    }
+    setNewTitle("");
+    setNewDesc("");
+    setCreating(false);
+  };
 
-        if (deckError || !deckData) {
-          setNotFound(true);
-          setLoading(false);
-          return;
-        }
+  const handleUpdate = async (id: string) => {
+    if (!editTitle.trim()) return;
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("custom_decks")
+      .update({ 
+        title: editTitle.trim(), 
+        description: editDesc.trim(), 
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", id);
+    
+    if (error) {
+      console.error("Error updating deck:", error);
+      return;
+    }
+    
+    setDecks(decks.map(d => d.id === id ? { ...d, title: editTitle.trim(), description: editDesc.trim() } : d));
+    setEditingId(null);
+  };
 
-        setDeck(deckData);
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this deck and all its cards?")) return;
+    const supabase = getSupabase();
+    await supabase.from("custom_deck_cards").delete().eq("deck_id", id);
+    await supabase.from("custom_decks").delete().eq("id", id);
+    setDecks(decks.filter(d => d.id !== id));
+  };
 
-        // Fetch cards
-        const { data: cardsData } = await supabase
-          .from("custom_deck_cards")
-          .select("front, back, hint")
-          .eq("deck_id", deckId)
-          .order("sort_order", { ascending: true });
-
-        const cardsList = cardsData || [];
-        setCards(cardsList);
-
-        // Redirect to the existing flashcard study page
-        // Format: /flashcards/[courseSlug]/[moduleSlug]/[reviewerSlug]
-        // We need to extract the parts from the deck ID
-        // deckId format: "My Decks/shared/el-fili-1st-term-exam"
-        const parts = deckId.split('/');
-        const courseSlug = parts[0] || "My Decks";
-        const moduleSlug = parts[1] || "shared";
-        const reviewerSlug = parts.slice(2).join('/') || deckId;
-
-        // Also save to localStorage for the flashcard page to read
-        const studyData = {
-          id: deckData.id,
-          title: deckData.title,
-          cards: cardsList.map(c => ({
-            front: c.front,
-            back: c.back,
-            hint: c.hint || ""
-          }))
-        };
-        localStorage.setItem("current_study_deck", JSON.stringify(studyData));
-
-        // Redirect to the existing flashcard page
-        router.push(`/flashcards/${encodeURIComponent(courseSlug)}/${encodeURIComponent(moduleSlug)}/${encodeURIComponent(reviewerSlug)}`);
-
-      } catch (error) {
-        console.error("Error loading deck:", error);
-        setNotFound(true);
-        setLoading(false);
-      }
-    })();
-  }, [deckId, user, router]);
+  const filtered = decks.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (!user) {
     return (
-      <div className="page-container" style={{ maxWidth: 700 }}>
-        <p className="text-secondary text-sm">Please log in to study.</p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="page-container" style={{ maxWidth: 700 }}>
-        <p className="text-secondary text-sm">Loading deck...</p>
-      </div>
-    );
-  }
-
-  if (notFound || !deck) {
-    return (
-      <div className="page-container" style={{ maxWidth: 700 }}>
+      <div className="page-container">
         <div className="empty-state">
-          <p className="text-secondary text-sm">Deck not found.</p>
-          <Link href="/decks" className="glass-btn glass-btn-ghost" style={{ marginTop: 12 }}>
-            <ArrowLeft size={14} /> Back to My Decks
-          </Link>
+          <div className="empty-state-icon"><Layers size={32} style={{ color: "var(--os-text-dim)" }} /></div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>My Decks</h2>
+          <p className="text-secondary text-sm" style={{ marginBottom: 16 }}>Sign in to create and study custom flashcard decks</p>
+          <Link href="/login" className="glass-btn glass-btn-primary">Log In</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-container" style={{ maxWidth: 700 }}>
-      <Link href="/decks" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-dim)", textDecoration: "none", marginBottom: 24 }}>
-        <ArrowLeft size={14} /> Back to My Decks
-      </Link>
+    <div className="page-container">
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div>
+            <h1 className="page-title"><Layers size={28} /> My Decks</h1>
+            <p className="page-subtitle">Custom flashcard decks outside of subjects</p>
+          </div>
+          {!creating && (
+            <button onClick={() => setCreating(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
+              <Plus size={15} /> New Deck
+            </button>
+          )}
+        </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{deck.title}</h1>
-        <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>{cards.length} cards</p>
-        {deck.description && <p style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>{deck.description}</p>}
-      </div>
+        {/* Create form */}
+        {creating && (
+          <div className="glass-panel" style={{ marginBottom: 20 }}>
+            <input 
+              value={newTitle} 
+              onChange={(e) => setNewTitle(e.target.value)} 
+              placeholder="Deck name..." 
+              autoFocus 
+              style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 15, fontWeight: 600, marginBottom: 10, outline: "none" }} 
+            />
+            <input 
+              value={newDesc} 
+              onChange={(e) => setNewDesc(e.target.value)} 
+              placeholder="Description (optional)..." 
+              style={{ width: "100%", padding: "10px 14px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, marginBottom: 12, outline: "none" }} 
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleCreate} className="glass-btn glass-btn-primary" style={{ padding: "8px 16px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                <Check size={14} /> Create
+              </button>
+              <button onClick={() => { setCreating(false); setNewTitle(""); setNewDesc(""); }} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
-      <div className="glass-card" style={{ padding: 20, textAlign: "center" }}>
-        <p style={{ fontSize: 14, color: "var(--os-text-primary)", marginBottom: 16 }}>Ready to study {cards.length} cards?</p>
-        <button
-          onClick={() => {
-            // Redirect to the existing flashcard page
-            const parts = deck.id.split('/');
-            const courseSlug = parts[0] || "My Decks";
-            const moduleSlug = parts[1] || "shared";
-            const reviewerSlug = parts.slice(2).join('/') || deck.id;
-            
-            router.push(`/flashcards/${encodeURIComponent(courseSlug)}/${encodeURIComponent(moduleSlug)}/${encodeURIComponent(reviewerSlug)}`);
-          }}
-          className="glass-btn glass-btn-primary"
-          style={{ padding: "10px 24px", fontSize: 14 }}
-        >
-          Start Studying
-        </button>
-      </div>
-    </div>
-  );
-}
+        {/* Search */}
+        {decks.length > 0 && (
+          <div style={{ position: "relative", marginBottom: 16 }}>
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
+            <input 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              placeholder="Search decks..." 
+              style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} 
+            />
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && <p className="text-secondary text-sm" style={{ textAlign: "center", padding: 40 }}>Loading decks...</p>}
+
+        {/* Empty */}
+        {!loading && decks.length === 0 && (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--os-text-dim)" }}>
+            <Layers size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+            <p style={{ fontSize: 14, marginBottom: 8 }}>No decks yet</p>
+            <p style={{ fontSize: 12 }}>Create your first deck to start studying</p>
+          </div>
+        )}
+
+        {/* Deck list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.map((deck) => (
+            <div key={deck.id} className="glass-card" style={{ padding: "16px 20px" }}>
+              {editingId === deck.id ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input 
+                    value={editTitle} 
+                    onChange={(e) => setEditTitle(e.target.value)} 
+                    style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius:
