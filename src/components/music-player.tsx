@@ -40,7 +40,7 @@ export function MusicPlayer() {
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 4px 20px rgba(29,185,84,0.4), 0 0 0 3px rgba(29,185,84,0.15)",
-          zIndex: 1000,
+          zIndex: 10000,
           transition: "all 0.2s",
           transform: open ? "scale(0.9)" : "scale(1)",
         }}
@@ -67,7 +67,7 @@ export function MusicPlayer() {
             border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: 16,
             boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)",
-            zIndex: 999,
+            zIndex: 10001,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",

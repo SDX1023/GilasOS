@@ -1130,7 +1130,7 @@ body {
 }
 
 .glass-card {
-  background: rgba(15, 21, 35, 0.85);
+  background: rgba(15, 21, 35, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
@@ -1138,14 +1138,14 @@ body {
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(20, 28, 45, 0.98);
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card-link {
   display: block;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 21, 35, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
@@ -1229,7 +1229,7 @@ a:active {
 }
 
 .glass-btn {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(15, 21, 35, 0.8);
   color: var(--os-text-secondary);
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
   padding: 10px 20px;
@@ -1242,7 +1242,7 @@ a:active {
 }
 
 .glass-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(25, 35, 55, 0.9);
   color: var(--os-text-primary);
   border-color: rgba(255, 255, 255, 0.55);
 }
@@ -1893,46 +1893,50 @@ button:focus {
 
 .btn-tab {
   color: var(--os-text-secondary);
-  background: transparent;
-  border: none;
+  background: rgba(15, 21, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-tab:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.1);
 }
 .btn-tab.active {
   color: var(--os-accent);
-  background: rgba(0,212,255,0.12);
+  background: rgba(109,40,217,0.15);
+  border-color: rgba(109,40,217,0.3);
 }
 
 .btn-mode {
   color: var(--os-text-secondary);
-  background: transparent;
-  border: none;
+  background: rgba(15, 21, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-mode:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.1);
 }
 .btn-mode.active {
   color: #fff;
   background: var(--os-accent);
+  border-color: var(--os-accent);
 }
 
 .btn-action {
   color: var(--os-text-primary);
-  background: rgba(255,255,255,0.05);
-  border: 1px solid transparent;
+  background: rgba(15, 21, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-action:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.1);
+  background: rgba(25, 35, 55, 0.85);
+  border-color: rgba(255,255,255,0.2);
 }
 
 .btn-action-primary {
