@@ -434,12 +434,30 @@ function QuizTab({ userId }: { userId: string | null }) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renamingTitle, setRenamingTitle] = useState("");
   const [showFormulas, setShowFormulas] = useState(false);
+  const [timePerQuestion, setTimePerQuestion] = useState(0);
+  const [questionTimer, setQuestionTimer] = useState(0);
 
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (!quizStarted || answered || timePerQuestion <= 0 || showResults) return;
+    setQuestionTimer(timePerQuestion);
+    const t = setInterval(() => {
+      setQuestionTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(t);
+          setAnswered(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [quizStarted, currentQ, answered, timePerQuestion, showResults]);
 
   useEffect(() => {
     if (!userId) { setLoadingSaved(false); return; }
@@ -725,6 +743,15 @@ function QuizTab({ userId }: { userId: string | null }) {
               style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}>
               {showFormulas ? "Σ On" : "Σ Off"}
             </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
+              {[0, 15, 30, 60].map((t) => (
+                <button key={t} onClick={() => setTimePerQuestion(t)} onMouseDown={(e) => e.preventDefault()}
+                  className={`btn-mode ${timePerQuestion === t ? "active" : ""}`}
+                  style={{ padding: "7px 10px", borderRadius: 8, fontSize: 11, fontWeight: 500 }}>
+                  {t === 0 ? "No Timer" : `${t}s`}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{ flex: 1 }} />
           <button onClick={handleStartQuiz} onMouseDown={(e) => e.preventDefault()} className="glass-btn glass-btn-primary" style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
@@ -821,6 +848,16 @@ function QuizTab({ userId }: { userId: string | null }) {
             style={{ padding: "5px 12px", fontSize: 11, background: showFormulas ? "rgba(109,40,217,0.15)" : undefined, color: showFormulas ? "#a78bfa" : undefined, borderColor: showFormulas ? "rgba(109,40,217,0.3)" : undefined }}>
             {showFormulas ? "Σ On" : "Σ Off"}
           </button>
+          {timePerQuestion > 0 && !answered && (
+            <span style={{
+              padding: "4px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+              background: questionTimer <= 5 ? "rgba(239,68,68,0.15)" : "rgba(59,130,246,0.1)",
+              color: questionTimer <= 5 ? "#ef4444" : "#3b82f6",
+              border: `1px solid ${questionTimer <= 5 ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)"}`,
+            }}>
+              {questionTimer}s
+            </span>
+          )}
         </div>
         <div className="glass-panel" style={{ padding: "24px", marginBottom: "24px" }}>
           <span style={{

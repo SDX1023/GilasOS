@@ -23,6 +23,101 @@ function getQuote(): string {
   return QUOTES[Math.floor(Math.random() * QUOTES.length)];
 }
 
+function createRainNoise(ctx: AudioContext): AudioNode {
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.3;
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const lowpass = ctx.createBiquadFilter();
+  lowpass.type = "lowpass";
+  lowpass.frequency.value = 800;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.15;
+  source.connect(lowpass).connect(gain).connect(ctx.destination);
+  source.start();
+  return gain;
+}
+
+function createLoFi(ctx: AudioContext): AudioNode {
+  const gain = ctx.createGain();
+  gain.gain.value = 0.08;
+  gain.connect(ctx.destination);
+
+  function playNote() {
+    if (ctx.state === "closed") return;
+    const osc = ctx.createOscillator();
+    const noteGain = ctx.createGain();
+    const notes = [261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9];
+    osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+    osc.type = "sine";
+    noteGain.gain.setValueAtTime(0, ctx.currentTime);
+    noteGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+    noteGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
+    osc.connect(noteGain).connect(gain);
+    osc.start();
+    osc.stop(ctx.currentTime + 2.1);
+    setTimeout(playNote, 1500 + Math.random() * 3000);
+  }
+  playNote();
+
+  const lfo = ctx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = 0.15;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 30;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 600;
+  lfo.connect(lfoGain).connect(filter.frequency);
+  lfo.start();
+
+  return gain;
+}
+
+function createForest(ctx: AudioContext): AudioNode {
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.1;
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const bandpass = ctx.createBiquadFilter();
+  bandpass.type = "bandpass";
+  bandpass.frequency.value = 2000;
+  bandpass.Q.value = 0.3;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.1;
+  source.connect(bandpass).connect(gain).connect(ctx.destination);
+  source.start();
+
+  function chirp() {
+    if (ctx.state === "closed") return;
+    const osc = ctx.createOscillator();
+    const cGain = ctx.createGain();
+    osc.frequency.setValueAtTime(2000 + Math.random() * 2000, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1500 + Math.random() * 1500, ctx.currentTime + 0.1);
+    osc.type = "sine";
+    cGain.gain.setValueAtTime(0, ctx.currentTime);
+    cGain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.02);
+    cGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+    osc.connect(cGain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+    setTimeout(chirp, 2000 + Math.random() * 5000);
+  }
+  chirp();
+
+  return gain;
+}
+
 interface FocusModeProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,14 +130,40 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
   const [ambient, setAmbient] = useState<string>("Silent");
   const [quote] = useState(getQuote);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const ambientNodeRef = useRef<AudioNode | null>(null);
   const totalSeconds = duration * 60;
+
+  const stopAmbient = useCallback(() => {
+    if (ambientNodeRef.current) {
+      try { (ambientNodeRef.current as any).disconnect(); } catch {}
+      ambientNodeRef.current = null;
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+  }, []);
+
+  const startAmbient = useCallback((type: string) => {
+    stopAmbient();
+    if (type === "Silent") return;
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      if (type === "Rain") ambientNodeRef.current = createRainNoise(ctx);
+      else if (type === "Lo-fi") ambientNodeRef.current = createLoFi(ctx);
+      else if (type === "Forest") ambientNodeRef.current = createForest(ctx);
+    } catch {}
+  }, [stopAmbient]);
 
   const reset = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
     setIsRunning(false);
     setTimeLeft(duration * 60);
-  }, [duration]);
+    stopAmbient();
+  }, [duration, stopAmbient]);
 
   const selectDuration = useCallback(
     (min: number) => {
@@ -67,6 +188,7 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
           setIsRunning(false);
+          stopAmbient();
           if (typeof window !== "undefined" && "Notification" in window) {
             if (Notification.permission === "granted") {
               new Notification("Focus session complete!", {
@@ -82,7 +204,7 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning]);
+  }, [isRunning, stopAmbient]);
 
   useEffect(() => {
     if (isOpen && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
@@ -93,11 +215,24 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { stopAmbient(); onClose(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, stopAmbient]);
+
+  useEffect(() => {
+    return () => stopAmbient();
+  }, [stopAmbient]);
+
+  useEffect(() => {
+    if (ambient !== "Silent" && isRunning) startAmbient(ambient);
+    else stopAmbient();
+  }, [ambient, isRunning, startAmbient, stopAmbient]);
+
+  useEffect(() => {
+    if (!isRunning) stopAmbient();
+  }, [isRunning, stopAmbient]);
 
   if (!isOpen) return null;
 
@@ -128,7 +263,7 @@ export default function FocusMode({ isOpen, onClose }: FocusModeProps) {
       }}
     >
       <button
-        onClick={onClose}
+        onClick={() => { stopAmbient(); onClose(); }}
         aria-label="Close focus mode"
         style={{
           position: "absolute",
