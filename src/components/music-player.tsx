@@ -67,98 +67,16 @@ function loadStarted(): boolean {
 
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
-  const [minimized, setMinimized] = useState(false);
   const [started, setStarted] = useState(loadStarted);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const currentTrack = TRACKS[currentTrackIndex];
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
-
-  // Create persistent iframe
-  useEffect(() => {
-    if (!started) {
-      if (iframeRef.current) {
-        iframeRef.current.remove();
-        iframeRef.current = null;
-      }
-      return;
-    }
-
-    if (!iframeRef.current) {
-      const iframe = document.createElement("iframe");
-      iframe.src = EMBED_URL;
-      iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-      iframe.loading = "lazy";
-      iframe.title = "Spotify Player";
-      iframe.style.cssText = `
-        position:fixed;
-        bottom:0;
-        left:0;
-        width:100%;
-        height:80px;
-        border:none;
-        z-index:9999;
-        opacity:1;
-        pointer-events:auto;
-      `;
-      document.body.appendChild(iframe);
-      iframeRef.current = iframe;
-      
-      iframe.onload = () => {
-        setIsPlaying(true);
-      };
-    }
-
-    return () => {
-      // Don't remove iframe on unmount - keep it playing
-    };
-  }, [started]);
-
-  // Position iframe based on state
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe || !started) return;
-
-    if (open && !minimized) {
-      // When expanded, show iframe in the panel
-      const panel = panelRef.current;
-      if (panel) {
-        const rect = panel.getBoundingClientRect();
-        iframe.style.cssText = `
-          position:fixed;
-          top:${rect.top + 60}px;
-          left:${rect.left + 16}px;
-          width:${rect.width - 32}px;
-          height:152px;
-          border:none;
-          border-radius:8px;
-          z-index:10002;
-          opacity:1;
-          pointer-events:auto;
-        `;
-      }
-    } else {
-      // When minimized or closed, keep at bottom
-      iframe.style.cssText = `
-        position:fixed;
-        bottom:0;
-        left:0;
-        width:100%;
-        height:80px;
-        border:none;
-        z-index:9999;
-        opacity:1;
-        pointer-events:auto;
-      `;
-    }
-  }, [open, minimized, started]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -173,37 +91,13 @@ export function MusicPlayer() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) setMinimized(false);
-  }, [open]);
-
-  // These buttons just simulate track changes visually
-  // The actual playback is controlled by Spotify's iframe
+  // Simple track navigation - just updates the display
   const nextTrack = () => {
-    const next = (currentTrackIndex + 1) % TRACKS.length;
-    setCurrentTrackIndex(next);
+    setCurrentTrackIndex((prev) => (prev + 1) % TRACKS.length);
   };
 
   const prevTrack = () => {
-    const prev = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
-    setCurrentTrackIndex(prev);
-  };
-
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    // Try to control the iframe
-    if (iframeRef.current) {
-      try {
-        // This is a hack - Spotify doesn't support programmatic control
-        // So we just let the user control it via the iframe
-        if (!isPlaying) {
-          // Reload to play
-          iframeRef.current.src = EMBED_URL;
-        }
-      } catch (e) {
-        // Ignore
-      }
-    }
+    setCurrentTrackIndex((prev) => (prev - 1 + TRACKS.length) % TRACKS.length);
   };
 
   return (
@@ -243,14 +137,12 @@ export function MusicPlayer() {
       >
         {open ? (
           <X size={18} color="#999" />
-        ) : started && isPlaying ? (
+        ) : started ? (
           <div style={{ display: "flex", gap: 2.5, alignItems: "flex-end", height: 16 }}>
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar1 0.6s ease-in-out infinite" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar2 0.8s ease-in-out infinite 0.2s" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar3 0.7s ease-in-out infinite 0.4s" }} />
           </div>
-        ) : started ? (
-          <Play size={18} color="#1db954" />
         ) : (
           <Music size={18} color="#666" />
         )}
@@ -271,337 +163,221 @@ export function MusicPlayer() {
           zIndex: 10001, 
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
-          padding: minimized ? "12px 16px" : "16px",
-          maxHeight: minimized ? 72 : 580,
-          transition: "max-height 0.3s ease, padding 0.3s ease",
+          padding: "16px",
+          maxHeight: 520,
         }}>
-          {minimized ? (
-            // Minimized view with controls
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 10,
-            }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, #1db954, #1ed760)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(29, 185, 84, 0.3)",
-              }}>
-                <Music size={20} color="#fff" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ 
-                  fontSize: 12, 
-                  fontWeight: 500, 
-                  color: "#e5e5e5", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis", 
-                  whiteSpace: "nowrap",
-                  marginBottom: 1,
-                }}>
-                  {currentTrack.title}
-                </div>
-                <div style={{ 
-                  fontSize: 10, 
-                  color: "#888", 
-                  overflow: "hidden", 
-                  textOverflow: "ellipsis", 
-                  whiteSpace: "nowrap" 
-                }}>
-                  {currentTrack.artist}
-                </div>
-              </div>
-
-              {/* Control buttons */}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevTrack();
-                }}
-                style={{
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "#666",
-                  cursor: "pointer",
-                  display: "flex",
-                  borderRadius: "4px",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#e5e5e5";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#666";
-                }}
-              >
-                <SkipBack size={16} />
-              </button>
-
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  togglePlay();
-                }}
-                style={{
-                  padding: "6px",
-                  background: "rgba(29, 185, 84, 0.15)",
-                  border: "none",
-                  borderRadius: "8px",
-                  color: "#1db954",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.15s",
-                  width: 32,
-                  height: 32,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.25)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.15)";
-                }}
-              >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-              </button>
-
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextTrack();
-                }}
-                style={{
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "#666",
-                  cursor: "pointer",
-                  display: "flex",
-                  borderRadius: "4px",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#e5e5e5";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#666";
-                }}
-              >
-                <SkipForward size={16} />
-              </button>
-
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMinimized(false);
-                }}
-                style={{
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "#555",
-                  cursor: "pointer",
-                  display: "flex",
-                  borderRadius: "4px",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#888";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#555";
-                }}
-              >
-                <ChevronDown size={16} />
-              </button>
-
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                }}
-                style={{
-                  padding: "4px",
-                  background: "none",
-                  border: "none",
-                  color: "#555",
-                  cursor: "pointer",
-                  display: "flex",
-                  borderRadius: "4px",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#888";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "#555";
-                }}
-              >
-                <X size={16} />
-              </button>
+          {/* Header */}
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between",
+            marginBottom: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Music size={14} color="#1db954" />
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#e5e5e5" }}>
+                GILAS Playlist
+              </span>
+              <span style={{ fontSize: 11, color: "#555" }}>
+                · {TRACKS.length} songs
+              </span>
             </div>
-          ) : (
-            // Expanded view
-            <>
-              <div style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Music size={14} color="#1db954" />
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#e5e5e5" }}>
-                    GILAS Playlist
-                  </span>
-                  <span style={{ fontSize: 11, color: "#555" }}>
-                    · {TRACKS.length} songs
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button 
-                    onClick={() => setMinimized(true)}
-                    style={{ 
-                      padding: 4, 
-                      background: "none", 
-                      border: "none", 
-                      cursor: "pointer", 
-                      color: "#666",
-                      display: "flex",
-                    }}
-                  >
-                    <ChevronDown size={14} />
-                  </button>
-                  <button 
-                    onClick={() => setOpen(false)}
-                    style={{ 
-                      padding: 4, 
-                      background: "none", 
-                      border: "none", 
-                      cursor: "pointer", 
-                      color: "#666",
-                      display: "flex",
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
+            <button 
+              onClick={() => setOpen(false)}
+              style={{ 
+                padding: 4, 
+                background: "none", 
+                border: "none", 
+                cursor: "pointer", 
+                color: "#666",
+                display: "flex",
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
 
-              {/* Current track display */}
-              <div style={{ 
-                padding: "10px 14px",
-                background: "rgba(255,255,255,0.03)",
-                borderRadius: "8px",
-                marginBottom: 12,
-              }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
-                  {currentTrack.title}
-                </div>
-                <div style={{ fontSize: 12, color: "#888" }}>
-                  {currentTrack.artist}
-                </div>
-              </div>
+          {/* Current track display */}
+          <div style={{ 
+            padding: "10px 14px",
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: "8px",
+            marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
+              {currentTrack.title}
+            </div>
+            <div style={{ fontSize: 12, color: "#888" }}>
+              {currentTrack.artist}
+            </div>
+          </div>
 
-              {/* The Spotify embed is rendered as a fixed position element */}
+          {/* Spotify Embed - Clean and full width */}
+          <div style={{
+            width: "100%",
+            height: 152,
+            borderRadius: "8px",
+            overflow: "hidden",
+            marginBottom: 12,
+            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(0,0,0,0.3)",
+          }}>
+            {started ? (
+              <iframe
+                src={EMBED_URL}
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                title="Spotify Player"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                  display: "block",
+                }}
+              />
+            ) : (
               <div style={{
                 width: "100%",
-                height: 152,
-                borderRadius: "8px",
-                overflow: "hidden",
-                marginBottom: 12,
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(0,0,0,0.3)",
-                position: "relative",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#444",
               }}>
-                {!started && (
-                  <div style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#444",
-                  }}>
-                    <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
-                    <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
-                      Click the music icon to start
-                    </div>
-                  </div>
-                )}
+                <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
+                  Click the music icon to start
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* Track list */}
-              <div style={{ 
-                marginTop: 8,
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                paddingTop: 10,
-                maxHeight: 180,
-                overflowY: "auto",
-              }}>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>
-                  PLAYLIST
+          {/* Track navigation hints */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "6px 4px",
+            marginBottom: 8,
+          }}>
+            <button
+              onClick={prevTrack}
+              style={{
+                padding: "6px 10px",
+                background: "rgba(255,255,255,0.04)",
+                border: "none",
+                borderRadius: "6px",
+                color: "#666",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.color = "#e5e5e5";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.color = "#666";
+              }}
+            >
+              <SkipBack size={14} />
+              Previous
+            </button>
+            <span style={{ fontSize: 10, color: "#555" }}>
+              {currentTrackIndex + 1} / {TRACKS.length}
+            </span>
+            <button
+              onClick={nextTrack}
+              style={{
+                padding: "6px 10px",
+                background: "rgba(255,255,255,0.04)",
+                border: "none",
+                borderRadius: "6px",
+                color: "#666",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.color = "#e5e5e5";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.color = "#666";
+              }}
+            >
+              Next
+              <SkipForward size={14} />
+            </button>
+          </div>
+
+          {/* Track list */}
+          <div style={{ 
+            marginTop: 4,
+            borderTop: "1px solid rgba(255,255,255,0.04)",
+            paddingTop: 10,
+            maxHeight: 160,
+            overflowY: "auto",
+          }}>
+            <div style={{ fontSize: 10, color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>
+              PLAYLIST
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {TRACKS.slice(0, 7).map((track, i) => (
+                <div 
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    fontSize: 11,
+                    color: i === currentTrackIndex ? "#1db954" : "#666",
+                    background: i === currentTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
+                    transition: "all 0.15s",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setCurrentTrackIndex(i)}
+                  onMouseEnter={(e) => {
+                    if (i !== currentTrackIndex) e.currentTarget.style.color = "#e5e5e5";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (i !== currentTrackIndex) e.currentTarget.style.color = "#666";
+                  }}
+                >
+                  <span style={{ 
+                    width: 16, 
+                    fontSize: 9, 
+                    color: i === currentTrackIndex ? "#1db954" : "#444",
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {i + 1}
+                  </span>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {track.title}
+                  </span>
+                  <span style={{ fontSize: 9, color: "#555" }}>
+                    {track.artist}
+                  </span>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {TRACKS.slice(0, 8).map((track, i) => (
-                    <div 
-                      key={i}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: 11,
-                        color: i === currentTrackIndex ? "#1db954" : "#666",
-                        background: i === currentTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
-                        transition: "all 0.15s",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => {
-                        setCurrentTrackIndex(i);
-                      }}
-                      onMouseEnter={(e) => {
-                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#e5e5e5";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#666";
-                      }}
-                    >
-                      <span style={{ 
-                        width: 16, 
-                        fontSize: 9, 
-                        color: i === currentTrackIndex ? "#1db954" : "#444",
-                        fontVariantNumeric: "tabular-nums",
-                      }}>
-                        {i + 1}
-                      </span>
-                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {track.title}
-                      </span>
-                      <span style={{ fontSize: 9, color: "#555" }}>
-                        {track.artist}
-                      </span>
-                    </div>
-                  ))}
-                  {TRACKS.length > 8 && (
-                    <div style={{ fontSize: 10, color: "#444", padding: "4px 8px" }}>
-                      +{TRACKS.length - 8} more songs
-                    </div>
-                  )}
+              ))}
+              {TRACKS.length > 7 && (
+                <div style={{ fontSize: 10, color: "#444", padding: "4px 8px" }}>
+                  +{TRACKS.length - 7} more songs
                 </div>
-              </div>
-            </>
-          )}
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
