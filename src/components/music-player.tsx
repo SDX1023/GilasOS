@@ -72,7 +72,6 @@ export function MusicPlayer() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const currentTrack = TRACKS[currentTrackIndex];
 
@@ -151,7 +150,7 @@ export function MusicPlayer() {
           position: "fixed", 
           bottom: 80, 
           right: 24, 
-          width: 340,
+          width: 360,
           background: "rgba(28, 28, 30, 0.95)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -161,11 +160,11 @@ export function MusicPlayer() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: minimized ? "12px 16px" : "16px",
-          maxHeight: minimized ? 72 : 520,
+          maxHeight: minimized ? 72 : 580,
           transition: "max-height 0.3s ease, padding 0.3s ease",
         }}>
           {minimized ? (
-            // Minimized view - clean and compact
+            // Minimized view
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
@@ -212,7 +211,7 @@ export function MusicPlayer() {
                   setMinimized(false);
                 }}
                 style={{
-                  padding: "6px 10px",
+                  padding: "6px 12px",
                   background: "rgba(255,255,255,0.06)",
                   border: "none",
                   borderRadius: "6px",
@@ -250,7 +249,7 @@ export function MusicPlayer() {
               </button>
             </div>
           ) : (
-            // Expanded view with exposed Spotify embed
+            // Expanded view with FULL Spotify embed
             <>
               <div style={{ 
                 display: "flex", 
@@ -302,7 +301,7 @@ export function MusicPlayer() {
                 padding: "10px 14px",
                 background: "rgba(255,255,255,0.03)",
                 borderRadius: "8px",
-                marginBottom: 10,
+                marginBottom: 12,
               }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
                   {currentTrack.title}
@@ -312,18 +311,16 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* ACTUAL SPOTIFY EMBED - Fully visible and interactive */}
-              <div 
-                ref={containerRef}
-                style={{
-                  width: "100%",
-                  height: 80,
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  marginBottom: 10,
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
+              {/* FULL SPOTIFY EMBED - Now with correct height */}
+              <div style={{
+                width: "100%",
+                height: 152,
+                borderRadius: "8px",
+                overflow: "hidden",
+                marginBottom: 12,
+                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(0,0,0,0.3)",
+              }}>
                 {started ? (
                   <iframe
                     src={EMBED_URL}
@@ -334,6 +331,7 @@ export function MusicPlayer() {
                       width: "100%",
                       height: "100%",
                       border: "none",
+                      display: "block",
                     }}
                   />
                 ) : (
@@ -344,11 +342,10 @@ export function MusicPlayer() {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: "rgba(0,0,0,0.3)",
                     color: "#444",
                   }}>
-                    <Music size={16} style={{ opacity: 0.3, marginBottom: 4 }} />
-                    <div style={{ fontSize: 9, letterSpacing: "0.05em" }}>
+                    <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
+                    <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
                       Click the music icon to start
                     </div>
                   </div>
