@@ -147,7 +147,7 @@ export function MusicPlayer() {
     const verifier = generateRandomString(64);
     const challenge = base64urlencode(await sha256(verifier));
     sessionStorage.setItem("spotify_pkce_verifier", verifier);
-    const redirectUri = `${window.location.origin}/api/spotify/callback`;
+    const redirectUri = `${window.location.origin}/spotify-callback`;
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "code",
@@ -160,25 +160,13 @@ export function MusicPlayer() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (!code) return;
-    const verifier = sessionStorage.getItem("spotify_pkce_verifier");
-    if (!verifier) return;
-    const redirectUri = `${window.location.origin}/api/spotify/callback`;
-    fetch("/api/spotify/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, verifier, redirect_uri: redirectUri }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.access_token) {
-          initPlayer(data.access_token);
-          window.history.replaceState({}, "", window.location.pathname);
-        }
-      })
-      .catch(console.error);
+    function onMessage(e: MessageEvent) {
+      if (e.data?.access_token) {
+        initPlayer(e.data.access_token);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   }, [initPlayer]);
 
   const togglePlay = useCallback(async () => {
