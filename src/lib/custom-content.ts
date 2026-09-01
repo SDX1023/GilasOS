@@ -220,10 +220,16 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
     .select("*, flashcards(*)")
     .eq("user_id", user.id);
 
-  const { data: customDecks } = await supabase
-    .from("custom_decks")
-    .select("*, custom_deck_cards(*)")
-    .eq("user_id", user.id);
+  let customDecks: any[] = [];
+  try {
+    const result = await supabase
+      .from("custom_decks")
+      .select("*, custom_deck_cards(*)")
+      .eq("user_id", user.id);
+    customDecks = result.data || [];
+  } catch {
+    // custom_decks table may not exist
+  }
 
   const seenIds = new Set<string>();
   const seenTitles = new Set<string>();
@@ -261,7 +267,6 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
       if (titleKey && seenTitles.has(titleKey)) continue;
       seenIds.add(d.id);
       seenTitles.add(titleKey);
-      seenIds.add(d.id);
       result.push({
         courseId: d.title || "My Decks",
         moduleId: "custom",
@@ -291,91 +296,81 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const originalId = reviewer.id;
-
   console.log("=== SAVING DECK ===");
-  console.log("Original ID:", originalId);
   console.log("Title:", reviewer.title);
   console.log("Cards:", reviewer.cards?.length || 0);
 
-  // Step 1: Find or create custom_decks row — use its UUID as the canonical deck ID
-  const { data: existingDeck } = await supabase
-    .from("custom_decks")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("title", reviewer.title || "Untitled Deck")
-    .maybeSingle();
+  let deckId: string | null = null;
 
-  let deckId: string;
-
-  if (existingDeck) {
-    deckId = existingDeck.id;
-    await supabase
+  // Step 1: Try to save to custom_decks / custom_deck_cards
+  try {
+    const { data: existingDeck, error: findErr } = await supabase
       .from("custom_decks")
-      .update({
-        card_count: reviewer.cards ? reviewer.cards.length : 0,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", deckId);
-  } else {
-    const { data: deckData, error: deckError } = await supabase
-      .from("custom_decks")
-      .insert({
-        user_id: user.id,
-        title: reviewer.title || "Untitled Deck",
-        description: "Imported from shared deck",
-        card_count: reviewer.cards ? reviewer.cards.length : 0,
-      })
-      .select()
-      .single();
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("title", reviewer.title || "Untitled Deck")
+      .maybeSingle();
 
-    if (deckError) {
-      console.error("Custom deck insert error:", deckError);
-      throw deckError;
-    }
-    deckId = deckData.id;
-  }
-
-  console.log("Deck ID:", deckId);
-
-  // Step 2: Save cards to custom_deck_cards
-  if (reviewer.cards && reviewer.cards.length > 0) {
-    await supabase.from("custom_deck_cards").delete().eq("deck_id", deckId);
-
-    const cards = reviewer.cards.map((card: any, index: number) => ({
-      deck_id: deckId,
-      user_id: user.id,
-      front: String(card.front || ""),
-      back: String(card.back || ""),
-      hint: String(card.hint || ""),
-      card_order: index,
-    }));
-
-    const { error: cardsError } = await supabase
-      .from("custom_deck_cards")
-      .insert(cards);
-
-    if (cardsError) {
-      console.error("Cards save error:", cardsError);
-      let successCount = 0;
-      for (const card of cards) {
-        const { error: singleError } = await supabase.from("custom_deck_cards").insert(card);
-        if (!singleError) successCount++;
-        else console.error("Single card error:", singleError);
-      }
-      console.log(`Inserted ${successCount}/${cards.length} cards individually`);
+    if (findErr) {
+      console.warn("custom_decks query failed (table may not exist):", findErr.message);
+    } else if (existingDeck) {
+      deckId = existingDeck.id;
+      await supabase
+        .from("custom_decks")
+        .update({ card_count: reviewer.cards?.length || 0, updated_at: new Date().toISOString() })
+        .eq("id", deckId);
     } else {
-      console.log("Cards saved:", cards.length);
+      const { data: deckData, error: deckError } = await supabase
+        .from("custom_decks")
+        .insert({
+          user_id: user.id,
+          title: reviewer.title || "Untitled Deck",
+          description: "Imported from shared deck",
+          card_count: reviewer.cards?.length || 0,
+        })
+        .select()
+        .single();
+
+      if (deckError) {
+        console.warn("custom_decks insert failed:", deckError.message);
+      } else {
+        deckId = deckData.id;
+      }
     }
+
+    // Save cards to custom_deck_cards
+    if (deckId && reviewer.cards && reviewer.cards.length > 0) {
+      await supabase.from("custom_deck_cards").delete().eq("deck_id", deckId);
+
+      const cards = reviewer.cards.map((card: any, index: number) => ({
+        deck_id: deckId,
+        user_id: user.id,
+        front: String(card.front || ""),
+        back: String(card.back || ""),
+        hint: String(card.hint || ""),
+        card_order: index,
+      }));
+
+      const { error: cardsError } = await supabase.from("custom_deck_cards").insert(cards);
+      if (cardsError) {
+        console.warn("custom_deck_cards insert failed:", cardsError.message);
+      }
+    }
+  } catch (e) {
+    console.warn("custom_decks/custom_deck_cards save failed:", e);
   }
 
-  // Step 3: Save to reviewers table — use the same deckId (UUID) so both systems share the key
-  await supabase.from("reviewers").delete().eq("id", deckId).eq("user_id", user.id);
+  console.log("Custom deck ID:", deckId);
+
+  // Step 2: Save to reviewers table — use custom_decks UUID if available, otherwise generate one
+  const reviewerId = deckId || `${courseId}/${moduleId}/${(reviewer.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  await supabase.from("reviewers").delete().eq("id", reviewerId).eq("user_id", user.id);
 
   const { error: reviewerError } = await supabase
     .from("reviewers")
     .insert({
-      id: deckId,
+      id: reviewerId,
       user_id: user.id,
       course_id: courseId,
       module_id: moduleId,
@@ -386,14 +381,14 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     console.error("Reviewers save error:", reviewerError);
   }
 
-  // Step 4: Save flashcards
-  await supabase.from("flashcards").delete().eq("reviewer_id", deckId).eq("user_id", user.id);
+  // Step 3: Save flashcards
+  await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId).eq("user_id", user.id);
 
   if (reviewer.cards && reviewer.cards.length > 0) {
     const timestamp = Date.now();
     const flashcardRows = reviewer.cards.map((card: any, index: number) => ({
-      id: `${deckId.replace(/\//g, "-")}-card-${timestamp}-${index}`,
-      reviewer_id: deckId,
+      id: `${reviewerId.replace(/\//g, "-")}-card-${timestamp}-${index}`,
+      reviewer_id: reviewerId,
       user_id: user.id,
       front: String(card.front || ""),
       back: String(card.back || ""),
@@ -411,7 +406,9 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     window.dispatchEvent(new CustomEvent("decksUpdated"));
   }
 
-  return { success: true, deckId };
+  // If custom_decks failed, use the reviewerId (slug) as the deckId
+  const finalId = deckId || reviewerId;
+  return { success: true, deckId: finalId };
 }
 
 export async function deleteReviewerFromSupabase(reviewerId: string) {
