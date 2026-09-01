@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, X, ChevronDown } from "lucide-react";
+import { Music, X, ChevronDown, Play, Pause, SkipForward, SkipBack } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
@@ -70,14 +70,95 @@ export function MusicPlayer() {
   const [minimized, setMinimized] = useState(false);
   const [started, setStarted] = useState(loadStarted);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const currentTrack = TRACKS[currentTrackIndex];
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
+
+  // Create persistent iframe
+  useEffect(() => {
+    if (!started) {
+      if (iframeRef.current) {
+        iframeRef.current.remove();
+        iframeRef.current = null;
+      }
+      return;
+    }
+
+    if (!iframeRef.current) {
+      const iframe = document.createElement("iframe");
+      iframe.src = EMBED_URL;
+      iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+      iframe.loading = "lazy";
+      iframe.title = "Spotify Player";
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
+        border:none;
+        z-index:9999;
+        opacity:1;
+        pointer-events:auto;
+      `;
+      document.body.appendChild(iframe);
+      iframeRef.current = iframe;
+      
+      iframe.onload = () => {
+        setIsPlaying(true);
+      };
+    }
+
+    return () => {
+      // Don't remove iframe on unmount - keep it playing
+    };
+  }, [started]);
+
+  // Position iframe based on state
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !started) return;
+
+    if (open && !minimized) {
+      // When expanded, show iframe in the panel
+      const panel = panelRef.current;
+      if (panel) {
+        const rect = panel.getBoundingClientRect();
+        iframe.style.cssText = `
+          position:fixed;
+          top:${rect.top + 60}px;
+          left:${rect.left + 16}px;
+          width:${rect.width - 32}px;
+          height:152px;
+          border:none;
+          border-radius:8px;
+          z-index:10002;
+          opacity:1;
+          pointer-events:auto;
+        `;
+      }
+    } else {
+      // When minimized or closed, keep at bottom
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:0;
+        left:0;
+        width:100%;
+        height:80px;
+        border:none;
+        z-index:9999;
+        opacity:1;
+        pointer-events:auto;
+      `;
+    }
+  }, [open, minimized, started]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -95,6 +176,35 @@ export function MusicPlayer() {
   useEffect(() => {
     if (!open) setMinimized(false);
   }, [open]);
+
+  // These buttons just simulate track changes visually
+  // The actual playback is controlled by Spotify's iframe
+  const nextTrack = () => {
+    const next = (currentTrackIndex + 1) % TRACKS.length;
+    setCurrentTrackIndex(next);
+  };
+
+  const prevTrack = () => {
+    const prev = (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
+    setCurrentTrackIndex(prev);
+  };
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+    // Try to control the iframe
+    if (iframeRef.current) {
+      try {
+        // This is a hack - Spotify doesn't support programmatic control
+        // So we just let the user control it via the iframe
+        if (!isPlaying) {
+          // Reload to play
+          iframeRef.current.src = EMBED_URL;
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
+  };
 
   return (
     <div data-music-player>
@@ -133,12 +243,14 @@ export function MusicPlayer() {
       >
         {open ? (
           <X size={18} color="#999" />
-        ) : started ? (
+        ) : started && isPlaying ? (
           <div style={{ display: "flex", gap: 2.5, alignItems: "flex-end", height: 16 }}>
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar1 0.6s ease-in-out infinite" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar2 0.8s ease-in-out infinite 0.2s" }} />
             <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar3 0.7s ease-in-out infinite 0.4s" }} />
           </div>
+        ) : started ? (
+          <Play size={18} color="#1db954" />
         ) : (
           <Music size={18} color="#666" />
         )}
@@ -164,11 +276,11 @@ export function MusicPlayer() {
           transition: "max-height 0.3s ease, padding 0.3s ease",
         }}>
           {minimized ? (
-            // Minimized view
+            // Minimized view with controls
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
-              gap: 12,
+              gap: 10,
             }}>
               <div style={{
                 width: 44,
@@ -185,18 +297,18 @@ export function MusicPlayer() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ 
-                  fontSize: 13, 
+                  fontSize: 12, 
                   fontWeight: 500, 
                   color: "#e5e5e5", 
                   overflow: "hidden", 
                   textOverflow: "ellipsis", 
                   whiteSpace: "nowrap",
-                  marginBottom: 2,
+                  marginBottom: 1,
                 }}>
                   {currentTrack.title}
                 </div>
                 <div style={{ 
-                  fontSize: 11, 
+                  fontSize: 10, 
                   color: "#888", 
                   overflow: "hidden", 
                   textOverflow: "ellipsis", 
@@ -205,32 +317,112 @@ export function MusicPlayer() {
                   {currentTrack.artist}
                 </div>
               </div>
+
+              {/* Control buttons */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevTrack();
+                }}
+                style={{
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "#666",
+                  cursor: "pointer",
+                  display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#e5e5e5";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#666";
+                }}
+              >
+                <SkipBack size={16} />
+              </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
+                style={{
+                  padding: "6px",
+                  background: "rgba(29, 185, 84, 0.15)",
+                  border: "none",
+                  borderRadius: "8px",
+                  color: "#1db954",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s",
+                  width: 32,
+                  height: 32,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(29, 185, 84, 0.15)";
+                }}
+              >
+                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+              </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextTrack();
+                }}
+                style={{
+                  padding: "4px",
+                  background: "none",
+                  border: "none",
+                  color: "#666",
+                  cursor: "pointer",
+                  display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#e5e5e5";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#666";
+                }}
+              >
+                <SkipForward size={16} />
+              </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setMinimized(false);
                 }}
                 style={{
-                  padding: "6px 12px",
-                  background: "rgba(255,255,255,0.06)",
+                  padding: "4px",
+                  background: "none",
                   border: "none",
-                  borderRadius: "6px",
-                  color: "#888",
+                  color: "#555",
                   cursor: "pointer",
-                  fontSize: 11,
+                  display: "flex",
+                  borderRadius: "4px",
                   transition: "all 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-                  e.currentTarget.style.color = "#e5e5e5";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
                   e.currentTarget.style.color = "#888";
                 }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#555";
+                }}
               >
-                Expand
+                <ChevronDown size={16} />
               </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -243,13 +435,21 @@ export function MusicPlayer() {
                   color: "#555",
                   cursor: "pointer",
                   display: "flex",
+                  borderRadius: "4px",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#888";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#555";
                 }}
               >
                 <X size={16} />
               </button>
             </div>
           ) : (
-            // Expanded view with FULL Spotify embed
+            // Expanded view
             <>
               <div style={{ 
                 display: "flex", 
@@ -311,7 +511,7 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* FULL SPOTIFY EMBED - Now with correct height */}
+              {/* The Spotify embed is rendered as a fixed position element */}
               <div style={{
                 width: "100%",
                 height: 152,
@@ -320,21 +520,9 @@ export function MusicPlayer() {
                 marginBottom: 12,
                 border: "1px solid rgba(255,255,255,0.06)",
                 background: "rgba(0,0,0,0.3)",
+                position: "relative",
               }}>
-                {started ? (
-                  <iframe
-                    src={EMBED_URL}
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                    title="Spotify Player"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      border: "none",
-                      display: "block",
-                    }}
-                  />
-                ) : (
+                {!started && (
                   <div style={{
                     width: "100%",
                     height: "100%",
@@ -357,7 +545,7 @@ export function MusicPlayer() {
                 marginTop: 8,
                 borderTop: "1px solid rgba(255,255,255,0.04)",
                 paddingTop: 10,
-                maxHeight: 200,
+                maxHeight: 180,
                 overflowY: "auto",
               }}>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>
@@ -377,7 +565,16 @@ export function MusicPlayer() {
                         color: i === currentTrackIndex ? "#1db954" : "#666",
                         background: i === currentTrackIndex ? "rgba(29, 185, 84, 0.08)" : "transparent",
                         transition: "all 0.15s",
-                        cursor: "default",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        setCurrentTrackIndex(i);
+                      }}
+                      onMouseEnter={(e) => {
+                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#e5e5e5";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (i !== currentTrackIndex) e.currentTarget.style.color = "#666";
                       }}
                     >
                       <span style={{ 
