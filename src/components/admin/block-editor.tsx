@@ -5,13 +5,14 @@ import { GripVertical, Plus, Trash2, Image as ImageIcon, Bold, Italic, Code, Hea
 
 interface Block {
   id: string;
-  type: "paragraph" | "heading1" | "heading2" | "heading3" | "bullet" | "numbered" | "quote" | "divider" | "image" | "code" | "callout" | "checkbox";
+  type: "paragraph" | "heading1" | "heading2" | "heading3" | "bullet" | "numbered" | "quote" | "divider" | "image" | "code" | "callout" | "checkbox" | "table";
   content: string;
   src?: string;
   alt?: string;
   checked?: boolean;
   indent?: number;
   numbering?: number;
+  rows?: string[][];
 }
 
 interface BlockEditorProps {
@@ -61,6 +62,22 @@ function parseBlocks(md: string): Block[] {
       blocks.push({ id: uid(), type: "code", content: code.join("\n"), alt: lang });
       continue;
     }
+    // Table: | col | col | pattern
+    if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|")) {
+        const row = lines[i].trim().slice(1, -1).split("|").map(c => c.trim());
+        // Skip separator row (|---|---|)
+        if (!row.every(c => /^[-:]+$/.test(c))) {
+          rows.push(row);
+        }
+        i++;
+      }
+      if (rows.length > 0) {
+        blocks.push({ id: uid(), type: "table", content: "", rows });
+      }
+      continue;
+    }
     blocks.push({ id: uid(), type: "paragraph", content: line });
     i++;
   }
@@ -86,6 +103,15 @@ function toMarkdown(blocks: Block[]): string {
       case "divider": return "---";
       case "image": return `![${b.alt || b.content}](${b.src})`;
       case "code": return `\`\`\`${b.alt || ""}\n${b.content}\n\`\`\``;
+      case "table": {
+        if (!b.rows || b.rows.length === 0) return "";
+        const cols = Math.max(...b.rows.map(r => r.length));
+        const normalized = b.rows.map(r => { const row = [...r]; while (row.length < cols) row.push(""); return row; });
+        const header = `| ${normalized[0].join(" | ")} |`;
+        const sep = `| ${normalized[0].map(() => "---").join(" | ")} |`;
+        const body = normalized.slice(1).map(r => `| ${r.join(" | ")} |`).join("\n");
+        return header + "\n" + sep + (body ? "\n" + body : "");
+      }
       default: return b.content;
     }
   }).join("\n");
@@ -113,6 +139,7 @@ const BLOCK_TYPES = [
   { type: "code" as const, icon: "</>", label: "Code", desc: "Code block" },
   { type: "image" as const, icon: "🖼", label: "Image", desc: "Upload or embed" },
   { type: "divider" as const, icon: "—", label: "Divider", desc: "Horizontal line" },
+  { type: "table" as const, icon: "⊞", label: "Table", desc: "Rows and columns" },
 ];
 
 export function BlockEditor({ content, onChange }: BlockEditorProps) {
@@ -521,6 +548,54 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               spellCheck={false} />
           </div>
         );
+      case "table": {
+        const rows = block.rows || [["", ""], ["", ""]];
+        const cols = Math.max(...rows.map(r => r.length));
+        const updateCell = (ri: number, ci: number, val: string) => {
+          const newRows = rows.map(r => [...r]);
+          while (newRows[ri].length <= ci) newRows[ri].push("");
+          newRows[ri][ci] = val;
+          update(block.id, { rows: newRows });
+        };
+        const addRow = () => { update(block.id, { rows: [...rows, new Array(cols).fill("")] }); };
+        const addCol = () => { update(block.id, { rows: rows.map(r => [...r, ""]) }); };
+        const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
+        const delCol = (ci: number) => { if (cols <= 1) return; update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)) }); };
+        return (
+          <div style={wrapperStyle} {...hoverHandlers}>
+            {handle}
+            <div style={{ flex: 1, overflow: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                <tbody>
+                  {rows.map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell, ci) => (
+                        <td key={ci} style={{ border: "1px solid var(--os-glass-border)", padding: 0, position: "relative" }}>
+                          <div contentEditable suppressContentEditableWarning
+                            onBlur={(e) => updateCell(ri, ci, e.currentTarget.textContent || "")}
+                            onKeyDown={(e) => {
+                              if (e.key === "Tab") { e.preventDefault(); const next = ci + 1 < cols ? ci + 1 : 0; const nextRow = ci + 1 >= cols ? ri + 1 : ri; const el = (e.currentTarget.closest("table") as HTMLTableElement)?.rows[nextRow]?.cells[next]; el?.querySelector("div")?.focus(); }
+                              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (ri < rows.length - 1) { const el = (e.currentTarget.closest("table") as HTMLTableElement)?.rows[ri + 1]?.cells[ci]; el?.querySelector("div")?.focus(); } else { addRow(); } }
+                            }}
+                            style={{ outline: "none", padding: "8px 10px", minHeight: "1.4em", wordBreak: "break-word", background: ri === 0 ? "rgba(255,255,255,0.03)" : "transparent" }}
+                            dangerouslySetInnerHTML={{ __html: renderInline(cell) }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                <button onClick={addRow} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(255,255,255,0.05)", border: "1px solid var(--os-glass-border)", color: "var(--os-text-dim)", fontSize: 11, cursor: "pointer" }}>+ Row</button>
+                <button onClick={addCol} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(255,255,255,0.05)", border: "1px solid var(--os-glass-border)", color: "var(--os-text-dim)", fontSize: 11, cursor: "pointer" }}>+ Col</button>
+                {rows.length > 1 && <button onClick={() => delRow(rows.length - 1)} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>- Row</button>}
+                {cols > 1 && <button onClick={() => delCol(cols - 1)} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", fontSize: 11, cursor: "pointer" }}>- Col</button>}
+              </div>
+            </div>
+            {delBtn}
+          </div>
+        );
+      }
       default:
         return (
           <div style={wrapperStyle} {...hoverHandlers}>

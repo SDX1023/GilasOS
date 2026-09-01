@@ -25,6 +25,7 @@ const EVENT_COLORS = [
   { name: "Quiz", color: "#10b981" },
   { name: "Exam", color: "#ef4444" },
   { name: "Task", color: "#06b6d4" },
+  { name: "Competition", color: "#f97316" },
   { name: "Other", color: "#8b5cf6" },
 ];
 
