@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { saveReviewerToSupabase } from "@/lib/custom-content";
 import { User, ArrowLeft, BookOpen, Save, Check, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface SharedDeckData {
   id: string;
@@ -36,6 +37,7 @@ interface CreatorProfile {
 export default function SharedDeckPage({ params }: { params: Promise<{ deckId: string }> }) {
   const { deckId } = use(params);
   const { user } = useAuth();
+  const router = useRouter();
   const [deck, setDeck] = useState<SharedDeckData | null>(null);
   const [cards, setCards] = useState<DeckCard[]>([]);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
@@ -93,20 +95,34 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
   const handleSave = async () => {
     if (!user || !deck) return;
     setSaving(true);
-    const slug = deck.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    const courseId = deck.course_id || "My Decks";
-    const moduleId = deck.module_id || "shared";
-    const reviewerId = `${courseId}/${moduleId}/${slug}`;
-    const reviewer = {
-      id: reviewerId,
-      courseId,
-      moduleId,
-      title: deck.title,
-      cards: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
-    };
-    await saveReviewerToSupabase(courseId, moduleId, reviewer);
-    setSaving(false);
-    setSaved(true);
+    try {
+      const slug = deck.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+      const courseId = deck.course_id || "My Decks";
+      const moduleId = deck.module_id || "shared";
+      const reviewerId = `${courseId}/${moduleId}/${slug}`;
+      const reviewer = {
+        id: reviewerId,
+        courseId,
+        moduleId,
+        title: deck.title,
+        cards: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      };
+      
+      await saveReviewerToSupabase(courseId, moduleId, reviewer);
+      setSaved(true);
+      
+      // Trigger event for decks page
+      window.dispatchEvent(new CustomEvent("decksUpdated"));
+      
+      // Redirect to My Decks after saving
+      setTimeout(() => {
+        router.push("/decks");
+      }, 800);
+    } catch (error) {
+      console.error("Error saving deck:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -114,7 +130,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
     setDeleting(true);
     const supabase = getSupabase();
     await supabase.from("shared_decks").delete().eq("id", deck.id).eq("user_id", user.id);
-    window.location.href = "/shared";
+    router.push("/shared");
   };
 
   if (!user) {
