@@ -223,6 +223,69 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             }
           }
         }
+
+        // Fallback: load from custom_decks/custom_deck_cards
+        if (!found) {
+          const expectedId = `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+          const { data: customDecks } = await supabase
+            .from("custom_decks")
+            .select("*, custom_deck_cards(*)")
+            .eq("user_id", user.id);
+
+          if (customDecks) {
+            for (const d of customDecks) {
+              if (d.id === expectedId || d.id.endsWith(`/${reviewerSlug}`)) {
+                const mapped = (d.custom_deck_cards || []).map((c: any) => ({
+                  front: c.front,
+                  back: c.back,
+                  hint: c.hint || "",
+                  card_type: "standard",
+                  image_url: "",
+                  labels: [],
+                }));
+                setReviewer({
+                  id: d.id,
+                  courseId: d.title || courseSlug,
+                  moduleId: "custom",
+                  title: d.title,
+                  cards: mapped,
+                });
+                setCards(mapped);
+                found = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // Fallback: load directly from flashcards table by reviewer_id
+        if (!found) {
+          const expectedId = `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+          const { data: flashcards } = await supabase
+            .from("flashcards")
+            .select("front, back, hint")
+            .eq("reviewer_id", expectedId);
+
+          if (flashcards && flashcards.length > 0) {
+            const mapped = flashcards.map((c: any) => ({
+              front: c.front,
+              back: c.back,
+              hint: c.hint || "",
+              card_type: "standard",
+              image_url: "",
+              labels: [],
+            }));
+            setReviewer({
+              id: expectedId,
+              courseId: courseSlug,
+              moduleId: moduleSlug,
+              title: reviewerSlug.replace(/-/g, " "),
+              cards: mapped,
+            });
+            setCards(mapped);
+            found = true;
+          }
+        }
       }
 
       // Fallback: load from localStorage
