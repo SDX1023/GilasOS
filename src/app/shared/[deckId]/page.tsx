@@ -164,8 +164,9 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
       window.dispatchEvent(new CustomEvent("decksUpdated"));
 
+      // Redirect to Study page with the deck ID
       setTimeout(() => {
-        router.push("/decks");
+        router.push(`/study?deck=${encodeURIComponent(deck.id)}`);
       }, 800);
     } catch (error) {
       console.error("Error saving deck:", error);
