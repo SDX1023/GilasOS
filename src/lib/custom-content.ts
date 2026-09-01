@@ -227,6 +227,9 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
         front: c.front,
         back: c.back,
         hint: c.hint || "",
+        card_type: c.card_type || "standard",
+        image_url: c.image_url || "",
+        labels: c.labels || [],
       })),
     },
   }));
