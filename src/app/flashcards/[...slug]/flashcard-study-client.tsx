@@ -194,8 +194,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
         if (reviewers) {
           for (const r of reviewers) {
-            // Match by full ID or by slug portion
-            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id.endsWith(`/${reviewerSlug}`)) {
+            // Match by full path, by direct ID (UUID), or by slug suffix
+            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id === courseSlug || r.id.endsWith(`/${reviewerSlug}`)) {
               setReviewer({
                 id: r.id,
                 courseId: r.course_id,
@@ -234,8 +234,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
           if (customDecks) {
             for (const d of customDecks) {
-              const titleMatch = d.title?.toLowerCase().replace(/\s+/g, "-").includes(reviewerSlug);
-              if (d.id === expectedId || d.id.endsWith(`/${reviewerSlug}`) || titleMatch) {
+              const titleKey = reviewerSlug ? reviewerSlug.replace(/-/g, " ").toLowerCase() : "";
+              const titleMatch = titleKey && d.title?.toLowerCase().includes(titleKey);
+              if (d.id === expectedId || d.id === courseSlug || d.id.endsWith(`/${reviewerSlug}`) || titleMatch) {
                 const mapped = (d.custom_deck_cards || []).map((c: any) => ({
                   front: c.front,
                   back: c.back,
@@ -266,7 +267,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           const { data: flashcards } = await supabase
             .from("flashcards")
             .select("front, back, hint")
-            .or(`reviewer_id.eq.${expectedId},reviewer_id.eq.${expectedId}-${userIdShort}`)
+            .or(`reviewer_id.eq.${expectedId},reviewer_id.eq.${courseSlug},reviewer_id.eq.${expectedId}-${userIdShort}`)
             .eq("user_id", user.id);
 
           if (flashcards && flashcards.length > 0) {
@@ -558,7 +559,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         module_id: moduleSlug,
         title: reviewer.title,
       }, { onConflict: "id" });
-      await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId);
+      await supabase.from("flashcards").delete().eq("reviewer_id", reviewerId).eq("user_id", user.id);
       if (updatedCards.length > 0) {
         const timestamp = Date.now();
         const rows = updatedCards.map((card, i) => ({
@@ -568,14 +569,38 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           front: card.front,
           back: card.back,
           hint: card.hint || "",
-          card_type: card.card_type || "standard",
-          image_url: card.image_url || "",
-          labels: card.labels || [],
         }));
         const { error } = await supabase.from("flashcards").insert(rows);
         if (error) {
-          const fallbackRows = rows.map(({ card_type: _ct, image_url: _iu, labels: _l, ...rest }) => rest);
-          await supabase.from("flashcards").insert(fallbackRows);
+          console.error("Flashcards insert error:", error);
+        }
+      }
+
+      // Also sync to custom_deck_cards so My Decks stays in sync
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(reviewerId)) {
+        const { data: existingDeck } = await supabase
+          .from("custom_decks")
+          .select("id")
+          .eq("id", reviewerId)
+          .maybeSingle();
+        if (existingDeck) {
+          await supabase.from("custom_deck_cards").delete().eq("deck_id", reviewerId);
+          if (updatedCards.length > 0) {
+            const cards = updatedCards.map((card, index) => ({
+              deck_id: reviewerId,
+              user_id: user.id,
+              front: card.front,
+              back: card.back,
+              hint: card.hint || "",
+              card_order: index,
+            }));
+            await supabase.from("custom_deck_cards").insert(cards);
+          }
+          await supabase.from("custom_decks").update({
+            card_count: updatedCards.length,
+            updated_at: new Date().toISOString(),
+          }).eq("id", reviewerId);
         }
       }
     }
