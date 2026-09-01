@@ -12,11 +12,11 @@ const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/study", label: "Study", icon: Sparkles },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/friends", label: "Friends", icon: Users },
 ];
 
 const toolItems = [
-  { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/pdf-to-cards", label: "PDF to Cards", icon: FileText },
   { href: "/archive", label: "Archive", icon: Archive },
