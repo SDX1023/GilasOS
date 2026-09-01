@@ -262,10 +262,11 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         // Fallback: load directly from flashcards table by reviewer_id
         if (!found) {
           const expectedId = `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+          const userIdShort = user.id.slice(0, 8);
           const { data: flashcards } = await supabase
             .from("flashcards")
             .select("front, back, hint")
-            .eq("reviewer_id", expectedId)
+            .or(`reviewer_id.eq.${expectedId},reviewer_id.eq.${expectedId}-${userIdShort}`)
             .eq("user_id", user.id);
 
           if (flashcards && flashcards.length > 0) {

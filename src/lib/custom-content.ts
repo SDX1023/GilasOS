@@ -391,7 +391,8 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   }
 
   // Also save to reviewers/flashcards tables so the Study page can load them
-  // Use insert (not upsert) to avoid conflicts with other users' rows
+  // Try to insert with the original ID; if it conflicts (another user owns it), append user suffix
+  let finalReviewerId = deckId;
   const { error: reviewerError } = await supabase
     .from("reviewers")
     .insert({
@@ -402,18 +403,35 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       title: reviewer.title || "Untitled Deck",
     });
 
-  if (reviewerError && reviewerError.code !== "23505") {
-    console.error("Reviewers table save error:", reviewerError);
+  if (reviewerError) {
+    if (reviewerError.code === "23505") {
+      // Row exists with same ID but different user — create our own copy with suffixed ID
+      finalReviewerId = `${deckId}-${user.id.slice(0, 8)}`;
+      const { error: retryError } = await supabase
+        .from("reviewers")
+        .insert({
+          id: finalReviewerId,
+          user_id: user.id,
+          course_id: courseId,
+          module_id: moduleId,
+          title: reviewer.title || "Untitled Deck",
+        });
+      if (retryError) {
+        console.error("Reviewers retry save error:", retryError);
+      }
+    } else {
+      console.error("Reviewers table save error:", reviewerError);
+    }
   }
 
-  // Save flashcards for this user (even if reviewers row already existed for another user)
-  await supabase.from("flashcards").delete().eq("reviewer_id", deckId).eq("user_id", user.id);
+  // Save flashcards for this user
+  await supabase.from("flashcards").delete().eq("reviewer_id", finalReviewerId).eq("user_id", user.id);
 
   if (reviewer.cards && reviewer.cards.length > 0) {
     const timestamp = Date.now();
     const flashcardRows = reviewer.cards.map((card: any, index: number) => ({
-      id: `${deckId.replace(/\//g, "-")}-card-${timestamp}-${index}`,
-      reviewer_id: deckId,
+      id: `${finalReviewerId.replace(/\//g, "-")}-card-${timestamp}-${index}`,
+      reviewer_id: finalReviewerId,
       user_id: user.id,
       front: String(card.front || ""),
       back: String(card.back || ""),
@@ -427,7 +445,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     }
   }
 
-  return { success: true, deckId };
+  return { success: true, deckId: finalReviewerId };
 }
 
 export async function deleteReviewerFromSupabase(reviewerId: string) {
