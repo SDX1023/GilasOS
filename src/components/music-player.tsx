@@ -5,7 +5,7 @@ import { Music, X, ChevronUp, ChevronDown, Shuffle, Volume2, VolumeX } from "luc
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || "";
-const SCOPES = ["streaming", "user-read-playback-state", "user-modify-playback-state", "user-read-currently-playing"];
+const SCOPES = ["streaming", "user-read-playback-state", "user-modify-playback-state", "user-read-currently-playing", "playlist-read-private", "playlist-read-collaborative"];
 
 declare global {
   interface Window {
@@ -97,18 +97,21 @@ export function MusicPlayer() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
-      setTracks(
-        (data.items || [])
-          .filter((i: any) => i.track)
-          .map((i: any) => ({
-            id: i.track.id,
-            name: i.track.name,
-            artist: i.track.artists.map((a: any) => a.name).join(", "),
-            uri: i.track.uri,
-            image: i.track.album.images?.[0]?.url || "",
-            duration_ms: i.track.duration_ms,
-          }))
-      );
+      if (data.error) {
+        console.error("Spotify API error:", data.error);
+        return;
+      }
+      const list = (data.items || [])
+        .filter((i: any) => i.track)
+        .map((i: any) => ({
+          id: i.track.id,
+          name: i.track.name,
+          artist: i.track.artists.map((a: any) => a.name).join(", "),
+          uri: i.track.uri,
+          image: i.track.album.images?.[0]?.url || "",
+          duration_ms: i.track.duration_ms,
+        }));
+      setTracks(list);
     } catch (e) {
       console.error("Failed to fetch tracks:", e);
     }
