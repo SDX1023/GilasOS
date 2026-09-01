@@ -250,8 +250,11 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
   // Use the reviewer.id directly as the deck ID
   const deckId = reviewer.id;
 
-  console.log("Saving deck with ID:", deckId);
-  console.log("Number of cards:", reviewer.cards?.length || 0);
+  console.log("=== SAVING DECK ===");
+  console.log("Deck ID:", deckId);
+  console.log("Title:", reviewer.title);
+  console.log("Cards array length:", reviewer.cards?.length || 0);
+  console.log("First card sample:", reviewer.cards?.[0]);
 
   // Save to custom_decks table
   const { data: deckData, error: deckError } = await supabase
@@ -272,26 +275,34 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     throw deckError;
   }
 
-  console.log("Deck saved successfully:", deckData);
+  console.log("Deck saved:", deckData);
 
   // Save the cards
   if (reviewer.cards && reviewer.cards.length > 0) {
+    console.log("Preparing to save", reviewer.cards.length, "cards");
+    
     const cards = reviewer.cards.map((card: any, index: number) => ({
       deck_id: deckId,
-      front: card.front || "",
-      back: card.back || "",
-      hint: card.hint || "",
+      front: String(card.front || ""),
+      back: String(card.back || ""),
+      hint: String(card.hint || ""),
       sort_order: index,
       created_at: new Date().toISOString(),
     }));
 
-    console.log("Cards to save:", cards.length);
+    console.log("Cards formatted:", cards.slice(0, 2));
 
     // Delete existing cards first
-    await supabase
+    const { error: deleteError } = await supabase
       .from("custom_deck_cards")
       .delete()
       .eq("deck_id", deckId);
+    
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+    } else {
+      console.log("Deleted existing cards");
+    }
 
     // Insert new cards
     const { data: cardsData, error: cardsError } = await supabase
@@ -301,23 +312,38 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
 
     if (cardsError) {
       console.error("Cards save error:", cardsError);
-      // Try inserting one by one as fallback
-      console.log("Trying to insert cards one by one...");
+      // Try inserting one by one
+      console.log("Trying individual inserts...");
       let successCount = 0;
-      for (const card of cards) {
+      for (let i = 0; i < cards.length; i++) {
         const { error: singleError } = await supabase
           .from("custom_deck_cards")
-          .insert(card);
+          .insert(cards[i]);
         if (!singleError) {
           successCount++;
         } else {
-          console.error("Failed to insert card:", card, singleError);
+          console.error(`Failed to insert card ${i}:`, singleError);
+          console.error("Card data:", cards[i]);
         }
       }
-      console.log(`Successfully inserted ${successCount} out of ${cards.length} cards`);
+      console.log(`Inserted ${successCount}/${cards.length} cards individually`);
     } else {
       console.log("Cards saved successfully:", cardsData?.length || cards.length);
     }
+  } else {
+    console.log("No cards to save - reviewer.cards is empty or undefined");
+  }
+
+  // Verify the cards were saved
+  const { data: verifyCards, error: verifyError } = await supabase
+    .from("custom_deck_cards")
+    .select("*")
+    .eq("deck_id", deckId);
+
+  if (verifyError) {
+    console.error("Verification error:", verifyError);
+  } else {
+    console.log("Verification - cards in DB:", verifyCards?.length || 0);
   }
 
   // Trigger event to refresh decks

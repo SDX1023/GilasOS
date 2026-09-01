@@ -139,6 +139,10 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
     if (!user || !deck) return;
     setSaving(true);
     try {
+      console.log("=== SAVING TO MY DECKS ===");
+      console.log("Deck:", deck);
+      console.log("Cards to save:", cards.length);
+      
       const reviewer = {
         id: deck.id,
         courseId: deck.course_id || "My Decks",
@@ -151,7 +155,11 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
         })),
       };
 
-      await saveReviewerToSupabase(reviewer.courseId, reviewer.moduleId, reviewer);
+      console.log("Reviewer object:", reviewer);
+
+      const result = await saveReviewerToSupabase(reviewer.courseId, reviewer.moduleId, reviewer);
+      console.log("Save result:", result);
+      
       setSaved(true);
 
       window.dispatchEvent(new CustomEvent("decksUpdated"));

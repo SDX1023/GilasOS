@@ -32,19 +32,38 @@ export default function DecksPage() {
     if (!user) return;
     try {
       const supabase = getSupabase();
-      const { data, error } = await supabase
+      
+      // Get all decks
+      const { data: decksData, error: decksError } = await supabase
         .from("custom_decks")
         .select("*")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
       
-      if (error) {
-        console.error("Error fetching decks:", error);
+      if (decksError) {
+        console.error("Error fetching decks:", decksError);
         setDecks([]);
-      } else {
-        console.log("Fetched decks:", data);
-        setDecks(data || []);
+        setLoading(false);
+        return;
       }
+
+      // For each deck, get the card count
+      const decksWithCount = await Promise.all(
+        (decksData || []).map(async (deck: any) => {
+          const { count, error: countError } = await supabase
+            .from("custom_deck_cards")
+            .select("*", { count: 'exact', head: true })
+            .eq("deck_id", deck.id);
+          
+          return {
+            ...deck,
+            card_count: countError ? 0 : count || 0
+          };
+        })
+      );
+
+      console.log("Fetched decks with counts:", decksWithCount);
+      setDecks(decksWithCount);
     } catch (error) {
       console.error("Error in fetchDecks:", error);
       setDecks([]);
@@ -87,12 +106,16 @@ export default function DecksPage() {
   const handleCreate = async () => {
     if (!newTitle.trim() || !user) return;
     const supabase = getSupabase();
-    const { data, error } = await supabase.from("custom_decks").insert({
-      user_id: user.id,
-      title: newTitle.trim(),
-      description: newDesc.trim(),
-      card_count: 0,
-    }).select().single();
+    const { data, error } = await supabase
+      .from("custom_decks")
+      .insert({
+        user_id: user.id,
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        card_count: 0,
+      })
+      .select()
+      .single();
     
     if (error) {
       console.error("Error creating deck:", error);
@@ -256,7 +279,7 @@ export default function DecksPage() {
                       <Play size={13} /> Study
                     </Link>
                     <button 
-                      onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description); }} 
+                      onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description || ""); }} 
                       style={{ padding: 6, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer" }}
                     >
                       <Pencil size={14} />
