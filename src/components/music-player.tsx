@@ -104,16 +104,14 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:1;
+        opacity:0.85;
         pointer-events:auto;
       `;
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
     }
 
-    return () => {
-      // Keep iframe for background playback
-    };
+    return () => {};
   }, [started]);
 
   // Position iframe based on state
@@ -133,14 +131,34 @@ export function MusicPlayer() {
           width:${rect.width - 32}px;
           height:152px;
           border:none;
-          border-radius:8px;
+          border-radius:12px;
           z-index:10002;
           opacity:1;
           pointer-events:auto;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         `;
       }
+    } else if (minimized && open) {
+      // When minimized, show at bottom with glass effect
+      iframe.style.cssText = `
+        position:fixed;
+        bottom:16px;
+        left:50%;
+        transform:translateX(-50%);
+        width:90%;
+        max-width:400px;
+        height:60px;
+        border:none;
+        border-radius:12px;
+        z-index:9999;
+        opacity:0.6;
+        pointer-events:auto;
+        backdrop-filter:blur(20px);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.1);
+      `;
     } else {
-      // When minimized or closed, keep at bottom
+      // When closed, keep at bottom with glass effect
       iframe.style.cssText = `
         position:fixed;
         bottom:0;
@@ -149,8 +167,10 @@ export function MusicPlayer() {
         height:80px;
         border:none;
         z-index:9999;
-        opacity:1;
+        opacity:0.6;
         pointer-events:auto;
+        backdrop-filter:blur(20px);
+        border-top: 1px solid rgba(255,255,255,0.05);
       `;
     }
   }, [open, minimized, started]);
@@ -250,7 +270,7 @@ export function MusicPlayer() {
           transition: "max-height 0.3s ease, padding 0.3s ease",
         }}>
           {minimized ? (
-            // Minimized view
+            // Minimized view - compact
             <div style={{ 
               display: "flex", 
               alignItems: "center", 
@@ -341,7 +361,6 @@ export function MusicPlayer() {
           ) : (
             // Expanded view
             <>
-              {/* Header with minimize button */}
               <div style={{ 
                 display: "flex", 
                 alignItems: "center", 
@@ -423,11 +442,11 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Spotify Embed placeholder - actual iframe overlays this */}
+              {/* Spotify embed placeholder - actual iframe overlays this */}
               <div style={{
                 width: "100%",
                 height: 152,
-                borderRadius: "8px",
+                borderRadius: "12px",
                 overflow: "hidden",
                 marginBottom: 12,
                 border: "1px solid rgba(255,255,255,0.06)",
