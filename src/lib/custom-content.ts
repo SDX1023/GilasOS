@@ -1,12 +1,13 @@
-// lib/custom-content.ts - Fix the saveReviewerToSupabase function
+// lib/custom-content.ts
+
+import { getSupabase } from "./supabase";
 
 export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: any) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Generate a clean unique ID for the deck
-  // Use the reviewer.id directly instead of concatenating again
+  // Use the reviewer.id directly as the deck ID
   const deckId = reviewer.id;
 
   console.log("Saving deck with ID:", deckId);
