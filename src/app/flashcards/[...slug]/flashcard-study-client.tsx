@@ -129,6 +129,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
+  const [addCardType, setAddCardType] = useState<"standard" | "image_label">("standard");
+  const [addImageUrl, setAddImageUrl] = useState("");
+  const [addLabels, setAddLabels] = useState<{ x: number; y: number; text: string }[]>([]);
   const [flashImage, setFlashImage] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
@@ -499,6 +502,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           front: card.front,
           back: card.back,
           hint: card.hint || "",
+          card_type: card.card_type || "standard",
+          image_url: card.image_url || "",
+          labels: card.labels || [],
         }));
         await supabase.from("flashcards").insert(rows);
       }
@@ -585,6 +591,15 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }
 
   function addCard() {
+    if (addCardType === "image_label") {
+      if (!addImageUrl || addLabels.length === 0) return;
+      const newCard = { front: addFront.trim() || "Label the image", back: addLabels.map(l => l.text).join(", "), hint: addHint.trim() || undefined, card_type: "image_label" as const, image_url: addImageUrl, labels: [...addLabels] };
+      const updated = [...cards, newCard];
+      setCards(updated);
+      syncToCloud(updated);
+      setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); setAddingCard(false);
+      return;
+    }
     if (!addFront.trim() || !addBack.trim()) return;
     const newCard = { front: addFront.trim(), back: addBack.trim(), hint: addHint.trim() || undefined };
     const updated = [...cards, newCard];
@@ -944,15 +959,32 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       {addingCard && (
         <div className="glass-card" style={{ marginBottom: "1.5rem", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <h3 style={{ fontWeight: 500 }}>Add New Card</h3>
-          <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
-            <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the question..." /></div>
-          <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
-            <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the answer..." /></div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {(["standard", "image_label"] as const).map((t) => (
+              <button key={t} onClick={() => setAddCardType(t)} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif", border: addCardType === t ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)", background: addCardType === t ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)", color: addCardType === t ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
+                {t === "standard" ? "Flip Card" : "Image Label"}
+              </button>
+            ))}
+          </div>
+          {addCardType === "image_label" ? (
+            <>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Front (optional prompt)</label>
+                <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. Label the parts of the heart..." /></div>
+              <ImageLabelAdder imageUrl={addImageUrl} setImageUrl={setAddImageUrl} labels={addLabels} setLabels={setAddLabels} />
+            </>
+          ) : (
+            <>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the question..." /></div>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
+                <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the answer..." /></div>
+            </>
+          )}
           <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
             <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." /></div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button onClick={addCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check style={{ width: 12, height: 12 }} /> Add</button>
-            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
+            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
           </div>
         </div>
       )}
@@ -1074,6 +1106,82 @@ function ImageLabelStudy({ image_url, labels, onComplete, revealed }: {
         <button onClick={checkAnswers} disabled={answers.every(a => !a.trim())} className="glass-btn-primary" style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: answers.every(a => !a.trim()) ? 0.4 : 1 }}>
           Check Labels
         </button>
+      )}
+    </div>
+  );
+}
+
+function ImageLabelAdder({ imageUrl, setImageUrl, labels, setLabels }: {
+  imageUrl: string;
+  setImageUrl: (url: string) => void;
+  labels: { x: number; y: number; text: string }[];
+  setLabels: (labels: { x: number; y: number; text: string }[]) => void;
+}) {
+  const [placing, setPlacing] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  const handleUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => setImageUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!placing || !imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const text = prompt("Enter the label text:");
+    if (text && text.trim()) {
+      setLabels([...labels, { x, y, text: text.trim() }]);
+    }
+    setPlacing(false);
+  };
+
+  if (!imageUrl) {
+    return (
+      <div onClick={handleUpload} style={{ padding: 20, border: "2px dashed var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer", textAlign: "center" }}>
+        Click to upload an image for labeling
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <button onClick={handleUpload} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>Change Image</button>
+        <button onClick={() => setPlacing(!placing)} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11, ...(placing ? { background: "var(--os-accent)", color: "#fff" } : {}) }}>
+          {placing ? "Click image to place..." : "+ Add Label"}
+        </button>
+        <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{labels.length} labels</span>
+      </div>
+      <div ref={imgRef} onClick={handleImageClick} style={{ position: "relative", cursor: placing ? "crosshair" : "default", borderRadius: 8, overflow: "hidden", border: "1px solid var(--os-glass-border)" }}>
+        <img src={imageUrl} alt="Label" style={{ width: "100%", display: "block", maxHeight: 300, objectFit: "contain", background: "#000" }} />
+        {labels.map((label, i) => (
+          <div key={i} style={{ position: "absolute", left: `${label.x}%`, top: `${label.y}%`, transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, zIndex: 2 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--os-accent)", border: "2px solid #fff", boxShadow: "0 1px 4px rgba(0,0,0,0.5)" }} />
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.7)", padding: "1px 4px", borderRadius: 3 }}>{i + 1}</span>
+          </div>
+        ))}
+      </div>
+      {labels.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {labels.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--os-accent)", flexShrink: 0 }} />
+              <input value={label.text} onChange={(e) => { const next = labels.map((l, idx) => idx === i ? { ...l, text: e.target.value } : l); setLabels(next); }} style={{ flex: 1, padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 6, color: "var(--os-text-primary)", fontSize: 12, outline: "none" }} />
+              <button onClick={() => setLabels(labels.filter((_, idx) => idx !== i))} style={{ padding: 3, background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>×</button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

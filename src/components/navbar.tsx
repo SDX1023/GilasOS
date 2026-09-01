@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Archive, Palette, Award, Megaphone } from "lucide-react";
+import { BookOpen, Sparkles, Users, Sun, Moon, LogIn, LogOut, User, Settings, Menu, X, Shield, Timer, FileText, CheckSquare, Trophy, Link as LinkIcon, Archive, Palette, Award, Megaphone, Layers } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
 import CustomizationPanel from "@/components/customization-panel";
+import { MusicPlayer } from "@/components/music-player";
 
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/study", label: "Study", icon: Sparkles },
+  { href: "/decks", label: "My Decks", icon: Layers },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/announcements", label: "Announcements", icon: Megaphone },
   { href: "/friends", label: "Friends", icon: Users },
@@ -162,6 +164,7 @@ export function Navbar() {
               >
                 <Palette size={15} />
               </button>
+              <MusicPlayer />
             </div>
           </div>
 
