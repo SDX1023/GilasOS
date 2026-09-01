@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { Music, X, ChevronUp, ChevronDown } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
@@ -58,21 +58,71 @@ const TRACKS = [
 ];
 
 const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&si=97daf86b3aa24a05&theme=0`;
+const STORAGE_KEY = "gilasos-music-player";
+
+function loadStarted(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").started === true; } catch { return false; }
+}
 
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [color, setColor] = useState<"white" | "black" | "purple">("white");
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(loadStarted);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
+  const holderRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  const showInScreen = open && !minimized && started;
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
+  }, [started]);
+
+  useEffect(() => {
+    if (!started || !holderRef.current) return;
+    if (!iframeRef.current) {
+      const iframe = document.createElement("iframe");
+      iframe.src = EMBED_URL;
+      iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+      iframe.loading = "lazy";
+      iframe.title = "Spotify Player";
+      iframe.style.cssText = "width:100%;height:100%;border:none;display:block;border-radius:8px;";
+      holderRef.current.appendChild(iframe);
+      iframeRef.current = iframe;
+    }
+  }, [started]);
+
+  useLayoutEffect(() => {
+    const iframe = iframeRef.current;
+    const holder = holderRef.current;
+    const screen = screenRef.current;
+    if (!iframe || !holder || !screen) return;
+
+    if (showInScreen) {
+      const r = screen.getBoundingClientRect();
+      iframe.style.cssText = `position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px;border:2px solid ${color === "white" ? "#333" : color === "black" ? "#111" : "#1e1b4b"};border-radius:10px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);z-index:10002;display:block;`;
+    } else {
+      iframe.style.cssText = "width:100%;height:100%;border:none;display:block;border-radius:8px;";
+    }
+  }, [showInScreen, open, minimized, color]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node) && btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false);
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setMinimized(false);
   }, [open]);
 
   const colorMap = {
@@ -99,15 +149,11 @@ export function MusicPlayer() {
         .track-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
       `}</style>
 
-      {/* Hidden background embed — keeps audio alive when minimized/closed */}
-      {started && !open && (
-        <iframe src={EMBED_URL} allow="autoplay; encrypted-media" title="Spotify BG"
-          style={{ position: "fixed", bottom: -9999, right: -9999, width: 320, height: 80, opacity: 0, pointerEvents: "none", zIndex: -1 }}
-        />
-      )}
+      {/* Permanent holder — NEVER unmounts, iframe lives here when not in screen */}
+      <div ref={holderRef} style={{ position: "fixed", bottom: -9999, right: -9999, width: 320, height: 80, opacity: 0, pointerEvents: "none", zIndex: -1, overflow: "hidden" }} />
 
       {/* Bubble */}
-      <button ref={btnRef} onClick={() => { setOpen(!open); setMinimized(false); if (!started) setStarted(true); }}
+      <button ref={btnRef} onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
         style={{
           position: "fixed", bottom: 90, right: 20, width: 50, height: 50, borderRadius: "50%",
           background: started ? `linear-gradient(135deg, ${c.accent}, ${c.accent}dd)` : "rgba(12,17,28,0.95)",
@@ -140,7 +186,6 @@ export function MusicPlayer() {
           transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
         }}>
 
-          {/* MINI BAR */}
           {minimized && (
             <div style={{
               display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
@@ -162,23 +207,16 @@ export function MusicPlayer() {
             </div>
           )}
 
-          {/* FULL */}
           {!minimized && (
             <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-
-              {/* iPod body */}
               <div style={{
                 width: 280, background: c.body, borderRadius: 28, padding: "14px 14px 18px",
                 boxShadow: "inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.4)",
                 border: `1px solid ${color === "white" ? "rgba(255,255,255,0.6)" : color === "black" ? "rgba(60,60,60,0.5)" : "rgba(200,180,255,0.6)"}`,
               }}>
-                {/* Screen — embed goes directly inside */}
-                <div style={screenStyle}>
-                  {started ? (
-                    <iframe src={EMBED_URL} width="100%" height="200" frameBorder="0"
-                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                      loading="lazy" style={{ border: "none", display: "block" }} title="Spotify Player" />
-                  ) : (
+                {/* Screen — always rendered, iframe overlays via position:fixed when active */}
+                <div ref={screenRef} style={screenStyle}>
+                  {!started && (
                     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#555" }}>
                       <Music size={28} style={{ opacity: 0.3, marginBottom: 8 }} />
                       <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Press play</div>
@@ -186,7 +224,6 @@ export function MusicPlayer() {
                   )}
                 </div>
 
-                {/* Click wheel */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 14 }}>
                   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: color === "white" ? "#999" : color === "black" ? "#555" : "#7c3aed", marginBottom: 10 }}>MUSIC</div>
                   <div style={{
@@ -204,7 +241,6 @@ export function MusicPlayer() {
                 </div>
               </div>
 
-              {/* Controls below */}
               <div style={{ width: 280, marginTop: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--os-text-primary)" }}>GILAS Playlist</div>
@@ -219,7 +255,6 @@ export function MusicPlayer() {
                   </div>
                 </div>
 
-                {/* Track list */}
                 <div className="track-scroll" style={{ maxHeight: 260, overflowY: "auto", borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
                   <div style={{ fontSize: 9, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 10px 4px", position: "sticky", top: 0, background: "rgba(12,17,28,0.98)", zIndex: 1 }}>
                     All Songs ({TRACKS.length})

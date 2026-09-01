@@ -1229,7 +1229,7 @@ a:active {
 }
 
 .glass-btn {
-  background: rgba(12, 17, 28, 0.95);
+  background: rgba(12, 17, 28, 0.98);
   color: var(--os-text-secondary);
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
   padding: 10px 20px;
@@ -1271,12 +1271,12 @@ a:active {
 }
 
 .glass-btn-ghost {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 17, 28, 0.95);
   color: var(--os-text-secondary);
 }
 
 .glass-btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(20, 28, 42, 1);
   color: var(--os-text-primary);
 }
 
@@ -1893,15 +1893,16 @@ button:focus {
 
 .btn-tab {
   color: var(--os-text-secondary);
-  background: rgba(12, 17, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 17, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-tab:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(25, 35, 55, 0.95);
+  background: rgba(20, 28, 42, 1);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 .btn-tab.active {
   color: var(--os-accent);
@@ -1911,15 +1912,16 @@ button:focus {
 
 .btn-mode {
   color: var(--os-text-secondary);
-  background: rgba(12, 17, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 17, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-mode:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(25, 35, 55, 0.95);
+  background: rgba(20, 28, 42, 1);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 .btn-mode.active {
   color: #fff;
@@ -1929,14 +1931,14 @@ button:focus {
 
 .btn-action {
   color: var(--os-text-primary);
-  background: rgba(12, 17, 28, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 17, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-action:hover {
   background: rgba(20, 28, 42, 1);
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.5);
 }
 
 .btn-action-primary {

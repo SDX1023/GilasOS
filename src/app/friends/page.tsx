@@ -268,7 +268,7 @@ export default function FriendsPage() {
       </h1>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.35)", marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 4, padding: 3, borderRadius: 10, background: "rgba(12, 17, 28, 0.98)", border: "1px solid rgba(255,255,255,0.35)", marginBottom: 20 }}>
         {([
           { id: "notes" as Tab, label: "Notes", count: notes.length },
           { id: "friends" as Tab, label: "Friends", count: friends.length },
@@ -277,9 +277,10 @@ export default function FriendsPage() {
         ]).map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex: 1, padding: "8px 14px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif",
-            background: tab === t.id ? "var(--os-accent)" : "transparent",
+            background: tab === t.id ? "var(--os-accent)" : "rgba(12, 17, 28, 0.95)",
             color: tab === t.id ? "#fff" : "var(--os-text-dim)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            transition: "all 0.2s",
           }}>
             {t.label}
             {t.count !== null && t.count > 0 && (
