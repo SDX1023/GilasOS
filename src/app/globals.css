@@ -65,7 +65,7 @@ button:active {
 
   --os-bg-primary: #0a0e17;
   --os-bg-secondary: #0f1520;
-  --os-glass: rgba(15, 21, 35, 0.95);
+  --os-glass: rgba(12, 17, 28, 0.98);
   --os-glass-border: rgba(255, 255, 255, 0.08);
   --os-glass-hover: rgba(255, 255, 255, 0.06);
   --os-accent: #6d28d9;
@@ -1121,7 +1121,7 @@ body {
 }
 
 .glass-panel {
-  background: rgba(15, 21, 35, 0.95);
+  background: rgba(12, 17, 28, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1130,7 +1130,7 @@ body {
 }
 
 .glass-card {
-  background: rgba(15, 21, 35, 0.95);
+  background: rgba(12, 17, 28, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
@@ -1138,14 +1138,14 @@ body {
 }
 
 .glass-card:hover {
-  background: rgba(20, 28, 45, 0.98);
+  background: rgba(18, 24, 38, 1);
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card-link {
   display: block;
-  background: rgba(15, 21, 35, 0.95);
+  background: rgba(12, 17, 28, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 14px;
   padding: 20px;
@@ -1229,7 +1229,7 @@ a:active {
 }
 
 .glass-btn {
-  background: rgba(15, 21, 35, 0.8);
+  background: rgba(12, 17, 28, 0.95);
   color: var(--os-text-secondary);
   transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
   padding: 10px 20px;
@@ -1242,7 +1242,7 @@ a:active {
 }
 
 .glass-btn:hover {
-  background: rgba(25, 35, 55, 0.9);
+  background: rgba(20, 28, 42, 1);
   color: var(--os-text-primary);
   border-color: rgba(255, 255, 255, 0.55);
 }
@@ -1893,7 +1893,7 @@ button:focus {
 
 .btn-tab {
   color: var(--os-text-secondary);
-  background: rgba(15, 21, 35, 0.6);
+  background: rgba(12, 17, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   cursor: pointer;
@@ -1901,17 +1901,17 @@ button:focus {
 }
 .btn-tab:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(255,255,255,0.1);
+  background: rgba(25, 35, 55, 0.95);
 }
 .btn-tab.active {
   color: var(--os-accent);
-  background: rgba(109,40,217,0.15);
-  border-color: rgba(109,40,217,0.3);
+  background: rgba(109,40,217,0.2);
+  border-color: rgba(109,40,217,0.4);
 }
 
 .btn-mode {
   color: var(--os-text-secondary);
-  background: rgba(15, 21, 35, 0.6);
+  background: rgba(12, 17, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   cursor: pointer;
@@ -1919,7 +1919,7 @@ button:focus {
 }
 .btn-mode:hover:not(.active) {
   color: var(--os-text-primary);
-  background: rgba(255,255,255,0.1);
+  background: rgba(25, 35, 55, 0.95);
 }
 .btn-mode.active {
   color: #fff;
@@ -1929,13 +1929,13 @@ button:focus {
 
 .btn-action {
   color: var(--os-text-primary);
-  background: rgba(15, 21, 35, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 17, 28, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .btn-action:hover {
-  background: rgba(25, 35, 55, 0.85);
+  background: rgba(20, 28, 42, 1);
   border-color: rgba(255,255,255,0.2);
 }
 

@@ -7,7 +7,6 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
 import CustomizationPanel from "@/components/customization-panel";
-import { MusicPlayer } from "@/components/music-player";
 
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
@@ -164,7 +163,6 @@ export function Navbar() {
               >
                 <Palette size={15} />
               </button>
-              <MusicPlayer />
             </div>
           </div>
 

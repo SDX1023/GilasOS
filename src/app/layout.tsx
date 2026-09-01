@@ -11,6 +11,7 @@ import PixelPet from "@/components/pixel-pet/pixel-pet";
 import CustomizationLoader from "@/components/customization-loader";
 import BackgroundOverlay from "@/components/background-overlay";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
+import { MusicPlayer } from "@/components/music-player";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default function RootLayout({
                 </div>
                 <FloatingTimer />
                 <PixelPet />
+                <MusicPlayer />
                 <ServiceWorkerRegistration />
               </PetProvider>
             </PomodoroProvider>
