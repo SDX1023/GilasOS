@@ -154,7 +154,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
       console.log("Cards to save:", cards.length);
       
       const reviewer = {
-        id: deck.id,
+        id: deck.reviewer_id || deck.id,
         courseId: deck.course_id || "My Decks",
         moduleId: deck.module_id || "shared",
         title: deck.title,
@@ -174,9 +174,10 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
       window.dispatchEvent(new CustomEvent("decksUpdated"));
 
-      // Redirect to Study page with the deck ID
+      // Redirect to the flashcard study page
       setTimeout(() => {
-        router.push(`/study?deck=${encodeURIComponent(deck.id)}`);
+        const rid = deck.reviewer_id || deck.id;
+        router.push(`/flashcards/${rid}`);
       }, 800);
     } catch (error) {
       console.error("Error saving deck:", error);
