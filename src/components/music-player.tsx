@@ -100,8 +100,8 @@ export function MusicPlayer() {
         position:fixed;
         bottom:90px;
         right:80px;
-        width:352px;
-        height:152px;
+        width:300px;
+        height:80px;
         border:none;
         border-radius:12px;
         z-index:9999;
@@ -149,8 +149,8 @@ export function MusicPlayer() {
         position:fixed;
         bottom:90px;
         right:80px;
-        width:352px;
-        height:152px;
+        width:300px;
+        height:80px;
         border:none;
         border-radius:12px;
         z-index:9999;
