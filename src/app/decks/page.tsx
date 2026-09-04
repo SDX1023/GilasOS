@@ -109,6 +109,7 @@ export default function DecksPage() {
     const { data, error } = await supabase
       .from("custom_decks")
       .insert({
+        id: crypto.randomUUID(),
         user_id: user.id,
         title: newTitle.trim(),
         description: newDesc.trim(),
