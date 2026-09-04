@@ -256,22 +256,31 @@ export default function FlashcardsPage() {
             const totalCards = course.modules.reduce((sum, m) => sum + m.reviewers.reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0), 0);
             return (
               <div key={course.courseId} className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
-                <button
-                  onClick={() => toggleCourse(course.courseId)}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
-                    background: "none", border: "none", cursor: "pointer", textAlign: "left",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  {courseOpen ? <ChevronDown size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: 600, fontSize: 16, color: "var(--os-text-primary)" }}>{course.courseId}</span>
-                    <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
-                      {course.modules.length} modules &middot; {totalCards} cards
-                    </span>
-                  </div>
-                </button>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <button
+                    onClick={() => toggleCourse(course.courseId)}
+                    style={{
+                      flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+                      background: "none", border: "none", cursor: "pointer", textAlign: "left",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    {courseOpen ? <ChevronDown size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, fontSize: 16, color: "var(--os-text-primary)" }}>{course.courseId}</span>
+                      <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
+                        {course.modules.length} modules &middot; {totalCards} cards
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAddingModuleTo(course.courseId); if (!openCourses.has(course.courseId)) toggleCourse(course.courseId); }}
+                    style={{ padding: "6px 10px", marginRight: 12, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-accent)", fontFamily: "Inter, sans-serif", borderRadius: 6, flexShrink: 0 }}
+                    title="Add Module"
+                  >
+                    <Plus size={14} /> Module
+                  </button>
+                </div>
 
                 {courseOpen && (
                   <div style={{ borderTop: "1px solid var(--os-glass-border)", padding: "4px 0" }}>

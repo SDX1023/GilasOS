@@ -348,26 +348,39 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     if (deckId && reviewer.cards && reviewer.cards.length > 0) {
       await supabase.from("custom_deck_cards").delete().eq("deck_id", deckId);
 
-      const cards = reviewer.cards.map((card: any, index: number) => ({
-        deck_id: deckId,
-        user_id: user.id,
-        front: String(card.front || ""),
-        back: String(card.back || ""),
-        hint: String(card.hint || ""),
-        card_order: index,
-      }));
-
-      const { error: cardsError } = await supabase.from("custom_deck_cards").insert(cards);
-      if (cardsError) {
-        console.warn("custom_deck_cards insert with user_id failed, retrying without:", cardsError.message);
-        const cardsNoUid = reviewer.cards.map((card: any, index: number) => ({
+      // Try progressively fewer columns to handle unknown table schema
+      const attempts = [
+        // Attempt 1: All columns
+        reviewer.cards.map((card: any, index: number) => ({
+          deck_id: deckId, user_id: user.id,
+          front: String(card.front || ""), back: String(card.back || ""),
+          hint: String(card.hint || ""), card_order: index,
+        })),
+        // Attempt 2: Without user_id
+        reviewer.cards.map((card: any, index: number) => ({
           deck_id: deckId,
-          front: String(card.front || ""),
-          back: String(card.back || ""),
-          hint: String(card.hint || ""),
-          card_order: index,
-        }));
-        await supabase.from("custom_deck_cards").insert(cardsNoUid);
+          front: String(card.front || ""), back: String(card.back || ""),
+          hint: String(card.hint || ""), card_order: index,
+        })),
+        // Attempt 3: Without hint or card_order
+        reviewer.cards.map((card: any) => ({
+          deck_id: deckId,
+          front: String(card.front || ""), back: String(card.back || ""),
+        })),
+        // Attempt 4: Minimal - just deck_id, front, back (no user_id)
+        reviewer.cards.map((card: any) => ({
+          deck_id: deckId,
+          front: String(card.front || ""), back: String(card.back || ""),
+        })),
+      ];
+
+      for (let i = 0; i < attempts.length; i++) {
+        const { error } = await supabase.from("custom_deck_cards").insert(attempts[i]);
+        if (!error) {
+          console.log(`custom_deck_cards insert succeeded on attempt ${i + 1}`);
+          break;
+        }
+        console.warn(`custom_deck_cards attempt ${i + 1} failed:`, error.message);
       }
     }
   } catch (e) {
