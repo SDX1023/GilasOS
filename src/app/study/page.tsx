@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase } from "@/lib/custom-content";
+import { loadCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, ChevronRight, ChevronDown, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap } from "lucide-react";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap } from "lucide-react";
 import { MathRenderer } from "@/components/math-renderer";
 import FocusMode from "@/components/focus-mode";
 import { earnBadge } from "@/lib/badges";
 
-type Tab = "flashcards" | "quiz" | "history" | "log";
+type Tab = "quiz" | "history" | "log";
 
 const formulaCacheGlobal: Record<string, { formula: string; explanation: string } | null> = {};
 
@@ -67,11 +67,9 @@ function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boole
 }
 
 export default function StudyPage() {
-  const [tab, setTab] = useState<Tab>("flashcards");
+  const [tab, setTab] = useState<Tab>("quiz");
   const [mounted, setMounted] = useState(false);
   const [showFocusMode, setShowFocusMode] = useState(false);
-  const [allReviewers, setAllReviewers] = useState<{ courseId: string; moduleId: string; reviewer: any }[]>([]);
-  const [deleteTarget, setDeleteTarget] = useState<{ courseId: string; moduleId: string; reviewerId: string; title: string } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,71 +77,9 @@ export default function StudyPage() {
       const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
-
-      const localReviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
-      const customContent = loadCustomContent();
-      for (const course of customContent.courses) {
-        for (const mod of course.modules) {
-          for (const reviewer of mod.reviewers) {
-            localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-          }
-        }
-      }
-
-      if (user) {
-        const cloudReviewers = await loadReviewersFromSupabase();
-        const cloudIds = new Set(cloudReviewers.map((r) => r.reviewer.id));
-        const missingFromCloud = localReviewers.filter((r) => !cloudIds.has(r.reviewer.id));
-        for (const item of missingFromCloud) {
-          saveReviewerToSupabase(item.courseId, item.moduleId, item.reviewer).catch(() => {});
-        }
-        setAllReviewers([...cloudReviewers, ...missingFromCloud]);
-      } else {
-        setAllReviewers(localReviewers);
-      }
       setMounted(true);
     })();
   }, []);
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    if (userId) {
-      await deleteReviewerFromSupabase(deleteTarget.reviewerId);
-      const cloudReviewers = await loadReviewersFromSupabase();
-      setAllReviewers(cloudReviewers);
-    } else {
-      deleteReviewer(deleteTarget.courseId, deleteTarget.moduleId, deleteTarget.reviewerId);
-      const customContent = loadCustomContent();
-      const reviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
-      for (const course of customContent.courses) {
-        for (const mod of course.modules) {
-          for (const reviewer of mod.reviewers) {
-            reviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-          }
-        }
-      }
-      setAllReviewers(reviewers);
-    }
-    setDeleteTarget(null);
-  }
-
-  async function refreshReviewers() {
-    const localReviewers: { courseId: string; moduleId: string; reviewer: any }[] = [];
-    const customContent = loadCustomContent();
-    for (const course of customContent.courses) {
-      for (const mod of course.modules) {
-        for (const reviewer of mod.reviewers) {
-          localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-        }
-      }
-    }
-    if (userId) {
-      const cloudReviewers = await loadReviewersFromSupabase();
-      setAllReviewers(cloudReviewers);
-    } else {
-      setAllReviewers(localReviewers);
-    }
-  }
 
   if (!mounted) {
     return (
@@ -181,7 +117,6 @@ export default function StudyPage() {
 
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", overflowX: "auto", userSelect: "none", WebkitOverflowScrolling: "touch" }}>
         {([
-          ["flashcards", "Flashcards", Brain],
           ["quiz", "Quiz", Sparkles],
           ["history", "History", History],
           ["log", "Study Log", BarChart3],
@@ -198,186 +133,9 @@ export default function StudyPage() {
         ))}
       </div>
 
-      {tab === "flashcards" && (
-        <FlashcardsTab allReviewers={allReviewers} userId={userId} onDelete={(target) => setDeleteTarget(target)} onRefresh={refreshReviewers} />
-      )}
       {tab === "quiz" && <QuizTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "log" && <StudyLogTab userId={userId} />}
-
-
-      {deleteTarget && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <div className="glass-card" style={{ maxWidth: "384px", width: "100%", margin: "0 16px", padding: "24px", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "8px", color: "var(--os-text-primary)" }}>Delete Deck?</h3>
-            <p className="text-secondary" style={{ fontSize: "13px", marginBottom: "16px" }}>
-              Are you sure you want to delete &quot;{deleteTarget.title}&quot;? This cannot be undone.
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-              <button onClick={() => setDeleteTarget(null)} className="glass-btn" style={{ padding: "8px 16px", fontSize: "13px", fontWeight: 500 }}>Cancel</button>
-              <button onClick={handleDelete} style={{ padding: "8px 16px", borderRadius: "8px", background: "#ef4444", color: "#fff", fontSize: "13px", fontWeight: 500, border: "none", cursor: "pointer" }}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FlashcardsTab({ allReviewers, userId, onDelete, onRefresh }: {
-  allReviewers: { courseId: string; moduleId: string; reviewer: any }[];
-  userId: string | null;
-  onDelete: (target: { courseId: string; moduleId: string; reviewerId: string; title: string }) => void;
-  onRefresh: () => void;
-}) {
-  const [openCourses, setOpenCourses] = useState<Set<string>>(new Set());
-  const [openModules, setOpenModules] = useState<Set<string>>(new Set());
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renamingTitle, setRenamingTitle] = useState("");
-
-  const toggleCourse = (id: string) => {
-    setOpenCourses((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-  const toggleModule = (id: string) => {
-    setOpenModules((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const handleRename = async (reviewerId: string) => {
-    if (!renamingTitle.trim()) return;
-    await getSupabase().from("reviewers").update({ title: renamingTitle.trim() }).eq("id", reviewerId);
-    setRenamingId(null);
-    setRenamingTitle("");
-    onRefresh();
-  };
-
-  if (allReviewers.length === 0) {
-    return (
-      <div className="empty-state">
-        <Brain className="empty-state-icon" />
-        <p className="text-secondary" style={{ marginBottom: "16px" }}>No flashcard decks yet.</p>
-        <Link href="/pdf-to-cards" className="glass-btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 16px", fontSize: "13px" }}>
-          <Upload style={{ width: "16px", height: "16px" }} /> Generate from PDF
-        </Link>
-      </div>
-    );
-  }
-
-  const courseMap = new Map<string, { moduleId: string; reviewer: any; courseId: string }[]>();
-  for (const r of allReviewers) {
-    if (!courseMap.has(r.courseId)) courseMap.set(r.courseId, []);
-    courseMap.get(r.courseId)!.push(r);
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {Array.from(courseMap.entries()).map(([courseId, reviewers]) => {
-        const courseOpen = openCourses.has(courseId);
-        const modMap = new Map<string, typeof reviewers>();
-        for (const r of reviewers) {
-          if (!modMap.has(r.moduleId)) modMap.set(r.moduleId, []);
-          modMap.get(r.moduleId)!.push(r);
-        }
-        const totalCards = reviewers.reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
-        return (
-          <div key={courseId} className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
-            <button onClick={() => toggleCourse(courseId)} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
-              background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
-            }}>
-              {courseOpen ? <ChevronDown size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={18} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontWeight: 600, fontSize: 16, color: "var(--os-text-primary)" }}>{courseId}</span>
-                <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
-                  {modMap.size} modules &middot; {totalCards} cards
-                </span>
-              </div>
-            </button>
-            {courseOpen && (
-              <div style={{ borderTop: "1px solid var(--os-glass-border)", padding: "4px 0" }}>
-                {Array.from(modMap.entries()).map(([moduleId, mods]) => {
-                  const modKey = `${courseId}/${moduleId}`;
-                  const modOpen = openModules.has(modKey);
-                  const modCards = mods.reduce((s, r) => s + (r.reviewer.cards?.length || 0), 0);
-                  return (
-                    <div key={modKey}>
-                      <button onClick={() => toggleModule(modKey)} style={{
-                        width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px 10px 46px",
-                        background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
-                      }}>
-                        {modOpen ? <ChevronDown size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-secondary)" }}>{moduleId}</span>
-                          <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>
-                            {mods.length} decks &middot; {modCards} cards
-                          </span>
-                        </div>
-                      </button>
-                      {modOpen && (
-                        <div style={{ padding: "0 16px 8px 62px", display: "flex", flexDirection: "column", gap: 6 }}>
-                          {mods.map(({ courseId: cid, moduleId: mid, reviewer }) => {
-                            const isRenaming = renamingId === reviewer.id;
-                            return (
-                              <div key={reviewer.id} className="glass-card-link" style={{ position: "relative", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                                <Link href={isRenaming ? "#" : `/flashcards/${reviewer.id}`} style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flex: 1, minWidth: 0 }} onClick={(e) => isRenaming && e.preventDefault()}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    {isRenaming ? (
-                                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                        <input
-                                          autoFocus
-                                          className="glass-input"
-                                          value={renamingTitle}
-                                          onChange={(e) => setRenamingTitle(e.target.value)}
-                                          onKeyDown={(e) => { if (e.key === "Enter") handleRename(reviewer.id); if (e.key === "Escape") { setRenamingId(null); setRenamingTitle(""); } }}
-                                          style={{ flex: 1, padding: "2px 6px", fontSize: 13 }}
-                                          onClick={(e) => e.stopPropagation()}
-                                        />
-                                        <button onClick={(e) => { e.preventDefault(); handleRename(reviewer.id); }} style={{ background: "var(--os-accent)", border: "none", borderRadius: 4, color: "#fff", padding: "2px 6px", cursor: "pointer", flexShrink: 0 }}><Check size={12} /></button>
-                                        <button onClick={(e) => { e.preventDefault(); setRenamingId(null); setRenamingTitle(""); }} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 4, color: "var(--os-text-secondary)", padding: "2px 6px", cursor: "pointer", flexShrink: 0 }}><X size={12} /></button>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <span className="text-sm" style={{ fontWeight: 500, color: "var(--os-text-primary)" }}>{reviewer.title}</span>
-                                        <span className="text-xs" style={{ color: "var(--os-text-dim)", marginLeft: 8 }}>{reviewer.cards?.length || 0} cards</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {!isRenaming && <ChevronRight size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
-                                </Link>
-                                {!isRenaming && (
-                                  <button onClick={(e) => { e.preventDefault(); setRenamingId(reviewer.id); setRenamingTitle(reviewer.title); }}
-                                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4, flexShrink: 0 }}
-                                    title="Rename deck">
-                                    <Pencil size={13} />
-                                  </button>
-                                )}
-                                {!isRenaming && (
-                                  <button onClick={(e) => { e.preventDefault(); onDelete({ courseId: cid, moduleId: mid, reviewerId: reviewer.id, title: reviewer.title }); }}
-                                    style={{ padding: 4, borderRadius: 6, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", opacity: 0.4, flexShrink: 0 }}
-                                    title="Delete deck">
-                                    <Trash2 size={13} />
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }

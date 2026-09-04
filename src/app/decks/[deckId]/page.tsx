@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 
 interface DeckCard {
@@ -45,6 +45,14 @@ export default function DeckStudyPage() {
   const [knownCount, setKnownCount] = useState(0);
   const [forgotCount, setForgotCount] = useState(0);
   const [dontKnowCount, setDontKnowCount] = useState(0);
+  const [swapped, setSwapped] = useState(false);
+  const [showFormulas, setShowFormulas] = useState(false);
+  const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in">("flip");
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [answerChecked, setAnswerChecked] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -192,11 +200,35 @@ export default function DeckStudyPage() {
               <span style={{ color: "#ef4444" }}>{forgotCount}</span>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button onClick={() => setShuffled(!shuffled)} className="glass-btn" style={shuffled ? { background: "var(--os-accent)", color: "#fff" } : {}}>
               <Shuffle size={16} />
             </button>
-            <button onClick={() => { setReviewMode(false); setReviewComplete(false); }} className="glass-btn">Exit</button>
+            <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); }}
+              className="glass-btn"
+              style={swapped ? { background: "var(--os-accent)", color: "#fff" } : {}}
+            >
+              {swapped ? "Back→Front" : "Front→Back"}
+            </button>
+            <button onClick={() => setReviewStudyMode(reviewStudyMode === "flip" ? "type-in" : "flip")}
+              className="glass-btn"
+              style={reviewStudyMode !== "flip" ? { background: "var(--os-accent)", color: "#fff" } : {}}
+            >
+              {reviewStudyMode === "flip" ? "Flip" : "Type-in"}
+            </button>
+            <button onClick={() => setShowFormulas(!showFormulas)}
+              className="glass-btn"
+              style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}
+            >
+              {showFormulas ? "Σ On" : "Σ Off"}
+            </button>
+            <button onClick={() => {
+              if (timerRunning) { clearInterval(timerRef.current!); setTimerRunning(false); }
+              else { setTimerRunning(true); timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000); }
+            }} className="glass-btn" style={timerRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}>
+              <Timer size={16} /> {Math.floor(timerSeconds / 60).toString().padStart(2, "0")}:{(timerSeconds % 60).toString().padStart(2, "0")}
+            </button>
+            <button onClick={() => { setReviewMode(false); setReviewComplete(false); if (timerRef.current) clearInterval(timerRef.current); setTimerRunning(false); setTimerSeconds(0); }} className="glass-btn">Exit</button>
           </div>
         </div>
         <div style={{ padding: "0 1.25rem 0.75rem" }}>
@@ -424,6 +456,24 @@ export default function DeckStudyPage() {
           {filtered.map((card) => (
             <div key={card.id} className="glass-card" style={{ padding: "14px 18px" }}>
               {editingId === card.id ? (
+                card.card_type === "image_occlusion" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <ImageOcclusionCreator
+                      onGenerate={(newCards) => {
+                        if (newCards.length > 0) {
+                          const c = newCards[0];
+                          getSupabase().from("custom_deck_cards").update({ front: c.front, back: c.back, image_url: c.image_url, labels: c.labels }).eq("id", card.id).then(() => {
+                            setCards(cards.map(x => x.id === card.id ? { ...x, front: c.front, back: c.back, image_url: c.image_url, labels: c.labels } : x));
+                            setEditingId(null);
+                          });
+                        }
+                      }}
+                      onCancel={() => setEditingId(null)}
+                      initialImageUrl={card.image_url}
+                      initialLabels={card.labels}
+                    />
+                  </div>
+                ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <textarea value={editFront} onChange={(e) => setEditFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} />
                   <textarea value={editBack} onChange={(e) => setEditBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} />
@@ -433,6 +483,7 @@ export default function DeckStudyPage() {
                     <button onClick={() => setEditingId(null)} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Cancel</button>
                   </div>
                 </div>
+                )
               ) : (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                   {card.image_url && (

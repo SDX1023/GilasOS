@@ -16,11 +16,13 @@ interface DetectedLabel {
 interface ImageOcclusionCreatorProps {
   onGenerate: (cards: { front: string; back: string; image_url: string; labels: { x: number; y: number; w: number; h: number; text: string }[] }[]) => void;
   onCancel: () => void;
+  initialImageUrl?: string;
+  initialLabels?: { x: number; y: number; w: number; h: number; text: string }[];
 }
 
-export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCreatorProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [labels, setLabels] = useState<DetectedLabel[]>([]);
+export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, initialLabels }: ImageOcclusionCreatorProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl || null);
+  const [labels, setLabels] = useState<DetectedLabel[]>(initialLabels ? initialLabels.map(l => ({ ...l, selected: true })) : []);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState("");
   const [mode, setMode] = useState<"auto" | "manual">("manual");
