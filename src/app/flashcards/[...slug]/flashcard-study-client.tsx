@@ -753,7 +753,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       </div>
 
       {reviewMode && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "rgba(10,14,24,0.98)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "rgba(10,14,24,0.98)" }}>
           {flashImage && (
             <div style={{ position: "absolute", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", opacity: flashVisible ? 1 : 0, transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}>
               <img src={flashImage} alt="" style={{ maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain", transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
@@ -975,7 +975,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             )}
           </div>
           {showSummary && (
-            <div style={{ position: "absolute", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,21,35,0.95)", backdropFilter: "blur(4px)" }}>
+            <div style={{ position: "absolute", inset: 0, zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,21,35,0.95)", backdropFilter: "blur(4px)" }}>
               <div className="glass-card" style={{ textAlign: "center", padding: "2rem", maxWidth: 448, width: "100%", margin: "0 1rem" }}>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1.5rem" }}>Session Summary</h2>
                 <div style={{ display: "flex", justifyContent: "center", gap: "1.5rem", marginBottom: "2rem", fontSize: "1.125rem" }}>
