@@ -23,9 +23,12 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
   const [labels, setLabels] = useState<DetectedLabel[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState("");
-  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [mode, setMode] = useState<"auto" | "manual">("manual");
   const [placing, setPlacing] = useState(false);
   const [placeStart, setPlaceStart] = useState<{ x: number; y: number } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [labelInput, setLabelInput] = useState("");
+  const [showInput, setShowInput] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,55 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
     reader.onload = () => setImageUrl(reader.result as string);
     reader.readAsDataURL(file);
   }, []);
+
+  const getRelativePos = (e: React.MouseEvent) => {
+    if (!imgRef.current) return { x: 0, y: 0 };
+    const rect = imgRef.current.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)),
+    };
+  };
+
+  const handleManualClick = (e: React.MouseEvent) => {
+    if (!placing || !imgRef.current) return;
+    const pos = getRelativePos(e);
+
+    if (!placeStart) {
+      setPlaceStart(pos);
+    } else {
+      setShowInput(true);
+      setLabelInput("");
+      setMousePos(pos);
+    }
+  };
+
+  const confirmLabel = () => {
+    if (!placeStart || !mousePos || !labelInput.trim()) {
+      setPlaceStart(null);
+      setMousePos(null);
+      setShowInput(false);
+      return;
+    }
+    const x = Math.min(placeStart.x, mousePos.x);
+    const y = Math.min(placeStart.y, mousePos.y);
+    const w = Math.abs(mousePos.x - placeStart.x);
+    const h = Math.abs(mousePos.y - placeStart.y);
+    if (w > 0.5 && h > 0.5) {
+      setLabels((prev) => [...prev, { x, y, w, h, text: labelInput.trim(), selected: true }]);
+    }
+    setPlaceStart(null);
+    setMousePos(null);
+    setShowInput(false);
+    setLabelInput("");
+  };
+
+  const cancelLabel = () => {
+    setPlaceStart(null);
+    setMousePos(null);
+    setShowInput(false);
+    setLabelInput("");
+  };
 
   const runOCR = async () => {
     if (!imageUrl) return;
@@ -52,9 +104,8 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       await new Promise<void>((r) => { img.onload = () => r(); });
 
       const allWords: any[] = (data as any).words || [];
-
       const noisePatterns = /^[\d.,©®™°•·–—""''()\[\]{}/\\|@#$%&*+=<>^~`]+$/;
-      const copyrightPatterns = /cleveland|clinic|copyright|©|®|all rights|reserved|\d{4}|\$|£|€|¥/i;
+      const copyrightPatterns = /cleveland|clinic|copyright|©|®|all rights|reserved|\d{4}/i;
 
       const goodWords = allWords.filter((w: any) => {
         if (!w.text || !w.bbox) return false;
@@ -72,42 +123,34 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       const wordBoxes = goodWords.map((w: any) => ({
         x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1,
         text: w.text.trim().replace(/[""]/g, '"').replace(/['']/g, "'"),
-        conf: w.confidence || 0,
         lineY: (w.bbox.y0 + w.bbox.y1) / 2,
         lineH: w.bbox.y1 - w.bbox.y0,
       }));
 
       const mergedLines: { text: string; x0: number; y0: number; x1: number; y1: number }[] = [];
       const used = new Set<number>();
-
       const byY = [...wordBoxes].sort((a, b) => a.lineY - b.lineY);
 
       for (let i = 0; i < byY.length; i++) {
         if (used.has(i)) continue;
         let group = [byY[i]];
         used.add(i);
-
         for (let j = i + 1; j < byY.length; j++) {
           if (used.has(j)) continue;
           const a = group[group.length - 1];
           const b = byY[j];
-          const yDiff = Math.abs(b.lineY - a.lineY);
-          const sameLine = yDiff < Math.min(a.lineH, b.lineH) * 0.6;
-          if (!sameLine) break;
+          if (Math.abs(b.lineY - a.lineY) > Math.min(a.lineH, b.lineH) * 0.6) break;
           const gap = Math.abs(b.x0 - a.x1);
           if (gap < img.width * 0.03 && gap >= 0) {
             group.push(b);
             used.add(j);
           }
         }
-
         group.sort((a, b) => a.x0 - b.x0);
         const lineW = Math.max(...group.map((g) => g.x1)) - Math.min(...group.map((g) => g.x0));
         if (lineW > img.width * 0.25) continue;
-
         const lineText = group.map((g) => g.text).join(" ");
         if (copyrightPatterns.test(lineText)) continue;
-
         mergedLines.push({
           text: lineText,
           x0: Math.min(...group.map((g) => g.x0)),
@@ -121,12 +164,8 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       for (const line of mergedLines) {
         const key = line.text.toLowerCase().trim();
         const existing = byText.get(key);
-        if (!existing) {
+        if (!existing || ((line.x1 - line.x0) * (line.y1 - line.y0)) > ((existing.x1 - existing.x0) * (existing.y1 - existing.y0))) {
           byText.set(key, line);
-        } else {
-          const eArea = (existing.x1 - existing.x0) * (existing.y1 - existing.y0);
-          const nArea = (line.x1 - line.x0) * (line.y1 - line.y0);
-          if (nArea > eArea) byText.set(key, line);
         }
       }
 
@@ -143,40 +182,18 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       setScanProgress(`Found ${result.length} labels`);
     } catch (err) {
       console.error("OCR failed:", err);
-      setScanProgress("OCR failed — try manual mode");
+      setScanProgress("OCR failed");
     } finally {
       setScanning(false);
     }
   };
 
-  const handleManualClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!placing || !imgRef.current) return;
-    const rect = imgRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    if (!placeStart) {
-      setPlaceStart({ x, y });
-    } else {
-      const text = prompt("Label text:");
-      if (text?.trim()) {
-        const newX = Math.min(placeStart.x, x);
-        const newY = Math.min(placeStart.y, y);
-        const newW = Math.abs(x - placeStart.x);
-        const newH = Math.abs(y - placeStart.y);
-        setLabels((prev) => [...prev, { x: newX, y: newY, w: newW, h: newH, text: text.trim(), selected: true }]);
-      }
-      setPlaceStart(null);
-      setPlacing(false);
-    }
+  const toggleLabel = (index: number) => {
+    setLabels((prev) => prev.map((l, i) => i === index ? { ...l, selected: !l.selected } : l));
   };
 
   const removeLabel = (index: number) => {
     setLabels((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const toggleLabel = (index: number) => {
-    setLabels((prev) => prev.map((l, i) => i === index ? { ...l, selected: !l.selected } : l));
   };
 
   const selectAll = () => setLabels((prev) => prev.map((l) => ({ ...l, selected: true })));
@@ -196,6 +213,13 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
 
   const selectedCount = labels.filter((l) => l.selected).length;
 
+  const previewRect = placeStart && mousePos && !showInput ? {
+    x: Math.min(placeStart.x, mousePos.x),
+    y: Math.min(placeStart.y, mousePos.y),
+    w: Math.abs(mousePos.x - placeStart.x),
+    h: Math.abs(mousePos.y - placeStart.y),
+  } : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <style>{`
@@ -208,24 +232,16 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
         <div
           onClick={() => fileRef.current?.click()}
           style={{
-            width: "100%",
-            height: 180,
-            borderRadius: 12,
+            width: "100%", height: 180, borderRadius: 12,
             border: "2px dashed rgba(255,255,255,0.15)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            gap: 8,
-            color: "var(--os-text-dim)",
-            transition: "border-color 0.2s",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", gap: 8, color: "var(--os-text-dim)", transition: "border-color 0.2s",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(109,40,217,0.5)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
         >
           <Upload size={28} style={{ opacity: 0.5 }} />
-          <span style={{ fontSize: 13 }}>Upload an image with labels</span>
+          <span style={{ fontSize: 13 }}>Upload an image</span>
           <span style={{ fontSize: 11, opacity: 0.5 }}>Diagrams, charts, anatomy, maps...</span>
         </div>
       ) : (
@@ -233,15 +249,15 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
           <div
             ref={imgRef}
             onClick={mode === "manual" && placing ? handleManualClick : undefined}
+            onMouseMove={mode === "manual" && placing && placeStart && !showInput ? (e) => setMousePos(getRelativePos(e)) : undefined}
             style={{
-              position: "relative",
-              borderRadius: 12,
-              overflow: "hidden",
+              position: "relative", borderRadius: 12, overflow: "hidden",
               border: "1px solid rgba(255,255,255,0.08)",
               cursor: mode === "manual" && placing ? "crosshair" : "default",
             }}
           >
             <img src={imageUrl} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+
             {labels.map((label, i) => (
               <div
                 key={i}
@@ -250,55 +266,70 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
                 onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); removeLabel(i); }}
                 style={{
                   position: "absolute",
-                  left: `${label.x}%`,
-                  top: `${label.y}%`,
-                  width: `${label.w}%`,
-                  height: `${label.h}%`,
-                  background: label.selected ? "rgba(109,40,217,0.35)" : "rgba(255,255,255,0.08)",
-                  border: label.selected ? "2px solid rgba(109,40,217,0.8)" : "1px solid rgba(255,255,255,0.2)",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: label.selected ? "#c4b5fd" : "rgba(255,255,255,0.5)",
+                  left: `${label.x}%`, top: `${label.y}%`,
+                  width: `${label.w}%`, height: `${label.h}%`,
+                  background: label.selected ? "#6d28d9" : "rgba(255,255,255,0.08)",
+                  border: label.selected ? "2px solid #7c3aed" : "1px solid rgba(255,255,255,0.2)",
+                  borderRadius: 4, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 600,
+                  color: "#e9d5ff",
                 }}
               >
                 {label.selected ? label.text : ""}
               </div>
             ))}
-            {placing && placeStart && (
+
+            {previewRect && previewRect.w > 0.3 && (
               <div style={{
                 position: "absolute",
-                left: `${placeStart.x}%`,
-                top: `${placeStart.y}%`,
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#1db954",
-                transform: "translate(-50%, -50%)",
-                boxShadow: "0 0 8px rgba(29,185,84,0.6)",
-                pointerEvents: "none",
+                left: `${previewRect.x}%`, top: `${previewRect.y}%`,
+                width: `${previewRect.w}%`, height: `${previewRect.h}%`,
+                background: "rgba(109,40,217,0.3)",
+                border: "2px dashed rgba(124,58,237,0.8)",
+                borderRadius: 4, pointerEvents: "none",
+              }} />
+            )}
+
+            {placing && placeStart && !showInput && (
+              <div style={{
+                position: "absolute",
+                left: `${placeStart.x}%`, top: `${placeStart.y}%`,
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#1db954", transform: "translate(-50%, -50%)",
+                boxShadow: "0 0 8px rgba(29,185,84,0.6)", pointerEvents: "none",
               }} />
             )}
           </div>
 
+          {showInput && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                autoFocus
+                value={labelInput}
+                onChange={(e) => setLabelInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmLabel(); if (e.key === "Escape") cancelLabel(); }}
+                placeholder="Type the label text..."
+                style={{
+                  flex: 1, padding: "8px 12px", borderRadius: 8,
+                  background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(109,40,217,0.5)",
+                  color: "var(--os-text-primary)", fontSize: 13, outline: "none",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              />
+              <button onClick={confirmLabel} className="glass-btn-primary" style={{ padding: "6px 14px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                <Check size={13} /> Add
+              </button>
+              <button onClick={cancelLabel} className="glass-btn" style={{ padding: "6px 10px", fontSize: 12 }}>
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 3 }}>
               <button
-                onClick={() => { setMode("auto"); setPlacing(false); setPlaceStart(null); }}
-                style={{
-                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
-                  background: mode === "auto" ? "rgba(109,40,217,0.3)" : "transparent",
-                  color: mode === "auto" ? "#c4b5fd" : "var(--os-text-dim)",
-                }}
-              >
-                <Wand2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Auto
-              </button>
-              <button
-                onClick={() => { setMode("manual"); setPlacing(false); setPlaceStart(null); }}
+                onClick={() => { setMode("manual"); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
                 style={{
                   padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
                   background: mode === "manual" ? "rgba(109,40,217,0.3)" : "transparent",
@@ -307,30 +338,21 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
               >
                 <MousePointer2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Manual
               </button>
+              <button
+                onClick={() => { setMode("auto"); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
+                style={{
+                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
+                  background: mode === "auto" ? "rgba(109,40,217,0.3)" : "transparent",
+                  color: mode === "auto" ? "#c4b5fd" : "var(--os-text-dim)",
+                }}
+              >
+                <Wand2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Auto
+              </button>
             </div>
 
-            {mode === "auto" ? (
-              <>
-                {!scanning && labels.length === 0 && (
-                  <button onClick={runOCR} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 12 }}>
-                    <Wand2 size={13} /> Auto-Detect
-                  </button>
-                )}
-                {scanning && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", fontSize: 12, color: "var(--os-text-dim)" }}>
-                    <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
-                    {scanProgress}
-                  </div>
-                )}
-                {labels.length > 0 && !scanning && (
-                  <button onClick={runOCR} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                    <Wand2 size={11} /> Re-Scan
-                  </button>
-                )}
-              </>
-            ) : (
+            {mode === "manual" ? (
               <button
-                onClick={() => { setPlacing(!placing); setPlaceStart(null); }}
+                onClick={() => { setPlacing(!placing); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
                 className="glass-btn"
                 style={{
                   padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4,
@@ -339,22 +361,36 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
                   border: placing ? "1px solid rgba(29,185,84,0.3)" : undefined,
                 }}
               >
-                <MousePointer2 size={11} /> {placing ? "Click two corners..." : "+ Add Box"}
+                <MousePointer2 size={11} /> {placing ? (placeStart ? "Click 2nd corner..." : "Click 1st corner...") : "+ Draw Box"}
               </button>
+            ) : (
+              <>
+                {!scanning && (
+                  <button onClick={runOCR} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", fontSize: 12 }}>
+                    <Wand2 size={12} /> {labels.length > 0 ? "Re-Scan" : "Auto-Detect"}
+                  </button>
+                )}
+                {scanning && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", fontSize: 12, color: "var(--os-text-dim)" }}>
+                    <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                    {scanProgress}
+                  </div>
+                )}
+              </>
             )}
 
             {labels.length > 0 && (
               <>
-                <button onClick={selectAll} className="glass-btn" style={{ padding: "5px 10px", fontSize: 11 }}>All</button>
-                <button onClick={deselectAll} className="glass-btn" style={{ padding: "5px 10px", fontSize: 11 }}>None</button>
+                <button onClick={selectAll} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>All</button>
+                <button onClick={deselectAll} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>None</button>
               </>
             )}
-            <button onClick={() => { setImageUrl(null); setLabels([]); setPlacing(false); setPlaceStart(null); }} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Change Image</button>
+            <button onClick={() => { setImageUrl(null); setLabels([]); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Change Image</button>
           </div>
 
           {labels.length > 0 && (
             <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
-              {selectedCount} of {labels.length} labels selected — right-click a label to remove it
+              {selectedCount} of {labels.length} labels — click to toggle, right-click to remove
             </div>
           )}
         </div>
