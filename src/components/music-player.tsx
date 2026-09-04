@@ -58,7 +58,7 @@ const TRACKS = [
   { title: "Universe", artist: "Tyler the Creator" },
 ];
 
-const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0`;
+const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0&compact=1`;
 
 function loadStarted(): boolean {
   if (typeof window === "undefined") return false;
@@ -133,7 +133,7 @@ export function MusicPlayer() {
           top:${rect.top + 100}px;
           left:${rect.left + 16}px;
           width:${rect.width - 32}px;
-          height:152px;
+          height:80px;
           border:none;
           border-radius:12px;
           z-index:10002;
@@ -278,7 +278,7 @@ export function MusicPlayer() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: "16px",
-          maxHeight: 520,
+          maxHeight: 440,
         }}>
           <div style={{ 
             display: "flex", 
@@ -335,13 +335,14 @@ export function MusicPlayer() {
           {/* Spotify embed placeholder */}
           <div style={{
             width: "100%",
-            height: 152,
+            height: started ? 0 : 80,
             borderRadius: "12px",
             overflow: "hidden",
-            marginBottom: 12,
-            border: "1px solid rgba(255,255,255,0.06)",
+            marginBottom: started ? 0 : 12,
+            border: started ? "none" : "1px solid rgba(255,255,255,0.06)",
             background: "rgba(0,0,0,0.3)",
             position: "relative",
+            transition: "all 0.3s ease",
           }}>
             {!started && (
               <div style={{
