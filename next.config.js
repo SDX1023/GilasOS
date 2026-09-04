@@ -8,6 +8,19 @@ const nextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "encrypted-media=*",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
