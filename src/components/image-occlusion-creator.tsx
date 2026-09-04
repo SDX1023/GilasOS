@@ -51,20 +51,72 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       img.src = imageUrl;
       await new Promise<void>((r) => { img.onload = () => r(); });
 
-      const words: any[] = (data as any).words || [];
-      const detected: DetectedLabel[] = words
-        .filter((w: any) => w.text && w.text.trim().length > 0 && w.bbox)
-        .map((w: any) => ({
-          x: (w.bbox.x0 / img.width) * 100,
-          y: (w.bbox.y0 / img.height) * 100,
-          w: ((w.bbox.x1 - w.bbox.x0) / img.width) * 100,
-          h: ((w.bbox.y1 - w.bbox.y0) / img.height) * 100,
-          text: w.text.trim(),
-          selected: true,
-        }));
+      const blocks: any[] = (data as any).blocks || [];
+      const detected: DetectedLabel[] = [];
 
-      setLabels(detected);
-      setScanProgress(`Found ${detected.length} labels`);
+      for (const block of blocks) {
+        const paragraphs: any[] = block.paragraphs || [];
+        for (const para of paragraphs) {
+          const lines: any[] = para.lines || [];
+          for (const line of lines) {
+            const words: any[] = line.words || [];
+            if (words.length === 0) continue;
+
+            const lineText = words.map((w: any) => w.text).join(" ").trim();
+            if (lineText.length < 2) continue;
+
+            const minX = Math.min(...words.map((w: any) => w.bbox.x0));
+            const minY = Math.min(...words.map((w: any) => w.bbox.y0));
+            const maxX = Math.max(...words.map((w: any) => w.bbox.x1));
+            const maxY = Math.max(...words.map((w: any) => w.bbox.y1));
+            const boxW = maxX - minX;
+            const boxH = maxY - minY;
+
+            if (boxW < img.width * 0.02 || boxH < img.height * 0.01) continue;
+
+            const avgConf = words.reduce((s: number, w: any) => s + (w.confidence || 0), 0) / words.length;
+            if (avgConf < 30) continue;
+
+            const cleanText = lineText.replace(/[|\\{}()[\]]/g, "").replace(/\s+/g, " ").trim();
+            if (cleanText.length < 2) continue;
+            if (/^\W+$/.test(cleanText)) continue;
+
+            detected.push({
+              x: (minX / img.width) * 100,
+              y: (minY / img.height) * 100,
+              w: (boxW / img.width) * 100,
+              h: (boxH / img.height) * 100,
+              text: cleanText,
+              selected: true,
+            });
+          }
+        }
+      }
+
+      const deduped: DetectedLabel[] = [];
+      const sorted = [...detected].sort((a, b) => {
+        const aArea = a.w * a.h;
+        const bArea = b.w * b.h;
+        return bArea - aArea;
+      });
+
+      for (const label of sorted) {
+        const overlaps = deduped.some((existing) => {
+          const ixMin = Math.max(label.x, existing.x);
+          const iyMin = Math.max(label.y, existing.y);
+          const ixMax = Math.min(label.x + label.w, existing.x + existing.w);
+          const iyMax = Math.min(label.y + label.h, existing.y + existing.h);
+          const overlapArea = Math.max(0, ixMax - ixMin) * Math.max(0, iyMax - iyMin);
+          const labelArea = label.w * label.h;
+          const existingArea = existing.w * existing.h;
+          const minArea = Math.min(labelArea, existingArea);
+          return minArea > 0 && overlapArea / minArea > 0.3;
+        });
+        if (!overlaps) deduped.push(label);
+      }
+
+      setLabels(deduped);
+      setScanProgress(`Found ${deduped.length} labels`);
     } catch (err) {
       console.error("OCR failed:", err);
       setScanProgress("OCR failed — try manual mode");

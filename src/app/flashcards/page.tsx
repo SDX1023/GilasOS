@@ -67,25 +67,19 @@ export default function FlashcardsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
 
-      const localReviewers: ReviewerEntry[] = [];
-      const customContent = loadCustomContent();
-      for (const course of customContent.courses) {
-        for (const mod of course.modules) {
-          for (const reviewer of mod.reviewers) {
-            localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
-          }
-        }
-      }
-
       if (user) {
         const cloudReviewers = await loadReviewersFromSupabase();
-        const cloudIds = new Set(cloudReviewers.map((r) => r.reviewer.id));
-        const missingFromCloud = localReviewers.filter((r) => !cloudIds.has(r.reviewer.id));
-        for (const item of missingFromCloud) {
-          saveReviewerToSupabase(item.courseId, item.moduleId, item.reviewer).catch(() => {});
-        }
-        setAllReviewers([...cloudReviewers, ...missingFromCloud]);
+        setAllReviewers(cloudReviewers);
       } else {
+        const localReviewers: ReviewerEntry[] = [];
+        const customContent = loadCustomContent();
+        for (const course of customContent.courses) {
+          for (const mod of course.modules) {
+            for (const reviewer of mod.reviewers) {
+              localReviewers.push({ courseId: course.id, moduleId: mod.id, reviewer });
+            }
+          }
+        }
         setAllReviewers(localReviewers);
       }
       setMounted(true);
@@ -168,7 +162,7 @@ export default function FlashcardsPage() {
 
   const handleRename = async (reviewerId: string) => {
     if (!renamingTitle.trim() || !userId) return;
-    await getSupabase().from("reviewers").update({ title: renamingTitle.trim() }).eq("id", reviewerId);
+    await getSupabase().from("custom_decks").update({ title: renamingTitle.trim() }).eq("id", reviewerId);
     setRenamingId(null);
     setRenamingTitle("");
     const cloudReviewers = await loadReviewersFromSupabase();
@@ -188,7 +182,6 @@ export default function FlashcardsPage() {
 
   const handleDrop = async (newCourseId: string, newModuleId: string) => {
     if (!draggedId) return;
-    await getSupabase().from("reviewers").update({ course_id: newCourseId, module_id: newModuleId }).eq("id", draggedId);
     setDraggedId(null);
     setDragOverModule(null);
     const cloudReviewers = await loadReviewersFromSupabase();
