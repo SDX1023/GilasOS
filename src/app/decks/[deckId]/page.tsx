@@ -44,6 +44,7 @@ export default function DeckStudyPage() {
   const [queue, setQueue] = useState<DeckCard[]>([]);
   const [knownCount, setKnownCount] = useState(0);
   const [forgotCount, setForgotCount] = useState(0);
+  const [dontKnowCount, setDontKnowCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +52,20 @@ export default function DeckStudyPage() {
     if (!user) { router.push("/login"); return; }
     fetchDeck();
   }, [user, deckId]);
+
+  useEffect(() => {
+    if (!reviewMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!reviewFlipped) setReviewFlipped(true); }
+      if (reviewFlipped) {
+        if (e.key === "1") nextCard(false);
+        if (e.key === "2") nextCard(false, true);
+        if (e.key === "3") nextCard(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [reviewMode, reviewFlipped, reviewIndex]);
 
   const fetchDeck = async () => {
     if (!user) return;
@@ -142,12 +157,12 @@ export default function DeckStudyPage() {
   const startReview = () => {
     const q = shuffled ? [...cards].sort(() => Math.random() - 0.5) : [...cards];
     setQueue(q); setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
-    setKnownCount(0); setForgotCount(0);
+    setKnownCount(0); setForgotCount(0); setDontKnowCount(0);
     setReviewMode(true);
   };
 
-  const nextCard = (correct: boolean) => {
-    if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);
+  const nextCard = (correct: boolean, dontKnow = false) => {
+    if (dontKnow) setDontKnowCount(d => d + 1); else if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);
     const next = queue.filter((_, i) => i !== reviewIndex);
     if (next.length === 0) { setQueue([]); setReviewComplete(true); return; }
     setQueue(next); setReviewIndex(reviewIndex >= next.length ? 0 : reviewIndex);
@@ -173,6 +188,7 @@ export default function DeckStudyPage() {
             <span style={{ fontSize: "1rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
             <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.875rem" }}>
               <span style={{ color: "#22c55e" }}>{knownCount}</span>
+              <span style={{ color: "#f97316" }}>{dontKnowCount}</span>
               <span style={{ color: "#ef4444" }}>{forgotCount}</span>
             </div>
           </div>
@@ -195,6 +211,7 @@ export default function DeckStudyPage() {
               <h2 style={{ fontSize: "1.875rem", fontWeight: 700, marginBottom: "1rem" }}>All Done!</h2>
               <div style={{ display: "flex", justifyContent: "center", gap: "2rem", marginBottom: "2rem", fontSize: "1.125rem" }}>
                 <span style={{ color: "#22c55e" }}>{knownCount} known</span>
+                <span style={{ color: "#f97316" }}>{dontKnowCount} don&apos;t know</span>
                 <span style={{ color: "#ef4444" }}>{forgotCount} forgot</span>
               </div>
               <button onClick={() => { setReviewMode(false); setReviewComplete(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
@@ -212,7 +229,7 @@ export default function DeckStudyPage() {
                           position: "absolute",
                           left: `${label.x}%`, top: `${label.y}%`,
                           width: `${label.w}%`, height: `${label.h}%`,
-                          background: isOccluded && !reviewFlipped ? "rgba(109,40,217,0.85)" : isOccluded && reviewFlipped ? "rgba(74,222,128,0.3)" : "transparent",
+                          background: isOccluded && !reviewFlipped ? "#6d28d9" : isOccluded && reviewFlipped ? "rgba(74,222,128,0.3)" : "transparent",
                           border: isOccluded ? "2px solid rgba(109,40,217,0.9)" : "none",
                           borderRadius: 4,
                           display: "flex", alignItems: "center", justifyContent: "center",
@@ -229,15 +246,16 @@ export default function DeckStudyPage() {
                     {reviewFlipped ? `Answer: ${card.back}` : "What is hidden here?"}
                   </div>
                   <div style={{ marginTop: "0.5rem", fontSize: 12, color: "var(--os-text-dim)" }}>
-                    {!reviewFlipped ? "Space/Enter to reveal" : "1 = Forgot  2 = Know"}
+                    {!reviewFlipped ? "Space/Enter to reveal" : "1 = Forgot  2 = Don't Know  3 = Know"}
                   </div>
                   <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
                     {!reviewFlipped ? (
                       <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Reveal</button>
                     ) : (
                       <>
-                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
-                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                        <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
                       </>
                     )}
                   </div>
@@ -254,15 +272,16 @@ export default function DeckStudyPage() {
                     {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
-                    {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Know"}
+                    {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                   </div>
                   <div style={{ display: "flex", gap: "1rem" }}>
                     {!reviewFlipped ? (
                       <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Show Answer</button>
                     ) : (
                       <>
-                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
-                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                        <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
                       </>
                     )}
                   </div>
@@ -278,15 +297,16 @@ export default function DeckStudyPage() {
                     </div>
                   </div>
                   <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
-                    {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Know"}
+                    {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                   </div>
                   <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
                     {!reviewFlipped ? (
                       <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Show Answer</button>
                     ) : (
                       <>
-                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
-                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                        <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
                       </>
                     )}
                   </div>
