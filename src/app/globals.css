@@ -139,6 +139,8 @@ body {
   flex: 1;
   padding-bottom: 80px;
   overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================================
