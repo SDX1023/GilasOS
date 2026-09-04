@@ -98,8 +98,8 @@ export function MusicPlayer() {
         position:fixed;
         bottom:90px;
         right:80px;
-        width:300px;
-        height:152px;
+        width:380px;
+        height:180px;
         border:none;
         border-radius:12px;
         z-index:9999;
