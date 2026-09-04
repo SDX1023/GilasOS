@@ -58,7 +58,7 @@ const TRACKS = [
   { title: "Universe", artist: "Tyler the Creator" },
 ];
 
-const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0&compact=1`;
+const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0`;
 
 function loadStarted(): boolean {
   if (typeof window === "undefined") return false;
@@ -71,7 +71,7 @@ export function MusicPlayer() {
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const miniIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const selectedTrack = TRACKS[selectedTrackIndex];
 
@@ -79,29 +79,27 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  // Create persistent iframe
   useEffect(() => {
     if (!started) {
-      if (iframeRef.current) {
-        iframeRef.current.remove();
-        iframeRef.current = null;
+      if (miniIframeRef.current) {
+        miniIframeRef.current.remove();
+        miniIframeRef.current = null;
       }
       return;
     }
 
-    if (!iframeRef.current) {
+    if (!miniIframeRef.current) {
       const iframe = document.createElement("iframe");
       iframe.src = EMBED_URL;
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
       iframe.loading = "lazy";
       iframe.title = "Spotify Player";
-      // Mini floating player - above taskbar
       iframe.style.cssText = `
         position:fixed;
         bottom:90px;
         right:80px;
         width:300px;
-        height:80px;
+        height:152px;
         border:none;
         border-radius:12px;
         z-index:9999;
@@ -109,63 +107,17 @@ export function MusicPlayer() {
         pointer-events:auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         border: 1px solid rgba(255,255,255,0.08);
-        transition: all 0.3s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
       `;
       document.body.appendChild(iframe);
-      iframeRef.current = iframe;
+      miniIframeRef.current = iframe;
     }
 
     return () => {};
   }, [started]);
 
-  // Position iframe based on state
   useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe || !started) return;
-
-    if (open) {
-      // When panel is open, position inside panel
-      const panel = panelRef.current;
-      if (panel) {
-        const rect = panel.getBoundingClientRect();
-        iframe.style.cssText = `
-          position:fixed;
-          top:${rect.top + 100}px;
-          left:${rect.left + 16}px;
-          width:${rect.width - 32}px;
-          height:80px;
-          border:none;
-          border-radius:12px;
-          z-index:10002;
-          opacity:1;
-          pointer-events:auto;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.06);
-        `;
-      }
-    } else {
-      // Mini floating player - above taskbar
-      iframe.style.cssText = `
-        position:fixed;
-        bottom:90px;
-        right:80px;
-        width:300px;
-        height:80px;
-        border:none;
-        border-radius:12px;
-        z-index:9999;
-        opacity:0.9;
-        pointer-events:auto;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.08);
-        transition: all 0.3s ease;
-      `;
-    }
-  }, [open, started]);
-
-  // Hover effect for iframe
-  useEffect(() => {
-    const iframe = iframeRef.current;
+    const iframe = miniIframeRef.current;
     if (!iframe) return;
 
     const handleMouseEnter = () => {
@@ -190,6 +142,12 @@ export function MusicPlayer() {
       iframe.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [open]);
+
+  useEffect(() => {
+    const miniIframe = miniIframeRef.current;
+    if (!miniIframe) return;
+    miniIframe.style.display = (open && started) ? "none" : started ? "block" : "none";
+  }, [open, started]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -226,7 +184,6 @@ export function MusicPlayer() {
         }
       `}</style>
 
-      {/* Floating button */}
       <button 
         ref={btnRef} 
         onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
@@ -262,7 +219,6 @@ export function MusicPlayer() {
         )}
       </button>
 
-      {/* Panel - only shows when open */}
       {open && (
         <div ref={panelRef} style={{
           position: "fixed", 
@@ -278,7 +234,7 @@ export function MusicPlayer() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: "16px",
-          maxHeight: 440,
+          maxHeight: 600,
         }}>
           <div style={{ 
             display: "flex", 
@@ -306,18 +262,13 @@ export function MusicPlayer() {
                 display: "flex",
                 borderRadius: "4px",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#e5e5e5";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#666";
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e5e5"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
             >
               <X size={14} />
             </button>
           </div>
 
-          {/* Selected track display */}
           <div style={{ 
             padding: "10px 14px",
             background: "rgba(255,255,255,0.03)",
@@ -332,37 +283,28 @@ export function MusicPlayer() {
             </div>
           </div>
 
-          {/* Spotify embed placeholder */}
           <div style={{
             width: "100%",
-            height: started ? 0 : 80,
+            height: 152,
             borderRadius: "12px",
             overflow: "hidden",
-            marginBottom: started ? 0 : 12,
-            border: started ? "none" : "1px solid rgba(255,255,255,0.06)",
+            marginBottom: 12,
+            border: "1px solid rgba(255,255,255,0.06)",
             background: "rgba(0,0,0,0.3)",
-            position: "relative",
-            transition: "all 0.3s ease",
           }}>
-            {!started && (
-              <div style={{
+            <iframe
+              src={EMBED_URL}
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              title="Spotify Player"
+              style={{
                 width: "100%",
                 height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#444",
-              }}>
-                <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
-                  Click the music icon to start
-                </div>
-              </div>
-            )}
+                border: "none",
+              }}
+            />
           </div>
 
-          {/* Track list */}
           <div style={{ 
             borderTop: "1px solid rgba(255,255,255,0.04)",
             paddingTop: 10,
