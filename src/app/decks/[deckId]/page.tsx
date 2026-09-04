@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
+import { saveStudyStats, saveStudySession } from "@/lib/user-data";
+import { earnBadge } from "@/lib/badges";
 
 interface DeckCard {
   id: string;
@@ -50,6 +52,7 @@ export default function DeckStudyPage() {
   const [reviewStudyMode, setReviewStudyMode] = useState<"flip" | "type-in">("flip");
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
+  const [answerCorrect, setAnswerCorrect] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -60,6 +63,8 @@ export default function DeckStudyPage() {
     if (!user) { router.push("/login"); return; }
     fetchDeck();
   }, [user, deckId]);
+
+  const sessionKey = `deck-session-${deckId}`;
 
   useEffect(() => {
     document.querySelector<HTMLElement>("nav")?.style.setProperty("display", reviewMode ? "none" : "");
@@ -72,7 +77,41 @@ export default function DeckStudyPage() {
 
   useEffect(() => {
     if (!reviewMode) return;
+    localStorage.setItem(sessionKey, JSON.stringify({
+      date: new Date().toDateString(), queue, reviewIndex, knownCount, forgotCount, dontKnowCount,
+    }));
+  }, [queue, reviewIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey]);
+
+  const sessionStartRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (!reviewComplete || !user) return;
+    const total = knownCount + forgotCount + dontKnowCount;
+    if (total === 0) return;
+    saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
+    const duration = Math.round((Date.now() - sessionStartRef.current) / 1000);
+    if (duration > 0) {
+      saveStudySession(user.id, {
+        session_type: "flashcards",
+        subject: deckTitle,
+        duration_seconds: duration,
+        cards_studied: total,
+        known: knownCount,
+        forgot: forgotCount,
+        dont_know: dontKnowCount,
+      }).catch(() => {});
+    }
+    earnBadge("first-study");
+    if (total >= 10) earnBadge("cards-10");
+    if (total >= 100) earnBadge("cards-100");
+    if (total >= 500) earnBadge("cards-500");
+    localStorage.removeItem(sessionKey);
+  }, [reviewComplete, knownCount, forgotCount, dontKnowCount]);
+
+  useEffect(() => {
+    if (!reviewMode) return;
     const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!reviewFlipped) setReviewFlipped(true); }
       if (reviewFlipped) {
         if (e.key === "1") nextCard(false);
@@ -172,9 +211,24 @@ export default function DeckStudyPage() {
   };
 
   const startReview = () => {
+    const stored = localStorage.getItem(sessionKey);
+    if (stored && !shuffled) {
+      try {
+        const data = JSON.parse(stored);
+        if (data.date === new Date().toDateString() && data.queue?.length > 0) {
+          setQueue(data.queue); setReviewIndex(data.reviewIndex || 0);
+          setKnownCount(data.knownCount || 0); setForgotCount(data.forgotCount || 0);
+          setDontKnowCount(data.dontKnowCount || 0);
+          setReviewFlipped(false); setReviewComplete(false); setReviewMode(true);
+          setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
+          return;
+        }
+      } catch {}
+    }
     const q = shuffled ? [...cards].sort(() => Math.random() - 0.5) : [...cards];
     setQueue(q); setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
     setKnownCount(0); setForgotCount(0); setDontKnowCount(0);
+    setTypedAnswer(""); setAnswerChecked(false);
     setReviewMode(true);
   };
 
@@ -183,7 +237,7 @@ export default function DeckStudyPage() {
     const next = queue.filter((_, i) => i !== reviewIndex);
     if (next.length === 0) { setQueue([]); setReviewComplete(true); return; }
     setQueue(next); setReviewIndex(reviewIndex >= next.length ? 0 : reviewIndex);
-    setReviewFlipped(false);
+    setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
   };
 
   const filtered = cards.filter(c => c.front.toLowerCase().includes(searchQuery.toLowerCase()) || c.back.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -237,7 +291,27 @@ export default function DeckStudyPage() {
             }} className="glass-btn" style={timerRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}>
               <Timer size={16} /> {Math.floor(timerSeconds / 60).toString().padStart(2, "0")}:{(timerSeconds % 60).toString().padStart(2, "0")}
             </button>
-            <button onClick={() => { setReviewMode(false); setReviewComplete(false); if (timerRef.current) clearInterval(timerRef.current); setTimerRunning(false); setTimerSeconds(0); }} className="glass-btn">Exit</button>
+            <button onClick={() => {
+              const total = knownCount + forgotCount + dontKnowCount;
+              if (total > 0 && user) {
+                saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
+                const duration = Math.round((Date.now() - sessionStartRef.current) / 1000);
+                if (duration > 0) {
+                  saveStudySession(user.id, {
+                    session_type: "flashcards",
+                    subject: deckTitle,
+                    duration_seconds: duration,
+                    cards_studied: total,
+                    known: knownCount,
+                    forgot: forgotCount,
+                    dont_know: dontKnowCount,
+                  }).catch(() => {});
+                }
+              }
+              localStorage.removeItem(sessionKey);
+              setReviewMode(false); setReviewComplete(false);
+              if (timerRef.current) clearInterval(timerRef.current); setTimerRunning(false); setTimerSeconds(0);
+            }} className="glass-btn">Exit</button>
           </div>
         </div>
         <div style={{ padding: "0 1.25rem 0.75rem" }}>
@@ -255,7 +329,7 @@ export default function DeckStudyPage() {
                 <span style={{ color: "#f97316" }}>{dontKnowCount} don&apos;t know</span>
                 <span style={{ color: "#ef4444" }}>{forgotCount} forgot</span>
               </div>
-              <button onClick={() => { setReviewMode(false); setReviewComplete(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
+              <button onClick={() => { localStorage.removeItem(sessionKey); setReviewMode(false); setReviewComplete(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
             </div>
           ) : card ? (
             <>
@@ -327,7 +401,62 @@ export default function DeckStudyPage() {
                     )}
                   </div>
                 </div>
+              ) : reviewStudyMode === "type-in" ? (
+                /* Type-in mode */
+                <>
+                  <div style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                    <div style={{ width: "100%" }}>
+                      <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)", marginBottom: "1rem" }}>
+                        {card.front}
+                      </p>
+                      {card.hint && <p style={{ fontSize: "0.9rem", marginBottom: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                      {!answerChecked ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                          <input
+                            type="text"
+                            value={typedAnswer}
+                            onChange={(e) => setTypedAnswer(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === card.back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            placeholder="Type your answer..."
+                            autoFocus
+                            style={{ width: "100%", maxWidth: 400, padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: "1rem", outline: "none", textAlign: "center", fontFamily: "Inter, sans-serif" }}
+                          />
+                          <button
+                            onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === card.back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            disabled={!typedAnswer.trim()}
+                            className="glass-btn-primary"
+                            style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: typedAnswer.trim() ? 1 : 0.4 }}
+                          >
+                            Check
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p style={{ fontSize: "1rem", marginBottom: 8, color: answerCorrect ? "#4ade80" : "#f87171" }}>
+                            {answerCorrect ? "Correct!" : `Your answer: ${typedAnswer}`}
+                          </p>
+                          {!answerCorrect && (
+                            <p style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--os-text-primary)" }}>
+                              Correct answer: {card.back}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                    {!answerChecked ? "Type answer, then press Enter or click Check" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                  </div>
+                  {answerChecked && (
+                    <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+                      <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                      <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                      <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
+                    </div>
+                  )}
+                </>
               ) : (
+                /* Flip mode */
                 <>
                   <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                     <div style={{ width: "100%" }}>
@@ -337,10 +466,10 @@ export default function DeckStudyPage() {
                       {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                     </div>
                   </div>
-                  <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                  <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
                     {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                   </div>
-                  <div style={{ marginTop: "1rem", display: "flex", gap: "1rem" }}>
+                  <div style={{ marginTop: "0.75rem", display: "flex", gap: "1rem" }}>
                     {!reviewFlipped ? (
                       <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Show Answer</button>
                     ) : (
@@ -367,12 +496,24 @@ export default function DeckStudyPage() {
           <ArrowLeft size={14} /> My Decks
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
           <div>
             <h1 className="page-title"><Layers size={28} /> {deckTitle}</h1>
             <p className="page-subtitle">{cards.length} cards</p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => setShowFormulas(!showFormulas)}
+              className="glass-btn"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, ...(showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}) }}
+            >
+              <Sigma size={15} /> {showFormulas ? "Σ On" : "Σ Off"}
+            </button>
+            <button onClick={() => setShuffled(!shuffled)}
+              className="glass-btn"
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, ...(shuffled ? { background: "rgba(0,212,255,0.1)", color: "var(--os-accent)", borderColor: "rgba(0,212,255,0.3)" } : {}) }}
+            >
+              <Shuffle size={15} /> {shuffled ? "Shuffled" : "Shuffle"}
+            </button>
             <button onClick={startReview} disabled={cards.length === 0} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, opacity: cards.length === 0 ? 0.4 : 1 }}>
               <Play size={15} /> Review
             </button>
