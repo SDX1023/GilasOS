@@ -53,14 +53,19 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
 
       const allWords: any[] = (data as any).words || [];
 
+      const noisePatterns = /^[\d.,©®™°•·–—""''()\[\]{}/\\|@#$%&*+=<>^~`]+$/;
+      const copyrightPatterns = /cleveland|clinic|copyright|©|®|all rights|reserved|\d{4}|\$|£|€|¥/i;
+
       const goodWords = allWords.filter((w: any) => {
         if (!w.text || !w.bbox) return false;
         const t = w.text.trim();
         if (t.length < 2) return false;
-        if ((w.confidence || 0) < 20) return false;
+        if ((w.confidence || 0) < 40) return false;
         const bw = w.bbox.x1 - w.bbox.x0;
         const bh = w.bbox.y1 - w.bbox.y0;
-        if (bw < img.width * 0.008 || bh < img.height * 0.005) return false;
+        if (bw < img.width * 0.01 || bh < img.height * 0.005) return false;
+        if (noisePatterns.test(t)) return false;
+        if (copyrightPatterns.test(t)) return false;
         return true;
       });
 
@@ -87,18 +92,24 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
           const a = group[group.length - 1];
           const b = byY[j];
           const yDiff = Math.abs(b.lineY - a.lineY);
-          const sameLine = yDiff < Math.max(a.lineH, b.lineH) * 1.0;
+          const sameLine = yDiff < Math.min(a.lineH, b.lineH) * 0.6;
           if (!sameLine) break;
           const gap = Math.abs(b.x0 - a.x1);
-          if (gap < img.width * 0.05) {
+          if (gap < img.width * 0.03 && gap >= 0) {
             group.push(b);
             used.add(j);
           }
         }
 
         group.sort((a, b) => a.x0 - b.x0);
+        const lineW = Math.max(...group.map((g) => g.x1)) - Math.min(...group.map((g) => g.x0));
+        if (lineW > img.width * 0.25) continue;
+
+        const lineText = group.map((g) => g.text).join(" ");
+        if (copyrightPatterns.test(lineText)) continue;
+
         mergedLines.push({
-          text: group.map((g) => g.text).join(" "),
+          text: lineText,
           x0: Math.min(...group.map((g) => g.x0)),
           y0: Math.min(...group.map((g) => g.y0)),
           x1: Math.max(...group.map((g) => g.x1)),
@@ -106,17 +117,8 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
         });
       }
 
-      const filtered = mergedLines.filter((line) => {
-        const w = line.x1 - line.x0;
-        const h = line.y1 - line.y0;
-        if (w > img.width * 0.45) return false;
-        const clean = line.text.replace(/[^a-zA-Z0-9\s]/g, "").trim();
-        if (clean.length < 2) return false;
-        return true;
-      });
-
-      const byText = new Map<string, typeof filtered[0]>();
-      for (const line of filtered) {
+      const byText = new Map<string, typeof mergedLines[0]>();
+      for (const line of mergedLines) {
         const key = line.text.toLowerCase().trim();
         const existing = byText.get(key);
         if (!existing) {
