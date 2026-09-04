@@ -7,8 +7,53 @@ import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
+import { MathRenderer } from "@/components/math-renderer";
 import { saveStudyStats, saveStudySession } from "@/lib/user-data";
 import { earnBadge } from "@/lib/badges";
+
+const formulaCache: Record<string, { formula: string; explanation: string } | null> = {};
+
+async function fetchFormula(text: string): Promise<{ formula: string; explanation: string } | null> {
+  if (text in formulaCache) return formulaCache[text];
+  if (/\$|\\|\\\\|\\frac|\\sqrt|\\sum|\\int|\\alpha|\\beta|\\gamma|\\sigma|\\omega|\\theta|\\delta|\\epsilon|\\pi\b/i.test(text)) {
+    formulaCache[text] = null;
+    return null;
+  }
+  try {
+    const res = await fetch("/api/generate-formula", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    if (data.detected && data.formula) {
+      const result = { formula: data.formula, explanation: data.explanation || "" };
+      formulaCache[text] = result;
+      return result;
+    }
+  } catch {}
+  formulaCache[text] = null;
+  return null;
+}
+
+function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boolean }) {
+  const [result, setResult] = useState<{ formula: string; explanation: string } | null>(null);
+  useEffect(() => {
+    if (!showFormulas) return;
+    if (text in formulaCache) { setResult(formulaCache[text]); return; }
+    fetchFormula(text).then((r) => setResult(r));
+  }, [showFormulas, text]);
+  if (!showFormulas || !result) return <MathRenderer content={text} />;
+  return (
+    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+      <div style={{ flex: 1, minWidth: 0 }}><MathRenderer content={text} /></div>
+      <div style={{ flexShrink: 0, maxWidth: "45%", padding: "8px 12px", borderRadius: 10, background: "rgba(109,40,217,0.08)", border: "1px solid rgba(109,40,217,0.2)", fontSize: 13, color: "#a78bfa" }}>
+        <div><MathRenderer content={`$${result.formula}$`} /></div>
+        {result.explanation && <div style={{ marginTop: 4, fontSize: 11, color: "#8b5cf6", fontStyle: "italic", lineHeight: 1.4 }}>{result.explanation}</div>}
+      </div>
+    </div>
+  );
+}
 
 interface DeckCard {
   id: string;
@@ -78,9 +123,9 @@ export default function DeckStudyPage() {
   useEffect(() => {
     if (!reviewMode) return;
     localStorage.setItem(sessionKey, JSON.stringify({
-      date: new Date().toDateString(), queue, reviewIndex, knownCount, forgotCount, dontKnowCount,
+      date: new Date().toDateString(), queue, reviewIndex, knownCount, forgotCount, dontKnowCount, swapped,
     }));
-  }, [queue, reviewIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey]);
+  }, [queue, reviewIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey, swapped]);
 
   const sessionStartRef = useRef(Date.now());
 
@@ -219,6 +264,7 @@ export default function DeckStudyPage() {
           setQueue(data.queue); setReviewIndex(data.reviewIndex || 0);
           setKnownCount(data.knownCount || 0); setForgotCount(data.forgotCount || 0);
           setDontKnowCount(data.dontKnowCount || 0);
+          if (data.swapped !== undefined) setSwapped(data.swapped);
           setReviewFlipped(false); setReviewComplete(false); setReviewMode(true);
           setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
           return;
@@ -291,21 +337,25 @@ export default function DeckStudyPage() {
             }} className="glass-btn" style={timerRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}>
               <Timer size={16} /> {Math.floor(timerSeconds / 60).toString().padStart(2, "0")}:{(timerSeconds % 60).toString().padStart(2, "0")}
             </button>
-            <button onClick={() => {
+            <button onClick={async () => {
               const total = knownCount + forgotCount + dontKnowCount;
               if (total > 0 && user) {
-                saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
-                const duration = Math.round((Date.now() - sessionStartRef.current) / 1000);
-                if (duration > 0) {
-                  saveStudySession(user.id, {
-                    session_type: "flashcards",
-                    subject: deckTitle,
-                    duration_seconds: duration,
-                    cards_studied: total,
-                    known: knownCount,
-                    forgot: forgotCount,
-                    dont_know: dontKnowCount,
-                  }).catch(() => {});
+                try {
+                  await saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total);
+                  const duration = Math.round((Date.now() - sessionStartRef.current) / 1000);
+                  if (duration > 0) {
+                    await saveStudySession(user.id, {
+                      session_type: "flashcards",
+                      subject: deckTitle,
+                      duration_seconds: duration,
+                      cards_studied: total,
+                      known: knownCount,
+                      forgot: forgotCount,
+                      dont_know: dontKnowCount,
+                    });
+                  }
+                } catch (err) {
+                  console.error("Failed to save study stats:", err);
                 }
               }
               localStorage.removeItem(sessionKey);
@@ -382,9 +432,9 @@ export default function DeckStudyPage() {
                   </div>
                   <div style={{ width: "100%", maxWidth: 672, maxHeight: "40vh", overflowY: "auto", minHeight: 100, padding: "1.5rem", cursor: "pointer", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }} onClick={() => setReviewFlipped(!reviewFlipped)}>
                     <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--os-text-primary)" }}>
-                      {reviewFlipped ? card.back : card.front}
+                      {reviewFlipped ? <FormulaLine text={swapped ? card.front : card.back} showFormulas={showFormulas} /> : <FormulaLine text={swapped ? card.back : card.front} showFormulas={showFormulas} />}
                     </p>
-                    {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                    {!reviewFlipped && card.hint && !swapped && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
                     {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
@@ -407,22 +457,22 @@ export default function DeckStudyPage() {
                   <div style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                     <div style={{ width: "100%" }}>
                       <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)", marginBottom: "1rem" }}>
-                        {card.front}
+                        <FormulaLine text={swapped ? card.back : card.front} showFormulas={showFormulas} />
                       </p>
-                      {card.hint && <p style={{ fontSize: "0.9rem", marginBottom: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                      {card.hint && !swapped && <p style={{ fontSize: "0.9rem", marginBottom: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                       {!answerChecked ? (
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                           <input
                             type="text"
                             value={typedAnswer}
                             onChange={(e) => setTypedAnswer(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === card.back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === (swapped ? card.front : card.back).toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                             placeholder="Type your answer..."
                             autoFocus
                             style={{ width: "100%", maxWidth: 400, padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: "1rem", outline: "none", textAlign: "center", fontFamily: "Inter, sans-serif" }}
                           />
                           <button
-                            onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === card.back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === (swapped ? card.front : card.back).toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                             disabled={!typedAnswer.trim()}
                             className="glass-btn-primary"
                             style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: typedAnswer.trim() ? 1 : 0.4 }}
@@ -437,7 +487,7 @@ export default function DeckStudyPage() {
                           </p>
                           {!answerCorrect && (
                             <p style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--os-text-primary)" }}>
-                              Correct answer: {card.back}
+                              Correct answer: {swapped ? card.front : card.back}
                             </p>
                           )}
                         </div>
@@ -461,9 +511,11 @@ export default function DeckStudyPage() {
                   <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                     <div style={{ width: "100%" }}>
                       <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)" }}>
-                        {reviewFlipped ? card.back : card.front}
+                        {reviewFlipped
+                          ? <FormulaLine text={swapped ? card.front : card.back} showFormulas={showFormulas} />
+                          : <FormulaLine text={swapped ? card.back : card.front} showFormulas={showFormulas} />}
                       </p>
-                      {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                      {!reviewFlipped && card.hint && !swapped && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                     </div>
                   </div>
                   <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
