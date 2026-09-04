@@ -223,7 +223,20 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
     .eq("user_id", user.id);
 
   if (customDecks) {
+    const seenTitles = new Map<string, any>();
     for (const d of customDecks) {
+      const key = (d.title || "").toLowerCase().trim();
+      if (key && seenTitles.has(key)) {
+        const existing = seenTitles.get(key);
+        const existingCards = existing.custom_deck_cards?.length || 0;
+        const newCards = d.custom_deck_cards?.length || 0;
+        if (newCards > existingCards) seenTitles.set(key, d);
+      } else {
+        seenTitles.set(key, d);
+      }
+    }
+
+    for (const d of seenTitles.values()) {
       result.push({
         courseId: d.title || "My Decks",
         moduleId: "custom",

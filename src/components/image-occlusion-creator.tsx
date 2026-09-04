@@ -51,72 +51,94 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       img.src = imageUrl;
       await new Promise<void>((r) => { img.onload = () => r(); });
 
-      const blocks: any[] = (data as any).blocks || [];
-      const detected: DetectedLabel[] = [];
+      const allWords: any[] = (data as any).words || [];
 
-      for (const block of blocks) {
-        const paragraphs: any[] = block.paragraphs || [];
-        for (const para of paragraphs) {
-          const lines: any[] = para.lines || [];
-          for (const line of lines) {
-            const words: any[] = line.words || [];
-            if (words.length === 0) continue;
+      const goodWords = allWords.filter((w: any) => {
+        if (!w.text || !w.bbox) return false;
+        const t = w.text.trim();
+        if (t.length < 2) return false;
+        if ((w.confidence || 0) < 20) return false;
+        const bw = w.bbox.x1 - w.bbox.x0;
+        const bh = w.bbox.y1 - w.bbox.y0;
+        if (bw < img.width * 0.008 || bh < img.height * 0.005) return false;
+        return true;
+      });
 
-            const lineText = words.map((w: any) => w.text).join(" ").trim();
-            if (lineText.length < 2) continue;
+      const wordBoxes = goodWords.map((w: any) => ({
+        x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1,
+        text: w.text.trim().replace(/[""]/g, '"').replace(/['']/g, "'"),
+        conf: w.confidence || 0,
+        lineY: (w.bbox.y0 + w.bbox.y1) / 2,
+        lineH: w.bbox.y1 - w.bbox.y0,
+      }));
 
-            const minX = Math.min(...words.map((w: any) => w.bbox.x0));
-            const minY = Math.min(...words.map((w: any) => w.bbox.y0));
-            const maxX = Math.max(...words.map((w: any) => w.bbox.x1));
-            const maxY = Math.max(...words.map((w: any) => w.bbox.y1));
-            const boxW = maxX - minX;
-            const boxH = maxY - minY;
+      const mergedLines: { text: string; x0: number; y0: number; x1: number; y1: number }[] = [];
+      const used = new Set<number>();
 
-            if (boxW < img.width * 0.02 || boxH < img.height * 0.01) continue;
+      const byY = [...wordBoxes].sort((a, b) => a.lineY - b.lineY);
 
-            const avgConf = words.reduce((s: number, w: any) => s + (w.confidence || 0), 0) / words.length;
-            if (avgConf < 30) continue;
+      for (let i = 0; i < byY.length; i++) {
+        if (used.has(i)) continue;
+        let group = [byY[i]];
+        used.add(i);
 
-            const cleanText = lineText.replace(/[|\\{}()[\]]/g, "").replace(/\s+/g, " ").trim();
-            if (cleanText.length < 2) continue;
-            if (/^\W+$/.test(cleanText)) continue;
-
-            detected.push({
-              x: (minX / img.width) * 100,
-              y: (minY / img.height) * 100,
-              w: (boxW / img.width) * 100,
-              h: (boxH / img.height) * 100,
-              text: cleanText,
-              selected: true,
-            });
+        for (let j = i + 1; j < byY.length; j++) {
+          if (used.has(j)) continue;
+          const a = group[group.length - 1];
+          const b = byY[j];
+          const yDiff = Math.abs(b.lineY - a.lineY);
+          const sameLine = yDiff < Math.max(a.lineH, b.lineH) * 1.0;
+          if (!sameLine) break;
+          const gap = Math.abs(b.x0 - a.x1);
+          if (gap < img.width * 0.05) {
+            group.push(b);
+            used.add(j);
           }
+        }
+
+        group.sort((a, b) => a.x0 - b.x0);
+        mergedLines.push({
+          text: group.map((g) => g.text).join(" "),
+          x0: Math.min(...group.map((g) => g.x0)),
+          y0: Math.min(...group.map((g) => g.y0)),
+          x1: Math.max(...group.map((g) => g.x1)),
+          y1: Math.max(...group.map((g) => g.y1)),
+        });
+      }
+
+      const filtered = mergedLines.filter((line) => {
+        const w = line.x1 - line.x0;
+        const h = line.y1 - line.y0;
+        if (w > img.width * 0.45) return false;
+        const clean = line.text.replace(/[^a-zA-Z0-9\s]/g, "").trim();
+        if (clean.length < 2) return false;
+        return true;
+      });
+
+      const byText = new Map<string, typeof filtered[0]>();
+      for (const line of filtered) {
+        const key = line.text.toLowerCase().trim();
+        const existing = byText.get(key);
+        if (!existing) {
+          byText.set(key, line);
+        } else {
+          const eArea = (existing.x1 - existing.x0) * (existing.y1 - existing.y0);
+          const nArea = (line.x1 - line.x0) * (line.y1 - line.y0);
+          if (nArea > eArea) byText.set(key, line);
         }
       }
 
-      const deduped: DetectedLabel[] = [];
-      const sorted = [...detected].sort((a, b) => {
-        const aArea = a.w * a.h;
-        const bArea = b.w * b.h;
-        return bArea - aArea;
-      });
+      const result: DetectedLabel[] = [...byText.values()].map((line) => ({
+        x: (line.x0 / img.width) * 100,
+        y: (line.y0 / img.height) * 100,
+        w: ((line.x1 - line.x0) / img.width) * 100,
+        h: ((line.y1 - line.y0) / img.height) * 100,
+        text: line.text,
+        selected: true,
+      }));
 
-      for (const label of sorted) {
-        const overlaps = deduped.some((existing) => {
-          const ixMin = Math.max(label.x, existing.x);
-          const iyMin = Math.max(label.y, existing.y);
-          const ixMax = Math.min(label.x + label.w, existing.x + existing.w);
-          const iyMax = Math.min(label.y + label.h, existing.y + existing.h);
-          const overlapArea = Math.max(0, ixMax - ixMin) * Math.max(0, iyMax - iyMin);
-          const labelArea = label.w * label.h;
-          const existingArea = existing.w * existing.h;
-          const minArea = Math.min(labelArea, existingArea);
-          return minArea > 0 && overlapArea / minArea > 0.3;
-        });
-        if (!overlaps) deduped.push(label);
-      }
-
-      setLabels(deduped);
-      setScanProgress(`Found ${deduped.length} labels`);
+      setLabels(result);
+      setScanProgress(`Found ${result.length} labels`);
     } catch (err) {
       console.error("OCR failed:", err);
       setScanProgress("OCR failed — try manual mode");
