@@ -692,8 +692,12 @@ export default function DeckStudyPage() {
                     <img src={card.image_url} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: "#000" }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: "var(--os-text-primary)" }}>{card.front}</div>
-                    <div style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>{card.back}</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: "var(--os-text-primary)" }}>
+                      {showFormulas ? <FormulaLine text={card.front} showFormulas={showFormulas} /> : card.front}
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>
+                      {showFormulas ? <FormulaLine text={card.back} showFormulas={showFormulas} /> : card.back}
+                    </div>
                     <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: card.card_type === "image_occlusion" ? "rgba(109,40,217,0.12)" : card.card_type === "image_card" ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.06)", color: card.card_type === "image_occlusion" ? "#a78bfa" : card.card_type === "image_card" ? "#60a5fa" : "var(--os-text-dim)", marginTop: 4, display: "inline-block" }}>
                       {cardTypeLabel(card.card_type || "standard")}
                     </span>
