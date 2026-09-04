@@ -759,36 +759,36 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               <img src={flashImage} alt="" style={{ maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain", transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
             </div>
           )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem", borderBottom: "1px solid var(--os-border)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <span style={{ fontSize: "1rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} className="text-sm">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--os-border)", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} className="text-sm">
                 <span style={{ color: "#22c55e" }}>{knownCount}</span>
                 <span style={{ color: "#f97316" }}>{dontKnowCount}</span>
                 <span style={{ color: "#ef4444" }}>{forgotCount}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {pomodoro && (
                 <button onClick={() => { if (!pomodoro.isRunning) pomodoro.start(); }}
                   className="glass-btn"
-                  style={pomodoro.isRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}}
+                  style={{ padding: "6px 10px", fontSize: 12, ...(pomodoro.isRunning ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", borderColor: "rgba(34,197,94,0.3)" } : {}) }}
                 >
-                  <Timer style={{ width: 16, height: 16 }} />
-                  {pomodoro.isRunning ? pomodoro.formatTime(pomodoro.timeLeft) : "Start Timer"}
+                  <Timer style={{ width: 14, height: 14 }} />
+                  {pomodoro.isRunning ? pomodoro.formatTime(pomodoro.timeLeft) : "Timer"}
                 </button>
               )}
               {!reviewComplete && queue[queueIndex] && (
                 <button onClick={() => handleToggleBookmark(queue[queueIndex])}
                   className="glass-btn"
-                  style={bookmarked.has(`${reviewer?.id || ""}:::${queue[queueIndex]?.front}`) ? { background: "rgba(234,179,8,0.1)", color: "#eab308", borderColor: "rgba(234,179,8,0.3)" } : {}}
+                  style={{ padding: "6px 8px", fontSize: 12, ...(bookmarked.has(`${reviewer?.id || ""}:::${queue[queueIndex]?.front}`) ? { background: "rgba(234,179,8,0.1)", color: "#eab308", borderColor: "rgba(234,179,8,0.3)" } : {}) }}
                 >
-                  <Bookmark style={{ width: 16, height: 16 }} />
+                  <Bookmark style={{ width: 14, height: 14 }} />
                 </button>
               )}
               <button onClick={() => { setSwapped(!swapped); setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); }}
                 className="glass-btn"
-                style={swapped ? { background: "var(--os-accent)", color: "#fff" } : {}}
+                style={{ padding: "6px 10px", fontSize: 12, ...(swapped ? { background: "var(--os-accent)", color: "#fff" } : {}) }}
               >
                 {swapped ? "Back→Front" : "Front→Back"}
               </button>
@@ -802,27 +802,27 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                 setLabelAnswers([]);
               }}
                 className="glass-btn"
-                style={reviewStudyMode !== "flip" ? { background: "var(--os-accent)", color: "#fff" } : {}}
+                style={{ padding: "6px 10px", fontSize: 12, ...(reviewStudyMode !== "flip" ? { background: "var(--os-accent)", color: "#fff" } : {}) }}
               >
-                {reviewStudyMode === "flip" ? "🔄 Flip" : reviewStudyMode === "type-in" ? "📝 Type-in" : "🏷️ Image Label"}
+                {reviewStudyMode === "flip" ? "Flip" : reviewStudyMode === "type-in" ? "Type-in" : "Label"}
               </button>
               <button onClick={() => setShowFormulas(!showFormulas)}
                 className="glass-btn"
-                style={showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}}
+                style={{ padding: "6px 10px", fontSize: 12, ...(showFormulas ? { background: "rgba(109,40,217,0.15)", color: "#a78bfa", borderColor: "rgba(109,40,217,0.3)" } : {}) }}
               >
                 {showFormulas ? "Σ On" : "Σ Off"}
               </button>
-              <button onClick={exitReview} className="glass-btn">
+              <button onClick={exitReview} className="glass-btn" style={{ padding: "6px 10px", fontSize: 12 }}>
                 Exit
               </button>
             </div>
           </div>
-          <div style={{ padding: "0 1.25rem 0.75rem" }}>
+          <div style={{ padding: "0 1rem 0.5rem", flexShrink: 0 }}>
             <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 9999, overflow: "hidden" }}>
               <div style={{ height: "100%", background: "var(--os-accent)", borderRadius: 9999, transition: "all 0.3s", width: `${cards.length > 0 ? ((knownCount + dontKnowCount + forgotCount) / cards.length) * 100 : 0}%` }} />
             </div>
           </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "1.5rem", overflowY: "auto" }}>
             {reviewComplete ? (
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "3.75rem", marginBottom: "1.5rem" }}>&#127881;</div>
