@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Music, X } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
-const STORAGE_KEY = "gilasos-music-player";
 
 const TRACKS = [
   { title: "The Winner Takes It All", artist: "ABBA" },
@@ -60,94 +59,13 @@ const TRACKS = [
 
 const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0`;
 
-function loadStarted(): boolean {
-  if (typeof window === "undefined") return false;
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}").started === true; } catch { return false; }
-}
-
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
-  const [started, setStarted] = useState(loadStarted);
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const miniIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const selectedTrack = TRACKS[selectedTrackIndex];
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
-  }, [started]);
-
-  useEffect(() => {
-    if (!started) {
-      if (miniIframeRef.current) {
-        miniIframeRef.current.remove();
-        miniIframeRef.current = null;
-      }
-      return;
-    }
-
-    if (!miniIframeRef.current) {
-      const iframe = document.createElement("iframe");
-      iframe.src = EMBED_URL;
-      iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-      iframe.loading = "lazy";
-      iframe.title = "Spotify Player";
-      iframe.style.cssText = `
-        position:fixed;
-        bottom:90px;
-        right:80px;
-        width:380px;
-        height:180px;
-        border:none;
-        border-radius:12px;
-        z-index:9999;
-        opacity:0.9;
-        pointer-events:auto;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.08);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-      `;
-      document.body.appendChild(iframe);
-      miniIframeRef.current = iframe;
-    }
-
-    return () => {};
-  }, [started]);
-
-  useEffect(() => {
-    const iframe = miniIframeRef.current;
-    if (!iframe) return;
-
-    const handleMouseEnter = () => {
-      if (!open) {
-        iframe.style.opacity = "1";
-        iframe.style.transform = "scale(1.02)";
-      }
-    };
-
-    const handleMouseLeave = () => {
-      if (!open) {
-        iframe.style.opacity = "0.9";
-        iframe.style.transform = "scale(1)";
-      }
-    };
-
-    iframe.addEventListener('mouseenter', handleMouseEnter);
-    iframe.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      iframe.removeEventListener('mouseenter', handleMouseEnter);
-      iframe.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    const miniIframe = miniIframeRef.current;
-    if (!miniIframe) return;
-    miniIframe.style.display = (open && started) ? "none" : started ? "block" : "none";
-  }, [open, started]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -169,9 +87,6 @@ export function MusicPlayer() {
           from { opacity: 0; transform: translateY(8px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes bar1 { 0%,100% { height: 6px; } 50% { height: 14px; } }
-        @keyframes bar2 { 0%,100% { height: 10px; } 50% { height: 4px; } }
-        @keyframes bar3 { 0%,100% { height: 8px; } 50% { height: 12px; } }
         .track-list-scroll::-webkit-scrollbar {
           width: 3px;
         }
@@ -186,7 +101,7 @@ export function MusicPlayer() {
 
       <button 
         ref={btnRef} 
-        onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
+        onClick={() => setOpen(!open)}
         style={{
           position: "fixed", 
           bottom: 24, 
@@ -208,12 +123,6 @@ export function MusicPlayer() {
       >
         {open ? (
           <X size={18} color="#999" />
-        ) : started ? (
-          <div style={{ display: "flex", gap: 2.5, alignItems: "flex-end", height: 16 }}>
-            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar1 0.6s ease-in-out infinite" }} />
-            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar2 0.8s ease-in-out infinite 0.2s" }} />
-            <div style={{ width: 2.5, background: "#1db954", borderRadius: 1, animation: "bar3 0.7s ease-in-out infinite 0.4s" }} />
-          </div>
         ) : (
           <Music size={18} color="#666" />
         )}
@@ -222,9 +131,9 @@ export function MusicPlayer() {
       {open && (
         <div ref={panelRef} style={{
           position: "fixed", 
-          bottom: 110, 
+          bottom: 80, 
           right: 24, 
-          width: 340,
+          width: 380,
           background: "rgba(28, 28, 30, 0.95)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -234,7 +143,6 @@ export function MusicPlayer() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: "16px",
-          maxHeight: 600,
         }}>
           <div style={{ 
             display: "flex", 
@@ -269,20 +177,6 @@ export function MusicPlayer() {
             </button>
           </div>
 
-          <div style={{ 
-            padding: "10px 14px",
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "8px",
-            marginBottom: 12,
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
-              {selectedTrack.title}
-            </div>
-            <div style={{ fontSize: 12, color: "#888" }}>
-              {selectedTrack.artist}
-            </div>
-          </div>
-
           <div style={{
             width: "100%",
             height: 152,
@@ -293,6 +187,7 @@ export function MusicPlayer() {
             background: "rgba(0,0,0,0.3)",
           }}>
             <iframe
+              key={open ? "player-open" : "player-closed"}
               src={EMBED_URL}
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
@@ -321,13 +216,13 @@ export function MusicPlayer() {
               <span style={{ color: "#444" }}>Select a track</span>
             </div>
             <div className="track-list-scroll" style={{ 
-              maxHeight: 160,
+              maxHeight: 200,
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
               gap: 2,
             }}>
-              {TRACKS.slice(0, 8).map((track, i) => (
+              {TRACKS.map((track, i) => (
                 <div 
                   key={i}
                   style={{
@@ -392,18 +287,6 @@ export function MusicPlayer() {
                   )}
                 </div>
               ))}
-              {TRACKS.length > 8 && (
-                <div style={{ 
-                  fontSize: 10, 
-                  color: "#444", 
-                  padding: "6px 8px",
-                  textAlign: "center",
-                  borderTop: "1px solid rgba(255,255,255,0.03)",
-                  marginTop: 2,
-                }}>
-                  +{TRACKS.length - 8} more songs
-                </div>
-              )}
             </div>
           </div>
         </div>
