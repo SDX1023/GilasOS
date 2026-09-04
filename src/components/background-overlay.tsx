@@ -53,7 +53,7 @@ export default function BackgroundOverlay() {
 
   if (!theme) return null;
 
-  const opacity = theme === "Galaxy" ? 0.55 : theme === "Resident Evil" ? 0.2 : 0.15;
+  const opacity = theme === "Galaxy" ? 0.75 : theme === "Resident Evil" ? 0.4 : 0.35;
 
   return (
     <div
