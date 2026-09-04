@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, X } from "lucide-react";
+import { Music, X, Play } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
@@ -58,7 +58,8 @@ const TRACKS = [
   { title: "Universe", artist: "Tyler the Creator" },
 ];
 
-const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0&compact=1`;
+const SPOTIFY_URL = `https://open.spotify.com/playlist/${PLAYLIST_ID}`;
+const EMBED_URL = `https://open.spotify.com/embed/playlist/${PLAYLIST_ID}?utm_source=generator&theme=0`;
 
 function loadStarted(): boolean {
   if (typeof window === "undefined") return false;
@@ -69,6 +70,7 @@ export function MusicPlayer() {
   const [open, setOpen] = useState(false);
   const [started, setStarted] = useState(loadStarted);
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -79,7 +81,6 @@ export function MusicPlayer() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ started })); } catch {}
   }, [started]);
 
-  // Create persistent iframe
   useEffect(() => {
     if (!started) {
       if (iframeRef.current) {
@@ -95,13 +96,12 @@ export function MusicPlayer() {
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
       iframe.loading = "lazy";
       iframe.title = "Spotify Player";
-      // Mini floating player - above taskbar
       iframe.style.cssText = `
         position:fixed;
         bottom:90px;
         right:80px;
         width:300px;
-        height:80px;
+        height:152px;
         border:none;
         border-radius:12px;
         z-index:9999;
@@ -118,13 +118,11 @@ export function MusicPlayer() {
     return () => {};
   }, [started]);
 
-  // Position iframe based on state
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !started) return;
 
     if (open) {
-      // When panel is open, position inside panel
       const panel = panelRef.current;
       if (panel) {
         const rect = panel.getBoundingClientRect();
@@ -133,7 +131,7 @@ export function MusicPlayer() {
           top:${rect.top + 100}px;
           left:${rect.left + 16}px;
           width:${rect.width - 32}px;
-          height:80px;
+          height:152px;
           border:none;
           border-radius:12px;
           z-index:10002;
@@ -144,13 +142,12 @@ export function MusicPlayer() {
         `;
       }
     } else {
-      // Mini floating player - above taskbar
       iframe.style.cssText = `
         position:fixed;
         bottom:90px;
         right:80px;
         width:300px;
-        height:80px;
+        height:152px;
         border:none;
         border-radius:12px;
         z-index:9999;
@@ -163,7 +160,6 @@ export function MusicPlayer() {
     }
   }, [open, started]);
 
-  // Hover effect for iframe
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -214,6 +210,7 @@ export function MusicPlayer() {
         @keyframes bar1 { 0%,100% { height: 6px; } 50% { height: 14px; } }
         @keyframes bar2 { 0%,100% { height: 10px; } 50% { height: 4px; } }
         @keyframes bar3 { 0%,100% { height: 8px; } 50% { height: 12px; } }
+        @keyframes pulse { 0%,100% { box-shadow: 0 2px 8px rgba(29,185,84,0.3); } 50% { box-shadow: 0 2px 16px rgba(29,185,84,0.6); } }
         .track-list-scroll::-webkit-scrollbar {
           width: 3px;
         }
@@ -226,7 +223,6 @@ export function MusicPlayer() {
         }
       `}</style>
 
-      {/* Floating button */}
       <button 
         ref={btnRef} 
         onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
@@ -262,7 +258,6 @@ export function MusicPlayer() {
         )}
       </button>
 
-      {/* Panel - only shows when open */}
       {open && (
         <div ref={panelRef} style={{
           position: "fixed", 
@@ -278,7 +273,7 @@ export function MusicPlayer() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: "16px",
-          maxHeight: 440,
+          maxHeight: 520,
         }}>
           <div style={{ 
             display: "flex", 
@@ -317,52 +312,52 @@ export function MusicPlayer() {
             </button>
           </div>
 
-          {/* Selected track display */}
           <div style={{ 
-            padding: "10px 14px",
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "8px",
+            padding: "12px 14px",
+            background: "rgba(29, 185, 84, 0.08)",
+            borderRadius: "10px",
             marginBottom: 12,
+            border: "1px solid rgba(29, 185, 84, 0.15)",
           }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: "#e5e5e5", marginBottom: 2 }}>
               {selectedTrack.title}
             </div>
-            <div style={{ fontSize: 12, color: "#888" }}>
+            <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>
               {selectedTrack.artist}
             </div>
-          </div>
-
-          {/* Spotify embed placeholder */}
-          <div style={{
-            width: "100%",
-            height: started ? 0 : 80,
-            borderRadius: "12px",
-            overflow: "hidden",
-            marginBottom: started ? 0 : 12,
-            border: started ? "none" : "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(0,0,0,0.3)",
-            position: "relative",
-            transition: "all 0.3s ease",
-          }}>
-            {!started && (
-              <div style={{
-                width: "100%",
-                height: "100%",
+            <a
+              href={SPOTIFY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#444",
-              }}>
-                <Music size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <div style={{ fontSize: 11, letterSpacing: "0.05em" }}>
-                  Click the music icon to start
-                </div>
-              </div>
-            )}
+                gap: 8,
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                background: "#1db954",
+                color: "#000",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#1ed760";
+                e.currentTarget.style.transform = "scale(1.02)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#1db954";
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              <Play size={14} fill="#000" />
+              Play on Spotify
+            </a>
           </div>
 
-          {/* Track list */}
           <div style={{ 
             borderTop: "1px solid rgba(255,255,255,0.04)",
             paddingTop: 10,
@@ -379,15 +374,18 @@ export function MusicPlayer() {
               <span style={{ color: "#444" }}>Select a track</span>
             </div>
             <div className="track-list-scroll" style={{ 
-              maxHeight: 160,
+              maxHeight: 240,
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
               gap: 2,
             }}>
-              {TRACKS.slice(0, 8).map((track, i) => (
-                <div 
+              {TRACKS.map((track, i) => (
+                <a
                   key={i}
+                  href={SPOTIFY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -400,8 +398,12 @@ export function MusicPlayer() {
                     border: i === selectedTrackIndex ? "1px solid rgba(29, 185, 84, 0.15)" : "1px solid transparent",
                     transition: "all 0.15s",
                     cursor: "pointer",
+                    textDecoration: "none",
                   }}
-                  onClick={() => setSelectedTrackIndex(i)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedTrackIndex(i);
+                  }}
                   onMouseEnter={(e) => {
                     if (i !== selectedTrackIndex) {
                       e.currentTarget.style.color = "#e5e5e5";
@@ -436,6 +438,7 @@ export function MusicPlayer() {
                   <span style={{ 
                     fontSize: 9, 
                     color: i === selectedTrackIndex ? "#1db954" : "#555",
+                    flexShrink: 0,
                   }}>
                     {track.artist}
                   </span>
@@ -443,25 +446,13 @@ export function MusicPlayer() {
                     <span style={{
                       fontSize: 8,
                       color: "#1db954",
-                      marginLeft: 4,
+                      marginLeft: 2,
                     }}>
                       ▶
                     </span>
                   )}
-                </div>
+                </a>
               ))}
-              {TRACKS.length > 8 && (
-                <div style={{ 
-                  fontSize: 10, 
-                  color: "#444", 
-                  padding: "6px 8px",
-                  textAlign: "center",
-                  borderTop: "1px solid rgba(255,255,255,0.03)",
-                  marginTop: 2,
-                }}>
-                  +{TRACKS.length - 8} more songs
-                </div>
-              )}
             </div>
           </div>
         </div>
