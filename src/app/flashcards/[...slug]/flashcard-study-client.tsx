@@ -186,73 +186,72 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       let found = false;
 
       if (user) {
-        // Logged in: load from Supabase
-        const { data: reviewers } = await supabase
-          .from("reviewers")
-          .select("*, flashcards(*)")
+        // Priority: load from custom_decks (My Decks is the canonical source)
+        const expectedId = `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+        const { data: customDecks } = await supabase
+          .from("custom_decks")
+          .select("*, custom_deck_cards(*)")
           .eq("user_id", user.id);
 
-        if (reviewers) {
-          for (const r of reviewers) {
-            // Match by full path, by direct ID (UUID), by slug suffix, or by prefix (for suffixed IDs)
-            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id === courseSlug || r.id.endsWith(`/${reviewerSlug}`) || r.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) {
-              setReviewer({
-                id: r.id,
-                courseId: r.course_id,
-                moduleId: r.module_id,
-                title: r.title,
-                cards: (r.flashcards || []).map((c: any) => ({
-                  front: c.front,
-                  back: c.back,
-                  hint: c.hint || "",
-                  card_type: c.card_type || "standard",
-                  image_url: c.image_url || "",
-                  labels: c.labels || [],
-                })),
-              });
-              setCards((r.flashcards || []).map((c: any) => ({
+        if (customDecks) {
+          for (const d of customDecks) {
+            const titleKey = reviewerSlug ? reviewerSlug.replace(/-/g, " ").toLowerCase() : "";
+            const titleMatch = titleKey && d.title?.toLowerCase().includes(titleKey);
+            if (d.id === expectedId || d.id === courseSlug || d.id.endsWith(`/${reviewerSlug}`) || (reviewerSlug && d.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) || titleMatch) {
+              const mapped = (d.custom_deck_cards || []).map((c: any) => ({
                 front: c.front,
                 back: c.back,
                 hint: c.hint || "",
                 card_type: c.card_type || "standard",
                 image_url: c.image_url || "",
                 labels: c.labels || [],
-              })));
+              }));
+              setReviewer({
+                id: d.id,
+                courseId: d.title || courseSlug,
+                moduleId: "custom",
+                title: d.title,
+                cards: mapped,
+              });
+              setCards(mapped);
               found = true;
               break;
             }
           }
         }
 
-        // Fallback: load from custom_decks/custom_deck_cards
+        // Fallback: load from reviewers/flashcards
         if (!found) {
-          const expectedId = `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
-          const { data: customDecks } = await supabase
-            .from("custom_decks")
-            .select("*, custom_deck_cards(*)")
+          const { data: reviewers } = await supabase
+            .from("reviewers")
+            .select("*, flashcards(*)")
             .eq("user_id", user.id);
 
-          if (customDecks) {
-            for (const d of customDecks) {
-              const titleKey = reviewerSlug ? reviewerSlug.replace(/-/g, " ").toLowerCase() : "";
-              const titleMatch = titleKey && d.title?.toLowerCase().includes(titleKey);
-              if (d.id === expectedId || d.id === courseSlug || d.id.endsWith(`/${reviewerSlug}`) || (reviewerSlug && d.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) || titleMatch) {
-                const mapped = (d.custom_deck_cards || []).map((c: any) => ({
+          if (reviewers) {
+            for (const r of reviewers) {
+              if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id === courseSlug || r.id.endsWith(`/${reviewerSlug}`) || r.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) {
+                setReviewer({
+                  id: r.id,
+                  courseId: r.course_id,
+                  moduleId: r.module_id,
+                  title: r.title,
+                  cards: (r.flashcards || []).map((c: any) => ({
+                    front: c.front,
+                    back: c.back,
+                    hint: c.hint || "",
+                    card_type: c.card_type || "standard",
+                    image_url: c.image_url || "",
+                    labels: c.labels || [],
+                  })),
+                });
+                setCards((r.flashcards || []).map((c: any) => ({
                   front: c.front,
                   back: c.back,
                   hint: c.hint || "",
-                  card_type: "standard",
-                  image_url: "",
-                  labels: [],
-                }));
-                setReviewer({
-                  id: d.id,
-                  courseId: d.title || courseSlug,
-                  moduleId: "custom",
-                  title: d.title,
-                  cards: mapped,
-                });
-                setCards(mapped);
+                  card_type: c.card_type || "standard",
+                  image_url: c.image_url || "",
+                  labels: c.labels || [],
+                })));
                 found = true;
                 break;
               }
