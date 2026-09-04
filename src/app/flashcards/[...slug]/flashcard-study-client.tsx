@@ -167,6 +167,15 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }, []);
 
   useEffect(() => {
+    document.querySelector<HTMLElement>("nav")?.style.setProperty("display", reviewMode ? "none" : "");
+    document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", reviewMode ? "none" : "");
+    return () => {
+      document.querySelector<HTMLElement>("nav")?.style.setProperty("display", "");
+      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+    };
+  }, [reviewMode]);
+
+  useEffect(() => {
     if (!showShareModal || !user) return;
     (async () => {
       const supabase = getSupabase();

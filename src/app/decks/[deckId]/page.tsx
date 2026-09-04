@@ -62,6 +62,15 @@ export default function DeckStudyPage() {
   }, [user, deckId]);
 
   useEffect(() => {
+    document.querySelector<HTMLElement>("nav")?.style.setProperty("display", reviewMode ? "none" : "");
+    document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", reviewMode ? "none" : "");
+    return () => {
+      document.querySelector<HTMLElement>("nav")?.style.setProperty("display", "");
+      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+    };
+  }, [reviewMode]);
+
+  useEffect(() => {
     if (!reviewMode) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!reviewFlipped) setReviewFlipped(true); }
