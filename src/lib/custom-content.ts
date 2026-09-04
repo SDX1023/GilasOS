@@ -353,7 +353,16 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
 
       const { error: cardsError } = await supabase.from("custom_deck_cards").insert(cards);
       if (cardsError) {
-        console.warn("custom_deck_cards insert failed:", cardsError.message);
+        console.warn("custom_deck_cards insert with user_id failed, retrying without:", cardsError.message);
+        const cardsNoUid = reviewer.cards.map((card: any, index: number) => ({
+          deck_id: deckId,
+          front: String(card.front || ""),
+          back: String(card.back || ""),
+          hint: String(card.hint || ""),
+          card_order: index,
+        }));
+        const { error: retryErr } = await supabase.from("custom_deck_cards").insert(cardsNoUid);
+        if (retryErr) console.warn("custom_deck_cards insert without user_id also failed:", retryErr.message);
       }
     }
   } catch (e) {

@@ -579,28 +579,42 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       // Also sync to custom_deck_cards so My Decks stays in sync
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(reviewerId)) {
-        const { data: existingDeck } = await supabase
-          .from("custom_decks")
-          .select("id")
-          .eq("id", reviewerId)
-          .maybeSingle();
-        if (existingDeck) {
-          await supabase.from("custom_deck_cards").delete().eq("deck_id", reviewerId);
-          if (updatedCards.length > 0) {
-            const cards = updatedCards.map((card, index) => ({
-              deck_id: reviewerId,
-              user_id: user.id,
-              front: card.front,
-              back: card.back,
-              hint: card.hint || "",
-              card_order: index,
-            }));
-            await supabase.from("custom_deck_cards").insert(cards);
+        try {
+          const { data: existingDeck } = await supabase
+            .from("custom_decks")
+            .select("id")
+            .eq("id", reviewerId)
+            .maybeSingle();
+          if (existingDeck) {
+            await supabase.from("custom_deck_cards").delete().eq("deck_id", reviewerId);
+            if (updatedCards.length > 0) {
+              const cards = updatedCards.map((card, index) => ({
+                deck_id: reviewerId,
+                user_id: user.id,
+                front: card.front,
+                back: card.back,
+                hint: card.hint || "",
+                card_order: index,
+              }));
+              const { error: ccErr } = await supabase.from("custom_deck_cards").insert(cards);
+              if (ccErr) {
+                const cardsNoUid = updatedCards.map((card, index) => ({
+                  deck_id: reviewerId,
+                  front: card.front,
+                  back: card.back,
+                  hint: card.hint || "",
+                  card_order: index,
+                }));
+                await supabase.from("custom_deck_cards").insert(cardsNoUid);
+              }
+            }
+            await supabase.from("custom_decks").update({
+              card_count: updatedCards.length,
+              updated_at: new Date().toISOString(),
+            }).eq("id", reviewerId);
           }
-          await supabase.from("custom_decks").update({
-            card_count: updatedCards.length,
-            updated_at: new Date().toISOString(),
-          }).eq("id", reviewerId);
+        } catch (e) {
+          console.warn("custom_deck_cards sync failed:", e);
         }
       }
     }
