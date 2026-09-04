@@ -312,7 +312,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       .maybeSingle();
 
     if (findErr) {
-      console.warn("custom_decks query failed (table may not exist):", findErr.message);
+      console.warn("custom_decks query failed:", findErr.message);
     } else if (existingDeck) {
       deckId = existingDeck.id;
       await supabase
@@ -320,9 +320,15 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
         .update({ card_count: reviewer.cards?.length || 0, updated_at: new Date().toISOString() })
         .eq("id", deckId);
     } else {
+      // Generate explicit UUID since the column may not have a DEFAULT
+      const newId = typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 15)}`;
+
       const { data: deckData, error: deckError } = await supabase
         .from("custom_decks")
         .insert({
+          id: newId,
           user_id: user.id,
           title: reviewer.title || "Untitled Deck",
           description: "Imported from shared deck",
@@ -361,8 +367,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
           hint: String(card.hint || ""),
           card_order: index,
         }));
-        const { error: retryErr } = await supabase.from("custom_deck_cards").insert(cardsNoUid);
-        if (retryErr) console.warn("custom_deck_cards insert without user_id also failed:", retryErr.message);
+        await supabase.from("custom_deck_cards").insert(cardsNoUid);
       }
     }
   } catch (e) {
@@ -371,12 +376,13 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
 
   console.log("Custom deck ID:", deckId);
 
-  // Step 2: Save to reviewers table — use custom_decks UUID if available, otherwise generate one
-  const reviewerId = deckId || `${courseId}/${moduleId}/${(reviewer.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  // Step 2: Save to reviewers table — use custom_decks UUID if available, otherwise use original ID
+  let reviewerId = deckId || reviewer.id || `${courseId}/${moduleId}/${(reviewer.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
+  // Try to insert; if duplicate key (another user owns this ID), append our user suffix
   await supabase.from("reviewers").delete().eq("id", reviewerId).eq("user_id", user.id);
 
-  const { error: reviewerError } = await supabase
+  let { error: reviewerError } = await supabase
     .from("reviewers")
     .insert({
       id: reviewerId,
@@ -386,7 +392,21 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       title: reviewer.title || "Untitled Deck",
     });
 
-  if (reviewerError) {
+  if (reviewerError && reviewerError.code === "23505") {
+    // Another user owns this reviewer ID — create our own copy with suffixed ID
+    reviewerId = `${reviewerId}-${user.id.slice(0, 8)}`;
+    await supabase.from("reviewers").delete().eq("id", reviewerId).eq("user_id", user.id);
+    const { error: retryErr } = await supabase
+      .from("reviewers")
+      .insert({
+        id: reviewerId,
+        user_id: user.id,
+        course_id: courseId,
+        module_id: moduleId,
+        title: reviewer.title || "Untitled Deck",
+      });
+    if (retryErr) console.error("Reviewers retry save error:", retryErr);
+  } else if (reviewerError) {
     console.error("Reviewers save error:", reviewerError);
   }
 
@@ -415,7 +435,6 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     window.dispatchEvent(new CustomEvent("decksUpdated"));
   }
 
-  // If custom_decks failed, use the reviewerId (slug) as the deckId
   const finalId = deckId || reviewerId;
   return { success: true, deckId: finalId };
 }

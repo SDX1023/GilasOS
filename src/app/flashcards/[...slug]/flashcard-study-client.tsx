@@ -194,8 +194,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
         if (reviewers) {
           for (const r of reviewers) {
-            // Match by full path, by direct ID (UUID), or by slug suffix
-            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id === courseSlug || r.id.endsWith(`/${reviewerSlug}`)) {
+            // Match by full path, by direct ID (UUID), by slug suffix, or by prefix (for suffixed IDs)
+            if (r.id === `${courseSlug}/${moduleSlug}/${reviewerSlug}` || r.id === courseSlug || r.id.endsWith(`/${reviewerSlug}`) || r.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) {
               setReviewer({
                 id: r.id,
                 courseId: r.course_id,
@@ -236,7 +236,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             for (const d of customDecks) {
               const titleKey = reviewerSlug ? reviewerSlug.replace(/-/g, " ").toLowerCase() : "";
               const titleMatch = titleKey && d.title?.toLowerCase().includes(titleKey);
-              if (d.id === expectedId || d.id === courseSlug || d.id.endsWith(`/${reviewerSlug}`) || titleMatch) {
+              if (d.id === expectedId || d.id === courseSlug || d.id.endsWith(`/${reviewerSlug}`) || (reviewerSlug && d.id.startsWith(`${courseSlug}/${moduleSlug}/${reviewerSlug}`)) || titleMatch) {
                 const mapped = (d.custom_deck_cards || []).map((c: any) => ({
                   front: c.front,
                   back: c.back,
