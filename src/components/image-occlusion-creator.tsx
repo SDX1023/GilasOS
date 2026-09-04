@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { createWorker } from "tesseract.js";
-import { Upload, Loader2, Check, X, Eye, EyeOff, Wand2 } from "lucide-react";
+import { Upload, Loader2, Check, X, Wand2, MousePointer2 } from "lucide-react";
 
 interface DetectedLabel {
   x: number;
@@ -23,7 +23,9 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
   const [labels, setLabels] = useState<DetectedLabel[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState("");
-  const [previewLabel, setPreviewLabel] = useState<number | null>(null);
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [placing, setPlacing] = useState(false);
+  const [placeStart, setPlaceStart] = useState<{ x: number; y: number } | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -38,16 +40,10 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
   const runOCR = async () => {
     if (!imageUrl) return;
     setScanning(true);
-    setScanProgress("Initializing OCR...");
+    setScanProgress("Loading OCR engine...");
     try {
-      const worker = await createWorker("eng", 1, {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            setScanProgress(`Scanning... ${Math.round((m.progress || 0) * 100)}%`);
-          }
-        },
-      });
-
+      const worker = await createWorker("eng");
+      setScanProgress("Scanning image...");
       const { data } = await worker.recognize(imageUrl);
       await worker.terminate();
 
@@ -55,7 +51,7 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       img.src = imageUrl;
       await new Promise<void>((r) => { img.onload = () => r(); });
 
-      const words = (data as any).words || [];
+      const words: any[] = (data as any).words || [];
       const detected: DetectedLabel[] = words
         .filter((w: any) => w.text && w.text.trim().length > 0 && w.bbox)
         .map((w: any) => ({
@@ -71,10 +67,36 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       setScanProgress(`Found ${detected.length} labels`);
     } catch (err) {
       console.error("OCR failed:", err);
-      setScanProgress("OCR failed — try a clearer image");
+      setScanProgress("OCR failed — try manual mode");
     } finally {
       setScanning(false);
     }
+  };
+
+  const handleManualClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!placing || !imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    if (!placeStart) {
+      setPlaceStart({ x, y });
+    } else {
+      const text = prompt("Label text:");
+      if (text?.trim()) {
+        const newX = Math.min(placeStart.x, x);
+        const newY = Math.min(placeStart.y, y);
+        const newW = Math.abs(x - placeStart.x);
+        const newH = Math.abs(y - placeStart.y);
+        setLabels((prev) => [...prev, { x: newX, y: newY, w: newW, h: newH, text: text.trim(), selected: true }]);
+      }
+      setPlaceStart(null);
+      setPlacing(false);
+    }
+  };
+
+  const removeLabel = (index: number) => {
+    setLabels((prev) => prev.filter((_, i) => i !== index));
   };
 
   const toggleLabel = (index: number) => {
@@ -95,6 +117,8 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
     }));
     onGenerate(cards);
   };
+
+  const selectedCount = labels.filter((l) => l.selected).length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -130,15 +154,24 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div ref={imgRef} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div
+            ref={imgRef}
+            onClick={mode === "manual" && placing ? handleManualClick : undefined}
+            style={{
+              position: "relative",
+              borderRadius: 12,
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.08)",
+              cursor: mode === "manual" && placing ? "crosshair" : "default",
+            }}
+          >
             <img src={imageUrl} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
             {labels.map((label, i) => (
               <div
                 key={i}
                 className="occ-label-box"
-                onClick={() => toggleLabel(i)}
-                onMouseEnter={() => setPreviewLabel(i)}
-                onMouseLeave={() => setPreviewLabel(null)}
+                onClick={(e) => { e.stopPropagation(); toggleLabel(i); }}
+                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); removeLabel(i); }}
                 style={{
                   position: "absolute",
                   left: `${label.x}%`,
@@ -155,41 +188,97 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
                   fontSize: 10,
                   fontWeight: 600,
                   color: label.selected ? "#c4b5fd" : "rgba(255,255,255,0.5)",
-                  animation: previewLabel === i ? "occPulse 1s ease infinite" : "none",
                 }}
               >
                 {label.selected ? label.text : ""}
               </div>
             ))}
+            {placing && placeStart && (
+              <div style={{
+                position: "absolute",
+                left: `${placeStart.x}%`,
+                top: `${placeStart.y}%`,
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#1db954",
+                transform: "translate(-50%, -50%)",
+                boxShadow: "0 0 8px rgba(29,185,84,0.6)",
+                pointerEvents: "none",
+              }} />
+            )}
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {!scanning && labels.length === 0 && (
-              <button onClick={runOCR} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
-                <Wand2 size={14} /> Auto-Detect Labels
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 3 }}>
+              <button
+                onClick={() => { setMode("auto"); setPlacing(false); setPlaceStart(null); }}
+                style={{
+                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
+                  background: mode === "auto" ? "rgba(109,40,217,0.3)" : "transparent",
+                  color: mode === "auto" ? "#c4b5fd" : "var(--os-text-dim)",
+                }}
+              >
+                <Wand2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Auto
+              </button>
+              <button
+                onClick={() => { setMode("manual"); setPlacing(false); setPlaceStart(null); }}
+                style={{
+                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
+                  background: mode === "manual" ? "rgba(109,40,217,0.3)" : "transparent",
+                  color: mode === "manual" ? "#c4b5fd" : "var(--os-text-dim)",
+                }}
+              >
+                <MousePointer2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Manual
+              </button>
+            </div>
+
+            {mode === "auto" ? (
+              <>
+                {!scanning && labels.length === 0 && (
+                  <button onClick={runOCR} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", fontSize: 12 }}>
+                    <Wand2 size={13} /> Auto-Detect
+                  </button>
+                )}
+                {scanning && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", fontSize: 12, color: "var(--os-text-dim)" }}>
+                    <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+                    {scanProgress}
+                  </div>
+                )}
+                {labels.length > 0 && !scanning && (
+                  <button onClick={runOCR} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Wand2 size={11} /> Re-Scan
+                  </button>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => { setPlacing(!placing); setPlaceStart(null); }}
+                className="glass-btn"
+                style={{
+                  padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4,
+                  background: placing ? "rgba(29,185,84,0.15)" : undefined,
+                  color: placing ? "#1db954" : undefined,
+                  border: placing ? "1px solid rgba(29,185,84,0.3)" : undefined,
+                }}
+              >
+                <MousePointer2 size={11} /> {placing ? "Click two corners..." : "+ Add Box"}
               </button>
             )}
-            {scanning && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", fontSize: 13, color: "var(--os-text-dim)" }}>
-                <Loader2 size={14} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
-                {scanProgress}
-              </div>
-            )}
-            {labels.length > 0 && !scanning && (
+
+            {labels.length > 0 && (
               <>
-                <button onClick={selectAll} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12 }}>Select All</button>
-                <button onClick={deselectAll} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12 }}>Deselect All</button>
-                <button onClick={runOCR} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
-                  <Wand2 size={12} /> Re-Scan
-                </button>
+                <button onClick={selectAll} className="glass-btn" style={{ padding: "5px 10px", fontSize: 11 }}>All</button>
+                <button onClick={deselectAll} className="glass-btn" style={{ padding: "5px 10px", fontSize: 11 }}>None</button>
               </>
             )}
-            <button onClick={() => { setImageUrl(null); setLabels([]); }} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12 }}>Change Image</button>
+            <button onClick={() => { setImageUrl(null); setLabels([]); setPlacing(false); setPlaceStart(null); }} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Change Image</button>
           </div>
 
-          {labels.length > 0 && !scanning && (
+          {labels.length > 0 && (
             <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
-              {labels.filter((l) => l.selected).length} of {labels.length} labels selected — each becomes a flashcard with that label occluded
+              {selectedCount} of {labels.length} labels selected — right-click a label to remove it
             </div>
           )}
         </div>
@@ -200,15 +289,15 @@ export function ImageOcclusionCreator({ onGenerate, onCancel }: ImageOcclusionCr
       <div style={{ display: "flex", gap: 8 }}>
         <button
           onClick={generate}
-          disabled={!imageUrl || labels.filter((l) => l.selected).length === 0}
+          disabled={!imageUrl || selectedCount === 0}
           className="glass-btn-primary"
           style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "8px 16px", fontSize: 13,
-            opacity: !imageUrl || labels.filter((l) => l.selected).length === 0 ? 0.4 : 1,
+            opacity: !imageUrl || selectedCount === 0 ? 0.4 : 1,
           }}
         >
-          <Check size={14} /> Generate {labels.filter((l) => l.selected).length} Cards
+          <Check size={14} /> Generate {selectedCount} Cards
         </button>
         <button onClick={onCancel} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>
           <X size={14} /> Cancel
