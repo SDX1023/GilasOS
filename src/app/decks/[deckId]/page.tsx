@@ -26,7 +26,7 @@ async function fetchFormula(text: string): Promise<{ formula: string; explanatio
       body: JSON.stringify({ text }),
     });
     const data = await res.json();
-    if (data.detected && data.formula) {
+    if (data.detected && data.formula && data.formula !== "NONE" && data.formula !== "none") {
       const result = { formula: data.formula, explanation: data.explanation || "" };
       formulaCache[text] = result;
       return result;

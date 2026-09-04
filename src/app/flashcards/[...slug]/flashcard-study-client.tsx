@@ -27,7 +27,7 @@ async function flashFetchFormula(text: string): Promise<{ formula: string; expla
       body: JSON.stringify({ text }),
     });
     const data = await res.json();
-    if (data.detected && data.formula) {
+    if (data.detected && data.formula && data.formula !== "NONE" && data.formula !== "none") {
       const result = { formula: data.formula, explanation: data.explanation || "" };
       flashFormulaCache[text] = result;
       return result;
