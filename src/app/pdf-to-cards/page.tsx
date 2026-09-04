@@ -3,12 +3,10 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { FileText, Upload, Loader2, Save } from "lucide-react";
-import { addCourse, addModule, addReviewer, loadCustomContent } from "@/lib/custom-content";
-import { getSupabase } from "@/lib/supabase";
+import { saveReviewerToSupabase } from "@/lib/custom-content";
 import { useAuth } from "@/lib/auth-context";
 
 const PDF_COURSE_ID = "pdf-generated";
-const PDF_MODULE_ID = "pdf-cards";
 
 export default function PdfToFlashcardsPage() {
   const { user } = useAuth();
@@ -33,16 +31,15 @@ export default function PdfToFlashcardsPage() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  const ensureCourseAndModule = (moduleId?: string) => {
-    const custom = loadCustomContent();
-    if (!custom.courses.find((c) => c.id === PDF_COURSE_ID)) {
-      addCourse({ id: PDF_COURSE_ID, title: "PDF Generated", description: "Flashcards generated from PDFs" });
-    }
-    const target = moduleId || PDF_MODULE_ID;
-    const course = custom.courses.find((c) => c.id === PDF_COURSE_ID);
-    if (!course?.modules.find((m) => m.id === target)) {
-      addModule(PDF_COURSE_ID, { id: target, courseId: PDF_COURSE_ID, title: target, description: `Auto-saved from PDF to Flashcards` });
-    }
+  const saveDeck = async () => {
+    if (!deckName.trim() || generatedCards.length === 0) return;
+    setSaving(true); setSaveMsg("");
+    try {
+      const reviewer = { title: deckName, cards: generatedCards };
+      await saveReviewerToSupabase(PDF_COURSE_ID, targetModule || "pdf-cards", reviewer);
+      setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!");
+      setTimeout(() => setSaveMsg(""), 3000);
+    } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
   };
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,25 +80,6 @@ export default function PdfToFlashcardsPage() {
       setLastError(msg.toLowerCase().includes("<!doctype") ? "Server busy — try again in 30s" : msg);
     } finally { setIsGenerating(false); }
   }, [pdfText, isGenerating, cooldown]);
-
-  const saveDeck = async () => {
-    if (!deckName.trim() || generatedCards.length === 0) return;
-    setSaving(true); setSaveMsg("");
-    try {
-      ensureCourseAndModule(targetModule);
-      addReviewer(PDF_COURSE_ID, targetModule, { title: deckName, cards: generatedCards });
-      const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const reviewerId = `${PDF_COURSE_ID}/${targetModule}/${deckName.toLowerCase().replace(/\s+/g, "-")}`;
-        await supabase.from("reviewers").upsert({ id: reviewerId, user_id: user.id, course_id: PDF_COURSE_ID, module_id: targetModule, title: deckName }, { onConflict: "id" });
-        const rows = generatedCards.map((card, i) => ({ id: `${reviewerId.replace(/\//g, "-")}-card-${Date.now()}-${i}`, reviewer_id: reviewerId, user_id: user.id, front: card.front, back: card.back, hint: card.hint || "" }));
-        await supabase.from("flashcards").insert(rows);
-      }
-      setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!");
-      setTimeout(() => setSaveMsg(""), 3000);
-    } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
-  };
 
   if (!user) {
     return (
