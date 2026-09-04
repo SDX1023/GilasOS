@@ -106,10 +106,11 @@ export default function DecksPage() {
   const handleCreate = async () => {
     if (!newTitle.trim() || !user) return;
     const supabase = getSupabase();
+    const deckId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : "d" + Date.now().toString(36) + Math.random().toString(36).slice(2);
     const { data, error } = await supabase
       .from("custom_decks")
       .insert({
-        id: crypto.randomUUID(),
+        id: deckId,
         user_id: user.id,
         title: newTitle.trim(),
         description: newDesc.trim(),
