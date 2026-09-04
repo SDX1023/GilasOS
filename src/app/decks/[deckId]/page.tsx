@@ -236,7 +236,7 @@ export default function DeckStudyPage() {
             <div style={{ height: "100%", background: "var(--os-accent)", borderRadius: 9999, transition: "all 0.3s", width: `${cards.length > 0 ? ((knownCount + forgotCount) / cards.length) * 100 : 0}%` }} />
           </div>
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "1.5rem", overflowY: "auto" }}>
           {reviewComplete ? (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "3.75rem", marginBottom: "1.5rem" }}>&#127881;</div>
@@ -297,8 +297,8 @@ export default function DeckStudyPage() {
                   <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
                     <img src={card.image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
                   </div>
-                  <div style={{ width: "100%", maxWidth: 672, minHeight: 100, padding: "2rem", cursor: "pointer", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }} onClick={() => setReviewFlipped(!reviewFlipped)}>
-                    <p style={{ fontSize: "1.25rem", fontWeight: 500, color: "var(--os-text-primary)" }}>
+                  <div style={{ width: "100%", maxWidth: 672, maxHeight: "40vh", overflowY: "auto", minHeight: 100, padding: "1.5rem", cursor: "pointer", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }} onClick={() => setReviewFlipped(!reviewFlipped)}>
+                    <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--os-text-primary)" }}>
                       {reviewFlipped ? card.back : card.front}
                     </p>
                     {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
@@ -320,12 +320,12 @@ export default function DeckStudyPage() {
                 </div>
               ) : (
                 <>
-                  <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", maxWidth: 672, minHeight: 300, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
-                    <div>
-                      <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
+                  <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                    <div style={{ width: "100%" }}>
+                      <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)" }}>
                         {reviewFlipped ? card.back : card.front}
                       </p>
-                      {!reviewFlipped && card.hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                      {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                     </div>
                   </div>
                   <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>

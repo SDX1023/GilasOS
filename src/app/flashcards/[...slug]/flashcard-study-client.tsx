@@ -843,18 +843,18 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
                       className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
-                      <div>
-                        <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
+                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                      <div style={{ width: "100%" }}>
+                        <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)" }}>
                           <FlashFormulaLine text={reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)} showFormulas={showFormulas} />
                         </p>
-                        {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
+                        {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                       </div>
                     </div>
-                    <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                    <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
                       {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                     </div>
-                    <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+                    <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
                       {!reviewFlipped ? (
                         <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>
                           Show Answer
@@ -878,12 +878,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   /* Identification card: type answer */
                   <>
                     <div className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, minHeight: 350, padding: "3rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ width: "100%" }}>
-                        <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)", marginBottom: "1.5rem" }}>
+                        <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)", marginBottom: "1rem" }}>
                           <FlashFormulaLine text={swapped ? queue[queueIndex].back : queue[queueIndex].front} showFormulas={showFormulas} />
                         </p>
-                        {!swapped && queue[queueIndex].hint && <p style={{ fontSize: "1rem", marginBottom: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
+                        {!swapped && queue[queueIndex].hint && <p style={{ fontSize: "0.9rem", marginBottom: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                         {!answerChecked ? (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                             <input
