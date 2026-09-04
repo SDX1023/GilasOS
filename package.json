@@ -37,6 +37,7 @@
     "remark-gfm": "^4.0.0",
     "remark-html": "^16.0.1",
     "tailwind-merge": "^2.3.0",
+    "tesseract.js": "^7.0.0",
     "unpdf": "^1.8.1"
   },
   "devDependencies": {

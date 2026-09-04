@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, RotateCcw, Bookmark, Shuffle, Search, Layers } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff } from "lucide-react";
+import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 
 interface DeckCard {
   id: string;
@@ -15,6 +16,7 @@ interface DeckCard {
   sort_order: number;
   image_url?: string;
   card_type?: string;
+  labels?: { x: number; y: number; w: number; h: number; text: string }[];
 }
 
 export default function DeckStudyPage() {
@@ -25,12 +27,11 @@ export default function DeckStudyPage() {
   const [cards, setCards] = useState<DeckCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingCard, setAddingCard] = useState(false);
+  const [addCardType, setAddCardType] = useState<"standard" | "image_card" | "image_occlusion">("standard");
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
-  const [addCardType, setAddCardType] = useState<"standard" | "image_label">("standard");
   const [addImageUrl, setAddImageUrl] = useState("");
-  const [addLabels, setAddLabels] = useState<{ x: number; y: number; text: string }[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
@@ -44,10 +45,7 @@ export default function DeckStudyPage() {
   const [knownCount, setKnownCount] = useState(0);
   const [forgotCount, setForgotCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [labelAnswers, setLabelAnswers] = useState<string[]>([]);
-  const [labelsRevealed, setLabelsRevealed] = useState(false);
-  const [placing, setPlacing] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
@@ -70,27 +68,8 @@ export default function DeckStudyPage() {
     await supabase.from("custom_decks").update({ card_count: newCards.length, updated_at: new Date().toISOString() }).eq("id", deckId);
   };
 
-  const handleAddCard = async () => {
-    if (!user) return;
-    if (addCardType === "image_label") {
-      if (!addImageUrl || addLabels.length === 0) return;
-      const supabase = getSupabase();
-      const { data } = await supabase.from("custom_deck_cards").insert({
-        id: crypto.randomUUID(),
-        deck_id: deckId, user_id: user.id,
-        front: addFront.trim() || "Label the image",
-        back: addLabels.map(l => l.text).join(", "),
-        hint: addHint.trim() || null,
-        sort_order: cards.length,
-        image_url: addImageUrl || null,
-        card_type: "image_label",
-      }).select().single();
-      if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
-      setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]);
-      setAddingCard(false);
-      return;
-    }
-    if (!addFront.trim() || !addBack.trim()) return;
+  const handleAddStandard = async () => {
+    if (!user || !addFront.trim() || !addBack.trim()) return;
     const supabase = getSupabase();
     const { data } = await supabase.from("custom_deck_cards").insert({
       id: crypto.randomUUID(),
@@ -101,7 +80,47 @@ export default function DeckStudyPage() {
       card_type: "standard",
     }).select().single();
     if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
-    setAddFront(""); setAddBack(""); setAddHint(""); setAddingCard(false);
+    resetForm();
+  };
+
+  const handleAddImageCard = async () => {
+    if (!user || !addFront.trim() || !addBack.trim() || !addImageUrl) return;
+    const supabase = getSupabase();
+    const { data } = await supabase.from("custom_deck_cards").insert({
+      id: crypto.randomUUID(),
+      deck_id: deckId, user_id: user.id,
+      front: addFront.trim(), back: addBack.trim(),
+      hint: addHint.trim() || null,
+      sort_order: cards.length,
+      card_type: "image_card",
+      image_url: addImageUrl,
+    }).select().single();
+    if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
+    resetForm();
+  };
+
+  const handleOcclusionGenerate = async (generatedCards: { front: string; back: string; image_url: string; labels: { x: number; y: number; w: number; h: number; text: string }[] }[]) => {
+    if (!user) return;
+    const supabase = getSupabase();
+    const rows = generatedCards.map((c, i) => ({
+      id: crypto.randomUUID(),
+      deck_id: deckId, user_id: user.id,
+      front: c.front, back: c.back,
+      hint: null,
+      sort_order: cards.length + i,
+      card_type: "image_occlusion",
+      image_url: c.image_url,
+      labels: c.labels,
+    }));
+    const { data } = await supabase.from("custom_deck_cards").insert(rows).select();
+    if (data) { const next = [...cards, ...data]; setCards(next); syncCount(next); }
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setAddingCard(false);
+    setAddCardType("standard");
+    setAddFront(""); setAddBack(""); setAddHint(""); setAddImageUrl("");
   };
 
   const handleDeleteCard = async (id: string) => {
@@ -123,7 +142,7 @@ export default function DeckStudyPage() {
   const startReview = () => {
     const q = shuffled ? [...cards].sort(() => Math.random() - 0.5) : [...cards];
     setQueue(q); setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
-    setKnownCount(0); setForgotCount(0); setLabelsRevealed(false); setLabelAnswers([]);
+    setKnownCount(0); setForgotCount(0);
     setReviewMode(true);
   };
 
@@ -132,14 +151,21 @@ export default function DeckStudyPage() {
     const next = queue.filter((_, i) => i !== reviewIndex);
     if (next.length === 0) { setQueue([]); setReviewComplete(true); return; }
     setQueue(next); setReviewIndex(reviewIndex >= next.length ? 0 : reviewIndex);
-    setReviewFlipped(false); setLabelsRevealed(false); setLabelAnswers([]);
+    setReviewFlipped(false);
   };
 
   const filtered = cards.filter(c => c.front.toLowerCase().includes(searchQuery.toLowerCase()) || c.back.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  const cardTypeLabel = (t: string) => {
+    if (t === "image_occlusion") return "Occlusion";
+    if (t === "image_card") return "Image";
+    return "Flip";
+  };
+
   if (loading) return <div className="page-container"><p className="text-secondary" style={{ textAlign: "center" }}>Loading...</p></div>;
 
   if (reviewMode) {
+    const card = queue[reviewIndex];
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "rgba(10,14,24,0.98)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -151,7 +177,7 @@ export default function DeckStudyPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button onClick={() => { setShuffled(!shuffled); }} className="glass-btn" style={shuffled ? { background: "var(--os-accent)", color: "#fff" } : {}}>
+            <button onClick={() => setShuffled(!shuffled)} className="glass-btn" style={shuffled ? { background: "var(--os-accent)", color: "#fff" } : {}}>
               <Shuffle size={16} />
             </button>
             <button onClick={() => { setReviewMode(false); setReviewComplete(false); }} className="glass-btn">Exit</button>
@@ -173,51 +199,82 @@ export default function DeckStudyPage() {
               </div>
               <button onClick={() => { setReviewMode(false); setReviewComplete(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
             </div>
-          ) : queue[reviewIndex] ? (
+          ) : card ? (
             <>
-              {queue[reviewIndex].card_type === "image_label" && queue[reviewIndex].image_url ? (
+              {card.card_type === "image_occlusion" && card.image_url && card.labels ? (
                 <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
                   <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <img src={queue[reviewIndex].image_url} style={{ width: "100%", maxHeight: 350, objectFit: "contain", background: "#0a0e18" }} />
-                    {(queue[reviewIndex].labels || []).map((label: any, i: number) => (
-                      <div key={i} style={{ position: "absolute", left: `${label.x}%`, top: `${label.y}%`, transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, zIndex: 2 }}>
-                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: "var(--os-accent)", border: "2px solid #fff", boxShadow: "0 1px 6px rgba(0,0,0,0.6)" }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.7)", padding: "1px 5px", borderRadius: 4 }}>{i + 1}</span>
-                      </div>
-                    ))}
+                    <img src={card.image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+                    {card.labels.map((label, i) => {
+                      const isOccluded = label.text === card.back;
+                      return (
+                        <div key={i} style={{
+                          position: "absolute",
+                          left: `${label.x}%`, top: `${label.y}%`,
+                          width: `${label.w}%`, height: `${label.h}%`,
+                          background: isOccluded && !reviewFlipped ? "rgba(109,40,217,0.85)" : isOccluded && reviewFlipped ? "rgba(74,222,128,0.3)" : "transparent",
+                          border: isOccluded ? "2px solid rgba(109,40,217,0.9)" : "none",
+                          borderRadius: 4,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "all 0.3s ease",
+                        }}>
+                          {isOccluded && reviewFlipped && (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", background: "rgba(0,0,0,0.7)", padding: "2px 8px", borderRadius: 4 }}>{label.text}</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 400 }}>
-                    {(queue[reviewIndex].labels || []).map((label: any, i: number) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--os-accent)", width: 20, textAlign: "center" }}>{i + 1}</span>
-                        {labelsRevealed ? (
-                          <span style={{ flex: 1, fontSize: 14, color: (labelAnswers[i] || "").toLowerCase() === label.text.toLowerCase() ? "#4ade80" : "#f87171" }}>
-                            {labelAnswers[i] || "(empty)"}
-                            {(labelAnswers[i] || "").toLowerCase() !== label.text.toLowerCase() && <span style={{ marginLeft: 8, color: "#4ade80", fontWeight: 600 }}>→ {label.text}</span>}
-                          </span>
-                        ) : (
-                          <input value={labelAnswers[i] || ""} onChange={(e) => { const next = [...labelAnswers]; next[i] = e.target.value; setLabelAnswers(next); }} onKeyDown={(e) => { if (e.key === "Enter" && i === (queue[reviewIndex].labels || []).length - 1) { const allCorrect = (queue[reviewIndex].labels || []).every((l: any, j: number) => (labelAnswers[j] || "").trim().toLowerCase() === l.text.toLowerCase()); setLabelsRevealed(true); setReviewFlipped(true); } }} placeholder={`Label ${i + 1}...`} autoFocus={i === 0} style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: 14, outline: "none" }} />
-                        )}
-                      </div>
-                    ))}
+                  <div style={{ fontSize: 14, color: "var(--os-text-dim)", textAlign: "center" }}>
+                    {reviewFlipped ? `Answer: ${card.back}` : "What is hidden here?"}
                   </div>
-                  {!labelsRevealed ? (
-                    <button onClick={() => { const allCorrect = (queue[reviewIndex].labels || []).every((l: any, j: number) => (labelAnswers[j] || "").trim().toLowerCase() === l.text.toLowerCase()); setLabelsRevealed(true); setReviewFlipped(true); }} className="glass-btn-primary" style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500 }}>Check Labels</button>
-                  ) : (
-                    <div style={{ display: "flex", gap: "1rem" }}>
-                      <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
-                      <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
-                    </div>
-                  )}
+                  <div style={{ marginTop: "0.5rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                    {!reviewFlipped ? "Space/Enter to reveal" : "1 = Forgot  2 = Know"}
+                  </div>
+                  <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
+                    {!reviewFlipped ? (
+                      <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Reveal</button>
+                    ) : (
+                      <>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : card.card_type === "image_card" && card.image_url ? (
+                <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                  <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                    <img src={card.image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+                  </div>
+                  <div style={{ width: "100%", maxWidth: 672, minHeight: 100, padding: "2rem", cursor: "pointer", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)" }} onClick={() => setReviewFlipped(!reviewFlipped)}>
+                    <p style={{ fontSize: "1.25rem", fontWeight: 500, color: "var(--os-text-primary)" }}>
+                      {reviewFlipped ? card.back : card.front}
+                    </p>
+                    {!reviewFlipped && card.hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
+                    {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Know"}
+                  </div>
+                  <div style={{ display: "flex", gap: "1rem" }}>
+                    {!reviewFlipped ? (
+                      <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Show Answer</button>
+                    ) : (
+                      <>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <>
-                  <div onClick={() => setReviewFlipped(!reviewFlipped)} className="flashcard-study-card" style={{ width: "100%", maxWidth: 672, minHeight: 300, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                  <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", maxWidth: 672, minHeight: 300, padding: "3rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                     <div>
                       <p style={{ fontSize: "1.5rem", fontWeight: 500, lineHeight: 1.75, color: "var(--os-text-primary)" }}>
-                        {reviewFlipped ? queue[reviewIndex].back : queue[reviewIndex].front}
+                        {reviewFlipped ? card.back : card.front}
                       </p>
-                      {!reviewFlipped && queue[reviewIndex].hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[reviewIndex].hint}</p>}
+                      {!reviewFlipped && card.hint && <p style={{ fontSize: "1rem", marginTop: "1.5rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                     </div>
                   </div>
                   <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
@@ -228,8 +285,8 @@ export default function DeckStudyPage() {
                       <button onClick={() => setReviewFlipped(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Show Answer</button>
                     ) : (
                       <>
-                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
-                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Forgot</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>Know</button>
                       </>
                     )}
                   </div>
@@ -264,58 +321,78 @@ export default function DeckStudyPage() {
           </div>
         </div>
 
-        {/* Add card form */}
         {addingCard && (
           <div className="glass-card" style={{ marginBottom: "1.5rem", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <h3 style={{ fontWeight: 500 }}>Add New Card</h3>
-            <div style={{ display: "flex", gap: 6 }}>
-              {(["standard", "image_label"] as const).map((t) => (
-                <button key={t} onClick={() => setAddCardType(t)} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: addCardType === t ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)", background: addCardType === t ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)", color: addCardType === t ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
-                  {t === "standard" ? "Flip Card" : "Image Label"}
+
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {([["standard", "Flip Card"], ["image_card", "Image Card"], ["image_occlusion", "Image Occlusion"]] as const).map(([t, label]) => (
+                <button key={t} onClick={() => setAddCardType(t)} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: addCardType === t ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)", background: addCardType === t ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)", color: addCardType === t ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
+                  {label}
                 </button>
               ))}
             </div>
-            {addCardType === "image_label" ? (
+
+            {addCardType === "image_occlusion" ? (
+              <ImageOcclusionCreator
+                onGenerate={handleOcclusionGenerate}
+                onCancel={resetForm}
+              />
+            ) : addCardType === "image_card" ? (
               <>
-                <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Prompt (optional)</label>
-                  <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. Label the parts..." /></div>
                 <div>
-                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                    <button onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.onchange = () => { const f = inp.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setAddImageUrl(r.result as string); r.readAsDataURL(f); }; inp.click(); }} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>Upload Image</button>
-                    {addImageUrl && <button onClick={() => { setPlacing(!placing); }} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>+ Add Label</button>}
-                    <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{addLabels.length} labels</span>
-                  </div>
-                  {addImageUrl && (
-                    <div ref={imgRef} onClick={(e) => { if (!imgRef.current) return; const rect = imgRef.current.getBoundingClientRect(); const x = ((e.clientX - rect.left) / rect.width) * 100; const y = ((e.clientY - rect.top) / rect.height) * 100; const text = prompt("Label text:"); if (text?.trim()) { setAddLabels([...addLabels, { x, y, text: text.trim() }]); } }} style={{ position: "relative", cursor: "crosshair", borderRadius: 8, overflow: "hidden", border: "1px solid var(--os-glass-border)" }}>
-                      <img src={addImageUrl} style={{ width: "100%", maxHeight: 300, objectFit: "contain", background: "#000" }} />
-                      {addLabels.map((l, i) => (
-                        <div key={i} style={{ position: "absolute", left: `${l.x}%`, top: `${l.y}%`, transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--os-accent)", border: "2px solid #fff" }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,0.7)", padding: "1px 4px", borderRadius: 3 }}>{i + 1}</span>
-                        </div>
-                      ))}
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                  <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. What painting is this?" />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
+                  <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. Starry Night by Van Gogh" />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Image</label>
+                  {addImageUrl ? (
+                    <div style={{ position: "relative", display: "inline-block" }}>
+                      <img src={addImageUrl} style={{ maxHeight: 150, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      <button onClick={() => setAddImageUrl("")} style={{ position: "absolute", top: 4, right: 4, padding: 2, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 4, cursor: "pointer", color: "#ef4444" }}>
+                        <X size={12} />
+                      </button>
                     </div>
+                  ) : (
+                    <button onClick={() => fileInputRef.current?.click()} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12 }}>Upload Image</button>
                   )}
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    const r = new FileReader(); r.onload = () => setAddImageUrl(r.result as string); r.readAsDataURL(f);
+                  }} />
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button onClick={handleAddImageCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check size={12} /> Add</button>
+                  <button onClick={resetForm} className="glass-btn"><X size={12} /> Cancel</button>
                 </div>
               </>
             ) : (
               <>
-                <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
-                  <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the question..." /></div>
-                <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
-                  <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the answer..." /></div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                  <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the question..." />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer</label>
+                  <textarea value={addBack} onChange={(e) => setAddBack(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="Enter the answer..." />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
+                  <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." />
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button onClick={handleAddStandard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check size={12} /> Add</button>
+                  <button onClick={resetForm} className="glass-btn"><X size={12} /> Cancel</button>
+                </div>
               </>
             )}
-            <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
-              <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." /></div>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button onClick={handleAddCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check size={12} /> Add</button>
-              <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); }} className="glass-btn"><X size={12} /> Cancel</button>
-            </div>
           </div>
         )}
 
-        {/* Search */}
         {cards.length > 0 && (
           <div style={{ position: "relative", marginBottom: 16 }}>
             <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
@@ -323,7 +400,6 @@ export default function DeckStudyPage() {
           </div>
         )}
 
-        {/* Card list */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map((card) => (
             <div key={card.id} className="glass-card" style={{ padding: "14px 18px" }}>
@@ -339,13 +415,15 @@ export default function DeckStudyPage() {
                 </div>
               ) : (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  {card.card_type === "image_label" && card.image_url && (
+                  {card.image_url && (
                     <img src={card.image_url} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: "#000" }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: "var(--os-text-primary)" }}>{card.front}</div>
                     <div style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>{card.back}</div>
-                    {card.card_type === "image_label" && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(109,40,217,0.12)", color: "#a78bfa", marginTop: 4, display: "inline-block" }}>Image Label</span>}
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: card.card_type === "image_occlusion" ? "rgba(109,40,217,0.12)" : card.card_type === "image_card" ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.06)", color: card.card_type === "image_occlusion" ? "#a78bfa" : card.card_type === "image_card" ? "#60a5fa" : "var(--os-text-dim)", marginTop: 4, display: "inline-block" }}>
+                      {cardTypeLabel(card.card_type || "standard")}
+                    </span>
                   </div>
                   <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                     <button onClick={() => { setEditingId(card.id); setEditFront(card.front); setEditBack(card.back); setEditHint(card.hint || ""); }} style={{ padding: 5, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 5, color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={13} /></button>
