@@ -80,8 +80,7 @@ export default function DeckStudyPage() {
         deck_id: deckId, user_id: user.id,
         front: addFront.trim() || "Label the image",
         back: addLabels.map(l => l.text).join(", "),
-        hint: addHint.trim(), card_type: "image_label",
-        image_url: addImageUrl, labels: addLabels,
+        hint: addHint.trim() || null,
         sort_order: cards.length,
       }).select().single();
       if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
@@ -94,7 +93,7 @@ export default function DeckStudyPage() {
     const { data } = await supabase.from("custom_deck_cards").insert({
       deck_id: deckId, user_id: user.id,
       front: addFront.trim(), back: addBack.trim(),
-      hint: addHint.trim(), card_type: "standard",
+      hint: addHint.trim() || null,
       sort_order: cards.length,
     }).select().single();
     if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
