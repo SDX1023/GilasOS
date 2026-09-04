@@ -12,10 +12,9 @@ interface DeckCard {
   front: string;
   back: string;
   hint: string;
-  card_type: string;
-  image_url: string;
-  labels: { x: number; y: number; text: string }[];
   sort_order: number;
+  image_url?: string;
+  card_type?: string;
 }
 
 export default function DeckStudyPage() {
@@ -77,11 +76,14 @@ export default function DeckStudyPage() {
       if (!addImageUrl || addLabels.length === 0) return;
       const supabase = getSupabase();
       const { data } = await supabase.from("custom_deck_cards").insert({
+        id: crypto.randomUUID(),
         deck_id: deckId, user_id: user.id,
         front: addFront.trim() || "Label the image",
         back: addLabels.map(l => l.text).join(", "),
         hint: addHint.trim() || null,
         sort_order: cards.length,
+        image_url: addImageUrl || null,
+        card_type: "image_label",
       }).select().single();
       if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
       setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]);
@@ -91,10 +93,12 @@ export default function DeckStudyPage() {
     if (!addFront.trim() || !addBack.trim()) return;
     const supabase = getSupabase();
     const { data } = await supabase.from("custom_deck_cards").insert({
+      id: crypto.randomUUID(),
       deck_id: deckId, user_id: user.id,
       front: addFront.trim(), back: addBack.trim(),
       hint: addHint.trim() || null,
       sort_order: cards.length,
+      card_type: "standard",
     }).select().single();
     if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
     setAddFront(""); setAddBack(""); setAddHint(""); setAddingCard(false);

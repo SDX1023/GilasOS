@@ -589,11 +589,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             await supabase.from("custom_deck_cards").delete().eq("deck_id", reviewerId);
             if (updatedCards.length > 0) {
               const cards = updatedCards.map((card, index) => ({
+                id: crypto.randomUUID(),
                 deck_id: String(reviewerId),
                 user_id: user.id,
                 front: card.front,
                 back: card.back,
-                hint: card.hint || "",
+                hint: card.hint || null,
                 sort_order: index,
               }));
               const { error: ccErr } = await supabase.from("custom_deck_cards").insert(cards);
