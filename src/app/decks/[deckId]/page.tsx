@@ -15,7 +15,7 @@ interface DeckCard {
   card_type: string;
   image_url: string;
   labels: { x: number; y: number; text: string }[];
-  card_order: number;
+  sort_order: number;
 }
 
 export default function DeckStudyPage() {
@@ -61,7 +61,7 @@ export default function DeckStudyPage() {
     const { data: deck } = await supabase.from("custom_decks").select("title").eq("id", deckId).eq("user_id", user.id).single();
     if (!deck) { router.push("/decks"); return; }
     setDeckTitle(deck.title);
-    const { data: cardData } = await supabase.from("custom_deck_cards").select("*").eq("deck_id", deckId).order("card_order");
+    const { data: cardData } = await supabase.from("custom_deck_cards").select("*").eq("deck_id", deckId).order("sort_order");
     setCards(cardData || []);
     setLoading(false);
   };
@@ -76,26 +76,14 @@ export default function DeckStudyPage() {
     if (addCardType === "image_label") {
       if (!addImageUrl || addLabels.length === 0) return;
       const supabase = getSupabase();
-      // Try with user_id first, then without
-      let { data } = await supabase.from("custom_deck_cards").insert({
+      const { data } = await supabase.from("custom_deck_cards").insert({
         deck_id: deckId, user_id: user.id,
         front: addFront.trim() || "Label the image",
         back: addLabels.map(l => l.text).join(", "),
         hint: addHint.trim(), card_type: "image_label",
         image_url: addImageUrl, labels: addLabels,
-        card_order: cards.length,
+        sort_order: cards.length,
       }).select().single();
-      if (!data) {
-        const retry = await supabase.from("custom_deck_cards").insert({
-          deck_id: deckId,
-          front: addFront.trim() || "Label the image",
-          back: addLabels.map(l => l.text).join(", "),
-          hint: addHint.trim(), card_type: "image_label",
-          image_url: addImageUrl, labels: addLabels,
-          card_order: cards.length,
-        }).select().single();
-        data = retry.data;
-      }
       if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
       setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]);
       setAddingCard(false);
@@ -103,22 +91,12 @@ export default function DeckStudyPage() {
     }
     if (!addFront.trim() || !addBack.trim()) return;
     const supabase = getSupabase();
-    // Try with user_id first, then without
-    let { data } = await supabase.from("custom_deck_cards").insert({
+    const { data } = await supabase.from("custom_deck_cards").insert({
       deck_id: deckId, user_id: user.id,
       front: addFront.trim(), back: addBack.trim(),
       hint: addHint.trim(), card_type: "standard",
-      card_order: cards.length,
+      sort_order: cards.length,
     }).select().single();
-    if (!data) {
-      const retry = await supabase.from("custom_deck_cards").insert({
-        deck_id: deckId,
-        front: addFront.trim(), back: addBack.trim(),
-        hint: addHint.trim(), card_type: "standard",
-        card_order: cards.length,
-      }).select().single();
-      data = retry.data;
-    }
     if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
     setAddFront(""); setAddBack(""); setAddHint(""); setAddingCard(false);
   };

@@ -348,39 +348,19 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
     if (deckId && reviewer.cards && reviewer.cards.length > 0) {
       await supabase.from("custom_deck_cards").delete().eq("deck_id", deckId);
 
-      // Try progressively fewer columns to handle unknown table schema
-      const attempts = [
-        // Attempt 1: All columns
-        reviewer.cards.map((card: any, index: number) => ({
-          deck_id: deckId, user_id: user.id,
-          front: String(card.front || ""), back: String(card.back || ""),
-          hint: String(card.hint || ""), card_order: index,
-        })),
-        // Attempt 2: Without user_id
-        reviewer.cards.map((card: any, index: number) => ({
-          deck_id: deckId,
-          front: String(card.front || ""), back: String(card.back || ""),
-          hint: String(card.hint || ""), card_order: index,
-        })),
-        // Attempt 3: Without hint or card_order
-        reviewer.cards.map((card: any) => ({
-          deck_id: deckId,
-          front: String(card.front || ""), back: String(card.back || ""),
-        })),
-        // Attempt 4: Minimal - just deck_id, front, back (no user_id)
-        reviewer.cards.map((card: any) => ({
-          deck_id: deckId,
-          front: String(card.front || ""), back: String(card.back || ""),
-        })),
-      ];
+      // Insert cards with correct column names (sort_order, not card_order)
+      const cardRows = reviewer.cards.map((card: any, index: number) => ({
+        deck_id: String(deckId),
+        user_id: user.id,
+        front: String(card.front || ""),
+        back: String(card.back || ""),
+        hint: String(card.hint || ""),
+        sort_order: index,
+      }));
 
-      for (let i = 0; i < attempts.length; i++) {
-        const { error } = await supabase.from("custom_deck_cards").insert(attempts[i]);
-        if (!error) {
-          console.log(`custom_deck_cards insert succeeded on attempt ${i + 1}`);
-          break;
-        }
-        console.warn(`custom_deck_cards attempt ${i + 1} failed:`, error.message);
+      const { error: cardsError } = await supabase.from("custom_deck_cards").insert(cardRows);
+      if (cardsError) {
+        console.warn("custom_deck_cards insert failed:", cardsError.message);
       }
     }
   } catch (e) {

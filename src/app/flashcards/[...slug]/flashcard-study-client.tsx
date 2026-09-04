@@ -588,28 +588,16 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           if (existingDeck) {
             await supabase.from("custom_deck_cards").delete().eq("deck_id", reviewerId);
             if (updatedCards.length > 0) {
-              // Try progressively fewer columns
-              const attempts = [
-                updatedCards.map((card, index) => ({
-                  deck_id: reviewerId, user_id: user.id,
-                  front: card.front, back: card.back,
-                  hint: card.hint || "", card_order: index,
-                })),
-                updatedCards.map((card, index) => ({
-                  deck_id: reviewerId,
-                  front: card.front, back: card.back,
-                  hint: card.hint || "", card_order: index,
-                })),
-                updatedCards.map((card) => ({
-                  deck_id: reviewerId,
-                  front: card.front, back: card.back,
-                })),
-              ];
-              for (const attempt of attempts) {
-                const { error: ccErr } = await supabase.from("custom_deck_cards").insert(attempt);
-                if (!ccErr) break;
-                console.warn("custom_deck_cards attempt failed:", ccErr.message);
-              }
+              const cards = updatedCards.map((card, index) => ({
+                deck_id: String(reviewerId),
+                user_id: user.id,
+                front: card.front,
+                back: card.back,
+                hint: card.hint || "",
+                sort_order: index,
+              }));
+              const { error: ccErr } = await supabase.from("custom_deck_cards").insert(cards);
+              if (ccErr) console.warn("custom_deck_cards sync failed:", ccErr.message);
             }
             await supabase.from("custom_decks").update({
               card_count: updatedCards.length,
