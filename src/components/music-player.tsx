@@ -110,6 +110,7 @@ export function MusicPlayer() {
         border: 1px solid rgba(255,255,255,0.08);
         transition: opacity 0.3s ease, transform 0.3s ease;
       `;
+      iframe.setAttribute("data-mini-spotify", "");
       document.body.appendChild(iframe);
       miniIframeRef.current = iframe;
     }
