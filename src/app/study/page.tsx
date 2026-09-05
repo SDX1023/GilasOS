@@ -265,9 +265,13 @@ function QuizTab({ userId }: { userId: string | null }) {
     if (isStudying) {
       document.body.classList.add("quiz-active");
       document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "none");
+      const spotify = document.querySelector<HTMLElement>('iframe[data-mini-spotify]');
+      if (spotify) { spotify.style.left = "-9999px"; spotify.style.pointerEvents = "none"; }
       return () => {
         document.body.classList.remove("quiz-active");
         document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+        const s = document.querySelector<HTMLElement>('iframe[data-mini-spotify]');
+        if (s) { s.style.left = ""; s.style.pointerEvents = ""; }
       };
     }
     document.body.classList.remove("quiz-active");

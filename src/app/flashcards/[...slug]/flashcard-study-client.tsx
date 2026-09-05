@@ -172,9 +172,13 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   useEffect(() => {
     document.querySelector<HTMLElement>("nav")?.style.setProperty("display", reviewMode ? "none" : "");
     document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", reviewMode ? "none" : "");
+    const spotify = document.querySelector<HTMLElement>("iframe[data-mini-spotify]");
+    if (spotify) { spotify.style.left = reviewMode ? "-9999px" : ""; spotify.style.pointerEvents = reviewMode ? "none" : ""; }
     return () => {
       document.querySelector<HTMLElement>("nav")?.style.setProperty("display", "");
       document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+      const s = document.querySelector<HTMLElement>("iframe[data-mini-spotify]");
+      if (s) { s.style.left = ""; s.style.pointerEvents = ""; }
     };
   }, [reviewMode]);
 
