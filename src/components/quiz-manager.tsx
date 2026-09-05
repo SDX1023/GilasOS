@@ -58,6 +58,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   const [answered, setAnswered] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [preGeneratedOptions, setPreGeneratedOptions] = useState<Record<number, string[]>>({});
+  const [generatingOptions, setGeneratingOptions] = useState(false);
 
   useEffect(() => {
     loadSavedQuizzes(userId).then((data) => { setQuizzes(data); setLoading(false); });
@@ -152,11 +154,11 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   const mcOptionsCache = useRef<Record<string, string[]>>({});
 
   function getMcOptionsCached(q: QuizQuestion, labelIndex?: number): string[] {
-    const key = `${q.type}-${q.question || ""}-${q.answer || ""}-${q.correct ?? ""}-${labelIndex ?? ""}-${(q.labels || []).map((l) => l.text).join(",")}-${(q.options || []).join(",")}`;
-    if (mcOptionsCache.current[key]) return mcOptionsCache.current[key];
-    const opts = getMcOptions(q, labelIndex);
-    mcOptionsCache.current[key] = opts;
-    return opts;
+    if (q.type === "mc" && q.options) return q.options;
+    const flat = flattenQuizQuestions(quizQuestions, quizMode);
+    const entryIdx = flat.findIndex((e) => e.question === q && e.labelIndex === labelIndex);
+    if (entryIdx !== -1 && preGeneratedOptions[entryIdx]) return preGeneratedOptions[entryIdx];
+    return getMcOptions(q, labelIndex);
   }
 
   function flattenQuizQuestions(questions: QuizQuestion[], mode: QuizMode): { question: QuizQuestion; subIndex: number; labelIndex?: number }[] {
@@ -180,12 +182,78 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   }
 
   function beginQuiz() {
-    const flat = flattenQuizQuestions(quizQuestions, quizMode);
     setCurrentQ(0);
     setQuizAnswers({});
     setAnswered(false);
     setQuizScore(0);
     setQuizStarted(true);
+    setGeneratingOptions(true);
+    preGenerateAllOptions().finally(() => setGeneratingOptions(false));
+  }
+
+  async function preGenerateAllOptions() {
+    const flat = flattenQuizQuestions(quizQuestions, quizMode);
+    const opts: Record<number, string[]> = {};
+    const needsAI: { index: number; q: QuizQuestion; labelIndex?: number; correct: string }[] = [];
+
+    for (let i = 0; i < flat.length; i++) {
+      const entry = flat[i];
+      const q = entry.question;
+      if (q.type === "mc" && q.options) {
+        opts[i] = q.options;
+        continue;
+      }
+      let correct = "";
+      if (q.type === "image_answer" && q.answer) correct = q.answer;
+      else if (q.type === "image_occlusion" && q.labels && entry.labelIndex != null) correct = q.labels[entry.labelIndex].text;
+      else if (q.type === "identification" && q.answer) correct = q.answer;
+      if (!correct) { opts[i] = ["A", "B", "C", "D"]; continue; }
+
+      let distractors: string[] = [];
+      if (q.type === "image_occlusion" && q.labels && entry.labelIndex != null) {
+        distractors = q.labels.filter((l, idx) => idx !== entry.labelIndex).map((l) => l.text).filter((t) => t.length > 0);
+      } else if (q.distractors && q.distractors.length >= 2) {
+        distractors = q.distractors.filter((d) => d.toLowerCase() !== correct.toLowerCase()).slice(0, 3);
+      }
+
+      if (distractors.length < 3) {
+        needsAI.push({ index: i, q, labelIndex: entry.labelIndex, correct });
+      } else {
+        const d = distractors.slice(0, 3);
+        const all = [...d, correct];
+        for (let j = all.length - 1; j > 0; j--) { const k = Math.floor(Math.random() * (j + 1)); [all[j], all[k]] = [all[k], all[j]]; }
+        opts[i] = all;
+      }
+    }
+
+    for (const item of needsAI) {
+      try {
+        const context = item.q.type === "image_occlusion"
+          ? `This is from a diagram with these labeled parts: ${item.q.labels?.map((l) => l.text).join(", ") || "unknown"}.`
+          : item.q.type === "image_answer"
+          ? `Image question: ${item.q.question || "unknown"}.`
+          : "";
+        const res = await fetch("/api/generate-distractors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: `${context} What is "${item.correct}"?`, answer: item.correct }),
+        });
+        const data = await res.json();
+        const d = (data.distractors || []).filter((x: string) => x.toLowerCase() !== item.correct.toLowerCase()).slice(0, 3);
+        while (d.length < 3) d.push(`Option ${d.length + 1}`);
+        const all = [...d, item.correct];
+        for (let j = all.length - 1; j > 0; j--) { const k = Math.floor(Math.random() * (j + 1)); [all[j], all[k]] = [all[k], all[j]]; }
+        opts[item.index] = all;
+      } catch {
+        const d = [`Similar term`, `Related concept`, `Often confused`].filter((x) => x.toLowerCase() !== item.correct.toLowerCase()).slice(0, 3);
+        while (d.length < 3) d.push(`Option ${d.length + 1}`);
+        const all = [...d, item.correct];
+        for (let j = all.length - 1; j > 0; j--) { const k = Math.floor(Math.random() * (j + 1)); [all[j], all[k]] = [all[k], all[j]]; }
+        opts[item.index] = all;
+      }
+    }
+
+    setPreGeneratedOptions(opts);
   }
 
   function getMcOptions(q: QuizQuestion, labelIndex?: number): string[] {
@@ -610,10 +678,10 @@ export default function QuizManager({ userId }: QuizManagerProps) {
             </p>
           </div>
 
-          <button onClick={() => { beginQuiz(); }}
+          <button onClick={() => { beginQuiz(); }} disabled={generatingOptions}
             className="glass-btn glass-btn-primary"
-            style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <Play size={16} /> Start Quiz ({totalQ} questions)
+            style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: generatingOptions ? 0.6 : 1 }}>
+            {generatingOptions ? "Generating choices..." : <><Play size={16} /> Start Quiz ({totalQ} questions)</>}
           </button>
         </div>
       );
