@@ -244,13 +244,13 @@ export default function SharedQuizPage({ params }: { params: Promise<{ code: str
               onKeyDown={(e) => { if (e.key === "Enter" && !answered && answers[currentQ]?.trim()) setAnswered(true); }}
               placeholder="Type your answer..." className="glass-input" style={{
                 padding: "14px 16px", fontSize: 16,
-                borderColor: answered ? (answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444") : undefined,
+                borderColor: answered ? (() => { const s = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, ""); return s(answers[currentQ] || "") === s(q.answer || ""); })() ? "#16a34a" : "#ef4444") : undefined,
               }} />
-            {answered && (
-              <p style={{ marginTop: 8, fontSize: 13, color: answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444" }}>
-                {answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "Correct!" : `Correct answer: ${q.answer}`}
+            {answered && (() => { const s = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, ""); const isCorrect = s(answers[currentQ] || "") === s(q.answer || ""); return (
+              <p style={{ marginTop: 8, fontSize: 13, color: isCorrect ? "#16a34a" : "#ef4444" }}>
+                {isCorrect ? "Correct!" : `Correct answer: ${(q.answer || "").replace(/^\s*[A-Da-d]\.\s*/, "").trim()}`}
               </p>
-            )}
+            ); })()}
           </div>
         )}
 

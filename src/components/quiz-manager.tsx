@@ -361,7 +361,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     }
 
     const correct = getCorrectText(entry.question, entry.labelIndex);
-    return answer.toLowerCase().trim() === correct.toLowerCase().trim();
+    const strip = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+    return strip(answer) === strip(correct);
   }
 
   function finishQuiz() {
@@ -807,8 +808,10 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                 placeholder="Type your answer..." className="glass-input" style={{ width: "100%", fontSize: 16, padding: "12px 16px" }}
                 disabled={answered} autoFocus />
               {answered && (() => {
-                const correct = getCorrectText(q, entry.labelIndex);
-                const isCorrect = userAnswer?.toLowerCase().trim() === correct.toLowerCase().trim();
+                const rawCorrect = getCorrectText(q, entry.labelIndex);
+                const correct = rawCorrect.replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+                const userNorm = (userAnswer || "").toLowerCase().trim().replace(/^\s*[A-Da-d]\.\s*/, "");
+                const isCorrect = userNorm === correct.toLowerCase();
                 return (
                   <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: isCorrect ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${isCorrect ? "#16a34a" : "#ef4444"}` }}>
                     <p style={{ fontSize: 13, color: isCorrect ? "#16a34a" : "#ef4444", fontWeight: 500 }}>
