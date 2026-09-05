@@ -5,11 +5,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const MAX_CHARS = 200000;
-const CHUNK_SIZE = 15000;
-const CONCURRENCY = 1;
-const MAX_RETRIES = 2;
-const BASE_DELAY = 2000;
-const REQUEST_TIMEOUT_MS = 60000;
+const CHUNK_SIZE = 40000;
+const CONCURRENCY = 2;
+const MAX_RETRIES = 1;
+const BASE_DELAY = 1500;
+const REQUEST_TIMEOUT_MS = 30000;
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
@@ -309,8 +309,18 @@ function tryParseJson(s: string): any[] | null {
   return null;
 }
 
-function normalizeCorrect(q: any): any {
+function normalizeQuestion(q: any): any {
   try {
+    if (!q || !q.question) return q;
+
+    if (q.type === "identification" || (!q.type && !q.options)) {
+      q.type = "identification";
+      if (!q.answer && q.correct) {
+        q.answer = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+      }
+      return q;
+    }
+
     if (q.type !== "mc" || !q.options || !q.correct || !Array.isArray(q.options)) return q;
     const c = String(q.correct).trim();
     if (/^[0-3]$/.test(c)) {
@@ -329,19 +339,19 @@ function normalizeCorrect(q: any): any {
     }
     return q;
   } catch (e) {
-    console.error("normalizeCorrect error:", e, q);
+    console.error("normalizeQuestion error:", e, q);
     return q;
   }
 }
 
 async function extractQuiz(content: string): Promise<any[]> {
   const d = tryParseJson(content);
-  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeCorrect);
+  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeQuestion);
 
   const m = content.match(/\[[\s\S]*\]/);
   if (m) {
     const p = tryParseJson(m[0]);
-    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeCorrect);
+    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeQuestion);
   }
 
   // Try to extract from Q&A pattern

@@ -207,7 +207,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
           opts[i] = q.options;
           continue;
         }
-        const correct = q.options[q.correct ?? 0] || "";
+        const correctIdx = getCorrectMcIndex(q.options, q, entry.labelIndex);
+        const correct = q.options[correctIdx] || "";
         if (correct.trim()) needsAI.push({ index: i, q, labelIndex: entry.labelIndex, correct: correct.trim() });
         else opts[i] = q.options;
         continue;
@@ -293,7 +294,20 @@ export default function QuizManager({ userId }: QuizManagerProps) {
 
   function getCorrectMcIndex(options: string[], q: QuizQuestion, labelIndex?: number): number {
     if (q.type === "mc") {
-      return q.correct ?? 0;
+      const c = q.correct;
+      if (c == null) return 0;
+      const cs = String(c).trim();
+      if (/^[0-3]$/.test(cs)) return parseInt(cs);
+      if (cs.length === 1) {
+        const code = cs.toUpperCase().charCodeAt(0);
+        if (code >= 65 && code <= 68) return code - 65;
+      }
+      const stripped = cs.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+      for (let i = 0; i < options.length; i++) {
+        const optText = (options[i] || "").replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+        if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) return i;
+      }
+      return 0;
     }
     let correctAnswer = "";
     if (q.type === "image_answer") correctAnswer = q.answer || "";
@@ -322,7 +336,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   }
 
   function getCorrectText(q: QuizQuestion, labelIndex?: number): string {
-    if (q.type === "mc" && q.options && q.correct != null) return q.options[q.correct] || "";
+    if (q.type === "mc" && q.options) return q.options[getCorrectMcIndex(q.options, q)] || "";
     if (q.type === "identification") return q.answer || "";
     if (q.type === "image_occlusion" && q.labels && labelIndex != null) return q.labels[labelIndex].text;
     if (q.type === "image_answer") return q.answer || "";
@@ -337,8 +351,9 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     const asMc = isMcForQuestion(entry.question, quizMode);
 
     if (asMc) {
-      if (entry.question.type === "mc") {
-        return answer === String(entry.question.correct ?? 0);
+      if (entry.question.type === "mc" && entry.question.options) {
+        const correctIdx = getCorrectMcIndex(entry.question.options, entry.question);
+        return answer === String(correctIdx);
       }
       const options = getMcOptionsCached(entry.question, entry.labelIndex);
       const correctIdx = getCorrectMcIndex(options, entry.question, entry.labelIndex);
