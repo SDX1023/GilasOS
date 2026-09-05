@@ -244,13 +244,18 @@ export default function SharedQuizPage({ params }: { params: Promise<{ code: str
               onKeyDown={(e) => { if (e.key === "Enter" && !answered && answers[currentQ]?.trim()) setAnswered(true); }}
               placeholder="Type your answer..." className="glass-input" style={{
                 padding: "14px 16px", fontSize: 16,
-                borderColor: answered ? (() => { const s = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, ""); return s(answers[currentQ] || "") === s(q.answer || ""); })() ? "#16a34a" : "#ef4444") : undefined,
+                borderColor: answered ? (((answers[currentQ] || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "") === (q.answer || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "")) ? "#16a34a" : "#ef4444") : undefined,
               }} />
-            {answered && (() => { const s = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, ""); const isCorrect = s(answers[currentQ] || "") === s(q.answer || ""); return (
-              <p style={{ marginTop: 8, fontSize: 13, color: isCorrect ? "#16a34a" : "#ef4444" }}>
-                {isCorrect ? "Correct!" : `Correct answer: ${(q.answer || "").replace(/^\s*[A-Da-d]\.\s*/, "").trim()}`}
-              </p>
-            ); })()}
+            {answered && (() => {
+              const userNorm = (answers[currentQ] || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+              const correctNorm = (q.answer || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+              const isCorrect = userNorm === correctNorm;
+              return (
+                <p style={{ marginTop: 8, fontSize: 13, color: isCorrect ? "#16a34a" : "#ef4444" }}>
+                  {isCorrect ? "Correct!" : `Correct answer: ${(q.answer || "").replace(/^\s*[A-Da-d]\.\s*/, "").trim()}`}
+                </p>
+              );
+            })()}
           </div>
         )}
 

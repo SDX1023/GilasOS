@@ -764,7 +764,7 @@ function QuizTab({ userId }: { userId: string | null }) {
             <input type="text" value={answers[currentQ] || ""} onChange={(e) => !answered && answerQuestion(e.target.value)}
               placeholder="Type your answer..." className="glass-input" style={{
                 width: "100%", fontSize: "18px",
-                borderColor: answered ? (() => { const s = (s: string) => s.toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, ""); return s(answers[currentQ] || "") === s(q.answer || ""); })() ? "#16a34a" : "#ef4444") : undefined,
+                borderColor: answered ? ((answers[currentQ] || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "") === (q.answer || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "") ? "#16a34a" : "#ef4444") : undefined,
               }}
               disabled={answered} autoFocus />
             {answered && (() => {
