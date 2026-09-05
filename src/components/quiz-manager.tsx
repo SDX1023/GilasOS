@@ -50,6 +50,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   const [addDistractors, setAddDistractors] = useState(["", "", ""]);
   const [generatingDistractors, setGeneratingDistractors] = useState(false);
   const [addingQuestion, setAddingQuestion] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [quizMode, setQuizMode] = useState<QuizMode>("mc");
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
@@ -159,6 +160,90 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     if (!ok) return;
     setActiveQuiz({ ...activeQuiz, questions: updated });
     setQuizzes((prev) => prev.map((q) => q.id === activeQuiz.id ? { ...q, questions: updated } : q));
+    if (editingIndex === index) resetAddForm();
+    else if (editingIndex != null && editingIndex > index) setEditingIndex(editingIndex - 1);
+  }
+
+  function handleStartEdit(index: number) {
+    if (!activeQuiz) return;
+    const q = activeQuiz.questions[index];
+    if (!q) return;
+    setEditingIndex(index);
+    setAddQuestionType(q.type || "mc");
+    if (q.type === "mc") {
+      setAddQuestion(q.question || "");
+      setAddOptions(q.options ? [...q.options] : ["", "", "", ""]);
+      setAddCorrect(typeof q.correct === "number" ? q.correct : 0);
+      setAddAnswer("");
+      setAddImageUrl("");
+      setAddLabels([]);
+      setAddDistractors(["", "", ""]);
+    } else if (q.type === "identification") {
+      setAddQuestion(q.question || "");
+      setAddAnswer(q.answer || "");
+      setAddOptions(["", "", "", ""]);
+      setAddCorrect(0);
+      setAddImageUrl("");
+      setAddLabels([]);
+      setAddDistractors(q.distractors ? [...q.distractors] : ["", "", ""]);
+    } else if (q.type === "image_occlusion") {
+      setAddQuestion("");
+      setAddAnswer("");
+      setAddOptions(["", "", "", ""]);
+      setAddCorrect(0);
+      setAddImageUrl(q.image_url || "");
+      setAddLabels(q.labels ? q.labels.map((l) => ({ x: l.x, y: l.y, w: l.w, h: l.h, text: l.text })) : []);
+      setAddDistractors(["", "", ""]);
+    } else if (q.type === "image_answer") {
+      setAddQuestion(q.question || "");
+      setAddAnswer(q.answer || "");
+      setAddOptions(["", "", "", ""]);
+      setAddCorrect(0);
+      setAddImageUrl(q.image_url || "");
+      setAddLabels([]);
+      setAddDistractors(q.distractors ? [...q.distractors] : ["", "", ""]);
+    }
+  }
+
+  function resetAddForm() {
+    setEditingIndex(null);
+    setAddQuestionType("mc");
+    setAddQuestion("");
+    setAddOptions(["", "", "", ""]);
+    setAddCorrect(0);
+    setAddAnswer("");
+    setAddImageUrl("");
+    setAddLabels([]);
+    setAddDistractors(["", "", ""]);
+  }
+
+  async function handleUpdateQuestion() {
+    if (!activeQuiz || editingIndex == null) return;
+    setAddingQuestion(true);
+    let updatedQ: QuizQuestion;
+    if (addQuestionType === "mc") {
+      if (!addQuestion.trim() || addOptions.some((o) => !o.trim())) { setAddingQuestion(false); return; }
+      updatedQ = { type: "mc", question: addQuestion.trim(), options: addOptions.map((o) => o.trim()), correct: addCorrect };
+    } else if (addQuestionType === "identification") {
+      if (!addQuestion.trim() || !addAnswer.trim()) { setAddingQuestion(false); return; }
+      const d = addDistractors.filter((d) => d.trim());
+      updatedQ = { type: "identification", question: addQuestion.trim(), answer: addAnswer.trim(), distractors: d.length > 0 ? d : undefined };
+    } else if (addQuestionType === "image_occlusion") {
+      if (!addImageUrl || addLabels.length === 0) { setAddingQuestion(false); return; }
+      updatedQ = { type: "image_occlusion", image_url: addImageUrl, labels: addLabels };
+    } else {
+      if (!addImageUrl || !addQuestion.trim() || !addAnswer.trim()) { setAddingQuestion(false); return; }
+      const d = addDistractors.filter((d) => d.trim());
+      updatedQ = { type: "image_answer", image_url: addImageUrl, question: addQuestion.trim(), answer: addAnswer.trim(), distractors: d.length > 0 ? d : undefined };
+    }
+    const updated = [...(activeQuiz.questions || [])];
+    updated[editingIndex] = updatedQ;
+    const ok = await updateQuizQuestions(userId, activeQuiz.id, updated);
+    if (!ok) { alert("Failed to save changes."); setAddingQuestion(false); return; }
+    setActiveQuiz({ ...activeQuiz, questions: updated });
+    setQuizzes((prev) => prev.map((q) => q.id === activeQuiz.id ? { ...q, questions: updated } : q));
+    resetAddForm();
+    setAddingQuestion(false);
   }
 
   const mcOptionsCache = useRef<Record<string, string[]>>({});
@@ -482,7 +567,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
         {activeQuiz.questions?.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
             {activeQuiz.questions.map((q: QuizQuestion, i: number) => (
-              <div key={i} className="glass-card" style={{ display: "flex", alignItems: "center", gap: 10, padding: 12 }}>
+              <div key={i} className="glass-card" style={{ display: "flex", alignItems: "center", gap: 10, padding: 12, border: editingIndex === i ? "1px solid rgba(109,40,217,0.4)" : undefined, background: editingIndex === i ? "rgba(109,40,217,0.06)" : undefined }}>
                 {q.image_url && (
                   <img src={q.image_url} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: "#0a0e18" }} />
                 )}
@@ -506,16 +591,21 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                   {q.type === "identification" && q.answer && <p className="text-xs text-secondary" style={{ marginTop: 2 }}>Answer: {q.answer}</p>}
                   {q.type === "image_answer" && q.answer && <p className="text-xs text-secondary" style={{ marginTop: 2 }}>Answer: {q.answer}</p>}
                 </div>
-                <button onClick={() => handleRemoveQuestion(i)} style={{ padding: 4, borderRadius: 4, color: "#ef4444", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
-                  <Trash2 size={14} />
-                </button>
+                <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                  <button onClick={() => handleStartEdit(i)} style={{ padding: 4, borderRadius: 4, color: "var(--os-accent)", background: editingIndex === i ? "rgba(109,40,217,0.15)" : "none", border: "none", cursor: "pointer" }}>
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => handleRemoveQuestion(i)} style={{ padding: 4, borderRadius: 4, color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
 
         <div className="glass-panel" style={{ padding: 20 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--os-text-primary)", marginBottom: 12 }}>Add Question</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--os-text-primary)", marginBottom: 12 }}>{editingIndex != null ? `Edit Question ${editingIndex + 1}` : "Add Question"}</h3>
 
           <div style={{ display: "flex", gap: 4, marginBottom: 16, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
             {([
@@ -651,18 +741,28 @@ export default function QuizManager({ userId }: QuizManagerProps) {
           )}
 
           {addQuestionType !== "image_occlusion" && (
-            <button onClick={handleAddQuestion} disabled={addingQuestion}
-              className="glass-btn glass-btn-primary"
-              style={{ width: "100%", padding: "10px", marginTop: 16, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <Plus size={14} /> Add Question
-            </button>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={editingIndex != null ? handleUpdateQuestion : handleAddQuestion} disabled={addingQuestion}
+                className="glass-btn glass-btn-primary"
+                style={{ flex: 1, padding: "10px", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {editingIndex != null ? <><Check size={14} /> Save Changes</> : <><Plus size={14} /> Add Question</>}
+              </button>
+              {editingIndex != null && (
+                <button onClick={resetAddForm} className="glass-btn" style={{ padding: "10px 16px", fontSize: 13 }}>Cancel</button>
+              )}
+            </div>
           )}
           {addQuestionType === "image_occlusion" && addLabels.length > 0 && (
-            <button onClick={handleAddQuestion} disabled={addingQuestion}
-              className="glass-btn glass-btn-primary"
-              style={{ width: "100%", padding: "10px", marginTop: 16, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <Plus size={14} /> Add {addLabels.length} Labels as Questions
-            </button>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={editingIndex != null ? handleUpdateQuestion : handleAddQuestion} disabled={addingQuestion}
+                className="glass-btn glass-btn-primary"
+                style={{ flex: 1, padding: "10px", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {editingIndex != null ? <><Check size={14} /> Save Changes</> : <><Plus size={14} /> Add {addLabels.length} Labels as Questions</>}
+              </button>
+              {editingIndex != null && (
+                <button onClick={resetAddForm} className="glass-btn" style={{ padding: "10px 16px", fontSize: 13 }}>Cancel</button>
+              )}
+            </div>
           )}
         </div>
       </div>
