@@ -200,7 +200,14 @@ export default function QuizManager({ userId }: QuizManagerProps) {
       const entry = flat[i];
       const q = entry.question;
       if (q.type === "mc" && q.options) {
-        opts[i] = q.options;
+        const filledOptions = q.options.filter((o: string) => o.trim().length > 0);
+        if (filledOptions.length >= 3 && q.correct != null) {
+          opts[i] = q.options;
+          continue;
+        }
+        const correct = q.options[q.correct ?? 0] || "";
+        if (correct.trim()) needsAI.push({ index: i, q, labelIndex: entry.labelIndex, correct: correct.trim() });
+        else opts[i] = q.options;
         continue;
       }
       let correct = "";
