@@ -8,6 +8,11 @@ export async function POST(req: NextRequest) {
     const { question, answer } = await req.json();
     if (!answer) return NextResponse.json({ error: "answer required" }, { status: 400 });
 
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ distractors: generateFallbackDistractors(answer) });
+    }
+
     const prompt = `Generate exactly 3 plausible wrong answers (distractors) for this multiple choice question.
 
 Question: ${question || "N/A"}
@@ -20,16 +25,11 @@ Rules:
 - Do NOT include "None of the above" or "All of the above"
 - Return ONLY the 3 distractors, one per line, no numbering or bullets`;
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ distractors: generateFallbackDistractors(answer) });
-    }
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "deepseek-chat",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 150,
         temperature: 0.8,
@@ -58,7 +58,6 @@ Rules:
 }
 
 function generateFallbackDistractors(correct: string): string[] {
-  const lower = correct.toLowerCase();
   const isNumber = /^\d+$/.test(correct.trim());
   const words = correct.split(/\s+/);
   const isShort = words.length <= 3;
