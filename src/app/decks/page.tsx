@@ -237,7 +237,11 @@ export default function DecksPage() {
             <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Move to:</span>
             <select
               value=""
-              onChange={(e) => { if (e.target.value) { moveSelectedToCourse(e.target.value); } else { moveSelectedToCourse(null); } }}
+              onChange={(e) => {
+                const val = e.target.value;
+                moveSelectedToCourse(val === "__none__" ? null : val);
+                e.currentTarget.value = "";
+              }}
               style={{ padding: "4px 8px", background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-glass-border)", borderRadius: 6, color: "var(--os-text-primary)", fontSize: 12, outline: "none" }}
             >
               <option value="" disabled>Choose...</option>
