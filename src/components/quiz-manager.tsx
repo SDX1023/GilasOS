@@ -65,6 +65,14 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     loadSavedQuizzes(userId).then((data) => { setQuizzes(data); setLoading(false); });
   }, [userId]);
 
+  useEffect(() => {
+    const isActive = view === "take" && quizStarted;
+    if (isActive) {
+      document.body.classList.add("quiz-active");
+      return () => { document.body.classList.remove("quiz-active"); };
+    }
+  }, [view, quizStarted]);
+
   async function handleCreateQuiz() {
     if (!newQuizTitle.trim()) return;
     setCreating(true);
