@@ -293,8 +293,13 @@ ${chunkText}`;
 // ENHANCED EXTRACTION
 // ============================================================
 function tryParseJson(s: string): any[] | null {
+  let cleaned = s.trim();
+
+  const mdMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (mdMatch) cleaned = mdMatch[1].trim();
+
   try {
-    const p = JSON.parse(s);
+    const p = JSON.parse(cleaned);
     if (Array.isArray(p) && p.length) return p;
     if (p && Array.isArray((p as any).questions) && (p as any).questions.length)
       return (p as any).questions;
