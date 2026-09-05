@@ -104,6 +104,7 @@ CRITICAL RULES:
 - Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Each question must have 4 options (A, B, C, D)
 - "correct" must be the LETTER (A, B, C, or D) matching the correct option — vary answers across questions
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
 
 CONTENT:
 ${chunkText}`;
@@ -145,6 +146,7 @@ CRITICAL RULES:
 - For each Q&A pair, create a question using the Q as the stem
 - Add 3 wrong options that are plausible but incorrect
 - "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
 
 CONTENT:
 ${chunkText}`;
@@ -192,6 +194,7 @@ CRITICAL RULES:
 - Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Each question must have 4 options (A, B, C, D)
 - "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
 
 TEXT:
 ${chunkText}`;
@@ -225,6 +228,7 @@ ${chunkText}`;
 Rules:
 - Create 5 quiz questions with 4 options each
 - "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
+- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
 
 TEXT:
 ${chunkText}`;
@@ -333,6 +337,37 @@ function extractQuiz(content: string): any[] {
     } catch {}
   }
 
+  if (out.length > 0) return out;
+
+  const textMcPattern = /(?:^|\n)\s*\d+[\.\)]\s*(.+?)(?:\n\s*[A-D][\.\)]\s*(.+?))(?:\n\s*[A-D][\.\)]\s*(.+?))(?:\n\s*[A-D][\.\)]\s*(.+?))(?:\n\s*(?:Answer|Correct)[\s:]+([A-D]))/gi;
+  let tm: RegExpExecArray | null;
+  while ((tm = textMcPattern.exec(content)) !== null) {
+    try {
+      const question = tm[1]?.trim().replace(/\?$/, "?") || "";
+      const options = [tm[2], tm[3], tm[4], tm[5]].map((o) => (o || "").trim());
+      const correct = (tm[6] || "A").trim().toUpperCase();
+      if (question && options.every((o) => o.length > 0) && /^[A-D]$/.test(correct)) {
+        const q = normalizeQuestion({ question, options, correct, type: "mc" });
+        if (q) out.push(q);
+      }
+    } catch {}
+  }
+
+  if (out.length > 0) return out;
+
+  const textIdPattern = /(?:^|\n)\s*\d+[\.\)]\s*(.+?)\s*(?:Answer|Correct)[\s:]+(.+?)(?:\n|$)/gi;
+  let ti: RegExpExecArray | null;
+  while ((ti = textIdPattern.exec(content)) !== null) {
+    try {
+      const question = ti[1]?.trim().replace(/\?$/, "") || "";
+      const answer = ti[2]?.trim() || "";
+      if (question && answer) {
+        const q = normalizeQuestion({ question, type: "identification", answer });
+        if (q) out.push(q);
+      }
+    } catch {}
+  }
+
   return out;
 }
 
@@ -409,7 +444,8 @@ async function generateQuizChunk(
     const questions = extractQuiz(content);
     if (questions.length > 0) return { questions, errors: chunkErrors };
 
-    chunkErrors.push(`Attempt ${attempt + 1}: Got response but couldn't extract questions`);
+    console.error(`Chunk ${idx + 1} attempt ${attempt}: got ${content.length} chars but extracted 0 questions. First 500 chars:`, content.slice(0, 500));
+    chunkErrors.push(`Attempt ${attempt + 1}: Got ${content.length} chars response but couldn't extract questions`);
     if (attempt < MAX_RETRIES) await sleep(2000 * Math.pow(2, attempt));
   }
 
