@@ -361,7 +361,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
 
   if (view === "list") {
     return (
-      <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px", padding: "0 16px" }}>
+      <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1 }}>
