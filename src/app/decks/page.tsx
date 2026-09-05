@@ -166,7 +166,8 @@ export default function DecksPage() {
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", id);
+    const idsToDrag = selectedIds.has(id) ? Array.from(selectedIds) : [id];
+    e.dataTransfer.setData("text/plain", JSON.stringify(idsToDrag));
   };
 
   const handleDragEnd = () => { setDraggedId(null); setDropTarget(null); };
@@ -179,10 +180,18 @@ export default function DecksPage() {
 
   const handleDragLeave = () => { setDropTarget(null); };
 
-  const handleDrop = (e: React.DragEvent, courseId: string | null) => {
+  const handleDrop = async (e: React.DragEvent, courseId: string | null) => {
     e.preventDefault();
-    const deckId = e.dataTransfer.getData("text/plain");
-    if (deckId) moveDeckToCourse(deckId, courseId);
+    try {
+      const raw = e.dataTransfer.getData("text/plain");
+      const ids: string[] = JSON.parse(raw);
+      if (ids.length > 0) {
+        const supabase = getSupabase();
+        await supabase.from("custom_decks").update({ course_id: courseId, updated_at: new Date().toISOString() }).in("id", ids);
+        setDecks(decks.map(d => ids.includes(d.id) ? { ...d, course_id: courseId } : d));
+        setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      }
+    } catch {}
     setDraggedId(null); setDropTarget(null);
   };
 
