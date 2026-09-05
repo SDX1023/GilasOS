@@ -16,6 +16,7 @@ interface QuizQuestion {
   options?: string[];
   correct?: number;
   answer?: string;
+  distractors?: string[];
   image_url?: string;
   labels?: { x: number; y: number; w: number; h: number; text: string }[];
 }
@@ -46,6 +47,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   const [addAnswer, setAddAnswer] = useState("");
   const [addImageUrl, setAddImageUrl] = useState("");
   const [addLabels, setAddLabels] = useState<{ x: number; y: number; w: number; h: number; text: string }[]>([]);
+  const [addDistractors, setAddDistractors] = useState(["", "", ""]);
+  const [generatingDistractors, setGeneratingDistractors] = useState(false);
   const [addingQuestion, setAddingQuestion] = useState(false);
 
   const [quizMode, setQuizMode] = useState<QuizMode>("mc");
@@ -86,6 +89,21 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     if (activeQuiz?.id === quizId) setActiveQuiz((prev: any) => prev ? { ...prev, title: renamingTitle.trim() } : prev);
   }
 
+  async function handleGenerateDistractors() {
+    if (!addAnswer.trim()) return;
+    setGeneratingDistractors(true);
+    try {
+      const res = await fetch("/api/generate-distractors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: addQuestion.trim() || "", answer: addAnswer.trim() }),
+      });
+      const data = await res.json();
+      if (data.distractors) setAddDistractors(data.distractors.slice(0, 3));
+    } catch {}
+    setGeneratingDistractors(false);
+  }
+
   async function handleAddQuestion() {
     if (!activeQuiz) return;
     setAddingQuestion(true);
@@ -97,13 +115,15 @@ export default function QuizManager({ userId }: QuizManagerProps) {
       newQ = { type: "mc", question: addQuestion.trim(), options: addOptions.map((o) => o.trim()), correct: addCorrect };
     } else if (addQuestionType === "identification") {
       if (!addQuestion.trim() || !addAnswer.trim()) { setAddingQuestion(false); return; }
-      newQ = { type: "identification", question: addQuestion.trim(), answer: addAnswer.trim() };
+      const d = addDistractors.filter((d) => d.trim());
+      newQ = { type: "identification", question: addQuestion.trim(), answer: addAnswer.trim(), distractors: d.length > 0 ? d : undefined };
     } else if (addQuestionType === "image_occlusion") {
       if (!addImageUrl || addLabels.length === 0) { setAddingQuestion(false); return; }
       newQ = { type: "image_occlusion", image_url: addImageUrl, labels: addLabels };
     } else {
       if (!addImageUrl || !addQuestion.trim() || !addAnswer.trim()) { setAddingQuestion(false); return; }
-      newQ = { type: "image_answer", image_url: addImageUrl, question: addQuestion.trim(), answer: addAnswer.trim() };
+      const d = addDistractors.filter((d) => d.trim());
+      newQ = { type: "image_answer", image_url: addImageUrl, question: addQuestion.trim(), answer: addAnswer.trim(), distractors: d.length > 0 ? d : undefined };
     }
 
     const updated = [...(activeQuiz.questions || []), newQ];
@@ -117,6 +137,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     setAddAnswer("");
     setAddImageUrl("");
     setAddLabels([]);
+    setAddDistractors(["", "", ""]);
     setAddingQuestion(false);
   }
 
@@ -167,35 +188,23 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     setQuizStarted(true);
   }
 
-  function getMcOptions(q: QuizQuestion, labelIndex?: number): string[] {
+  function getCorrectMcIndex(options: string[], q: QuizQuestion, labelIndex?: number): number {
     if (q.type === "mc" && q.options) return q.options;
-    if (q.type === "image_answer" && q.answer) {
-      const correct = q.answer;
-      const otherAnswers: string[] = ["The mitochondria", "Mitosis", "Tokyo", "1776", "H2O", "72", "Albert Einstein", "Nucleus"];
-      const shuffled = otherAnswers.sort(() => Math.random() - 0.5).filter((a) => a.toLowerCase() !== correct.toLowerCase()).slice(0, 3);
-      const opts = [...shuffled, correct];
-      for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-      return opts;
+    let correct = "";
+    if (q.type === "image_answer" && q.answer) correct = q.answer;
+    else if (q.type === "image_occlusion" && q.labels && labelIndex != null) correct = q.labels[labelIndex].text;
+    else if (q.type === "identification" && q.answer) correct = q.answer;
+    if (!correct) return ["Option A", "Option B", "Option C", "Option D"];
+    const distractors = (q.distractors && q.distractors.length >= 2)
+      ? q.distractors.filter((d) => d.toLowerCase() !== correct.toLowerCase()).slice(0, 3)
+      : [];
+    if (distractors.length < 3) {
+      const fallbacks = ["Similar concept", "Often confused with this", "Partially related"].filter((f) => f.toLowerCase() !== correct.toLowerCase() && !distractors.some((d) => d.toLowerCase() === f.toLowerCase()));
+      while (distractors.length < 3 && fallbacks.length > 0) distractors.push(fallbacks.shift()!);
     }
-    if (q.type === "image_occlusion" && q.labels && labelIndex != null) {
-      const correct = q.labels[labelIndex].text;
-      const otherLabels = q.labels.filter((_, i) => i !== labelIndex).map((l) => l.text);
-      const filler = ["Unknown", "Hidden", "Blank", "Null"].filter((f) => f.toLowerCase() !== correct.toLowerCase());
-      const pool = [...otherLabels, ...filler];
-      const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 3);
-      const opts = [...shuffled, correct];
-      for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-      return opts;
-    }
-    if (q.type === "identification" && q.answer) {
-      const correct = q.answer;
-      const distractors = ["False", "True", "None of the above", "All of the above"].filter((d) => d.toLowerCase() !== correct.toLowerCase());
-      const shuffled = distractors.sort(() => Math.random() - 0.5).slice(0, 3);
-      const opts = [...shuffled, correct];
-      for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-      return opts;
-    }
-    return ["Option A", "Option B", "Option C", "Option D"];
+    const opts = [...distractors, correct];
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+    return opts;
   }
 
   function getCorrectMcIndex(options: string[], q: QuizQuestion, labelIndex?: number): number {
@@ -468,6 +477,19 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                 <label style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)", display: "block", marginBottom: 6 }}>Answer</label>
                 <input value={addAnswer} onChange={(e) => setAddAnswer(e.target.value)} placeholder="Correct answer" className="glass-input" style={{ width: "100%", padding: "8px 12px", fontSize: 13 }} />
               </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)" }}>Wrong Choices (for MC mode)</label>
+                  <button onClick={handleGenerateDistractors} disabled={generatingDistractors || !addAnswer.trim()}
+                    style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(109,40,217,0.15)", color: "#a78bfa", border: "1px solid rgba(109,40,217,0.3)", cursor: generatingDistractors || !addAnswer.trim() ? "not-allowed" : "pointer" }}>
+                    {generatingDistractors ? "Generating..." : "Generate with AI"}
+                  </button>
+                </div>
+                {addDistractors.map((d, i) => (
+                  <input key={i} value={d} onChange={(e) => { const next = [...addDistractors]; next[i] = e.target.value; setAddDistractors(next); }}
+                    placeholder={`Wrong choice ${i + 1}`} className="glass-input" style={{ width: "100%", padding: "6px 10px", fontSize: 12, marginBottom: 4 }} />
+                ))}
+              </div>
             </div>
           ) : addQuestionType === "mc" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -503,6 +525,19 @@ export default function QuizManager({ userId }: QuizManagerProps) {
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)", display: "block", marginBottom: 6 }}>Answer</label>
                 <input value={addAnswer} onChange={(e) => setAddAnswer(e.target.value)} placeholder="Correct answer" className="glass-input" style={{ width: "100%", padding: "8px 12px", fontSize: 13 }} />
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--os-text-primary)" }}>Wrong Choices (for MC mode)</label>
+                  <button onClick={handleGenerateDistractors} disabled={generatingDistractors || !addAnswer.trim()}
+                    style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(109,40,217,0.15)", color: "#a78bfa", border: "1px solid rgba(109,40,217,0.3)", cursor: generatingDistractors || !addAnswer.trim() ? "not-allowed" : "pointer" }}>
+                    {generatingDistractors ? "Generating..." : "Generate with AI"}
+                  </button>
+                </div>
+                {addDistractors.map((d, i) => (
+                  <input key={i} value={d} onChange={(e) => { const next = [...addDistractors]; next[i] = e.target.value; setAddDistractors(next); }}
+                    placeholder={`Wrong choice ${i + 1}`} className="glass-input" style={{ width: "100%", padding: "6px 10px", fontSize: 12, marginBottom: 4 }} />
+                ))}
               </div>
             </div>
           )}
@@ -608,8 +643,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                   position: "absolute",
                   left: `${label.x}%`, top: `${label.y}%`,
                   width: `${label.w}%`, height: `${label.h}%`,
-                  background: li === entry.labelIndex ? "rgba(109,40,217,0.7)" : "rgba(109,40,217,0.15)",
-                  border: li === entry.labelIndex ? "2px solid rgba(109,40,217,0.9)" : "1px solid rgba(109,40,217,0.3)",
+                  background: li === entry.labelIndex ? "rgba(109,40,217,0.85)" : "rgba(109,40,217,0.95)",
+                  border: li === entry.labelIndex ? "2px solid rgba(139,92,246,1)" : "1px solid rgba(109,40,217,0.8)",
                   borderRadius: 4,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.3s ease",
