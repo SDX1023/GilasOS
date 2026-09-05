@@ -336,17 +336,47 @@ export async function renameSavedQuiz(userId: string, quizId: string, newTitle: 
 
 export async function updateQuizQuestions(userId: string, quizId: string, questions: any[]) {
   const supabase = getSupabase();
+  const serialized = JSON.parse(JSON.stringify(questions));
+
+  // Try native JSON first
   const { data, error } = await supabase
     .from("saved_quizzes")
-    .update({ questions: JSON.parse(JSON.stringify(questions)) })
+    .update({ questions: serialized })
     .eq("id", quizId)
     .eq("user_id", userId)
     .select("id, questions");
+
   if (error) {
-    console.error("Failed to update quiz questions:", error.message, error.details, error.hint);
-    localStorage.setItem("quiz_save_error", JSON.stringify({ message: error.message, details: error.details, hint: error.hint, ts: Date.now() }));
+    console.error("UPDATE FAILED:", error);
+    localStorage.setItem("quiz_save_error", JSON.stringify({ message: error.message, details: error.details, hint: error.hint, code: error.code, ts: Date.now() }));
     return false;
   }
+
+  // Verify readback
+  const { data: verify } = await supabase.from("saved_quizzes").select("questions").eq("id", quizId).maybeSingle();
+  const savedLen = Array.isArray(verify?.questions) ? verify!.questions.length : -1;
+
+  if (savedLen !== questions.length) {
+    // Try stringified fallback (text column)
+    const { error: err2 } = await supabase
+      .from("saved_quizzes")
+      .update({ questions: JSON.stringify(serialized) })
+      .eq("id", quizId)
+      .eq("user_id", userId);
+
+    if (!err2) {
+      const { data: verify2 } = await supabase.from("saved_quizzes").select("questions").eq("id", quizId).maybeSingle();
+      const parsed = typeof verify2?.questions === "string" ? JSON.parse(verify2.questions) : verify2?.questions;
+      if (Array.isArray(parsed) && parsed.length === questions.length) {
+        localStorage.removeItem("quiz_save_error");
+        return true;
+      }
+    }
+
+    localStorage.setItem("quiz_save_error", JSON.stringify({ message: `Verify mismatch: sent ${questions.length}, got ${savedLen}`, ts: Date.now() }));
+    return false;
+  }
+
   localStorage.removeItem("quiz_save_error");
   return true;
 }
