@@ -195,14 +195,20 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     else if (q.type === "image_occlusion" && q.labels && labelIndex != null) correct = q.labels[labelIndex].text;
     else if (q.type === "identification" && q.answer) correct = q.answer;
     if (!correct) return ["Option A", "Option B", "Option C", "Option D"];
-    const distractors = (q.distractors && q.distractors.length >= 2)
-      ? q.distractors.filter((d) => d.toLowerCase() !== correct.toLowerCase()).slice(0, 3)
-      : [];
-    if (distractors.length < 3) {
-      const fallbacks = ["Similar concept", "Often confused with this", "Partially related"].filter((f) => f.toLowerCase() !== correct.toLowerCase() && !distractors.some((d) => d.toLowerCase() === f.toLowerCase()));
-      while (distractors.length < 3 && fallbacks.length > 0) distractors.push(fallbacks.shift()!);
+
+    let distractors: string[] = [];
+
+    if (q.type === "image_occlusion" && q.labels && labelIndex != null) {
+      distractors = q.labels.filter((l, i) => i !== labelIndex).map((l) => l.text);
+    } else if (q.distractors && q.distractors.length >= 2) {
+      distractors = q.distractors.filter((d) => d.toLowerCase() !== correct.toLowerCase()).slice(0, 3);
     }
-    const opts = [...distractors, correct];
+
+    while (distractors.length < 3) {
+      distractors.push(`Choice ${distractors.length + 1}`);
+    }
+
+    const opts = [...distractors.slice(0, 3), correct];
     for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
     return opts;
   }
@@ -643,8 +649,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                   position: "absolute",
                   left: `${label.x}%`, top: `${label.y}%`,
                   width: `${label.w}%`, height: `${label.h}%`,
-                  background: li === entry.labelIndex ? "rgba(109,40,217,0.85)" : "rgba(109,40,217,0.95)",
-                  border: li === entry.labelIndex ? "2px solid rgba(139,92,246,1)" : "1px solid rgba(109,40,217,0.8)",
+                  background: li === entry.labelIndex ? "#6d28d9" : "#7c3aed",
+                  border: li === entry.labelIndex ? "2px solid #8b5cf6" : "1px solid #6d28d9",
                   borderRadius: 4,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transition: "all 0.3s ease",
