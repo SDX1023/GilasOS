@@ -480,7 +480,10 @@ export default function DeckStudyPage() {
             >
               {swapped ? "Back→Front" : "Front→Back"}
             </button>
-            <button onClick={() => setReviewStudyMode(reviewStudyMode === "flip" ? "type-in" : "flip")}
+            <button onClick={() => {
+              setReviewStudyMode(reviewStudyMode === "flip" ? "type-in" : "flip");
+              setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false);
+            }}
               className="glass-btn"
               style={reviewStudyMode !== "flip" ? { background: "var(--os-accent)", color: "#fff" } : {}}
             >

@@ -9,6 +9,7 @@ import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCard
 import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap } from "lucide-react";
 import { MathRenderer } from "@/components/math-renderer";
 import FocusMode from "@/components/focus-mode";
+import QuizManager from "@/components/quiz-manager";
 import { earnBadge } from "@/lib/badges";
 
 type Tab = "quiz" | "history" | "log";
@@ -133,7 +134,7 @@ export default function StudyPage() {
         ))}
       </div>
 
-      {tab === "quiz" && <QuizTab userId={userId} />}
+      {tab === "quiz" && <QuizTabWithManager userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "log" && <StudyLogTab userId={userId} />}
     </div>
@@ -151,6 +152,34 @@ function getCorrectIndex(q: any): string {
 
 function stripOptionPrefix(opt: string): string {
   return opt.replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+}
+
+function QuizTabWithManager({ userId }: { userId: string | null }) {
+  const [quizSubTab, setQuizSubTab] = useState<"manage" | "ai">("manage");
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: 3, background: "rgba(255,255,255,0.03)" }}>
+        {([
+          ["manage", "My Quizzes", Sparkles],
+          ["ai", "AI Generate", Zap],
+        ] as const).map(([key, label, Icon]) => (
+          <button key={key} onClick={() => setQuizSubTab(key)} onMouseDown={(e) => e.preventDefault()}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer",
+              background: quizSubTab === key ? "var(--os-accent)" : "transparent",
+              color: quizSubTab === key ? "#fff" : "var(--os-text-secondary)",
+              border: quizSubTab === key ? "1px solid var(--os-accent)" : "1px solid transparent",
+            }}>
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+      {quizSubTab === "manage" && userId && <QuizManager userId={userId} />}
+      {quizSubTab === "ai" && <QuizTab userId={userId} />}
+    </div>
+  );
 }
 
 function QuizTab({ userId }: { userId: string | null }) {
