@@ -369,7 +369,11 @@ function QuizTab({ userId }: { userId: string | null }) {
           }
           if (indexMatch || textMatch) s++;
         }
-        if (q.type === "identification" && answers[i]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim()) s++;
+        if (q.type === "identification") {
+          const userAns = (answers[i] || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+          const correctAns = (q.answer || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+          if (userAns && correctAns && (userAns === correctAns || correctAns.includes(userAns) || userAns.includes(correctAns))) s++;
+        }
       });
       setScore(s); setShowResults(true);
       if (userId) {
@@ -763,13 +767,18 @@ function QuizTab({ userId }: { userId: string | null }) {
                 borderColor: answered ? (answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444") : undefined,
               }}
               disabled={answered} autoFocus />
-            {answered && (
-              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444"}` }}>
-                <p style={{ fontSize: 13, color: answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "#16a34a" : "#ef4444", fontWeight: 500 }}>
-                  {answers[currentQ]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim() ? "✓ Correct!" : `✗ Correct answer: ${q.answer}`}
-                </p>
-              </div>
-            )}
+            {answered && (() => {
+              const userAns = (answers[currentQ] || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+              const correctAns = (q.answer || "").toLowerCase().trim().replace(/^\s*[a-d]\.\s*/, "");
+              const isCorrect = userAns && correctAns && (userAns === correctAns || correctAns.includes(userAns) || userAns.includes(correctAns));
+              return (
+                <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: isCorrect ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${isCorrect ? "#16a34a" : "#ef4444"}` }}>
+                  <p style={{ fontSize: 13, color: isCorrect ? "#16a34a" : "#ef4444", fontWeight: 500 }}>
+                    {isCorrect ? "✓ Correct!" : `✗ Correct answer: ${(q.answer || "").replace(/^\s*[A-Da-d]\.\s*/, "").trim()}`}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         )}
 

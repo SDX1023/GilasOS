@@ -269,7 +269,10 @@ function normalizeQuestion(q: any): any {
   if (q.type === "identification" || (!q.type && !q.options)) {
     q.type = "identification";
     if (!q.answer && q.correct) {
-      q.answer = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+      q.answer = String(q.correct).trim();
+    }
+    if (q.answer) {
+      q.answer = String(q.answer).replace(/^\s*[A-Da-d]\.\s*/, "").trim();
     }
     if (!q.answer) return null;
     return q;
