@@ -9,7 +9,7 @@ const CHUNK_SIZE = 15000;
 const CONCURRENCY = 1;
 const MAX_RETRIES = 2;
 const BASE_DELAY = 2000;
-const REQUEST_TIMEOUT_MS = 45000;
+const REQUEST_TIMEOUT_MS = 60000;
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
@@ -305,23 +305,28 @@ function tryParseJson(s: string): any[] | null {
 }
 
 function normalizeCorrect(q: any): any {
-  if (q.type !== "mc" || !q.options || !q.correct || !Array.isArray(q.options)) return q;
-  const c = String(q.correct).trim();
-  if (/^[0-3]$/.test(c)) {
-    const idx = parseInt(c);
-    q.correct = String.fromCharCode(65 + idx);
-    return q;
-  }
-  if (c.length === 1 && c.toUpperCase().charCodeAt(0) >= 65 && c.toUpperCase().charCodeAt(0) <= 68) return q;
-  const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
-  for (let i = 0; i < q.options.length; i++) {
-    const optText = String(q.options[i]).replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
-    if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
-      q.correct = String.fromCharCode(65 + i);
+  try {
+    if (q.type !== "mc" || !q.options || !q.correct || !Array.isArray(q.options)) return q;
+    const c = String(q.correct).trim();
+    if (/^[0-3]$/.test(c)) {
+      const idx = parseInt(c);
+      q.correct = String.fromCharCode(65 + idx);
       return q;
     }
+    if (c.length === 1 && c.toUpperCase().charCodeAt(0) >= 65 && c.toUpperCase().charCodeAt(0) <= 68) return q;
+    const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+    for (let i = 0; i < q.options.length; i++) {
+      const optText = String(q.options[i]).replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+      if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
+        q.correct = String.fromCharCode(65 + i);
+        return q;
+      }
+    }
+    return q;
+  } catch (e) {
+    console.error("normalizeCorrect error:", e, q);
+    return q;
   }
-  return q;
 }
 
 async function extractQuiz(content: string): Promise<any[]> {
@@ -449,18 +454,25 @@ async function generateQuizChunk(
 
   const prompt = buildQuizPrompt(chunk, idx, total, questionType);
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const { content, retry, error } = await callDeepSeek(
       apiKey,
       prompt,
       attempt
     );
     if (retry) continue;
-    if (error) return { questions: [], error };
+    if (error) {
+      console.error(`Chunk ${idx + 1} attempt ${attempt} error:`, error);
+      if (attempt === MAX_RETRIES) return { questions: [], error };
+      continue;
+    }
+    console.log(`Chunk ${idx + 1} attempt ${attempt}: got ${content.length} chars`);
     const questions = await extractQuiz(content);
+    console.log(`Chunk ${idx + 1} attempt ${attempt}: extracted ${questions.length} questions`);
     if (questions.length) return { questions };
+    console.log(`Chunk ${idx + 1} attempt ${attempt}: no questions extracted, retrying...`);
   }
-  return { questions: [], error: "Failed to generate quiz" };
+  return { questions: [], error: "Failed to generate quiz after retries" };
 }
 
 function dedupeQuestions(questions: any[]): any[] {
@@ -539,14 +551,18 @@ export async function POST(req: NextRequest) {
     let all: any[] = [];
     const errors: string[] = [];
     for (const r of results) {
-      if (r.error) errors.push(r.error);
+      if (r.error) {
+        console.error("Chunk error:", r.error);
+        errors.push(r.error);
+      }
       if (r.questions.length) all = all.concat(r.questions);
     }
 
     all = dedupeQuestions(all);
+    console.log(`Total questions generated: ${all.length}, errors: ${errors.length}`);
     if (!all.length) {
       return NextResponse.json(
-        { error: errors[0] || "Failed to generate quiz" },
+        { error: errors[0] || "Failed to generate quiz", details: errors },
         { status: 500 }
       );
     }
