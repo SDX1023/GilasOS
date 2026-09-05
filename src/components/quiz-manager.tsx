@@ -204,8 +204,9 @@ export default function QuizManager({ userId }: QuizManagerProps) {
       distractors = q.distractors.filter((d) => d.toLowerCase() !== correct.toLowerCase()).slice(0, 3);
     }
 
+    distractors = distractors.filter((d) => d.length > 0 && d.toLowerCase() !== correct.toLowerCase());
     while (distractors.length < 3) {
-      distractors.push(`Choice ${distractors.length + 1}`);
+      distractors.push(`Other label ${distractors.length + 1}`);
     }
 
     const opts = [...distractors.slice(0, 3), correct];
@@ -656,7 +657,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                   transition: "all 0.3s ease",
                 }}>
                   {li !== entry.labelIndex && <span style={{ fontSize: 11, fontWeight: 700, color: "#e9d5ff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{li + 1}</span>}
-                  {li === entry.labelIndex && !answered && <span style={{ fontSize: 11, fontWeight: 700, color: "#e9d5ff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>?</span>}
+                  {li === entry.labelIndex && <span style={{ fontSize: 11, fontWeight: 700, color: "#e9d5ff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{li + 1}</span>}
                 </div>
               ))}
             </div>
