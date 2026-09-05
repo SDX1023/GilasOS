@@ -188,7 +188,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     setQuizStarted(true);
   }
 
-  function getCorrectMcIndex(options: string[], q: QuizQuestion, labelIndex?: number): number {
+  function getMcOptions(q: QuizQuestion, labelIndex?: number): string[] {
     if (q.type === "mc" && q.options) return q.options;
     let correct = "";
     if (q.type === "image_answer" && q.answer) correct = q.answer;
