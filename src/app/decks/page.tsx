@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X } from "lucide-react";
+import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle } from "lucide-react";
+import { CramTab } from "@/components/cram-tab";
 
 interface DeckCourse {
   id: string;
@@ -44,6 +45,7 @@ export default function DecksPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [showCram, setShowCram] = useState(false);
 
   const fetchData = async () => {
     if (!user) return;
@@ -238,6 +240,26 @@ export default function DecksPage() {
             )}
           </div>
         </div>
+
+        {user && (
+          <div style={{ marginBottom: 16 }}>
+            <button onClick={() => setShowCram(!showCram)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 16px", borderRadius: 12, background: showCram ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.03)", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer", transition: "background 0.15s" }}
+              onMouseEnter={(e) => { if (!showCram) e.currentTarget.style.background = "rgba(239,68,68,0.05)"; }}
+              onMouseLeave={(e) => { if (!showCram) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+            >
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(239,68,68,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Target size={16} style={{ color: "#f87171" }} />
+              </div>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "var(--os-text-primary)", textAlign: "left" }}>Cram Weak Cards</span>
+              {showCram ? <ChevronDown size={16} style={{ color: "var(--os-text-dim)" }} /> : <ChevronRight size={16} style={{ color: "var(--os-text-dim)" }} />}
+            </button>
+            {showCram && (
+              <div style={{ marginTop: 8, padding: "16px", background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.06)" }}>
+                <CramTab userId={user.id} />
+              </div>
+            )}
+          </div>
+        )}
 
         {selectedIds.size > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "10px 16px", background: "rgba(109,40,217,0.1)", border: "1px solid rgba(109,40,217,0.3)", borderRadius: 10 }}>
