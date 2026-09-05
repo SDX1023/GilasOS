@@ -338,14 +338,16 @@ export async function updateQuizQuestions(userId: string, quizId: string, questi
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("saved_quizzes")
-    .update({ questions: JSON.parse(JSON.stringify(questions)), total_questions: questions.length })
+    .update({ questions: JSON.parse(JSON.stringify(questions)) })
     .eq("id", quizId)
     .eq("user_id", userId)
     .select("id, questions");
   if (error) {
     console.error("Failed to update quiz questions:", error.message, error.details, error.hint);
+    localStorage.setItem("quiz_save_error", JSON.stringify({ message: error.message, details: error.details, hint: error.hint, ts: Date.now() }));
     return false;
   }
+  localStorage.removeItem("quiz_save_error");
   return true;
 }
 
