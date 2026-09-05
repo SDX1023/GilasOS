@@ -192,7 +192,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
       setAddOptions(["", "", "", ""]);
       setAddCorrect(0);
       setAddImageUrl(q.image_url || "");
-      setAddLabels(q.labels ? q.labels.map((l) => ({ x: l.x, y: l.y, w: l.w, h: l.h, text: l.text })) : []);
+      setAddLabels(q.labels ? q.labels.map((l: { x: number; y: number; w: number; h: number; text: string }) => ({ x: l.x, y: l.y, w: l.w, h: l.h, text: l.text })) : []);
       setAddDistractors(["", "", ""]);
     } else if (q.type === "image_answer") {
       setAddQuestion(q.question || "");
