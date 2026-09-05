@@ -262,15 +262,22 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   useEffect(() => {
     const isStudying = quizStarted && !showResults;
-    const hide = () => {
-      document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", isStudying ? "none" : "");
-      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", isStudying ? "none" : "");
-    };
-    hide();
+    let styleEl = document.getElementById("quiz-spotify-hide");
     if (isStudying) {
-      const t = setInterval(hide, 500);
-      return () => { clearInterval(t); document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", ""); document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", ""); };
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "quiz-spotify-hide";
+        styleEl.textContent = '[data-mini-spotify] { display: none !important; } .taskbar { display: none !important; }';
+        document.head.appendChild(styleEl);
+      }
+      document.body.classList.add("quiz-active");
+      const t = setInterval(() => {
+        document.querySelectorAll<HTMLElement>("[data-mini-spotify]").forEach(el => el.style.display = "none");
+      }, 200);
+      return () => { clearInterval(t); document.body.classList.remove("quiz-active"); styleEl?.remove(); document.querySelectorAll<HTMLElement>("[data-mini-spotify]").forEach(el => el.style.display = ""); document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", ""); };
     }
+    document.body.classList.remove("quiz-active");
+    styleEl?.remove();
     return () => {};
   }, [quizStarted, showResults]);
 

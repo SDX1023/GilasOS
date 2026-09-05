@@ -140,8 +140,9 @@ CRITICAL RULES:
 - You MUST generate at least ${Math.ceil(bullets / 2)} questions from these ${bullets} bullet points
 - Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Each question must have 4 options (A, B, C, D)
-- Include the correct answer
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+- Include the correct answer as a LETTER (A, B, C, or D) matching the correct option position
+- The correct answer letter MUST vary across questions — do NOT always use "A"
+- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
 
 CONTENT:
 ${chunkText}`;
@@ -157,7 +158,7 @@ CRITICAL RULES:
 - Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Half should be multiple-choice with 4 options, half should be identification (fill-in-the-blank)
 - Return ONLY JSON array with mixed types:
-  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
   ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 CONTENT:
@@ -187,7 +188,7 @@ CRITICAL RULES:
 - You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - For each Q&A pair, create a question using the Q as the stem
 - Add 3 wrong options that are plausible but incorrect
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
 
 CONTENT:
 ${chunkText}`;
@@ -198,7 +199,7 @@ CRITICAL RULES:
 - You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - Half MC with 4 options, half identification fill-in-the-blank
 - Return ONLY JSON array:
-  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
   ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 CONTENT:
@@ -237,7 +238,7 @@ EXTRACTION RULES:
 CRITICAL RULES:
 - Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Each question must have 4 options (A, B, C, D)
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
 
 TEXT:
 ${chunkText}`;
@@ -248,7 +249,7 @@ CRITICAL RULES:
 - Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Half MC with 4 options, half identification fill-in-the-blank
 - Return ONLY JSON array:
-  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
   ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 TEXT:
@@ -273,7 +274,7 @@ ${chunkText}`;
 
 Rules:
 - Create 5 quiz questions with 4 options each
-- Return ONLY JSON array: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
 
 TEXT:
 ${chunkText}`;
@@ -283,7 +284,7 @@ ${chunkText}`;
 Rules:
 - Create 5 questions, mix of MC (4 options) and identification (fill-in-the-blank)
 - Return ONLY JSON array:
-  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"A"}]
+  MC: [{"question":"...", "options":["A. ...", "B. ...", "C. ...", "D. ..."], "type":"mc", "correct":"B"}]
   ID: [{"question":"The ___ is responsible for...", "type":"identification", "answer":"nucleus"}]
 
 TEXT:
@@ -305,14 +306,34 @@ function tryParseJson(s: string): any[] | null {
   return null;
 }
 
+function normalizeCorrect(q: any): any {
+  if (q.type !== "mc" || !q.options || !q.correct || !Array.isArray(q.options)) return q;
+  const c = String(q.correct).trim();
+  if (/^[0-3]$/.test(c)) {
+    const idx = parseInt(c);
+    q.correct = String.fromCharCode(65 + idx);
+    return q;
+  }
+  if (c.length === 1 && c.toUpperCase().charCodeAt(0) >= 65 && c.toUpperCase().charCodeAt(0) <= 68) return q;
+  const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+  for (let i = 0; i < q.options.length; i++) {
+    const optText = String(q.options[i]).replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+    if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
+      q.correct = String.fromCharCode(65 + i);
+      return q;
+    }
+  }
+  return q;
+}
+
 async function extractQuiz(content: string): Promise<any[]> {
   const d = tryParseJson(content);
-  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer)));
+  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeCorrect);
 
   const m = content.match(/\[[\s\S]*\]/);
   if (m) {
     const p = tryParseJson(m[0]);
-    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer)));
+    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeCorrect);
   }
 
   // Try to extract from Q&A pattern
