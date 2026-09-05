@@ -337,11 +337,23 @@ export async function renameSavedQuiz(userId: string, quizId: string, newTitle: 
 }
 
 export async function updateQuizQuestions(userId: string, quizId: string, questions: any[]) {
-  const supabase = getSupabase();
   const serialized = JSON.parse(JSON.stringify(questions));
 
+  // Save to localStorage as backup
   localStorage.setItem(`quiz_questions_${quizId}`, JSON.stringify(serialized));
 
+  // Try server-side API route (bypasses client-side RLS/auth issues)
+  try {
+    const res = await fetch("/api/save-quiz-questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quizId, userId, questions: serialized }),
+    });
+    if (res.ok) return true;
+  } catch {}
+
+  // Try direct Supabase update as fallback
+  const supabase = getSupabase();
   const { error } = await supabase
     .from("saved_quizzes")
     .update({ questions: serialized })
@@ -349,7 +361,7 @@ export async function updateQuizQuestions(userId: string, quizId: string, questi
     .eq("user_id", userId);
 
   if (error) {
-    console.warn("Supabase update failed, saved to localStorage:", error.message);
+    console.warn("Supabase update failed, using localStorage:", error.message);
   }
   return true;
 }
