@@ -150,6 +150,15 @@ function getCorrectIndex(q: any): string {
   if (/^[0-3]$/.test(c)) return c;
   const code = c.toUpperCase().charCodeAt(0);
   if (code >= 65 && code <= 68) return String(code - 65);
+  if (q.options && Array.isArray(q.options)) {
+    const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+    for (let i = 0; i < q.options.length; i++) {
+      const optText = stripOptionPrefix(String(q.options[i])).toLowerCase();
+      if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
+        return String(i);
+      }
+    }
+  }
   return "0";
 }
 
@@ -248,6 +257,16 @@ function QuizTab({ userId }: { userId: string | null }) {
     }, 1000);
     return () => clearInterval(t);
   }, [quizStarted, currentQ, answered, timePerQuestion, showResults]);
+
+  useEffect(() => {
+    const isStudying = quizStarted && !showResults;
+    document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", isStudying ? "none" : "");
+    document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", isStudying ? "none" : "");
+    return () => {
+      document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", "");
+      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+    };
+  }, [quizStarted, showResults]);
 
   useEffect(() => {
     if (!userId) { setLoadingSaved(false); return; }
