@@ -1205,6 +1205,16 @@ select.glass-input option {
   color: #0f172a;
 }
 
+select option {
+  background: #1a1f2e;
+  color: #e2e8f0;
+}
+
+.light select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
 button {
   outline: none;
   border: none;
