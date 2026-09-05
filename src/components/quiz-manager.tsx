@@ -129,7 +129,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     }
 
     const updated = [...(activeQuiz.questions || []), newQ];
-    await updateQuizQuestions(userId, activeQuiz.id, updated);
+    const ok = await updateQuizQuestions(userId, activeQuiz.id, updated);
+    if (!ok) { alert("Failed to save question. Check console for details."); setAddingQuestion(false); return; }
     setActiveQuiz({ ...activeQuiz, questions: updated });
     setQuizzes((prev) => prev.map((q) => q.id === activeQuiz.id ? { ...q, questions: updated } : q));
 
@@ -146,7 +147,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   async function handleRemoveQuestion(index: number) {
     if (!activeQuiz) return;
     const updated = activeQuiz.questions.filter((_: any, i: number) => i !== index);
-    await updateQuizQuestions(userId, activeQuiz.id, updated);
+    const ok = await updateQuizQuestions(userId, activeQuiz.id, updated);
+    if (!ok) return;
     setActiveQuiz({ ...activeQuiz, questions: updated });
     setQuizzes((prev) => prev.map((q) => q.id === activeQuiz.id ? { ...q, questions: updated } : q));
   }

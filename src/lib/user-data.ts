@@ -318,7 +318,10 @@ export async function loadSavedQuizzes(userId: string) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) return [];
-  return data || [];
+  return (data || []).map((q: any) => ({
+    ...q,
+    questions: typeof q.questions === "string" ? JSON.parse(q.questions) : q.questions || [],
+  }));
 }
 
 export async function deleteSavedQuiz(userId: string, id: string) {
@@ -333,7 +336,17 @@ export async function renameSavedQuiz(userId: string, quizId: string, newTitle: 
 
 export async function updateQuizQuestions(userId: string, quizId: string, questions: any[]) {
   const supabase = getSupabase();
-  await supabase.from("saved_quizzes").update({ questions, total_questions: questions.length }).eq("id", quizId).eq("user_id", userId);
+  const { data, error } = await supabase
+    .from("saved_quizzes")
+    .update({ questions: JSON.parse(JSON.stringify(questions)), total_questions: questions.length })
+    .eq("id", quizId)
+    .eq("user_id", userId)
+    .select("id, questions");
+  if (error) {
+    console.error("Failed to update quiz questions:", error.message, error.details, error.hint);
+    return false;
+  }
+  return true;
 }
 
 export async function shareQuiz(userId: string, id: string, recipientUserId?: string): Promise<string | null> {
