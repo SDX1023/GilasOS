@@ -129,9 +129,11 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
-  const [addCardType, setAddCardType] = useState<"standard" | "image_label">("standard");
+  const [addCardType, setAddCardType] = useState<"standard" | "image_label" | "quiz">("standard");
   const [addImageUrl, setAddImageUrl] = useState("");
   const [addLabels, setAddLabels] = useState<{ x: number; y: number; text: string }[]>([]);
+  const [quizChoices, setQuizChoices] = useState<{ text: string; imageUrl?: string }[]>([{ text: "" }, { text: "" }]);
+  const [quizCorrectIndex, setQuizCorrectIndex] = useState(0);
   const [flashImage, setFlashImage] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
@@ -648,6 +650,18 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); setAddingCard(false);
       return;
     }
+    if (addCardType === "quiz") {
+      if (!addFront.trim()) return;
+      const validChoices = quizChoices.filter(c => c.text.trim());
+      if (validChoices.length < 2) return;
+      const correctAnswer = validChoices[quizCorrectIndex]?.text.trim() || validChoices[0].text.trim();
+      const newCard = { front: addFront.trim(), back: correctAnswer, hint: addHint.trim() || undefined, card_type: "quiz" as const, image_url: addImageUrl || undefined, labels: validChoices.map((c, i) => ({ x: 0, y: 0, w: 0, h: 0, text: c.text.trim(), imageUrl: c.imageUrl || null, isCorrect: i === quizCorrectIndex })) };
+      const updated = [...cards, newCard];
+      setCards(updated);
+      syncToCloud(updated);
+      setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setQuizChoices([{ text: "" }, { text: "" }]); setQuizCorrectIndex(0); setAddingCard(false);
+      return;
+    }
     if (!addFront.trim() || !addBack.trim()) return;
     const newCard = { front: addFront.trim(), back: addBack.trim(), hint: addHint.trim() || undefined };
     const updated = [...cards, newCard];
@@ -848,7 +862,19 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               </div>
             ) : (
               <>
-                {reviewStudyMode === "flip" ? (
+                {queue[queueIndex]?.card_type === "quiz" && queue[queueIndex]?.labels ? (
+                  <QuizStudy
+                    question={queue[queueIndex].front}
+                    image_url={queue[queueIndex].image_url}
+                    choices={queue[queueIndex].labels}
+                    hint={queue[queueIndex].hint}
+                    onComplete={() => { setReviewFlipped(true); setAnswerChecked(true); setAnswerCorrect(true); }}
+                    revealed={reviewFlipped}
+                    onForgot={handleForgot}
+                    onDontKnow={handleDontKnow}
+                    onKnow={handleKnow}
+                  />
+                ) : reviewStudyMode === "flip" ? (
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
                       className="flashcard-study-card"
@@ -948,22 +974,21 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   /* Image label card */
                   <>
                     {queue[queueIndex]?.image_url ? (
-                      <ImageLabelStudy
+                      <ImageOcclusionQuiz
                         image_url={queue[queueIndex].image_url}
                         labels={queue[queueIndex].labels || []}
-                        onComplete={(correct) => {
+                        onComplete={() => {
                           setLabelsRevealed(true);
-                          setAnswerCorrect(correct);
+                          setAnswerCorrect(true);
                           setAnswerChecked(true);
                           setReviewFlipped(true);
                         }}
-                        revealed={labelsRevealed}
                       />
                     ) : (
                       <div style={{ textAlign: "center", color: "var(--os-text-dim)" }}>No image on this card</div>
                     )}
                     <div style={{ marginTop: "1rem", fontSize: 12, color: "var(--os-text-dim)" }}>
-                      {!labelsRevealed ? "Type labels for each marker, then click Check" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                      {!labelsRevealed ? "Type each label, then click Continue" : "1 = Forgot  2 = Don't Know  3 = Know"}
                     </div>
                     {labelsRevealed && (
                       <div style={{ marginTop: "1rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
@@ -1008,9 +1033,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         <div className="glass-card" style={{ marginBottom: "1.5rem", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <h3 style={{ fontWeight: 500 }}>Add New Card</h3>
           <div style={{ display: "flex", gap: 6 }}>
-            {(["standard", "image_label"] as const).map((t) => (
+            {(["standard", "image_label", "quiz"] as const).map((t) => (
               <button key={t} onClick={() => setAddCardType(t)} style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif", border: addCardType === t ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)", background: addCardType === t ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)", color: addCardType === t ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
-                {t === "standard" ? "Flip Card" : "Image Label"}
+                {t === "standard" ? "Flip Card" : t === "image_label" ? "Image Label" : "Quiz"}
               </button>
             ))}
           </div>
@@ -1019,6 +1044,48 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Front (optional prompt)</label>
                 <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. Label the parts of the heart..." /></div>
               <ImageLabelAdder imageUrl={addImageUrl} setImageUrl={setAddImageUrl} labels={addLabels} setLabels={setAddLabels} />
+            </>
+          ) : addCardType === "quiz" ? (
+            <>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. What is the capital of France?" /></div>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Optional Image</label>
+                {addImageUrl ? (
+                  <div style={{ position: "relative", display: "inline-block" }}>
+                    <img src={addImageUrl} style={{ maxHeight: 120, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
+                    <button onClick={() => setAddImageUrl("")} style={{ position: "absolute", top: 4, right: 4, padding: 2, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 4, cursor: "pointer", color: "#ef4444" }}><X style={{ width: 12, height: 12 }} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => { const input = document.createElement("input"); input.type = "file"; input.accept = "image/*"; input.onchange = () => { const f = input.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setAddImageUrl(r.result as string); r.readAsDataURL(f); }; input.click(); }} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12 }}>Upload Image</button>
+                )}
+              </div>
+              <div><label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer Choices (click circle to mark correct)</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {quizChoices.map((choice, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        onClick={() => setQuizCorrectIndex(i)}
+                        style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${i === quizCorrectIndex ? "#4ade80" : "rgba(255,255,255,0.2)"}`, background: i === quizCorrectIndex ? "rgba(74,222,128,0.2)" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        {i === quizCorrectIndex && <Check style={{ width: 12, height: 12, color: "#4ade80" }} />}
+                      </button>
+                      <input
+                        value={choice.text}
+                        onChange={(e) => { const next = [...quizChoices]; next[i] = { ...next[i], text: e.target.value }; setQuizChoices(next); }}
+                        className="glass-input"
+                        style={{ flex: 1, padding: "6px 10px", fontSize: 13 }}
+                        placeholder={`Choice ${i + 1}...`}
+                      />
+                      {quizChoices.length > 2 && (
+                        <button onClick={() => { const next = quizChoices.filter((_, idx) => idx !== i); setQuizChoices(next); if (quizCorrectIndex >= next.length) setQuizCorrectIndex(0); }} style={{ padding: 2, background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 style={{ width: 12, height: 12 }} /></button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {quizChoices.length < 6 && (
+                  <button onClick={() => setQuizChoices([...quizChoices, { text: "" }])} className="glass-btn" style={{ marginTop: 6, padding: "4px 10px", fontSize: 11 }}>+ Add Choice</button>
+                )}
+              </div>
             </>
           ) : (
             <>
@@ -1032,7 +1099,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." /></div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button onClick={addCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check style={{ width: 12, height: 12 }} /> Add</button>
-            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
+            <button onClick={() => { setAddingCard(false); setAddFront(""); setAddBack(""); setAddHint(""); setAddCardType("standard"); setAddImageUrl(""); setAddLabels([]); setQuizChoices([{ text: "" }, { text: "" }]); setQuizCorrectIndex(0); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><X style={{ width: 12, height: 12 }} /> Cancel</button>
           </div>
         </div>
       )}
@@ -1085,6 +1152,201 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         })}
         {filteredCards.length === 0 && searchQuery && <p style={{ textAlign: "center" }} className="text-secondary">No cards match &quot;{searchQuery}&quot;</p>}
       </div>
+    </div>
+  );
+}
+
+function QuizStudy({ question, image_url, choices, hint, onComplete, revealed, onForgot, onDontKnow, onKnow }: {
+  question: string;
+  image_url?: string;
+  choices: { x: number; y: number; w?: number; h?: number; text: string; imageUrl?: string | null; isCorrect?: boolean }[];
+  hint?: string;
+  onComplete: () => void;
+  revealed: boolean;
+  onForgot: () => void;
+  onDontKnow: () => void;
+  onKnow: () => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+
+  const handleSelect = (index: number) => {
+    if (answered) return;
+    setSelectedIndex(index);
+    setAnswered(true);
+    onComplete();
+  };
+
+  return (
+    <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      {image_url && (
+        <img src={image_url} style={{ width: "100%", maxHeight: 250, objectFit: "contain", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "#0a0e18" }} />
+      )}
+      <div style={{ width: "100%", padding: "1.5rem", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+        <p style={{ fontSize: "1.15rem", fontWeight: 500, color: "var(--os-text-primary)" }}>{question}</p>
+        {hint && !answered && <p style={{ fontSize: "0.9rem", marginTop: "0.75rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {hint}</p>}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 500 }}>
+        {choices.map((choice, i) => {
+          const isCorrect = choice.isCorrect;
+          const isSelected = selectedIndex === i;
+          return (
+            <button
+              key={i}
+              onClick={() => handleSelect(i)}
+              disabled={answered}
+              style={{
+                padding: "0.75rem 1.25rem", borderRadius: 10, fontSize: "1rem", fontWeight: 500,
+                cursor: answered ? "default" : "pointer", textAlign: "left", fontFamily: "Inter, sans-serif",
+                background: answered ? (isCorrect ? "rgba(74,222,128,0.15)" : isSelected && !isCorrect ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.03)") : "rgba(255,255,255,0.05)",
+                color: answered ? (isCorrect ? "#4ade80" : isSelected && !isCorrect ? "#f87171" : "var(--os-text-dim)") : "var(--os-text-primary)",
+                border: answered ? (isCorrect ? "1px solid rgba(74,222,128,0.4)" : isSelected && !isCorrect ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.08)") : "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              {answered && isCorrect && <span style={{ marginRight: 8 }}>&#10003;</span>}
+              {answered && isSelected && !isCorrect && <span style={{ marginRight: 8 }}>&#10007;</span>}
+              {choice.text}
+            </button>
+          );
+        })}
+      </div>
+      {revealed && (
+        <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
+          <button onClick={onForgot} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>I Forgot</button>
+          <button onClick={onDontKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>I Don&apos;t Know</button>
+          <button onClick={onKnow} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>I Know</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ImageOcclusionQuiz({ image_url, labels, onComplete }: {
+  image_url: string;
+  labels: { x: number; y: number; w?: number; h?: number; text: string }[];
+  onComplete: () => void;
+}) {
+  const fullLabels = labels.map(l => ({ ...l, w: l.w ?? 12, h: l.h ?? 6 }));
+  const [started, setStarted] = useState(false);
+  const [answers, setAnswers] = useState<string[]>(() => fullLabels.map(() => ""));
+  const [revealed, setRevealed] = useState<boolean[]>(() => fullLabels.map(() => false));
+  const [skipped, setSkipped] = useState<boolean[]>(() => fullLabels.map(() => false));
+  const [activeInput, setActiveInput] = useState(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const allDone = revealed.every((r, i) => r || skipped[i]);
+
+  const checkLabel = (index: number) => {
+    const val = answers[index].trim().toLowerCase();
+    const correct = val === fullLabels[index].text.toLowerCase();
+    if (correct) {
+      const next = [...revealed];
+      next[index] = true;
+      setRevealed(next);
+      const nextActive = fullLabels.findIndex((_, i) => !next[i] && !skipped[i]);
+      if (nextActive !== -1) {
+        setActiveInput(nextActive);
+        setTimeout(() => inputRefs.current[nextActive]?.focus(), 50);
+      }
+    }
+  };
+
+  const skipLabel = (index: number) => {
+    const nextSkipped = [...skipped];
+    nextSkipped[index] = true;
+    setSkipped(nextSkipped);
+    const nextRevealed = [...revealed];
+    nextRevealed[index] = true;
+    setRevealed(nextRevealed);
+    const nextActive = fullLabels.findIndex((_, i) => !nextRevealed[i] && !nextSkipped[i]);
+    if (nextActive !== -1) {
+      setActiveInput(nextActive);
+      setTimeout(() => inputRefs.current[nextActive]?.focus(), 50);
+    }
+  };
+
+  const updateAnswer = (index: number, val: string) => {
+    const next = [...answers];
+    next[index] = val;
+    setAnswers(next);
+  };
+
+  return (
+    <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <img src={image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+        {fullLabels.map((label, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            left: `${label.x}%`, top: `${label.y}%`,
+            width: `${label.w}%`, height: `${label.h}%`,
+            background: revealed[i]
+              ? skipped[i] ? "rgba(251,146,60,0.3)" : "rgba(74,222,128,0.3)"
+              : started ? "#6d28d9" : "rgba(109,40,217,0.15)",
+            border: revealed[i]
+              ? skipped[i] ? "2px solid rgba(251,146,60,0.6)" : "2px solid rgba(74,222,128,0.6)"
+              : started ? "2px solid rgba(109,40,217,0.9)" : "1px solid rgba(109,40,217,0.3)",
+            borderRadius: 4,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.3s ease",
+          }}>
+            {revealed[i] && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: skipped[i] ? "#fb923c" : "#4ade80", background: "rgba(0,0,0,0.7)", padding: "2px 8px", borderRadius: 4 }}>
+                {label.text}
+              </span>
+            )}
+            {!revealed[i] && started && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#e9d5ff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{i + 1}</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {!started ? (
+        <button onClick={() => setStarted(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1rem", fontWeight: 500 }}>
+          Start Quiz
+        </button>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 400 }}>
+          {fullLabels.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: revealed[i] ? (skipped[i] ? "#fb923c" : "#4ade80") : "var(--os-accent)", width: 20, textAlign: "center" }}>{i + 1}</span>
+              {revealed[i] ? (
+                <span style={{ flex: 1, fontSize: 14, color: skipped[i] ? "#fb923c" : "#4ade80", fontStyle: skipped[i] ? "italic" : "normal" }}>
+                  {skipped[i] ? `${label.text} (skipped)` : label.text}
+                </span>
+              ) : (
+                <>
+                  <input
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    value={answers[i]}
+                    onChange={(e) => updateAnswer(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && answers[i].trim()) checkLabel(i);
+                      if (e.key === "Tab" || e.key === "Escape") { e.preventDefault(); skipLabel(i); }
+                    }}
+                    placeholder={`Label ${i + 1}...`}
+                    autoFocus={i === activeInput}
+                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif" }}
+                  />
+                  <button onClick={() => skipLabel(i)} className="glass-btn" style={{ padding: "4px 8px", fontSize: 11, flexShrink: 0 }}>Skip</button>
+                </>
+              )}
+            </div>
+          ))}
+          {allDone && (
+            <div style={{ marginTop: 8, display: "flex", justifyContent: "center" }}>
+              <button onClick={onComplete} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1rem", fontWeight: 500 }}>
+                Continue
+              </button>
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: "var(--os-text-dim)", textAlign: "center" }}>
+            Enter = check answer &middot; Tab/Esc = skip label
+          </div>
+        </div>
+      )}
     </div>
   );
 }

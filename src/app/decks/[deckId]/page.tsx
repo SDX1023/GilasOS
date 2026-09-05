@@ -63,7 +63,136 @@ interface DeckCard {
   sort_order: number;
   image_url?: string;
   card_type?: string;
-  labels?: { x: number; y: number; w: number; h: number; text: string }[];
+  labels?: { x: number; y: number; w: number; h: number; text: string; imageUrl?: string | null; isCorrect?: boolean }[];
+}
+
+function ImageOcclusionQuiz({ image_url, labels, onComplete }: {
+  image_url: string;
+  labels: { x: number; y: number; w: number; h: number; text: string }[];
+  onComplete: () => void;
+}) {
+  const [started, setStarted] = useState(false);
+  const [answers, setAnswers] = useState<string[]>(() => labels.map(() => ""));
+  const [revealed, setRevealed] = useState<boolean[]>(() => labels.map(() => false));
+  const [skipped, setSkipped] = useState<boolean[]>(() => labels.map(() => false));
+  const [activeInput, setActiveInput] = useState(0);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const allDone = revealed.every((r, i) => r || skipped[i]);
+
+  const checkLabel = (index: number) => {
+    const val = answers[index].trim().toLowerCase();
+    const correct = val === labels[index].text.toLowerCase();
+    if (correct) {
+      const next = [...revealed];
+      next[index] = true;
+      setRevealed(next);
+      const nextActive = labels.findIndex((_, i) => !next[i] && !skipped[i]);
+      if (nextActive !== -1) {
+        setActiveInput(nextActive);
+        setTimeout(() => inputRefs.current[nextActive]?.focus(), 50);
+      }
+    }
+  };
+
+  const skipLabel = (index: number) => {
+    const nextSkipped = [...skipped];
+    nextSkipped[index] = true;
+    setSkipped(nextSkipped);
+    const nextRevealed = [...revealed];
+    nextRevealed[index] = true;
+    setRevealed(nextRevealed);
+    const nextActive = labels.findIndex((_, i) => !nextRevealed[i] && !nextSkipped[i]);
+    if (nextActive !== -1) {
+      setActiveInput(nextActive);
+      setTimeout(() => inputRefs.current[nextActive]?.focus(), 50);
+    }
+  };
+
+  const updateAnswer = (index: number, val: string) => {
+    const next = [...answers];
+    next[index] = val;
+    setAnswers(next);
+  };
+
+  return (
+    <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <img src={image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+        {labels.map((label, i) => (
+          <div key={i} style={{
+            position: "absolute",
+            left: `${label.x}%`, top: `${label.y}%`,
+            width: `${label.w}%`, height: `${label.h}%`,
+            background: revealed[i]
+              ? skipped[i] ? "rgba(251,146,60,0.3)" : "rgba(74,222,128,0.3)"
+              : started ? "#6d28d9" : "rgba(109,40,217,0.15)",
+            border: revealed[i]
+              ? skipped[i] ? "2px solid rgba(251,146,60,0.6)" : "2px solid rgba(74,222,128,0.6)"
+              : started ? "2px solid rgba(109,40,217,0.9)" : "1px solid rgba(109,40,217,0.3)",
+            borderRadius: 4,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.3s ease",
+          }}>
+            {revealed[i] && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: skipped[i] ? "#fb923c" : "#4ade80", background: "rgba(0,0,0,0.7)", padding: "2px 8px", borderRadius: 4 }}>
+                {skipped[i] ? label.text : label.text}
+              </span>
+            )}
+            {!revealed[i] && started && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#e9d5ff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 4 }}>{i + 1}</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {!started ? (
+        <button onClick={() => setStarted(true)} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1rem", fontWeight: 500 }}>
+          Start Quiz
+        </button>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 400 }}>
+          {labels.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: revealed[i] ? (skipped[i] ? "#fb923c" : "#4ade80") : "var(--os-accent)", width: 20, textAlign: "center" }}>{i + 1}</span>
+              {revealed[i] ? (
+                <span style={{ flex: 1, fontSize: 14, color: skipped[i] ? "#fb923c" : "#4ade80", fontStyle: skipped[i] ? "italic" : "normal" }}>
+                  {skipped[i] ? `${label.text} (skipped)` : label.text}
+                </span>
+              ) : (
+                <>
+                  <input
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    value={answers[i]}
+                    onChange={(e) => updateAnswer(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && answers[i].trim()) checkLabel(i);
+                      if (e.key === "Tab" || e.key === "Escape") { e.preventDefault(); skipLabel(i); }
+                    }}
+                    placeholder={`Label ${i + 1}...`}
+                    autoFocus={i === activeInput}
+                    style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: 14, outline: "none", fontFamily: "Inter, sans-serif" }}
+                  />
+                  <button onClick={() => skipLabel(i)} className="glass-btn" style={{ padding: "4px 8px", fontSize: 11, flexShrink: 0 }}>Skip</button>
+                </>
+              )}
+            </div>
+          ))}
+          {allDone && (
+            <div style={{ marginTop: 8, display: "flex", justifyContent: "center" }}>
+              <button onClick={onComplete} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1rem", fontWeight: 500 }}>
+                Continue
+              </button>
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: "var(--os-text-dim)", textAlign: "center" }}>
+            Enter = check answer &middot; Tab/Esc = skip label
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function DeckStudyPage() {
@@ -74,11 +203,13 @@ export default function DeckStudyPage() {
   const [cards, setCards] = useState<DeckCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingCard, setAddingCard] = useState(false);
-  const [addCardType, setAddCardType] = useState<"standard" | "image_card" | "image_occlusion">("standard");
+  const [addCardType, setAddCardType] = useState<"standard" | "image_card" | "image_occlusion" | "quiz">("standard");
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
   const [addHint, setAddHint] = useState("");
   const [addImageUrl, setAddImageUrl] = useState("");
+  const [quizChoices, setQuizChoices] = useState<{ text: string; imageUrl?: string }[]>([{ text: "" }, { text: "" }]);
+  const [quizCorrectIndex, setQuizCorrectIndex] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
@@ -98,6 +229,9 @@ export default function DeckStudyPage() {
   const [typedAnswer, setTypedAnswer] = useState("");
   const [answerChecked, setAnswerChecked] = useState(false);
   const [answerCorrect, setAnswerCorrect] = useState(false);
+  const [quizKey, setQuizKey] = useState(0);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizSelectedIndex, setQuizSelectedIndex] = useState<number | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -237,10 +371,31 @@ export default function DeckStudyPage() {
     resetForm();
   };
 
+  const handleAddQuiz = async () => {
+    if (!user || !addFront.trim()) return;
+    const validChoices = quizChoices.filter(c => c.text.trim());
+    if (validChoices.length < 2) return;
+    const correctAnswer = validChoices[quizCorrectIndex]?.text.trim() || validChoices[0].text.trim();
+    const supabase = getSupabase();
+    const { data } = await supabase.from("custom_deck_cards").insert({
+      id: crypto.randomUUID(),
+      deck_id: deckId, user_id: user.id,
+      front: addFront.trim(), back: correctAnswer,
+      hint: addHint.trim() || null,
+      sort_order: cards.length,
+      card_type: "quiz",
+      image_url: addImageUrl || null,
+      labels: validChoices.map((c, i) => ({ x: 0, y: 0, w: 0, h: 0, text: c.text.trim(), imageUrl: c.imageUrl || null, isCorrect: i === quizCorrectIndex })),
+    }).select().single();
+    if (data) { const next = [...cards, data]; setCards(next); syncCount(next); }
+    resetForm();
+  };
+
   const resetForm = () => {
     setAddingCard(false);
     setAddCardType("standard");
     setAddFront(""); setAddBack(""); setAddHint(""); setAddImageUrl("");
+    setQuizChoices([{ text: "" }, { text: "" }]); setQuizCorrectIndex(0);
   };
 
   const handleDeleteCard = async (id: string) => {
@@ -288,6 +443,7 @@ export default function DeckStudyPage() {
     if (next.length === 0) { setQueue([]); setReviewComplete(true); return; }
     setQueue(next); setReviewIndex(reviewIndex >= next.length ? 0 : reviewIndex);
     setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
+    setQuizKey(k => k + 1); setQuizAnswered(false); setQuizSelectedIndex(null);
   };
 
   const filtered = cards.filter(c => c.front.toLowerCase().includes(searchQuery.toLowerCase()) || c.back.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -295,6 +451,7 @@ export default function DeckStudyPage() {
   const cardTypeLabel = (t: string) => {
     if (t === "image_occlusion") return "Occlusion";
     if (t === "image_card") return "Image";
+    if (t === "quiz") return "Quiz";
     return "Flip";
   };
 
@@ -388,6 +545,23 @@ export default function DeckStudyPage() {
           ) : card ? (
             <>
               {card.card_type === "image_occlusion" && card.image_url && card.labels ? (
+                reviewStudyMode === "type-in" ? (
+                  <>
+                    <ImageOcclusionQuiz
+                      key={quizKey}
+                      image_url={card.image_url}
+                      labels={card.labels}
+                      onComplete={() => { setReviewFlipped(true); }}
+                    />
+                    {reviewFlipped && (
+                      <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
+                        <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                        <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                        <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
+                      </div>
+                    )}
+                  </>
+                ) : (
                 <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
                   <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <img src={card.image_url} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
@@ -429,6 +603,7 @@ export default function DeckStudyPage() {
                     )}
                   </div>
                 </div>
+                )
               ) : card.card_type === "image_card" && card.image_url ? (
                 <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
                   <div onClick={() => setReviewFlipped(!reviewFlipped)} style={{ width: "100%", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
@@ -454,6 +629,53 @@ export default function DeckStudyPage() {
                       </>
                     )}
                   </div>
+                </div>
+              ) : card.card_type === "quiz" && card.labels ? (
+                <div style={{ width: "100%", maxWidth: 672, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                  {card.image_url && (
+                    <img src={card.image_url} style={{ width: "100%", maxHeight: 250, objectFit: "contain", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "#0a0e18" }} />
+                  )}
+                  <div style={{ width: "100%", padding: "1.5rem", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+                    <p style={{ fontSize: "1.15rem", fontWeight: 500, color: "var(--os-text-primary)", marginBottom: "1rem" }}>
+                      <FormulaLine text={swapped ? card.back : card.front} showFormulas={showFormulas} />
+                    </p>
+                    {card.hint && !quizAnswered && <p style={{ fontSize: "0.9rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 500 }}>
+                    {card.labels.map((choice, i) => {
+                      const isCorrect = (choice as any).isCorrect;
+                      const isSelected = quizSelectedIndex === i;
+                      const showResult = quizAnswered;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => { if (!quizAnswered) { setQuizSelectedIndex(i); setQuizAnswered(true); setReviewFlipped(true); } }}
+                          disabled={quizAnswered}
+                          style={{
+                            padding: "0.75rem 1.25rem", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: quizAnswered ? "default" : "pointer",
+                            textAlign: "left", fontFamily: "Inter, sans-serif",
+                            background: showResult ? (isCorrect ? "rgba(74,222,128,0.15)" : isSelected && !isCorrect ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.03)") : "rgba(255,255,255,0.05)",
+                            color: showResult ? (isCorrect ? "#4ade80" : isSelected && !isCorrect ? "#f87171" : "var(--os-text-dim)") : "var(--os-text-primary)",
+                            border: showResult ? (isCorrect ? "1px solid rgba(74,222,128,0.4)" : isSelected && !isCorrect ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.08)") : "1px solid rgba(255,255,255,0.12)",
+                          }}
+                        >
+                          {showResult && isCorrect && <span style={{ marginRight: 8 }}>&#10003;</span>}
+                          {showResult && isSelected && !isCorrect && <span style={{ marginRight: 8 }}>&#10007;</span>}
+                          {choice.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
+                    {!quizAnswered ? "Click an answer" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                  </div>
+                  {quizAnswered && (
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                      <button onClick={() => nextCard(false)} style={{ padding: "0.75rem 1.5rem", background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Forgot</button>
+                      <button onClick={() => nextCard(false, true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Don&apos;t Know</button>
+                      <button onClick={() => nextCard(true)} style={{ padding: "0.75rem 1.5rem", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 10, fontSize: "1rem", fontWeight: 500, cursor: "pointer" }}>I Know</button>
+                    </div>
+                  )}
                 </div>
               ) : reviewStudyMode === "type-in" ? (
                 /* Type-in mode */
@@ -584,7 +806,7 @@ export default function DeckStudyPage() {
             <h3 style={{ fontWeight: 500 }}>Add New Card</h3>
 
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {([["standard", "Flip Card"], ["image_card", "Image Card"], ["image_occlusion", "Image Occlusion"]] as const).map(([t, label]) => (
+              {([["standard", "Flip Card"], ["image_card", "Image Card"], ["image_occlusion", "Image Occlusion"], ["quiz", "Quiz"]] as const).map(([t, label]) => (
                 <button key={t} onClick={() => setAddCardType(t)} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: addCardType === t ? "1.5px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)", background: addCardType === t ? "rgba(109,40,217,0.12)" : "rgba(255,255,255,0.03)", color: addCardType === t ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
                   {label}
                 </button>
@@ -625,6 +847,61 @@ export default function DeckStudyPage() {
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <button onClick={handleAddImageCard} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check size={12} /> Add</button>
+                  <button onClick={resetForm} className="glass-btn"><X size={12} /> Cancel</button>
+                </div>
+              </>
+            ) : addCardType === "quiz" ? (
+              <>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Question</label>
+                  <textarea value={addFront} onChange={(e) => setAddFront(e.target.value)} className="glass-input" style={{ width: "100%", resize: "none" }} rows={2} placeholder="e.g. What is the capital of France?" />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Optional Image</label>
+                  {addImageUrl ? (
+                    <div style={{ position: "relative", display: "inline-block" }}>
+                      <img src={addImageUrl} style={{ maxHeight: 120, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
+                      <button onClick={() => setAddImageUrl("")} style={{ position: "absolute", top: 4, right: 4, padding: 2, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 4, cursor: "pointer", color: "#ef4444" }}><X size={12} /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => fileInputRef.current?.click()} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12 }}>Upload Image</button>
+                  )}
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setAddImageUrl(r.result as string); r.readAsDataURL(f); }} />
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Answer Choices (click circle to mark correct)</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {quizChoices.map((choice, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <button
+                          onClick={() => setQuizCorrectIndex(i)}
+                          style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${i === quizCorrectIndex ? "#4ade80" : "rgba(255,255,255,0.2)"}`, background: i === quizCorrectIndex ? "rgba(74,222,128,0.2)" : "transparent", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          {i === quizCorrectIndex && <Check size={12} color="#4ade80" />}
+                        </button>
+                        <input
+                          value={choice.text}
+                          onChange={(e) => { const next = [...quizChoices]; next[i] = { ...next[i], text: e.target.value }; setQuizChoices(next); }}
+                          className="glass-input"
+                          style={{ flex: 1, padding: "6px 10px", fontSize: 13 }}
+                          placeholder={`Choice ${i + 1}...`}
+                        />
+                        {quizChoices.length > 2 && (
+                          <button onClick={() => { const next = quizChoices.filter((_, idx) => idx !== i); setQuizChoices(next); if (quizCorrectIndex >= next.length) setQuizCorrectIndex(0); }} style={{ padding: 2, background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={12} /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {quizChoices.length < 6 && (
+                    <button onClick={() => setQuizChoices([...quizChoices, { text: "" }])} className="glass-btn" style={{ marginTop: 6, padding: "4px 10px", fontSize: 11 }}>+ Add Choice</button>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-secondary" style={{ marginBottom: "0.25rem", display: "block" }}>Hint (optional)</label>
+                  <input value={addHint} onChange={(e) => setAddHint(e.target.value)} className="glass-input" style={{ width: "100%" }} placeholder="Optional hint..." />
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button onClick={handleAddQuiz} className="glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Check size={12} /> Add</button>
                   <button onClick={resetForm} className="glass-btn"><X size={12} /> Cancel</button>
                 </div>
               </>
@@ -702,7 +979,7 @@ export default function DeckStudyPage() {
                     <div style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>
                       {showFormulas ? <FormulaLine text={card.back} showFormulas={showFormulas} /> : card.back}
                     </div>
-                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: card.card_type === "image_occlusion" ? "rgba(109,40,217,0.12)" : card.card_type === "image_card" ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.06)", color: card.card_type === "image_occlusion" ? "#a78bfa" : card.card_type === "image_card" ? "#60a5fa" : "var(--os-text-dim)", marginTop: 4, display: "inline-block" }}>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: card.card_type === "image_occlusion" ? "rgba(109,40,217,0.12)" : card.card_type === "image_card" ? "rgba(59,130,246,0.12)" : card.card_type === "quiz" ? "rgba(234,179,8,0.12)" : "rgba(255,255,255,0.06)", color: card.card_type === "image_occlusion" ? "#a78bfa" : card.card_type === "image_card" ? "#60a5fa" : card.card_type === "quiz" ? "#eab308" : "var(--os-text-dim)", marginTop: 4, display: "inline-block" }}>
                       {cardTypeLabel(card.card_type || "standard")}
                     </span>
                   </div>
