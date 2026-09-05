@@ -361,9 +361,9 @@ export default function QuizManager({ userId }: QuizManagerProps) {
 
   if (view === "list") {
     return (
-      <div style={{ maxWidth: 672, margin: "0 auto" }}>
+      <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px", padding: "0 16px" }}>
         <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1 }}>
               <input
                 value={newQuizTitle}
@@ -445,7 +445,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
 
   if (view === "edit" && activeQuiz) {
     return (
-      <div style={{ maxWidth: 672, margin: "0 auto" }}>
+      <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
         <button onClick={() => setView("list")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", marginBottom: 16, padding: 0 }}>
           <ArrowLeft size={14} /> Back to My Quizzes
         </button>
@@ -649,7 +649,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
 
     if (!quizStarted) {
       return (
-        <div style={{ maxWidth: 672, margin: "0 auto" }}>
+        <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
           <button onClick={() => setView("edit")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", marginBottom: 16, padding: 0 }}>
             <ArrowLeft size={14} /> Back to Editor
           </button>
@@ -709,7 +709,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
       const qText = getQuestionText(q, entry.labelIndex);
 
       return (
-        <div style={{ maxWidth: 672, margin: "0 auto" }}>
+        <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
             <span className="text-sm text-secondary">Question {currentQ + 1} of {totalQ}</span>
             <div style={{ height: 8, flex: 1, marginLeft: 16, marginRight: 16, background: "rgba(255,255,255,0.06)", borderRadius: 9999, overflow: "hidden" }}>
@@ -824,7 +824,7 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     const pct = totalQ > 0 ? Math.round((quizScore / totalQ) * 100) : 0;
 
     return (
-      <div style={{ maxWidth: 672, margin: "0 auto" }}>
+      <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
         <div className="empty-state" style={{ marginBottom: 32 }}>
           <Sparkles style={{ width: 64, height: 64, color: "var(--os-accent)", marginBottom: 16 }} />
           <h2 style={{ fontSize: 30, fontWeight: 700, marginBottom: 8 }}>Quiz Complete!</h2>
@@ -843,12 +843,20 @@ export default function QuizManager({ userId }: QuizManagerProps) {
           {flat.map((entry, i) => {
             const q = entry.question;
             const userAns = quizAnswers[i] || "";
-            const correct = isMcForQuestion(q, quizMode) ? (() => {
-              const opts = getMcOptionsCached(q, entry.labelIndex);
-              return opts[getCorrectMcIndex(opts, q, entry.labelIndex)] || "";
-            })() : getCorrectText(q, entry.labelIndex);
+            const isCorrect = checkAnswer(i, userAns);
 
-            const isCorrect = userAns.toLowerCase().trim() === correct.toLowerCase().trim();
+            let userDisplay = userAns;
+            let correctDisplay = "";
+            if (isMcForQuestion(q, quizMode)) {
+              const opts = getMcOptionsCached(q, entry.labelIndex);
+              const ci = getCorrectMcIndex(opts, q, entry.labelIndex);
+              correctDisplay = opts[ci] || "";
+              const ui = parseInt(userAns);
+              userDisplay = !isNaN(ui) && opts[ui] ? opts[ui] : userAns;
+            } else {
+              correctDisplay = getCorrectText(q, entry.labelIndex);
+            }
+
             return (
               <div key={i} className="glass-card" style={{
                 borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
@@ -859,8 +867,8 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                   {i + 1}. <MathRenderer content={getQuestionText(q, entry.labelIndex)} />
                 </p>
                 <div style={{ marginLeft: 16 }}>
-                  <p style={{ fontSize: 12, color: isCorrect ? "#16a34a" : "#dc2626" }}>Your answer: {userAns || "(none)"}</p>
-                  {!isCorrect && <p style={{ fontSize: 12, color: "#16a34a" }}>Correct: {correct}</p>}
+                  <p style={{ fontSize: 12, color: isCorrect ? "#16a34a" : "#dc2626" }}>Your answer: {userDisplay || "(none)"}</p>
+                  {!isCorrect && <p style={{ fontSize: 12, color: "#16a34a" }}>Correct: {correctDisplay}</p>}
                 </div>
               </div>
             );
