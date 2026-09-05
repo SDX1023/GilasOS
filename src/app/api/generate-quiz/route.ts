@@ -6,25 +6,14 @@ export const maxDuration = 120;
 
 const MAX_CHARS = 200000;
 const CHUNK_SIZE = 15000;
-const CONCURRENCY = 1;
 const MAX_RETRIES = 2;
-const BASE_DELAY = 2000;
 const REQUEST_TIMEOUT_MS = 45000;
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 10 * 60 * 1000;
 
-let lastRequestTime = 0;
-const MIN_INTERVAL = 2000;
-let rateLimitChain: Promise<void> = Promise.resolve();
-
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function parseRetryAfter(m: string): number {
-  const x = m.match(/retry in (\d+(?:\.\d+)?)/i);
-  return x ? Math.ceil(parseFloat(x[1])) : 35;
 }
 
 function simpleHash(s: string): string {
@@ -34,38 +23,6 @@ function simpleHash(s: string): string {
     h |= 0;
   }
   return h.toString(36);
-}
-
-async function safeJson(res: Response): Promise<any> {
-  try {
-    return JSON.parse(await res.text());
-  } catch {
-    return null;
-  }
-}
-
-function splitIntoChunks(text: string, size: number): string[] {
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < text.length) {
-    let end = Math.min(start + size, text.length);
-    if (end < text.length) {
-      const br = text.lastIndexOf("\n\n", end);
-      if (br > start + size * 0.3) end = br;
-      else {
-        const a = Math.max(
-          text.lastIndexOf(". ", end),
-          text.lastIndexOf("? ", end),
-          text.lastIndexOf("! ", end)
-        );
-        if (a > start + size * 0.3) end = a + 2;
-      }
-    }
-    const c = text.slice(start, end).trim();
-    if (c) chunks.push(c);
-    start = end;
-  }
-  return chunks;
 }
 
 function cleanText(t: string): string {
@@ -80,41 +37,48 @@ function cleanText(t: string): string {
     .trim();
 }
 
-// ============================================================
-// FORMAT DETECTION
-// ============================================================
+function splitIntoChunks(text: string, size: number): string[] {
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + size, text.length);
+    if (end < text.length) {
+      const br = text.lastIndexOf("\n\n", end);
+      if (br > start + size * 0.3) end = br;
+      else {
+        const a = Math.max(text.lastIndexOf(". ", end), text.lastIndexOf("? ", end), text.lastIndexOf("! ", end));
+        if (a > start + size * 0.3) end = a + 2;
+      }
+    }
+    const c = text.slice(start, end).trim();
+    if (c) chunks.push(c);
+    start = end;
+  }
+  return chunks;
+}
+
 function detectFormat(text: string): string {
   if (text.includes("●") || text.includes("•")) return "BULLET_POINTS";
-  if (text.includes("ANS:") || text.includes("Q:") || text.includes("Answer:"))
-    return "QA_PAIRS";
+  if (text.includes("ANS:") || text.includes("Q:") || text.includes("Answer:")) return "QA_PAIRS";
   const matches = text.match(/[.!?]\s+[A-Z]/g);
-if (matches && matches.length > 10) return "PARAGRAPHS";
+  if (matches && matches.length > 10) return "PARAGRAPHS";
   return "MIXED";
 }
 
-// ============================================================
-// QUIZ PROMPT BUILDER (Supports all formats)
-// ============================================================
 function buildQuizPrompt(chunkText: string, idx: number, total: number, questionType: string): string {
   const format = detectFormat(chunkText);
   const ctx = total > 1 ? `Section ${idx + 1}/${total}.` : "";
 
-  const typeInstructions = questionType === "identification"
-    ? `Generate IDENTIFICATION (fill-in-the-blank) quiz questions. Each question has NO options — just the question and a correct answer string.`
-    : questionType === "mc"
-    ? `Generate MULTIPLE CHOICE quiz questions with 4 options each.`
-    : `Generate a MIX of MULTIPLE CHOICE (4 options) and IDENTIFICATION (fill-in-the-blank) questions. Roughly half and half.`;
+  const typeInstructions =
+    questionType === "identification"
+      ? `Generate IDENTIFICATION (fill-in-the-blank) quiz questions. Each question has NO options — just the question and a correct answer string.`
+      : questionType === "mc"
+        ? `Generate MULTIPLE CHOICE quiz questions with 4 options each.`
+        : `Generate a MIX of MULTIPLE CHOICE (4 options) and IDENTIFICATION (fill-in-the-blank) questions. Roughly half and half.`;
 
-  // ============================================
-  // FORMAT 1: BULLET POINTS
-  // ============================================
   if (format === "BULLET_POINTS") {
     const bullets = (chunkText.match(/●/g) || []).length;
-    const hint =
-      bullets > 0
-        ? ` This section has ~${bullets} bullet points.`
-        : "";
-
+    const hint = bullets > 0 ? ` This section has ~${bullets} bullet points.` : "";
     if (questionType === "identification") {
       return `Generate identification quiz questions from this study material. ${ctx}${hint}
 
@@ -130,7 +94,6 @@ CRITICAL RULES:
 CONTENT:
 ${chunkText}`;
     }
-
     if (questionType === "mc") {
       return `Generate multiple-choice quiz questions from this study material. ${ctx}${hint}
 
@@ -145,8 +108,6 @@ CRITICAL RULES:
 CONTENT:
 ${chunkText}`;
     }
-
-    // mixed
     return `Generate a mix of multiple-choice and identification quiz questions. ${ctx}${hint}
 
 IMPORTANT: This text uses BULLET POINTS. Create a MIX of question types.
@@ -163,9 +124,6 @@ CONTENT:
 ${chunkText}`;
   }
 
-  // ============================================
-  // FORMAT 2: Q&A PAIRS
-  // ============================================
   if (format === "QA_PAIRS") {
     if (questionType === "identification") {
       return `Generate identification quiz questions from this Q&A material. ${ctx}
@@ -204,9 +162,6 @@ CONTENT:
 ${chunkText}`;
   }
 
-  // ============================================
-  // FORMAT 3: PLAIN PARAGRAPHS
-  // ============================================
   if (format === "PARAGRAPHS") {
     if (questionType === "identification") {
       return `Generate identification quiz questions from this text. ${ctx}
@@ -254,9 +209,6 @@ TEXT:
 ${chunkText}`;
   }
 
-  // ============================================
-  // FALLBACK
-  // ============================================
   if (questionType === "identification") {
     return `Generate identification quiz questions from this text. ${ctx}
 
@@ -289,76 +241,72 @@ TEXT:
 ${chunkText}`;
 }
 
-// ============================================================
-// ENHANCED EXTRACTION
-// ============================================================
 function tryParseJson(s: string): any[] | null {
   let cleaned = s.trim();
 
   const mdMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (mdMatch) cleaned = mdMatch[1].trim();
 
+  const arrMatch = cleaned.match(/\[[\s\S]*\]/);
+  if (arrMatch) cleaned = arrMatch[0];
+
   try {
     const p = JSON.parse(cleaned);
     if (Array.isArray(p) && p.length) return p;
-    if (p && Array.isArray((p as any).questions) && (p as any).questions.length)
-      return (p as any).questions;
-    if (p && Array.isArray((p as any).quiz) && (p as any).quiz.length)
-      return (p as any).quiz;
+    if (p && Array.isArray((p as any).questions) && (p as any).questions.length) return (p as any).questions;
+    if (p && Array.isArray((p as any).quiz) && (p as any).quiz.length) return (p as any).quiz;
   } catch {}
   return null;
 }
 
 function normalizeQuestion(q: any): any {
-  try {
-    if (!q || !q.question) return q;
+  if (!q || !q.question) return null;
 
-    if (q.type === "identification" || (!q.type && !q.options)) {
-      q.type = "identification";
-      if (!q.answer && q.correct) {
-        q.answer = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").trim();
-      }
-      return q;
+  if (q.type === "identification" || (!q.type && !q.options)) {
+    q.type = "identification";
+    if (!q.answer && q.correct) {
+      q.answer = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").trim();
     }
-
-    if (q.type !== "mc" || !q.options || !q.correct || !Array.isArray(q.options)) return q;
-    const c = String(q.correct).trim();
-    if (/^[0-3]$/.test(c)) {
-      const idx = parseInt(c);
-      q.correct = String.fromCharCode(65 + idx);
-      return q;
-    }
-    if (c.length === 1 && c.toUpperCase().charCodeAt(0) >= 65 && c.toUpperCase().charCodeAt(0) <= 68) return q;
-    const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
-    for (let i = 0; i < q.options.length; i++) {
-      const optText = String(q.options[i]).replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
-      if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
-        q.correct = String.fromCharCode(65 + i);
-        return q;
-      }
-    }
-    return q;
-  } catch (e) {
-    console.error("normalizeQuestion error:", e, q);
+    if (!q.answer) return null;
     return q;
   }
+
+  if (!q.options || !Array.isArray(q.options) || q.options.length < 2) return null;
+
+  q.type = "mc";
+  if (!q.correct) return null;
+
+  const c = String(q.correct).trim();
+  if (/^[0-3]$/.test(c)) {
+    q.correct = String.fromCharCode(65 + parseInt(c));
+    return q;
+  }
+  if (c.length === 1) {
+    const code = c.toUpperCase().charCodeAt(0);
+    if (code >= 65 && code <= 68) return q;
+  }
+  const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+  for (let i = 0; i < q.options.length; i++) {
+    const optText = String(q.options[i]).replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
+    if (optText === stripped || optText.includes(stripped) || stripped.includes(optText)) {
+      q.correct = String.fromCharCode(65 + i);
+      return q;
+    }
+  }
+  return q;
 }
 
-async function extractQuiz(content: string): Promise<any[]> {
-  const d = tryParseJson(content);
-  if (d) return d.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeQuestion);
-
-  const m = content.match(/\[[\s\S]*\]/);
-  if (m) {
-    const p = tryParseJson(m[0]);
-    if (p) return p.filter((q: any) => q?.question && ((q?.options?.length === 4 && q?.correct) || (q?.type === "identification" && q?.answer))).map(normalizeQuestion);
+function extractQuiz(content: string): any[] {
+  const parsed = tryParseJson(content);
+  if (parsed) {
+    return parsed
+      .map(normalizeQuestion)
+      .filter((q: any) => q != null);
   }
 
-  // Try to extract from Q&A pattern
+  const out: any[] = [];
   const mcPattern = /"question"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"options"\s*:\s*\[((?:\\.|[^\]\\])*)\]\s*,\s*"correct"\s*:\s*"([^"]*)"/g;
   const idPattern = /"question"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"type"\s*:\s*"identification"\s*,\s*"answer"\s*:\s*"((?:\\.|[^"\\])*)"/g;
-
-  const out: any[] = [];
 
   let match: RegExpExecArray | null;
   while ((match = mcPattern.exec(content)) !== null) {
@@ -368,7 +316,8 @@ async function extractQuiz(content: string): Promise<any[]> {
       const correct = match[3]?.trim() || "";
       const options = optionsStr.split(",").map((o: string) => o.trim().replace(/^"|"$/g, ""));
       if (question && options.length === 4 && correct) {
-        out.push({ question, options, correct, type: "mc" });
+        const q = normalizeQuestion({ question, options, correct, type: "mc" });
+        if (q) out.push(q);
       }
     } catch {}
   }
@@ -378,7 +327,8 @@ async function extractQuiz(content: string): Promise<any[]> {
       const question = match[1]?.trim() || "";
       const answer = match[2]?.trim() || "";
       if (question && answer) {
-        out.push({ question, type: "identification", answer });
+        const q = normalizeQuestion({ question, type: "identification", answer });
+        if (q) out.push(q);
       }
     } catch {}
   }
@@ -386,18 +336,15 @@ async function extractQuiz(content: string): Promise<any[]> {
   return out;
 }
 
-// ============================================================
-// DEEPSEEK API CALL
-// ============================================================
 async function callDeepSeek(
   apiKey: string,
   prompt: string,
   attempt: number
-): Promise<{ content: string; retry: boolean; error?: string }> {
-  try {
-    const ac = new AbortController();
-    const t = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS);
+): Promise<{ content: string; error?: string }> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS);
 
+  try {
     const res = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -414,46 +361,29 @@ async function callDeepSeek(
     });
 
     clearTimeout(t);
-    const body = await safeJson(res);
+
+    const text = await res.text();
+    let body: any;
+    try { body = JSON.parse(text); } catch { body = null; }
 
     if (res.status === 429) {
-      const wa = parseRetryAfter(body?.error?.message || "");
-      if (attempt < MAX_RETRIES) {
-        await sleep(wa * 1000);
-        lastRequestTime = 0;
-        return { content: "", retry: true };
-      }
-      return {
-        content: "",
-        retry: false,
-        error: `Rate limited: retry in ${wa}s`,
-      };
+      const retryMatch = (body?.error?.message || "").match(/retry in (\d+)/i);
+      const waitSec = retryMatch ? Math.ceil(parseInt(retryMatch[1])) : 30;
+      return { content: "", error: `Rate limited. Retry in ${waitSec}s.` };
     }
 
     if (!res.ok) {
-      const msg = body?.error?.message || `API error ${res.status}`;
-      if (attempt < MAX_RETRIES) {
-        await sleep(BASE_DELAY * Math.pow(2, attempt));
-        return { content: "", retry: true };
-      }
-      return { content: "", retry: false, error: msg };
+      const msg = body?.error?.message || `DeepSeek API error ${res.status}`;
+      return { content: "", error: msg };
     }
 
     const content = body?.choices?.[0]?.message?.content ?? "";
-    return { content, retry: false };
+    if (!content) return { content: "", error: "DeepSeek returned empty response" };
+    return { content, error: undefined };
   } catch (e: any) {
-    if (e?.name === "AbortError") {
-      if (attempt < MAX_RETRIES) {
-        await sleep(BASE_DELAY * Math.pow(2, attempt));
-        return { content: "", retry: true };
-      }
-      return { content: "", retry: false, error: "Request timed out" };
-    }
-    if (attempt < MAX_RETRIES) {
-      await sleep(BASE_DELAY * Math.pow(2, attempt));
-      return { content: "", retry: true };
-    }
-    return { content: "", retry: false, error: e?.message || "Request failed" };
+    clearTimeout(t);
+    if (e?.name === "AbortError") return { content: "", error: "Request timed out after 45s" };
+    return { content: "", error: e?.message || "Request failed" };
   }
 }
 
@@ -463,79 +393,45 @@ async function generateQuizChunk(
   idx: number,
   total: number,
   questionType: string
-): Promise<{ questions: any[]; error?: string }> {
-  const format = detectFormat(chunk);
-  console.log(`Chunk ${idx + 1}/${total}: Detected format: ${format}, Type: ${questionType}`);
-
+): Promise<{ questions: any[]; errors: string[] }> {
   const prompt = buildQuizPrompt(chunk, idx, total, questionType);
+  const chunkErrors: string[] = [];
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { content, retry, error } = await callDeepSeek(
-      apiKey,
-      prompt,
-      attempt
-    );
-    if (retry) continue;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const { content, error } = await callDeepSeek(apiKey, prompt, attempt);
+
     if (error) {
-      console.error(`Chunk ${idx + 1} attempt ${attempt} error:`, error);
-      if (attempt === MAX_RETRIES) return { questions: [], error };
+      chunkErrors.push(`Attempt ${attempt + 1}: ${error}`);
+      if (attempt < MAX_RETRIES) await sleep(2000 * Math.pow(2, attempt));
       continue;
     }
-    console.log(`Chunk ${idx + 1} attempt ${attempt}: got ${content.length} chars`);
-    const questions = await extractQuiz(content);
-    console.log(`Chunk ${idx + 1} attempt ${attempt}: extracted ${questions.length} questions`);
-    if (questions.length) return { questions };
-    console.log(`Chunk ${idx + 1} attempt ${attempt}: no questions extracted, retrying...`);
+
+    const questions = extractQuiz(content);
+    if (questions.length > 0) return { questions, errors: chunkErrors };
+
+    chunkErrors.push(`Attempt ${attempt + 1}: Got response but couldn't extract questions`);
+    if (attempt < MAX_RETRIES) await sleep(2000 * Math.pow(2, attempt));
   }
-  return { questions: [], error: "Failed to generate quiz after retries" };
+
+  return { questions: [], errors: chunkErrors };
 }
 
 function dedupeQuestions(questions: any[]): any[] {
   const seen = new Set<string>();
-  const out: any[] = [];
-  for (const q of questions) {
-    const key = String(q.question || "")
-      .trim()
-      .toLowerCase();
-    if (q.question && !seen.has(key)) {
-      seen.add(key);
-      out.push(q);
-    }
-  }
-  return out;
+  return questions.filter((q) => {
+    const key = String(q.question || "").trim().toLowerCase();
+    if (!q.question || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-async function runPool<T, R>(
-  items: T[],
-  conc: number,
-  fn: (v: T, i: number) => Promise<R>
-): Promise<R[]> {
-  const res: R[] = new Array(items.length);
-  let cur = 0;
-  async function next() {
-    while (cur < items.length) {
-      const i = cur++;
-      res[i] = await fn(items[i], i);
-    }
-  }
-  const workers = Array.from({ length: Math.min(conc, items.length) }, () =>
-    next()
-  );
-  await Promise.all(workers);
-  return res;
-}
-
-// ============================================================
-// MAIN POST HANDLER
-// ============================================================
 export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.DEEPSEEK_API_KEY;
-    if (!apiKey)
-      return NextResponse.json(
-        { error: "DEEPSEEK_API_KEY not configured" },
-        { status: 500 }
-      );
+    if (!apiKey) {
+      return NextResponse.json({ error: "DEEPSEEK_API_KEY not configured on server" }, { status: 500 });
+    }
 
     let text: string;
     let questionType: string;
@@ -544,42 +440,37 @@ export async function POST(req: NextRequest) {
       text = body.text;
       questionType = body.type || "mc";
     } catch {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
-    if (!text?.trim())
+    if (!text?.trim()) {
       return NextResponse.json({ error: "No text provided" }, { status: 400 });
+    }
 
     const cleaned = cleanText(text).slice(0, MAX_CHARS);
-    const key = `quiz-${simpleHash(cleaned)}-${questionType}-v1`;
+    const key = `quiz-${simpleHash(cleaned)}-${questionType}-v2`;
     const cached = cache.get(key);
-    if (cached && Date.now() - cached.ts < CACHE_TTL)
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
       return NextResponse.json({ questions: cached.data });
+    }
 
-    const chunks = splitIntoChunks(cleaned, 30000);
-    const results = await runPool(chunks, CONCURRENCY, (c, i) =>
-      generateQuizChunk(apiKey, c, i, chunks.length, questionType)
-    );
+    const chunks = splitIntoChunks(cleaned, CHUNK_SIZE);
 
     let all: any[] = [];
-    const errors: string[] = [];
-    for (const r of results) {
-      if (r.error) {
-        console.error("Chunk error:", r.error);
-        errors.push(r.error);
-      }
-      if (r.questions.length) all = all.concat(r.questions);
+    const allErrors: string[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const { questions, errors } = await generateQuizChunk(apiKey, chunks[i], i, chunks.length, questionType);
+      all = all.concat(questions);
+      allErrors.push(...errors);
     }
 
     all = dedupeQuestions(all);
-    console.log(`Total questions generated: ${all.length}, errors: ${errors.length}`);
+
     if (!all.length) {
-      return NextResponse.json(
-        { error: errors[0] || "Failed to generate quiz", details: errors },
-        { status: 500 }
-      );
+      const errorMsg = allErrors.length > 0
+        ? `Quiz generation failed. Errors: ${allErrors.slice(0, 5).join(" | ")}`
+        : "Failed to generate quiz — no questions could be extracted";
+      return NextResponse.json({ error: errorMsg, details: allErrors }, { status: 500 });
     }
 
     cache.set(key, { data: all, ts: Date.now() });
@@ -588,12 +479,9 @@ export async function POST(req: NextRequest) {
       totalQuestions: all.length,
       chunksProcessed: chunks.length,
       formatDetected: detectFormat(cleaned),
-      ...(errors.length ? { warnings: errors } : {}),
+      ...(allErrors.length ? { warnings: allErrors } : {}),
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message || "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 });
   }
 }
