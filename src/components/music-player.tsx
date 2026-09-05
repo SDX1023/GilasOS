@@ -126,13 +126,13 @@ export function MusicPlayer() {
     const updateVisibility = () => {
       const quizActive = document.body.classList.contains("quiz-active");
       if (open || quizActive) {
-        iframe.style.left = "-9999px";
+        iframe.style.visibility = "hidden";
         iframe.style.pointerEvents = "none";
       } else if (started) {
-        iframe.style.left = "";
+        iframe.style.visibility = "visible";
         iframe.style.pointerEvents = "auto";
       } else {
-        iframe.style.left = "-9999px";
+        iframe.style.visibility = "hidden";
         iframe.style.pointerEvents = "none";
       }
     };
