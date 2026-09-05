@@ -42,7 +42,7 @@ export default function SharedDecksPage() {
         const { data, error } = await supabase
           .from("shared_decks")
           .select("*")
-          .or(`and(user_id.eq.${user.id},shared_with_user_id.is.null),shared_with_user_id.eq.${user.id}`)
+          .or(`shared_with_user_id.is.null,shared_with_user_id.eq.${user.id}`)
           .order("created_at", { ascending: false });
 
         let shared = data;
