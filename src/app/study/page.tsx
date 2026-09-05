@@ -148,8 +148,10 @@ function getCorrectIndex(q: any): string {
   if (q.correct == null) return "0";
   const c = String(q.correct).trim();
   if (/^[0-3]$/.test(c)) return c;
-  const code = c.toUpperCase().charCodeAt(0);
-  if (code >= 65 && code <= 68) return String(code - 65);
+  if (c.length === 1) {
+    const code = c.toUpperCase().charCodeAt(0);
+    if (code >= 65 && code <= 68) return String(code - 65);
+  }
   if (q.options && Array.isArray(q.options)) {
     const stripped = c.replace(/^\s*[A-Da-d]\.\s*/, "").trim().toLowerCase();
     for (let i = 0; i < q.options.length; i++) {
