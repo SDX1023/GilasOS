@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { createWorker } from "tesseract.js";
-import { Upload, Loader2, Check, X, Wand2, MousePointer2 } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Upload, Check, X, MousePointer2 } from "lucide-react";
 
 interface DetectedLabel {
   x: number;
@@ -23,14 +22,14 @@ interface ImageOcclusionCreatorProps {
 export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, initialLabels }: ImageOcclusionCreatorProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl || null);
   const [labels, setLabels] = useState<DetectedLabel[]>(initialLabels ? initialLabels.map(l => ({ ...l, selected: true })) : []);
-  const [scanning, setScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState("");
-  const [mode, setMode] = useState<"auto" | "manual">("manual");
   const [placing, setPlacing] = useState(false);
-  const [placeStart, setPlaceStart] = useState<{ x: number; y: number } | null>(null);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [labelInput, setLabelInput] = useState("");
   const [showInput, setShowInput] = useState(false);
+  const [pendingRect, setPendingRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [resizing, setResizing] = useState<{ index: number; handle: string; startX: number; startY: number; startLabel: DetectedLabel } | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -51,144 +50,98 @@ export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, i
     };
   };
 
-  const handleManualClick = (e: React.MouseEvent) => {
-    if (!placing || !imgRef.current) return;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (resizing) return;
+    if (!placing || !imgRef.current || showInput) return;
+    e.preventDefault();
     const pos = getRelativePos(e);
+    setDragStart(pos);
+    setDragCurrent(pos);
+    setIsDragging(true);
+  };
 
-    if (!placeStart) {
-      setPlaceStart(pos);
-    } else {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (resizing) return;
+    if (!isDragging || !dragStart) return;
+    setDragCurrent(getRelativePos(e));
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (resizing) return;
+    if (!isDragging || !dragStart) return;
+    const pos = getRelativePos(e);
+    const x = Math.min(dragStart.x, pos.x);
+    const y = Math.min(dragStart.y, pos.y);
+    const w = Math.abs(pos.x - dragStart.x);
+    const h = Math.abs(pos.y - dragStart.y);
+    setIsDragging(false);
+    setDragStart(null);
+    setDragCurrent(null);
+    if (w > 0.5 && h > 0.5) {
+      setPendingRect({ x, y, w, h });
       setShowInput(true);
       setLabelInput("");
-      setMousePos(pos);
     }
   };
 
   const confirmLabel = () => {
-    if (!placeStart || !mousePos || !labelInput.trim()) {
-      setPlaceStart(null);
-      setMousePos(null);
+    if (!pendingRect || !labelInput.trim()) {
+      setPendingRect(null);
       setShowInput(false);
       return;
     }
-    const x = Math.min(placeStart.x, mousePos.x);
-    const y = Math.min(placeStart.y, mousePos.y);
-    const w = Math.abs(mousePos.x - placeStart.x);
-    const h = Math.abs(mousePos.y - placeStart.y);
-    if (w > 0.5 && h > 0.5) {
-      setLabels((prev) => [...prev, { x, y, w, h, text: labelInput.trim(), selected: true }]);
-    }
-    setPlaceStart(null);
-    setMousePos(null);
+    setLabels((prev) => [...prev, { ...pendingRect, text: labelInput.trim(), selected: true }]);
+    setPendingRect(null);
     setShowInput(false);
     setLabelInput("");
   };
 
   const cancelLabel = () => {
-    setPlaceStart(null);
-    setMousePos(null);
+    setPendingRect(null);
     setShowInput(false);
     setLabelInput("");
   };
 
-  const runOCR = async () => {
-    if (!imageUrl) return;
-    setScanning(true);
-    setScanProgress("Loading OCR engine...");
-    try {
-      const worker = await createWorker("eng");
-      setScanProgress("Scanning image...");
-      const { data } = await worker.recognize(imageUrl);
-      await worker.terminate();
-
-      const img = new Image();
-      img.src = imageUrl;
-      await new Promise<void>((r) => { img.onload = () => r(); });
-
-      const allWords: any[] = (data as any).words || [];
-      const noisePatterns = /^[\d.,©®™°•·–—""''()\[\]{}/\\|@#$%&*+=<>^~`]+$/;
-      const copyrightPatterns = /cleveland|clinic|copyright|©|®|all rights|reserved|\d{4}/i;
-
-      const goodWords = allWords.filter((w: any) => {
-        if (!w.text || !w.bbox) return false;
-        const t = w.text.trim();
-        if (t.length < 2) return false;
-        if ((w.confidence || 0) < 40) return false;
-        const bw = w.bbox.x1 - w.bbox.x0;
-        const bh = w.bbox.y1 - w.bbox.y0;
-        if (bw < img.width * 0.01 || bh < img.height * 0.005) return false;
-        if (noisePatterns.test(t)) return false;
-        if (copyrightPatterns.test(t)) return false;
-        return true;
-      });
-
-      const wordBoxes = goodWords.map((w: any) => ({
-        x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1,
-        text: w.text.trim().replace(/[""]/g, '"').replace(/['']/g, "'"),
-        lineY: (w.bbox.y0 + w.bbox.y1) / 2,
-        lineH: w.bbox.y1 - w.bbox.y0,
-      }));
-
-      const mergedLines: { text: string; x0: number; y0: number; x1: number; y1: number }[] = [];
-      const used = new Set<number>();
-      const byY = [...wordBoxes].sort((a, b) => a.lineY - b.lineY);
-
-      for (let i = 0; i < byY.length; i++) {
-        if (used.has(i)) continue;
-        let group = [byY[i]];
-        used.add(i);
-        for (let j = i + 1; j < byY.length; j++) {
-          if (used.has(j)) continue;
-          const a = group[group.length - 1];
-          const b = byY[j];
-          if (Math.abs(b.lineY - a.lineY) > Math.min(a.lineH, b.lineH) * 0.6) break;
-          const gap = Math.abs(b.x0 - a.x1);
-          if (gap < img.width * 0.03 && gap >= 0) {
-            group.push(b);
-            used.add(j);
-          }
-        }
-        group.sort((a, b) => a.x0 - b.x0);
-        const lineW = Math.max(...group.map((g) => g.x1)) - Math.min(...group.map((g) => g.x0));
-        if (lineW > img.width * 0.25) continue;
-        const lineText = group.map((g) => g.text).join(" ");
-        if (copyrightPatterns.test(lineText)) continue;
-        mergedLines.push({
-          text: lineText,
-          x0: Math.min(...group.map((g) => g.x0)),
-          y0: Math.min(...group.map((g) => g.y0)),
-          x1: Math.max(...group.map((g) => g.x1)),
-          y1: Math.max(...group.map((g) => g.y1)),
-        });
-      }
-
-      const byText = new Map<string, typeof mergedLines[0]>();
-      for (const line of mergedLines) {
-        const key = line.text.toLowerCase().trim();
-        const existing = byText.get(key);
-        if (!existing || ((line.x1 - line.x0) * (line.y1 - line.y0)) > ((existing.x1 - existing.x0) * (existing.y1 - existing.y0))) {
-          byText.set(key, line);
-        }
-      }
-
-      const result: DetectedLabel[] = [...byText.values()].map((line) => ({
-        x: (line.x0 / img.width) * 100,
-        y: (line.y0 / img.height) * 100,
-        w: ((line.x1 - line.x0) / img.width) * 100,
-        h: ((line.y1 - line.y0) / img.height) * 100,
-        text: line.text,
-        selected: true,
-      }));
-
-      setLabels(result);
-      setScanProgress(`Found ${result.length} labels`);
-    } catch (err) {
-      console.error("OCR failed:", err);
-      setScanProgress("OCR failed");
-    } finally {
-      setScanning(false);
-    }
+  const handleResizeStart = (e: React.MouseEvent, index: number, handle: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setResizing({
+      index,
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLabel: { ...labels[index] },
+    });
   };
+
+  useEffect(() => {
+    if (!resizing) return;
+    const onMove = (e: MouseEvent) => {
+      setResizing((prev) => {
+        if (!prev || !imgRef.current) return prev;
+        const imgRect = imgRef.current.getBoundingClientRect();
+        const dx = ((e.clientX - prev.startX) / imgRect.width) * 100;
+        const dy = ((e.clientY - prev.startY) / imgRect.height) * 100;
+        const sl = prev.startLabel;
+        let { x, y, w, h } = sl;
+
+        if (prev.handle.includes("e")) w = Math.max(1, sl.w + dx);
+        if (prev.handle.includes("w")) { w = Math.max(1, sl.w - dx); x = sl.x + sl.w - w; }
+        if (prev.handle.includes("s")) h = Math.max(1, sl.h + dy);
+        if (prev.handle.includes("n")) { h = Math.max(1, sl.h - dy); y = sl.y + sl.h - h; }
+
+        x = Math.max(0, Math.min(99, x));
+        y = Math.max(0, Math.min(99, y));
+
+        setLabels((prev2) => prev2.map((l, i) => i === prev!.index ? { ...l, x, y, w, h } : l));
+        return prev;
+      });
+    };
+    const onUp = () => setResizing(null);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [resizing]);
 
   const toggleLabel = (index: number) => {
     setLabels((prev) => prev.map((l, i) => i === index ? { ...l, selected: !l.selected } : l));
@@ -215,19 +168,27 @@ export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, i
 
   const selectedCount = labels.filter((l) => l.selected).length;
 
-  const previewRect = placeStart && mousePos && !showInput ? {
-    x: Math.min(placeStart.x, mousePos.x),
-    y: Math.min(placeStart.y, mousePos.y),
-    w: Math.abs(mousePos.x - placeStart.x),
-    h: Math.abs(mousePos.y - placeStart.y),
+  const dragRect = dragStart && dragCurrent ? {
+    x: Math.min(dragStart.x, dragCurrent.x),
+    y: Math.min(dragStart.y, dragCurrent.y),
+    w: Math.abs(dragCurrent.x - dragStart.x),
+    h: Math.abs(dragCurrent.y - dragStart.y),
   } : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <style>{`
-        @keyframes occPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
-        .occ-label-box { transition: all 0.15s ease; }
+        .occ-label-box { transition: filter 0.15s ease; }
         .occ-label-box:hover { filter: brightness(1.3); }
+        .occ-handle { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid #7c3aed; border-radius: 2px; pointer-events: auto; }
+        .occ-handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+        .occ-handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+        .occ-handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .occ-handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+        .occ-handle-n { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .occ-handle-s { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .occ-handle-w { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
+        .occ-handle-e { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
       `}</style>
 
       {!imageUrl ? (
@@ -250,58 +211,62 @@ export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, i
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
             ref={imgRef}
-            onClick={mode === "manual" && placing ? handleManualClick : undefined}
-            onMouseMove={mode === "manual" && placing && placeStart && !showInput ? (e) => setMousePos(getRelativePos(e)) : undefined}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
             style={{
-              position: "relative", borderRadius: 12, overflow: "hidden",
+              position: "relative", borderRadius: 12, overflow: "visible",
               border: "1px solid rgba(255,255,255,0.08)",
-              cursor: mode === "manual" && placing ? "crosshair" : "default",
+              cursor: placing ? "crosshair" : "default",
             }}
           >
-            <img src={imageUrl} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block" }} />
+            <div style={{ borderRadius: 12, overflow: "hidden", position: "relative" }}>
+              <img src={imageUrl} style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: "#0a0e18", display: "block", pointerEvents: "none" }} />
 
-            {labels.map((label, i) => (
-              <div
-                key={i}
-                className="occ-label-box"
-                onClick={(e) => { e.stopPropagation(); toggleLabel(i); }}
-                onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); removeLabel(i); }}
-                style={{
+              {labels.map((label, i) => (
+                <div
+                  key={i}
+                  className="occ-label-box"
+                  onClick={(e) => { e.stopPropagation(); toggleLabel(i); }}
+                  onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); removeLabel(i); }}
+                  style={{
+                    position: "absolute",
+                    left: `${label.x}%`, top: `${label.y}%`,
+                    width: `${label.w}%`, height: `${label.h}%`,
+                    background: label.selected ? "#6d28d9" : "rgba(255,255,255,0.08)",
+                    border: label.selected ? "2px solid #7c3aed" : "1px solid rgba(255,255,255,0.2)",
+                    borderRadius: 4, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 600, color: "#e9d5ff",
+                  }}
+                >
+                  {label.selected ? label.text : ""}
+                  {label.selected && (
+                    <>
+                      <div className="occ-handle occ-handle-nw" onMouseDown={(e) => handleResizeStart(e, i, "nw")} />
+                      <div className="occ-handle occ-handle-ne" onMouseDown={(e) => handleResizeStart(e, i, "ne")} />
+                      <div className="occ-handle occ-handle-sw" onMouseDown={(e) => handleResizeStart(e, i, "sw")} />
+                      <div className="occ-handle occ-handle-se" onMouseDown={(e) => handleResizeStart(e, i, "se")} />
+                      <div className="occ-handle occ-handle-n" onMouseDown={(e) => handleResizeStart(e, i, "n")} />
+                      <div className="occ-handle occ-handle-s" onMouseDown={(e) => handleResizeStart(e, i, "s")} />
+                      <div className="occ-handle occ-handle-w" onMouseDown={(e) => handleResizeStart(e, i, "w")} />
+                      <div className="occ-handle occ-handle-e" onMouseDown={(e) => handleResizeStart(e, i, "e")} />
+                    </>
+                  )}
+                </div>
+              ))}
+
+              {dragRect && dragRect.w > 0.3 && (
+                <div style={{
                   position: "absolute",
-                  left: `${label.x}%`, top: `${label.y}%`,
-                  width: `${label.w}%`, height: `${label.h}%`,
-                  background: label.selected ? "#6d28d9" : "rgba(255,255,255,0.08)",
-                  border: label.selected ? "2px solid #7c3aed" : "1px solid rgba(255,255,255,0.2)",
-                  borderRadius: 4, cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 600,
-                  color: "#e9d5ff",
-                }}
-              >
-                {label.selected ? label.text : ""}
-              </div>
-            ))}
-
-            {previewRect && previewRect.w > 0.3 && (
-              <div style={{
-                position: "absolute",
-                left: `${previewRect.x}%`, top: `${previewRect.y}%`,
-                width: `${previewRect.w}%`, height: `${previewRect.h}%`,
-                background: "rgba(109,40,217,0.3)",
-                border: "2px dashed rgba(124,58,237,0.8)",
-                borderRadius: 4, pointerEvents: "none",
-              }} />
-            )}
-
-            {placing && placeStart && !showInput && (
-              <div style={{
-                position: "absolute",
-                left: `${placeStart.x}%`, top: `${placeStart.y}%`,
-                width: 8, height: 8, borderRadius: "50%",
-                background: "#1db954", transform: "translate(-50%, -50%)",
-                boxShadow: "0 0 8px rgba(29,185,84,0.6)", pointerEvents: "none",
-              }} />
-            )}
+                  left: `${dragRect.x}%`, top: `${dragRect.y}%`,
+                  width: `${dragRect.w}%`, height: `${dragRect.h}%`,
+                  background: "rgba(109,40,217,0.3)",
+                  border: "2px dashed rgba(124,58,237,0.8)",
+                  borderRadius: 4, pointerEvents: "none",
+                }} />
+              )}
+            </div>
           </div>
 
           {showInput && (
@@ -329,57 +294,18 @@ export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, i
           )}
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 3 }}>
-              <button
-                onClick={() => { setMode("manual"); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
-                style={{
-                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
-                  background: mode === "manual" ? "rgba(109,40,217,0.3)" : "transparent",
-                  color: mode === "manual" ? "#c4b5fd" : "var(--os-text-dim)",
-                }}
-              >
-                <MousePointer2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Manual
-              </button>
-              <button
-                onClick={() => { setMode("auto"); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
-                style={{
-                  padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none",
-                  background: mode === "auto" ? "rgba(109,40,217,0.3)" : "transparent",
-                  color: mode === "auto" ? "#c4b5fd" : "var(--os-text-dim)",
-                }}
-              >
-                <Wand2 size={12} style={{ marginRight: 4, verticalAlign: "middle" }} />Auto
-              </button>
-            </div>
-
-            {mode === "manual" ? (
-              <button
-                onClick={() => { setPlacing(!placing); setPlaceStart(null); setMousePos(null); setShowInput(false); }}
-                className="glass-btn"
-                style={{
-                  padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4,
-                  background: placing ? "rgba(29,185,84,0.15)" : undefined,
-                  color: placing ? "#1db954" : undefined,
-                  border: placing ? "1px solid rgba(29,185,84,0.3)" : undefined,
-                }}
-              >
-                <MousePointer2 size={11} /> {placing ? (placeStart ? "Click 2nd corner..." : "Click 1st corner...") : "+ Draw Box"}
-              </button>
-            ) : (
-              <>
-                {!scanning && (
-                  <button onClick={runOCR} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", fontSize: 12 }}>
-                    <Wand2 size={12} /> {labels.length > 0 ? "Re-Scan" : "Auto-Detect"}
-                  </button>
-                )}
-                {scanning && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", fontSize: 12, color: "var(--os-text-dim)" }}>
-                    <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-                    {scanProgress}
-                  </div>
-                )}
-              </>
-            )}
+            <button
+              onClick={() => { setPlacing(!placing); setDragStart(null); setDragCurrent(null); setShowInput(false); setPendingRect(null); }}
+              className="glass-btn"
+              style={{
+                padding: "5px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4,
+                background: placing ? "rgba(29,185,84,0.15)" : undefined,
+                color: placing ? "#1db954" : undefined,
+                border: placing ? "1px solid rgba(29,185,84,0.3)" : undefined,
+              }}
+            >
+              <MousePointer2 size={11} /> {placing ? "Draw a rectangle on the image..." : "+ Draw Box"}
+            </button>
 
             {labels.length > 0 && (
               <>
@@ -387,12 +313,12 @@ export function ImageOcclusionCreator({ onGenerate, onCancel, initialImageUrl, i
                 <button onClick={deselectAll} className="glass-btn" style={{ padding: "4px 10px", fontSize: 11 }}>None</button>
               </>
             )}
-            <button onClick={() => { setImageUrl(null); setLabels([]); setPlacing(false); setPlaceStart(null); setMousePos(null); setShowInput(false); }} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Change Image</button>
+            <button onClick={() => { setImageUrl(null); setLabels([]); setPlacing(false); setDragStart(null); setDragCurrent(null); setShowInput(false); setPendingRect(null); }} className="glass-btn" style={{ padding: "5px 12px", fontSize: 12 }}>Change Image</button>
           </div>
 
           {labels.length > 0 && (
             <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
-              {selectedCount} of {labels.length} labels — click to toggle, right-click to remove
+              {selectedCount} of {labels.length} labels — click to toggle, right-click to remove, drag edges to resize
             </div>
           )}
         </div>
