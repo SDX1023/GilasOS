@@ -572,3 +572,30 @@ export async function loadReactions(noteIds: string[], userId: string): Promise<
   }
   return { reactions: grouped, usernames: usernameMap };
 }
+
+export async function logCardResult(userId: string, deckId: string, cardFront: string, cardBack: string, result: "known" | "forgot" | "dont_know") {
+  const supabase = getSupabase();
+  await supabase.from("card_results").insert({
+    user_id: userId, deck_id: deckId, card_front: cardFront, card_back: cardBack, result,
+  });
+}
+
+export async function loadWeakCards(userId: string, deckId?: string): Promise<{ front: string; back: string; deck_id: string; forgot: number; known: number; dont_know: number }[]> {
+  const supabase = getSupabase();
+  let query = supabase.from("card_results").select("card_front, card_back, deck_id, result").eq("user_id", userId);
+  if (deckId) query = query.eq("deck_id", deckId);
+  const { data, error } = await query;
+  if (error || !data || data.length === 0) return [];
+
+  const map = new Map<string, { front: string; back: string; deck_id: string; forgot: number; known: number; dont_know: number }>();
+  for (const row of data) {
+    const key = `${row.deck_id}:::${row.card_front}:::${row.card_back}`;
+    if (!map.has(key)) map.set(key, { front: row.card_front, back: row.card_back, deck_id: row.deck_id, forgot: 0, known: 0, dont_know: 0 });
+    const entry = map.get(key)!;
+    if (row.result === "known") entry.known++;
+    else if (row.result === "forgot") entry.forgot++;
+    else entry.dont_know++;
+  }
+
+  return Array.from(map.values()).filter((e) => (e.forgot + e.dont_know) > e.known);
+}

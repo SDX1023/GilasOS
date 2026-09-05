@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
-import { saveStudyStats, saveStudySession } from "@/lib/user-data";
+import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards } from "@/lib/user-data";
 import { earnBadge } from "@/lib/badges";
 
 const formulaCache: Record<string, { formula: string; explanation: string } | null> = {};
@@ -199,6 +199,7 @@ export default function DeckStudyPage() {
   const { deckId } = useParams() as { deckId: string };
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [deckTitle, setDeckTitle] = useState("");
   const [cards, setCards] = useState<DeckCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -232,6 +233,7 @@ export default function DeckStudyPage() {
   const [quizKey, setQuizKey] = useState(0);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizSelectedIndex, setQuizSelectedIndex] = useState<number | null>(null);
+  const [cramMode, setCramMode] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -316,6 +318,12 @@ export default function DeckStudyPage() {
     setCards(cardData || []);
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!loading && cards.length > 0 && searchParams.get("cram") === "true" && !reviewMode) {
+      startCram();
+    }
+  }, [loading, cards.length]);
 
   const syncCount = async (newCards: DeckCard[]) => {
     const supabase = getSupabase();
@@ -437,7 +445,29 @@ export default function DeckStudyPage() {
     setReviewMode(true);
   };
 
+  const startCram = async () => {
+    if (!user) return;
+    setCramMode(true);
+    const weak = await loadWeakCards(user.id, deckId);
+    if (weak.length > 0) {
+      const weakSet = new Set(weak.map((w) => `${w.front}:::${w.back}`));
+      const q = cards.filter((c) => weakSet.has(`${c.front}:::${c.back}`));
+      setQueue(q.length > 0 ? q : [...cards]);
+    } else {
+      setQueue([...cards]);
+    }
+    setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
+    setKnownCount(0); setForgotCount(0); setDontKnowCount(0);
+    setTypedAnswer(""); setAnswerChecked(false);
+    setReviewMode(true);
+  };
+
   const nextCard = (correct: boolean, dontKnow = false) => {
+    const current = queue[reviewIndex];
+    if (user && current) {
+      const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
+      logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
+    }
     if (dontKnow) setDontKnowCount(d => d + 1); else if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);
     const next = queue.filter((_, i) => i !== reviewIndex);
     if (next.length === 0) { setQueue([]); setReviewComplete(true); return; }
@@ -464,6 +494,7 @@ export default function DeckStudyPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <span style={{ fontSize: "1rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
+            {cramMode && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 9999, background: "rgba(239,68,68,0.15)", color: "#f87171", fontWeight: 600 }}>CRAM</span>}
             <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.875rem" }}>
               <span style={{ color: "#22c55e" }}>{knownCount}</span>
               <span style={{ color: "#f97316" }}>{dontKnowCount}</span>
@@ -523,7 +554,7 @@ export default function DeckStudyPage() {
                 }
               }
               localStorage.removeItem(sessionKey);
-              setReviewMode(false); setReviewComplete(false);
+              setReviewMode(false); setReviewComplete(false); setCramMode(false);
               if (timerRef.current) clearInterval(timerRef.current); setTimerRunning(false); setTimerSeconds(0);
             }} className="glass-btn">Exit</button>
           </div>
@@ -543,7 +574,7 @@ export default function DeckStudyPage() {
                 <span style={{ color: "#f97316" }}>{dontKnowCount} don&apos;t know</span>
                 <span style={{ color: "#ef4444" }}>{forgotCount} forgot</span>
               </div>
-              <button onClick={() => { localStorage.removeItem(sessionKey); setReviewMode(false); setReviewComplete(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
+              <button onClick={() => { localStorage.removeItem(sessionKey); setReviewMode(false); setReviewComplete(false); setCramMode(false); }} className="glass-btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "1.125rem", fontWeight: 500 }}>Back to Deck</button>
             </div>
           ) : card ? (
             <>
@@ -797,6 +828,9 @@ export default function DeckStudyPage() {
             </button>
             <button onClick={startReview} disabled={cards.length === 0} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, opacity: cards.length === 0 ? 0.4 : 1 }}>
               <Play size={15} /> Review
+            </button>
+            <button onClick={startCram} disabled={cards.length === 0 || !user} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, opacity: cards.length === 0 ? 0.4 : 1, borderColor: "rgba(239,68,68,0.4)", color: "#f87171" }}>
+              <Target size={15} /> Cram
             </button>
             <button onClick={() => setAddingCard(!addingCard)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
               <Plus size={15} /> Add Card

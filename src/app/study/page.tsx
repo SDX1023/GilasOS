@@ -6,13 +6,14 @@ import { loadCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
-import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap } from "lucide-react";
+import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap, Target } from "lucide-react";
 import { MathRenderer } from "@/components/math-renderer";
+import { CramTab } from "@/components/cram-tab";
 import FocusMode from "@/components/focus-mode";
 import QuizManager from "@/components/quiz-manager";
 import { earnBadge } from "@/lib/badges";
 
-type Tab = "quiz" | "history" | "log";
+type Tab = "quiz" | "cram" | "history" | "log";
 
 const formulaCacheGlobal: Record<string, { formula: string; explanation: string } | null> = {};
 
@@ -119,6 +120,7 @@ export default function StudyPage() {
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", overflowX: "auto", userSelect: "none", WebkitOverflowScrolling: "touch" }}>
         {([
           ["quiz", "Quiz", Sparkles],
+          ["cram", "Cram", Target],
           ["history", "History", History],
           ["log", "Study Log", BarChart3],
         ] as const).map(([key, label, Icon]) => (
@@ -135,6 +137,7 @@ export default function StudyPage() {
       </div>
 
       {tab === "quiz" && <QuizTabWithManager userId={userId} />}
+      {tab === "cram" && <CramTab userId={userId} />}
       {tab === "history" && <HistoryTab userId={userId} />}
       {tab === "log" && <StudyLogTab userId={userId} />}
     </div>

@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
-import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer, Share2, Copy } from "lucide-react";
+import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer, Share2, Copy, Target } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession } from "@/lib/user-data";
+import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession, logCardResult, loadWeakCards } from "@/lib/user-data";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
 import { MathRenderer } from "@/components/math-renderer";
 import { earnBadge } from "@/lib/badges";
@@ -125,6 +125,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [dontKnowCount, setDontKnowCount] = useState(0);
   const [reviewComplete, setReviewComplete] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [cramMode, setCramMode] = useState(false);
   const [addingCard, setAddingCard] = useState(false);
   const [addFront, setAddFront] = useState("");
   const [addBack, setAddBack] = useState("");
@@ -353,6 +354,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     saveProgressIfNeeded();
     setShowSummary(false);
     setReviewMode(false);
+    setCramMode(false);
   }
 
   if (!mounted) {
@@ -453,9 +455,35 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     setReviewComplete(false); setReviewMode(true);
   }
 
+  async function startCram() {
+    sessionStartRef.current = Date.now();
+    setCramMode(true);
+    const deckId = reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`;
+    if (user) {
+      const weak = await loadWeakCards(user.id, deckId);
+      if (weak.length > 0) {
+        const weakSet = new Set(weak.map((w) => `${w.front}:::${w.back}`));
+        const q = cards.filter((c) => weakSet.has(`${c.front}:::${c.back}`));
+        if (q.length > 0) { setQueue(shuffled ? shuffleArray(q) : q); }
+        else { setQueue(shuffled ? shuffleArray(cards) : buildSpacedQueue(cards)); }
+      } else {
+        const q = Object.entries(cardLevels).filter(([_, level]) => (level || 0) === 0).map(([idx]) => cards[parseInt(idx)]);
+        setQueue(q.length > 0 ? (shuffled ? shuffleArray(q) : q) : (shuffled ? shuffleArray(cards) : buildSpacedQueue(cards)));
+      }
+    } else {
+      const q = Object.entries(cardLevels).filter(([_, level]) => (level || 0) === 0).map(([idx]) => cards[parseInt(idx)]);
+      setQueue(q.length > 0 ? (shuffled ? shuffleArray(q) : q) : (shuffled ? shuffleArray(cards) : buildSpacedQueue(cards)));
+    }
+    setQueueIndex(0); setKnownCount(0); setForgotCount(0);
+    setDontKnowCount(0); setShowSummary(false); setReviewFlipped(false); setSwapped(false);
+    setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
+    setReviewComplete(false); setReviewMode(true);
+  }
+
   function handleKnow() {
     showFlash("know");
     const current = queue[queueIndex];
+    if (user && current) logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "known").catch(() => {});
     updateLevel(current, 1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setKnownCount((k) => k + 1);
@@ -469,6 +497,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   function handleDontKnow() {
     showFlash("dontknow");
     const current = queue[queueIndex];
+    if (user && current) logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "dont_know").catch(() => {});
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setDontKnowCount((d) => d + 1);
@@ -482,6 +511,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   function handleForgot() {
     showFlash("forgot");
     const current = queue[queueIndex];
+    if (user && current) logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "forgot").catch(() => {});
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setForgotCount((f) => f + 1);
@@ -760,6 +790,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
             <button onClick={startReview} className="glass-btn" style={{ color: "var(--os-accent)", borderColor: "var(--os-accent)" }}>
               <Play style={{ width: 16, height: 16 }} /> Review
             </button>
+            <button onClick={startCram} className="glass-btn" style={{ color: "#f87171", borderColor: "rgba(239,68,68,0.4)" }}>
+              <Target style={{ width: 16, height: 16 }} /> Cram
+            </button>
             <button onClick={() => setAddingCard(!addingCard)} className="glass-btn">
               <Plus style={{ width: 16, height: 16 }} /> Add Card
             </button>
@@ -785,6 +818,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--os-border)", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
+              {cramMode && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 9999, background: "rgba(239,68,68,0.15)", color: "#f87171", fontWeight: 600 }}>CRAM</span>}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }} className="text-sm">
                 <span style={{ color: "#22c55e" }}>{knownCount}</span>
                 <span style={{ color: "#f97316" }}>{dontKnowCount}</span>
@@ -1018,7 +1052,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <div style={{ textAlign: "center" }}><p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#ef4444" }}>{forgotCount}</p><p className="text-sm text-secondary">Forgot</p></div>
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-                  <button onClick={() => { saveProgressIfNeeded(); localStorage.removeItem(sessionKey); setShowSummary(false); startReview(); }}
+                  <button onClick={() => { saveProgressIfNeeded(); localStorage.removeItem(sessionKey); setShowSummary(false); setCramMode(false); startReview(); }}
                     className="glass-btn-primary" style={{ padding: "0.5rem 1.5rem" }}>Review Again</button>
                   <button onClick={exitReview}
                     className="glass-btn" style={{ padding: "0.5rem 1.5rem" }}>Back to Deck</button>
