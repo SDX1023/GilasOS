@@ -140,9 +140,7 @@ CRITICAL RULES:
 - You MUST generate at least ${Math.ceil(bullets / 2)} questions from these ${bullets} bullet points
 - Create 1 question for every 1-2 bullet points — do NOT skip bullet points
 - Each question must have 4 options (A, B, C, D)
-- Include the correct answer as a LETTER (A, B, C, or D) matching the correct option position
-- The correct answer letter MUST vary across questions — do NOT always use "A"
-- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
+- "correct" must be the LETTER (A, B, C, or D) matching the correct option — vary answers across questions
 
 CONTENT:
 ${chunkText}`;
@@ -188,7 +186,7 @@ CRITICAL RULES:
 - You MUST generate at least 1 question for EVERY Q&A pair — do NOT skip any
 - For each Q&A pair, create a question using the Q as the stem
 - Add 3 wrong options that are plausible but incorrect
-- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
+- "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
 
 CONTENT:
 ${chunkText}`;
@@ -238,7 +236,7 @@ EXTRACTION RULES:
 CRITICAL RULES:
 - Create 1 question for every 1-2 sentences of important information — do NOT skip facts
 - Each question must have 4 options (A, B, C, D)
-- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
+- "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
 
 TEXT:
 ${chunkText}`;
@@ -274,7 +272,7 @@ ${chunkText}`;
 
 Rules:
 - Create 5 quiz questions with 4 options each
-- For MC: "correct" must be the LETTER (A, B, C, or D) — vary answers across questions, do NOT always use A
+- "correct" must be the LETTER (A, B, C, or D) — vary answers across questions
 
 TEXT:
 ${chunkText}`;

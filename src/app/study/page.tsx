@@ -262,22 +262,16 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   useEffect(() => {
     const isStudying = quizStarted && !showResults;
-    let styleEl = document.getElementById("quiz-spotify-hide");
     if (isStudying) {
-      if (!styleEl) {
-        styleEl = document.createElement("style");
-        styleEl.id = "quiz-spotify-hide";
-        styleEl.textContent = '[data-mini-spotify] { display: none !important; } .taskbar { display: none !important; }';
-        document.head.appendChild(styleEl);
-      }
       document.body.classList.add("quiz-active");
-      const t = setInterval(() => {
-        document.querySelectorAll<HTMLElement>("[data-mini-spotify]").forEach(el => el.style.display = "none");
-      }, 200);
-      return () => { clearInterval(t); document.body.classList.remove("quiz-active"); styleEl?.remove(); document.querySelectorAll<HTMLElement>("[data-mini-spotify]").forEach(el => el.style.display = ""); document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", ""); };
+      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "none");
+      return () => {
+        document.body.classList.remove("quiz-active");
+        document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+      };
     }
     document.body.classList.remove("quiz-active");
-    styleEl?.remove();
+    document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
     return () => {};
   }, [quizStarted, showResults]);
 

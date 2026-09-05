@@ -118,11 +118,22 @@ export function MusicPlayer() {
     return () => {};
   }, [started]);
 
-  // Hide mini player when panel is open
+  // Hide mini player when panel is open or quiz is active
   useEffect(() => {
     const iframe = miniIframeRef.current;
     if (!iframe) return;
-    iframe.style.display = open ? "none" : started ? "block" : "none";
+
+    const updateVisibility = () => {
+      const quizActive = document.body.classList.contains("quiz-active");
+      iframe.style.display = open || quizActive ? "none" : started ? "block" : "none";
+    };
+
+    updateVisibility();
+
+    const observer = new MutationObserver(updateVisibility);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
   }, [open, started]);
 
   // Hover effect for mini player
