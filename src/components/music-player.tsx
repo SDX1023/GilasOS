@@ -126,14 +126,17 @@ export function MusicPlayer() {
     const updateVisibility = () => {
       const quizActive = document.body.classList.contains("quiz-active");
       if (open || quizActive) {
-        iframe.style.visibility = "hidden";
+        iframe.style.transform = "translateX(9999px)";
         iframe.style.pointerEvents = "none";
+        iframe.style.opacity = "0";
       } else if (started) {
-        iframe.style.visibility = "visible";
+        iframe.style.transform = "";
         iframe.style.pointerEvents = "auto";
+        iframe.style.opacity = "0.6";
       } else {
-        iframe.style.visibility = "hidden";
+        iframe.style.transform = "translateX(9999px)";
         iframe.style.pointerEvents = "none";
+        iframe.style.opacity = "0";
       }
     };
 
