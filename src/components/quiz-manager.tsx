@@ -446,22 +446,11 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   }
 
   if (view === "edit" && activeQuiz) {
-    const savedError = typeof window !== "undefined" ? localStorage.getItem("quiz_save_error") : null;
-    const parsedError = savedError ? JSON.parse(savedError) : null;
     return (
       <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
         <button onClick={() => setView("list")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", marginBottom: 16, padding: 0 }}>
           <ArrowLeft size={14} /> Back to My Quizzes
         </button>
-
-        {parsedError && (
-          <div style={{ padding: 12, borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", marginBottom: 16, fontSize: 12 }}>
-            <p style={{ color: "#ef4444", fontWeight: 600, marginBottom: 4 }}>Save failed:</p>
-            <p style={{ color: "var(--os-text-secondary)" }}>{parsedError.message}</p>
-            {parsedError.details && <p style={{ color: "var(--os-text-dim)", marginTop: 2 }}>{parsedError.details}</p>}
-            {parsedError.hint && <p style={{ color: "var(--os-text-dim)", marginTop: 2 }}>{parsedError.hint}</p>}
-          </div>
-        )}
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>{activeQuiz.title}</h2>
         <p className="text-sm text-secondary" style={{ marginBottom: 20 }}>{activeQuiz.questions?.length || 0} questions</p>

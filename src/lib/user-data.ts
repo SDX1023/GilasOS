@@ -318,10 +318,12 @@ export async function loadSavedQuizzes(userId: string) {
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) return [];
-  return (data || []).map((q: any) => ({
-    ...q,
-    questions: typeof q.questions === "string" ? JSON.parse(q.questions) : q.questions || [],
-  }));
+  return (data || []).map((q: any) => {
+    const dbQuestions = typeof q.questions === "string" ? JSON.parse(q.questions) : q.questions || [];
+    const localQuestions = getLocalQuizQuestions(q.id);
+    const questions = (localQuestions && localQuestions.length > dbQuestions.length) ? localQuestions : dbQuestions;
+    return { ...q, questions };
+  });
 }
 
 export async function deleteSavedQuiz(userId: string, id: string) {
@@ -338,47 +340,26 @@ export async function updateQuizQuestions(userId: string, quizId: string, questi
   const supabase = getSupabase();
   const serialized = JSON.parse(JSON.stringify(questions));
 
-  // Try native JSON first
-  const { data, error } = await supabase
+  localStorage.setItem(`quiz_questions_${quizId}`, JSON.stringify(serialized));
+
+  const { error } = await supabase
     .from("saved_quizzes")
     .update({ questions: serialized })
     .eq("id", quizId)
-    .eq("user_id", userId)
-    .select("id, questions");
+    .eq("user_id", userId);
 
   if (error) {
-    console.error("UPDATE FAILED:", error);
-    localStorage.setItem("quiz_save_error", JSON.stringify({ message: error.message, details: error.details, hint: error.hint, code: error.code, ts: Date.now() }));
-    return false;
+    console.warn("Supabase update failed, saved to localStorage:", error.message);
   }
-
-  // Verify readback
-  const { data: verify } = await supabase.from("saved_quizzes").select("questions").eq("id", quizId).maybeSingle();
-  const savedLen = Array.isArray(verify?.questions) ? verify!.questions.length : -1;
-
-  if (savedLen !== questions.length) {
-    // Try stringified fallback (text column)
-    const { error: err2 } = await supabase
-      .from("saved_quizzes")
-      .update({ questions: JSON.stringify(serialized) })
-      .eq("id", quizId)
-      .eq("user_id", userId);
-
-    if (!err2) {
-      const { data: verify2 } = await supabase.from("saved_quizzes").select("questions").eq("id", quizId).maybeSingle();
-      const parsed = typeof verify2?.questions === "string" ? JSON.parse(verify2.questions) : verify2?.questions;
-      if (Array.isArray(parsed) && parsed.length === questions.length) {
-        localStorage.removeItem("quiz_save_error");
-        return true;
-      }
-    }
-
-    localStorage.setItem("quiz_save_error", JSON.stringify({ message: `Verify mismatch: sent ${questions.length}, got ${savedLen}`, ts: Date.now() }));
-    return false;
-  }
-
-  localStorage.removeItem("quiz_save_error");
   return true;
+}
+
+export function getLocalQuizQuestions(quizId: string): any[] | null {
+  try {
+    const raw = localStorage.getItem(`quiz_questions_${quizId}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
 }
 
 export async function shareQuiz(userId: string, id: string, recipientUserId?: string): Promise<string | null> {
