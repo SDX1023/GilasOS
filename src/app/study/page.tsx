@@ -262,12 +262,16 @@ function QuizTab({ userId }: { userId: string | null }) {
 
   useEffect(() => {
     const isStudying = quizStarted && !showResults;
-    document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", isStudying ? "none" : "");
-    document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", isStudying ? "none" : "");
-    return () => {
-      document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", "");
-      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", "");
+    const hide = () => {
+      document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", isStudying ? "none" : "");
+      document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", isStudying ? "none" : "");
     };
+    hide();
+    if (isStudying) {
+      const t = setInterval(hide, 500);
+      return () => { clearInterval(t); document.querySelector<HTMLElement>("[data-mini-spotify]")?.style.setProperty("display", ""); document.querySelector<HTMLElement>(".taskbar")?.style.setProperty("display", ""); };
+    }
+    return () => {};
   }, [quizStarted, showResults]);
 
   useEffect(() => {
@@ -353,7 +357,17 @@ function QuizTab({ userId }: { userId: string | null }) {
       let s = 0;
       quizQuestions.forEach((q, i) => {
         const correctIdx = getCorrectIndex(q);
-        if (q.type === "mc" && answers[i] === correctIdx) s++;
+        if (q.type === "mc") {
+          const ansIdx = answers[i];
+          const indexMatch = ansIdx === correctIdx;
+          let textMatch = false;
+          if (!indexMatch && q.options && ansIdx != null && q.correct != null) {
+            const chosenText = stripOptionPrefix(String(q.options[parseInt(ansIdx)] || "")).toLowerCase().trim();
+            const correctText = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").toLowerCase().trim();
+            textMatch = chosenText.length > 0 && (chosenText === correctText || chosenText.includes(correctText) || correctText.includes(chosenText));
+          }
+          if (indexMatch || textMatch) s++;
+        }
         if (q.type === "identification" && answers[i]?.toLowerCase().trim() === (q.answer || "").toLowerCase().trim()) s++;
       });
       setScore(s); setShowResults(true);
@@ -490,7 +504,19 @@ function QuizTab({ userId }: { userId: string | null }) {
           {quizQuestions.map((q, i) => {
             const userAnswer = answers[i] || "";
             const correctIdx = getCorrectIndex(q);
-            const isCorrect = q.type === "mc" ? userAnswer === correctIdx : userAnswer.toLowerCase().trim() === (q.answer || "").toLowerCase().trim();
+            let isCorrect: boolean;
+            if (q.type === "mc") {
+              const indexMatch = userAnswer === correctIdx;
+              let textMatch = false;
+              if (!indexMatch && q.options && q.correct != null && userAnswer) {
+                const chosenText = stripOptionPrefix(String(q.options[parseInt(userAnswer)] || "")).toLowerCase().trim();
+                const correctText = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").toLowerCase().trim();
+                textMatch = chosenText.length > 0 && (chosenText === correctText || chosenText.includes(correctText) || correctText.includes(chosenText));
+              }
+              isCorrect = indexMatch || textMatch;
+            } else {
+              isCorrect = userAnswer.toLowerCase().trim() === (q.answer || "").toLowerCase().trim();
+            }
             return (
               <div key={i} className="glass-card" style={{
                 borderColor: isCorrect ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)",
@@ -500,7 +526,14 @@ function QuizTab({ userId }: { userId: string | null }) {
                 {q.type === "mc" && q.options && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "16px" }}>
                     {q.options.map((opt: string, j: number) => {
-                      const isCorrectOpt = String(j) === correctIdx;
+                      const indexMatch = String(j) === correctIdx;
+                      let textMatch = false;
+                      if (!indexMatch && q.correct != null) {
+                        const optText = stripOptionPrefix(opt).toLowerCase().trim();
+                        const correctText = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").toLowerCase().trim();
+                        textMatch = optText.length > 0 && (optText === correctText || optText.includes(correctText) || correctText.includes(optText));
+                      }
+                      const isCorrectOpt = indexMatch || textMatch;
                       const isUserChoice = userAnswer === String(j);
                       return (
                         <p key={j} className="text-sm" style={{
@@ -685,7 +718,14 @@ function QuizTab({ userId }: { userId: string | null }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
             {q.options.map((opt: string, j: number) => {
               const isChosen = userAns === String(j);
-              const isCorrectOpt = String(j) === correctIdx;
+              const indexMatch = String(j) === correctIdx;
+              let textMatch = false;
+              if (!indexMatch && q.correct != null) {
+                const optText = stripOptionPrefix(opt).toLowerCase().trim();
+                const correctText = String(q.correct).replace(/^\s*[A-Da-d]\.\s*/, "").toLowerCase().trim();
+                textMatch = optText.length > 0 && (optText === correctText || optText.includes(correctText) || correctText.includes(optText));
+              }
+              const isCorrectOpt = indexMatch || textMatch;
               const showFeedback = answered;
               let bg = "transparent";
               let border = "rgba(255,255,255,0.35)";
