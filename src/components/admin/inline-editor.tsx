@@ -411,7 +411,8 @@ export function markdownToHtml(md: string): string {
     ) {
       processed.push(line);
     } else {
-      processed.push(`<p>${t}</p>`);
+      // Wrap each bold-starting line as its own paragraph for spacing
+      processed.push(`<p style="margin:0.6em 0">${t}</p>`);
     }
   }
   if (inTable) {

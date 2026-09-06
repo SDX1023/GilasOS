@@ -88,21 +88,33 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
 
   return (
     <div
-      className="prose prose-neutral dark:prose-invert max-w-none relative overflow-visible
-        prose-headings:scroll-mt-20
-        prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:mt-10 prose-h1:text-white
-        prose-h2:text-2xl prose-h2:font-bold prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-white prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2
-        prose-h3:text-lg prose-h3:font-semibold prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-purple-300
-        prose-p:my-4 prose-p:leading-relaxed prose-p:text-gray-300
-        prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:underline
-        prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
-        prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
-        prose-strong:text-white prose-strong:font-semibold
-        prose-li:my-1.5 prose-li:text-gray-300
-        prose-ul:list-disc prose-ul:my-5 prose-ol:list-decimal prose-ol:my-5
-        prose-table:border prose-th:border prose-td:border prose-table:max-w-full
-        prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg prose-blockquote:my-4"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
+      className="prose prose-neutral dark:prose-invert max-w-none relative overflow-visible"
+      style={{
+        "--tw-prose-headings": "white",
+      } as React.CSSProperties}
+    >
+      <style>{`
+        .markdown-viewer p { margin: 0.7em 0; line-height: 1.7; color: #d1d5db; }
+        .markdown-viewer h1 { font-size: 1.75rem; font-weight: 700; margin: 1.5em 0 0.8em; color: white; }
+        .markdown-viewer h2 { font-size: 1.35rem; font-weight: 700; margin: 1.8em 0 0.6em; padding-bottom: 0.4em; border-bottom: 1px solid rgba(255,255,255,0.08); color: white; }
+        .markdown-viewer h3 { font-size: 1.1rem; font-weight: 600; margin: 1.4em 0 0.5em; color: #c4b5fd; }
+        .markdown-viewer ul { margin: 0.8em 0; padding-left: 1.5em; }
+        .markdown-viewer ol { margin: 0.8em 0; padding-left: 1.5em; }
+        .markdown-viewer li { margin: 0.35em 0; color: #d1d5db; }
+        .markdown-viewer strong { color: white; font-weight: 600; }
+        .markdown-viewer a { color: #60a5fa; }
+        .markdown-viewer a:hover { text-decoration: underline; }
+        .markdown-viewer blockquote { border-left: 3px solid #8b5cf6; padding: 0.6em 1em; margin: 0.8em 0; background: rgba(139,92,246,0.08); border-radius: 0 8px 8px 0; font-style: italic; }
+        .markdown-viewer code { color: #f472b6; background: rgba(255,255,255,0.06); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
+        .markdown-viewer hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 1.5em 0; }
+        .markdown-viewer table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 14px; }
+        .markdown-viewer th, .markdown-viewer td { border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; text-align: left; }
+        .markdown-viewer th { background: rgba(255,255,255,0.03); font-weight: 600; }
+      `}</style>
+      <div
+        className="markdown-viewer"
+        dangerouslySetInnerHTML={{ __html: htmlContent }}
+      />
+    </div>
   );
 }
