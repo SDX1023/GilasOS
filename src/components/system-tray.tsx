@@ -31,16 +31,16 @@ export function SystemTray() {
   }, [showTray]);
 
   return (
-    <div ref={trayRef} style={{ position: "relative" }}>
+    <div ref={trayRef} style={{ position: "relative", display: "inline-block" }}>
       <button
-        onClick={() => setShowTray(!showTray)}
+        onClick={(e) => { e.stopPropagation(); setShowTray(!showTray); }}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "4px 10px",
+          padding: "5px 12px",
           borderRadius: 8,
-          background: showTray ? "rgba(255,255,255,0.08)" : "transparent",
+          background: showTray ? "rgba(255,255,255,0.1)" : "transparent",
           border: "none",
           color: "#a8b5c8",
           cursor: "pointer",
@@ -50,7 +50,11 @@ export function SystemTray() {
           fontVariantNumeric: "tabular-nums",
           transition: "all 0.15s",
           flexShrink: 0,
+          zIndex: 10001,
+          position: "relative",
         }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+        onMouseLeave={(e) => { if (!showTray) e.currentTarget.style.background = "transparent"; }}
       >
         {time}
       </button>
@@ -70,64 +74,36 @@ export function SystemTray() {
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
         }}>
-          {/* Clock */}
-          <div style={{
-            padding: "20px 20px 16px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-            textAlign: "center",
-          }}>
+          <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", textAlign: "center" }}>
             <p style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, lineHeight: 1, color: "#e8edf5", margin: 0 }}>{time}</p>
-            <p style={{ fontSize: 13, color: "#6b7a90", marginTop: 4, margin: 0 }}>
+            <p style={{ fontSize: 13, color: "#6b7a90", marginTop: 4, margin: "4px 0 0" }}>
               {new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
             </p>
           </div>
-
-          {/* Toggles */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 8,
-            padding: "16px",
-          }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: 16 }}>
             {[
-              { icon: <Wifi size={18} />, label: "Wi-Fi", active: true },
-              { icon: <Volume2 size={18} />, label: "Sound", active: true },
-              { icon: <Battery size={18} />, label: "Battery", active: true },
-              { icon: <Moon size={18} />, label: "Dark", active: true },
+              { icon: <Wifi size={18} />, label: "Wi-Fi" },
+              { icon: <Volume2 size={18} />, label: "Sound" },
+              { icon: <Battery size={18} />, label: "Battery" },
+              { icon: <Moon size={18} />, label: "Dark" },
             ].map((item) => (
               <button key={item.label} style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                padding: "12px 4px",
-                borderRadius: 12,
-                background: item.active ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.04)",
-                border: "none",
-                color: item.active ? "#a78bfa" : "#6b7a90",
-                cursor: "pointer",
-                fontSize: 10,
-                fontWeight: 500,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                padding: "12px 4px", borderRadius: 12,
+                background: "rgba(109,40,217,0.2)", border: "none",
+                color: "#a78bfa", cursor: "pointer", fontSize: 10, fontWeight: 500,
               }}>
                 {item.icon}
                 <span>{item.label}</span>
               </button>
             ))}
           </div>
-
-          {/* Pomodoro */}
           {pomodoro?.isRunning && (
             <div style={{
-              margin: "0 16px 16px",
-              padding: 12,
-              borderRadius: 12,
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.15)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              fontSize: 13,
-              color: "#ef4444",
+              margin: "0 16px 16px", padding: 12, borderRadius: 12,
+              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontSize: 13, color: "#ef4444",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />
@@ -136,14 +112,9 @@ export function SystemTray() {
               <span style={{ fontWeight: 600 }}>{pomodoro.timeLeft || "00:00"}</span>
             </div>
           )}
-
-          {/* Footer */}
           <div style={{
-            padding: "12px 16px",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
             <Link href="/settings" onClick={() => setShowTray(false)} style={{
               display: "flex", alignItems: "center", gap: 6,

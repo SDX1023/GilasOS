@@ -42,7 +42,9 @@ export function Taskbar() {
         );
       })}
       <div className="taskbar-divider" />
-      <SystemTray />
+      <div style={{ position: "relative" }}>
+        <SystemTray />
+      </div>
     </div>
   );
 }
