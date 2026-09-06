@@ -280,15 +280,15 @@ export default function ArchivePage() {
           <p className="text-secondary text-sm">Competition records will appear here.</p>
         </div>
       ) : (
-        <div className="glass-panel archive-table-wrap" style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+        <div className="glass-panel archive-table-wrap" style={{ padding: 0, overflow: "hidden", maxWidth: 900, margin: "0 auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
                 <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "90px" }}>
+                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
                   Type {typeSort === "asc" ? "↑" : typeSort === "desc" ? "↓" : "↕"}
                 </th>
-                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", width: "70px" }}>
+                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
                   Year {yearSort === "asc" ? "↑" : yearSort === "desc" ? "↓" : "↕"}
                 </th>
                 {isAdmin && <th style={{ width: 60 }}></th>}
@@ -317,12 +317,12 @@ export default function ArchivePage() {
                     </td>
                   ) : (
                     <>
-                      <td style={{ padding: "14px 20px", fontSize: 14, fontWeight: 500 }}>
+                      <td style={{ padding: "14px 12px", fontSize: 14, fontWeight: 500 }}>
                         {renderLinks(entry)}
                       </td>
-                      <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)" }}>{entry.type}</td>
-                      <td style={{ padding: "14px 20px", fontSize: 14, color: "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-                        <Calendar size={14} /> {entry.year || "—"}
+                      <td style={{ padding: "14px 12px", fontSize: 14, color: "var(--os-text-secondary)", whiteSpace: "nowrap" }}>{entry.type}</td>
+                      <td style={{ padding: "14px 12px", fontSize: 14, color: "var(--os-text-secondary)", whiteSpace: "nowrap" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Calendar size={14} /> {entry.year || "—"}</span>
                       </td>
                       {isAdmin && (
                         <td style={{ padding: "14px 20px" }}>
