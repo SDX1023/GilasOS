@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
 
-    // Debug: list all files in the ZIP with sizes
-    const zipFiles: Record<string, number> = {};
+    // Debug: list all files in the ZIP
+    const zipFiles: string[] = [];
     zip.forEach((path, entry) => {
-      if (!entry.dir) zipFiles[path] = entry._data ? (entry._data as any).uncompressedSize || 0 : 0;
+      if (!entry.dir) zipFiles.push(path);
     });
 
     const dbFile = zip.file("collection.anki21") || zip.file("collection.anki2");
