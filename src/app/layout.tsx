@@ -1,7 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { AuthWrapper } from "@/components/auth-wrapper";
 import { Navbar } from "@/components/navbar";
@@ -15,17 +12,20 @@ import CustomizationLoader from "@/components/customization-loader";
 import BackgroundOverlay from "@/components/background-overlay";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { MusicPlayer } from "@/components/music-player";
-import { StartMenu } from "@/components/os-desktop";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "GilasOS - The Ultimate GILAS Reviewer",
+  description: "Guts. Instincts. Luck. Attitude. Skill.",
+  manifest: "/manifest.json",
+  themeColor: "#6d28d9",
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [startMenuOpen, setStartMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const isLanding = pathname === "/";
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -37,10 +37,9 @@ export default function RootLayout({
                   <ScrollToTop />
                   <CustomizationLoader />
                   <BackgroundOverlay />
-                  {!isLanding && <Navbar />}
+                  <Navbar />
                   <main className="app-main">{children}</main>
-                  {!isLanding && <Taskbar onStartClick={() => setStartMenuOpen(!startMenuOpen)} />}
-                  <StartMenu isOpen={startMenuOpen} onClose={() => setStartMenuOpen(false)} />
+                  <Taskbar />
                 </div>
                 <FloatingTimer />
                 <PixelPet />
