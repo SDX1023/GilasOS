@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon, FolderOpen, FolderPlus } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -15,6 +15,14 @@ interface ArchiveEntry {
   link_labels: string[];
   type: string;
   year: string;
+  category_id: string | null;
+}
+
+interface ArchiveCategory {
+  id: string;
+  title: string;
+  sort_order: number;
+  user_id: string;
 }
 
 function LinksInput({ links, labels, setLinks, setLabels }: { links: string[]; labels: string[]; setLinks: (v: string[]) => void; setLabels: (v: string[]) => void }) {
@@ -102,6 +110,7 @@ function getAllLabels(entry: ArchiveEntry): string[] {
 export default function ArchivePage() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<ArchiveEntry[]>([]);
+  const [categories, setCategories] = useState<ArchiveCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -114,25 +123,34 @@ export default function ArchivePage() {
   const [editLabels, setEditLabels] = useState<string[]>([]);
   const [typeSort, setTypeSort] = useState<"asc" | "desc" | "">("");
   const [yearSort, setYearSort] = useState<"asc" | "desc" | "">("desc");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [newCatTitle, setNewCatTitle] = useState("");
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editCatTitle, setEditCatTitle] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState<string | null>(null);
 
   useEffect(() => {
     const password = sessionStorage.getItem("archive_admin");
     setIsAdmin(password === "SDX102310");
-    loadEntries();
+    loadData();
   }, []);
 
-  async function loadEntries() {
+  async function loadData() {
     setLoading(true);
     const supabase = getSupabase();
-    const { data, error } = await supabase.from("archive_entries").select("*").order("year", { ascending: false });
-    if (error) console.error("Archive load error:", error);
-    const mapped = (data || []).map((e: any) => ({
+    const [{ data: catData }, { data: entryData }] = await Promise.all([
+      supabase.from("archive_categories").select("*").order("sort_order"),
+      supabase.from("archive_entries").select("*").order("year", { ascending: false }),
+    ]);
+    setCategories((catData || []) as ArchiveCategory[]);
+    setEntries((entryData || []).map((e: any) => ({
       ...e,
       links: e.links || (e.competition_url ? [e.competition_url] : []),
       link_labels: e.link_labels || [],
-    }));
-    setEntries(mapped);
+    })) as ArchiveEntry[]);
     setLoading(false);
   }
 
@@ -153,22 +171,21 @@ export default function ArchivePage() {
       link_labels: filteredLabels,
       type: newEntry.type,
       year: newEntry.year,
+      category_id: selectedCategoryId,
     });
     if (!error) {
       setNewEntry({ competition: "", type: "", year: "" });
       setNewLinks([""]);
       setNewLabels([""]);
       setShowAddForm(false);
-      loadEntries();
+      loadData();
     }
   };
-
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const deleteEntry = async (id: string) => {
     const supabase = getSupabase();
     await supabase.from("archive_entries").delete().eq("id", id);
-    loadEntries();
+    loadData();
   };
 
   const startEdit = (entry: ArchiveEntry) => {
@@ -193,19 +210,40 @@ export default function ArchivePage() {
       year: editValues.year,
     }).eq("id", id);
     setEditingId(null);
-    loadEntries();
+    loadData();
   };
 
-  const handleTypeSort = () => {
-    setTypeSort(typeSort === "asc" ? "desc" : typeSort === "desc" ? "" : "asc");
+  const addCategory = async () => {
+    if (!newCatTitle.trim() || !user) return;
+    const supabase = getSupabase();
+    await supabase.from("archive_categories").insert({ title: newCatTitle.trim(), user_id: user.id, sort_order: categories.length });
+    setNewCatTitle("");
+    setShowNewCat(false);
+    loadData();
   };
 
-  const handleYearSort = () => {
-    setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc");
+  const updateCategory = async (id: string) => {
+    if (!editCatTitle.trim()) return;
+    const supabase = getSupabase();
+    await supabase.from("archive_categories").update({ title: editCatTitle.trim() }).eq("id", id);
+    setEditingCatId(null);
+    loadData();
   };
 
-  const sortedEntries = [...entries]
-    .filter(e => selectedType === "all" || (e.type || "").toLowerCase() === selectedType.toLowerCase())
+  const deleteCategory = async (id: string) => {
+    const supabase = getSupabase();
+    await supabase.from("archive_categories").delete().eq("id", id);
+    await supabase.from("archive_entries").update({ category_id: null }).eq("category_id", id);
+    if (selectedCategoryId === id) setSelectedCategoryId(null);
+    loadData();
+  };
+
+  const filteredEntries = entries
+    .filter(e => {
+      if (selectedCategoryId !== null && e.category_id !== selectedCategoryId) return false;
+      if (selectedType !== "all" && (e.type || "").toLowerCase() !== selectedType.toLowerCase()) return false;
+      return true;
+    })
     .sort((a, b) => {
       if (typeSort) {
         const cmp = (a.type || "").localeCompare(b.type || "");
@@ -218,7 +256,9 @@ export default function ArchivePage() {
       return 0;
     });
 
-  const uniqueTypes = [...new Set(entries.map(e => e.type).filter(Boolean))].sort();
+  const entriesForCategory = selectedCategoryId === null ? entries : entries.filter(e => e.category_id === selectedCategoryId);
+  const uniqueTypes = [...new Set(entriesForCategory.map(e => e.type).filter(Boolean))].sort();
+  const uncategorizedCount = entries.filter(e => !e.category_id).length;
 
   if (!user) {
     return (
@@ -236,6 +276,7 @@ export default function ArchivePage() {
   return (
     <div className="page-container">
       <ConfirmDialog open={!!confirmDeleteId} title="Delete Entry?" message="This will permanently delete this archive entry." confirmLabel="Delete" danger onConfirm={() => { if (confirmDeleteId) { deleteEntry(confirmDeleteId); setConfirmDeleteId(null); } }} onCancel={() => setConfirmDeleteId(null)} />
+      <ConfirmDialog open={!!confirmDeleteCat} title="Delete Category?" message="Entries in this category will become uncategorized." confirmLabel="Delete" danger onConfirm={() => { if (confirmDeleteCat) { deleteCategory(confirmDeleteCat); setConfirmDeleteCat(null); } }} onCancel={() => setConfirmDeleteCat(null)} />
       <div className="flex-between" style={{ marginBottom: 32 }}>
         <div>
           <h1 className="page-title"><Archive size={28} /> Archive</h1>
@@ -252,13 +293,59 @@ export default function ArchivePage() {
         )}
       </div>
 
+      {/* Main category tabs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={() => { setSelectedCategoryId(null); setSelectedType("all"); }} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedCategoryId === null ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedCategoryId === null ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedCategoryId === null ? "var(--os-accent)" : "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+          <Archive size={12} /> All
+        </button>
+        {categories.map(cat => (
+          <div key={cat.id} style={{ display: "flex", alignItems: "center" }}>
+            {editingCatId === cat.id ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input value={editCatTitle} onChange={(e) => setEditCatTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") updateCategory(cat.id); if (e.key === "Escape") setEditingCatId(null); }} autoFocus style={{ padding: "6px 10px", fontSize: 12, background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-accent)", borderRadius: 8, color: "var(--os-text-primary)", outline: "none", width: 120 }} />
+                <button onClick={() => updateCategory(cat.id)} style={{ padding: 4, background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={14} /></button>
+                <button onClick={() => setEditingCatId(null)} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={14} /></button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => { setSelectedCategoryId(cat.id); setSelectedType("all"); }} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedCategoryId === cat.id ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedCategoryId === cat.id ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedCategoryId === cat.id ? "var(--os-accent)" : "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
+                  <FolderOpen size={12} /> {cat.title}
+                </button>
+                {isAdmin && (
+                  <div style={{ display: "flex", border: "1px solid var(--os-glass-border)", borderLeft: "none", borderRadius: "0 8px 8px 0", overflow: "hidden" }}>
+                    <button onClick={() => { setEditingCatId(cat.id); setEditCatTitle(cat.title); }} style={{ padding: "6px 6px", background: "rgba(0,0,0,0.15)", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={10} /></button>
+                    <button onClick={() => setConfirmDeleteCat(cat.id)} style={{ padding: "6px 6px", background: "rgba(0,0,0,0.15)", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={10} /></button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+        {isAdmin && (
+          <>
+            {showNewCat ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input value={newCatTitle} onChange={(e) => setNewCatTitle(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") setShowNewCat(false); }} placeholder="Category name" autoFocus style={{ padding: "6px 10px", fontSize: 12, background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-accent)", borderRadius: 8, color: "var(--os-text-primary)", outline: "none", width: 120 }} />
+                <button onClick={addCategory} style={{ padding: 4, background: "none", border: "none", color: "#10b981", cursor: "pointer" }}><Check size={14} /></button>
+                <button onClick={() => setShowNewCat(false)} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={14} /></button>
+              </div>
+            ) : (
+              <button onClick={() => setShowNewCat(true)} className="glass-btn glass-btn-ghost" style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>
+                <FolderPlus size={12} /> New Category
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Sub-tabs: type filter */}
       {uniqueTypes.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-          <button onClick={() => setSelectedType("all")} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedType === "all" ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedType === "all" ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedType === "all" ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
-            All
+        <div style={{ display: "flex", gap: 4, marginBottom: 20, flexWrap: "wrap", paddingLeft: 4 }}>
+          <button onClick={() => setSelectedType("all")} style={{ padding: "4px 10px", fontSize: 11, background: selectedType === "all" ? "rgba(109,40,217,0.15)" : "none", border: "none", borderRadius: 6, color: selectedType === "all" ? "var(--os-accent)" : "var(--os-text-dim)", cursor: "pointer" }}>
+            All types
           </button>
           {uniqueTypes.map(type => (
-            <button key={type} onClick={() => setSelectedType(type)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedType === type ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedType === type ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedType === type ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
+            <button key={type} onClick={() => setSelectedType(type)} style={{ padding: "4px 10px", fontSize: 11, background: selectedType === type ? "rgba(109,40,217,0.15)" : "none", border: "none", borderRadius: 6, color: selectedType === type ? "var(--os-accent)" : "var(--os-text-dim)", cursor: "pointer" }}>
               {type}
             </button>
           ))}
@@ -268,7 +355,7 @@ export default function ArchivePage() {
       {showAddForm && (
         <div className="glass-panel" style={{ marginBottom: 24 }}>
           <div className="flex-between" style={{ marginBottom: 16 }}>
-            <h3 style={{ fontWeight: 600 }}>New Entry</h3>
+            <h3 style={{ fontWeight: 600 }}>New Entry {selectedCategoryId && <span style={{ fontSize: 12, color: "var(--os-accent)", fontWeight: 400 }}>in {categories.find(c => c.id === selectedCategoryId)?.title}</span>}</h3>
             <button onClick={() => setShowAddForm(false)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><X size={18} /></button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
@@ -291,11 +378,11 @@ export default function ArchivePage() {
         <div className="empty-state">
           <p className="text-secondary text-sm">Loading...</p>
         </div>
-      ) : entries.length === 0 ? (
+      ) : filteredEntries.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon"><Archive size={32} style={{ color: "var(--os-text-dim)" }} /></div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No archive entries yet</h2>
-          <p className="text-secondary text-sm">Competition records will appear here.</p>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>No entries found</h2>
+          <p className="text-secondary text-sm">{entries.length === 0 ? "Add your first archive entry." : "No entries match this filter."}</p>
         </div>
       ) : (
         <div className="glass-panel archive-table-wrap" style={{ padding: 0, overflow: "hidden", maxWidth: 900, margin: "0 auto" }}>
@@ -303,17 +390,17 @@ export default function ArchivePage() {
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
                 <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={handleTypeSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
+                <th onClick={() => setTypeSort(typeSort === "asc" ? "desc" : typeSort === "desc" ? "" : "asc")} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
                   Type {typeSort === "asc" ? "↑" : typeSort === "desc" ? "↓" : "↕"}
                 </th>
-                <th onClick={handleYearSort} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
+                <th onClick={() => setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc")} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
                   Year {yearSort === "asc" ? "↑" : yearSort === "desc" ? "↓" : "↕"}
                 </th>
                 {isAdmin && <th style={{ width: 60 }}></th>}
               </tr>
             </thead>
             <tbody>
-              {sortedEntries.map((entry) => (
+              {filteredEntries.map((entry) => (
                 <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   {editingId === entry.id ? (
                     <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 20px" }}>
