@@ -608,7 +608,7 @@ export default function DeckStudyPage() {
                   console.error("Failed to save study stats:", err);
                 }
               }
-              localStorage.removeItem(sessionKey);
+              localStorage.setItem(sessionKey, JSON.stringify({ date: new Date().toDateString(), queue, reviewIndex, knownCount, forgotCount, dontKnowCount, swapped }));
               setReviewMode(false); setReviewComplete(false); setCramMode(false);
               if (timerRef.current) clearInterval(timerRef.current); setTimerRunning(false); setTimerSeconds(0);
             }} className="glass-btn">Exit</button>

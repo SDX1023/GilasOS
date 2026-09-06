@@ -372,6 +372,9 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
 
   function exitReview() {
     saveProgressIfNeeded();
+    localStorage.setItem(sessionKey, JSON.stringify({
+      date: new Date().toDateString(), queue, queueIndex, knownCount, forgotCount, dontKnowCount,
+    }));
     setShowSummary(false);
     setReviewMode(false);
     setCramMode(false);
