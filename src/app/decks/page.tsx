@@ -50,6 +50,8 @@ export default function DecksPage() {
   const [showCram, setShowCram] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "deck" | "course"; id: string } | null>(null);
   const [categorySort, setCategorySort] = useState<"custom" | "name" | "date" | "decks">("custom");
+  const [deckSorts, setDeckSorts] = useState<Record<string, "name" | "date" | "cards">>({});
+  const [deckSortOpen, setDeckSortOpen] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCourseId, setShareCourseId] = useState<string | null>(null);
   const [shareRecipient, setShareRecipient] = useState("");
@@ -502,6 +504,30 @@ export default function DecksPage() {
                   )}
                   <input type="checkbox" checked={allSelected} onChange={() => toggleSelectAll(courseDeckIds)} onClick={(e) => e.stopPropagation()} style={{ accentColor: "var(--os-accent)" }} />
                   <span style={{ fontSize: 11, color: "var(--os-text-dim)" }}>{course.decks.length} decks</span>
+                  <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setDeckSortOpen(deckSortOpen === course.id ? null : course.id)} style={{ padding: 2, background: "none", border: "none", color: deckSorts[course.id] ? "var(--os-accent)" : "var(--os-text-dim)", cursor: "pointer", borderRadius: 4, display: "flex", alignItems: "center" }} title="Sort decks">
+                      <ArrowUpDown size={12} />
+                    </button>
+                    {deckSortOpen === course.id && (
+                      <>
+                        <div style={{ position: "fixed", inset: 0, zIndex: 9 }} onClick={() => setDeckSortOpen(null)} />
+                        <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, background: "var(--os-glass)", border: "1px solid var(--os-glass-border)", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.3)", padding: 4, zIndex: 10, minWidth: 120, backdropFilter: "blur(20px)" }}>
+                          {[{ v: "name" as const, l: "Name" }, { v: "date" as const, l: "Date" }, { v: "cards" as const, l: "Cards" }].map(opt => (
+                            <button key={opt.v} onClick={() => { setDeckSorts(prev => ({ ...prev, [course.id]: opt.v })); setDeckSortOpen(null); }}
+                              style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 4, background: deckSorts[course.id] === opt.v ? "rgba(109,40,217,0.15)" : "none", border: "none", color: deckSorts[course.id] === opt.v ? "var(--os-accent)" : "var(--os-text-primary)", fontSize: 12, cursor: "pointer" }}>
+                              {opt.l}
+                            </button>
+                          ))}
+                          {deckSorts[course.id] && (
+                            <button onClick={() => { setDeckSorts(prev => { const n = { ...prev }; delete n[course.id]; return n; }); setDeckSortOpen(null); }}
+                              style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 4, background: "none", border: "none", color: "var(--os-text-dim)", fontSize: 12, cursor: "pointer", borderTop: "1px solid var(--os-glass-border)", marginTop: 2 }}>
+                              Clear sort
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <div style={{ display: "flex", gap: 2 }} onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => { setShowShareModal(true); setShareCourseId(course.id); setShareRecipient(""); setShareError(""); setShareLinks([]); setCopied(false); }} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", borderRadius: 4 }} title="Share category"><Share2 size={12} /></button>
                     <button onClick={() => { setEditingCourseId(course.id); setEditCourseTitle(course.title); }} style={{ padding: 4, background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer", borderRadius: 4 }}><Pencil size={12} /></button>
@@ -510,7 +536,13 @@ export default function DecksPage() {
                 </div>
                 {expandedCourses[course.id] !== false && (
                   <div style={{ padding: "6px" }}>
-                    {course.decks.map((deck) => (
+                    {[...course.decks].sort((a, b) => {
+                      const sort = deckSorts[course.id];
+                      if (sort === "name") return a.title.localeCompare(b.title);
+                      if (sort === "date") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                      if (sort === "cards") return b.card_count - a.card_count;
+                      return 0;
+                    }).map((deck) => (
                       <DeckRow key={deck.id} deck={deck} courses={courses} editingId={editingId} editTitle={editTitle} editDesc={editDesc} editCourseId={editCourseId} selectedIds={selectedIds} draggedId={draggedId} setEditTitle={setEditTitle} setEditDesc={setEditDesc} setEditCourseId={setEditCourseId} setEditingId={setEditingId} handleUpdateDeck={handleUpdateDeck} handleDeleteDeck={handleDeleteDeck} toggleSelect={toggleSelect} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} />
                     ))}
                   </div>

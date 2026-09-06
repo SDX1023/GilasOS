@@ -151,6 +151,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
   const refs = useRef<Map<string, HTMLElement>>(new Map());
   const menuInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imageTargetId, setImageTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     const md = toMarkdown(blocks);
@@ -335,6 +337,17 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         return;
       }
     }
+  }, []);
+
+  const handleImageFile = useCallback((file: File, blockId: string) => {
+    const reader = new FileReader();
+    reader.onload = () => update(blockId, { src: reader.result as string, alt: file.name });
+    reader.readAsDataURL(file);
+  }, [update]);
+
+  const openImagePicker = useCallback((blockId: string) => {
+    setImageTargetId(blockId);
+    setTimeout(() => imageInputRef.current?.click(), 0);
   }, []);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
@@ -556,6 +569,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
           <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)} tabIndex={0}
             onFocus={() => setActiveBlock(block.id)}
+            onClick={() => setActiveBlock(block.id)}
             data-block-id={block.id}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
@@ -564,25 +578,13 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               {delBtn}
             </div>
             {block.src ? (
-              <div style={{ marginLeft: 30, marginTop: 8, position: "relative" }}>
+              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", cursor: "pointer" }}
+                onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}>
                 <img src={block.src} alt={block.alt || ""} style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} />
               </div>
             ) : (
               <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.onchange = () => {
-                    const file = input.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => update(block.id, { src: reader.result as string, alt: file.name });
-                    reader.readAsDataURL(file);
-                  };
-                  input.click();
-                }}>
+                onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}>
                 Click to upload or paste an image
               </div>
             )}
@@ -669,6 +671,13 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
   return (
     <div style={{ position: "relative", padding: "0 16px 120px" }}>
+      <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && imageTargetId) handleImageFile(file, imageTargetId);
+          e.target.value = "";
+          setImageTargetId(null);
+        }} />
       <style>{`
         .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; pointer-events: none; }
         .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; pointer-events: auto; }
