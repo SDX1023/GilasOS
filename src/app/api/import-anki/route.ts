@@ -3,7 +3,7 @@ import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { decompressSync } from "fzstd";
+import { decompress } from "fzstd";
 
 export const runtime = "nodejs";
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         let rawData = await f.async("arraybuffer");
         // .anki21b is zstandard-compressed SQLite
         if (name === "collection.anki21b") {
-          rawData = decompressSync(new Uint8Array(rawData)).buffer;
+          rawData = decompress(new Uint8Array(rawData)).buffer;
         }
         db = new SQL.Database(new Uint8Array(rawData));
         db.exec("SELECT 1");
