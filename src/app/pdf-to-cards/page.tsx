@@ -36,10 +36,11 @@ export default function PdfToFlashcardsPage() {
 
   useEffect(() => {
     if (!user) return;
-    loadReviewersFromSupabase().then((reviewers) => {
-      const categories = [...new Set(reviewers.map((r) => r.courseId))].filter(Boolean).sort();
-      setExistingCategories(categories);
-    });
+    const supabase = getSupabase();
+    supabase.from("deck_courses").select("title").eq("user_id", user.id).order("sort_order")
+      .then(({ data }) => {
+        setExistingCategories((data || []).map((c) => c.title));
+      });
   }, [user]);
 
   const saveDeck = async () => {
