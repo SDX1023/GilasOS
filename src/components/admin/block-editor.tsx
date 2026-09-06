@@ -151,15 +151,25 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
   const refs = useRef<Map<string, HTMLElement>>(new Map());
   const menuInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imageTargetId, setImageTargetId] = useState<string | null>(null);
+  const outgoingChange = useRef(false);
 
   useEffect(() => {
     const md = toMarkdown(blocks);
-    if (md !== content) onChange(md);
+    if (md !== content) {
+      outgoingChange.current = true;
+      onChange(md);
+    }
   }, [blocks]);
 
   useEffect(() => {
+    if (outgoingChange.current) {
+      outgoingChange.current = false;
+      return;
+    }
     const nb = parseBlocks(content);
-    if (JSON.stringify(nb.map(b => ({ t: b.type, c: b.content, s: b.src }))) !== JSON.stringify(blocks.map(b => ({ t: b.type, c: b.content, s: b.src })))) {
+    if (JSON.stringify(nb.map(b => ({ t: b.type, c: b.content, s: b.src, r: b.rows }))) !== JSON.stringify(blocks.map(b => ({ t: b.type, c: b.content, s: b.src, r: b.rows })))) {
       setBlocks(nb);
     }
   }, [content]);
@@ -344,18 +354,9 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   }, [update]);
 
   const openImagePicker = useCallback((blockId: string) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.style.display = "none";
-    document.body.appendChild(input);
-    input.addEventListener("change", () => {
-      const file = input.files?.[0];
-      if (file) handleImageFile(file, blockId);
-      document.body.removeChild(input);
-    }, { once: true });
-    input.click();
-  }, [handleImageFile]);
+    setImageTargetId(blockId);
+    setTimeout(() => imageInputRef.current?.click(), 0);
+  }, []);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
     setDragId(id);
@@ -683,6 +684,13 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
   return (
     <div style={{ position: "relative", padding: "0 16px 120px" }}>
+      <input ref={imageInputRef} type="file" accept="image/*" style={{ position: "fixed", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && imageTargetId) handleImageFile(file, imageTargetId);
+          e.target.value = "";
+          setImageTargetId(null);
+        }} />
       <style>{`
         .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; }
         .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; }
