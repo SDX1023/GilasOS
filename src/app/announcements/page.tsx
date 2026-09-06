@@ -166,7 +166,7 @@ export default function AnnouncementsPage() {
               <Pin size={13} /> Pinned
             </div>
             {pinned.map(item => (
-              <AnnouncementCard key={item.id} item={item} isAdmin={isAdmin} editingId={editingId} editTitle={editTitle} editContent={editContent} editDate={editDate} editTime={editTime} editPinned={editPinned} setEditTitle={setEditTitle} setEditContent={setEditContent} setEditDate={setEditDate} setEditTime={setEditTime} setEditPinned={setEditPinned} startEdit={startEdit} handleUpdate={handleUpdate} handleDelete={handleDelete} setEditingId={setEditingId} formatDate={formatDate} />
+              <AnnouncementCard key={item.id} item={item} isAdmin={isAdmin} editingId={editingId} editTitle={editTitle} editContent={editContent} editDate={editDate} editTime={editTime} editPinned={editPinned} setEditTitle={setEditTitle} setEditContent={setEditContent} setEditDate={setEditDate} setEditTime={setEditTime} setEditPinned={setEditPinned} startEdit={startEdit} handleUpdate={handleUpdate} setConfirmDeleteId={setConfirmDeleteId} setEditingId={setEditingId} formatDate={formatDate} />
             ))}
           </div>
         )}
@@ -180,7 +180,7 @@ export default function AnnouncementsPage() {
               </div>
             )}
             {unpinned.map(item => (
-              <AnnouncementCard key={item.id} item={item} isAdmin={isAdmin} editingId={editingId} editTitle={editTitle} editContent={editContent} editDate={editDate} editTime={editTime} editPinned={editPinned} setEditTitle={setEditTitle} setEditContent={setEditContent} setEditDate={setEditDate} setEditTime={setEditTime} setEditPinned={setEditPinned} startEdit={startEdit} handleUpdate={handleUpdate} handleDelete={handleDelete} setEditingId={setEditingId} formatDate={formatDate} />
+              <AnnouncementCard key={item.id} item={item} isAdmin={isAdmin} editingId={editingId} editTitle={editTitle} editContent={editContent} editDate={editDate} editTime={editTime} editPinned={editPinned} setEditTitle={setEditTitle} setEditContent={setEditContent} setEditDate={setEditDate} setEditTime={setEditTime} setEditPinned={setEditPinned} startEdit={startEdit} handleUpdate={handleUpdate} setConfirmDeleteId={setConfirmDeleteId} setEditingId={setEditingId} formatDate={formatDate} />
             ))}
           </div>
         )}
@@ -189,7 +189,7 @@ export default function AnnouncementsPage() {
   );
 }
 
-function AnnouncementCard({ item, isAdmin, editingId, editTitle, editContent, editDate, editTime, editPinned, setEditTitle, setEditContent, setEditDate, setEditTime, setEditPinned, startEdit, handleUpdate, handleDelete, setEditingId, formatDate }: any) {
+function AnnouncementCard({ item, isAdmin, editingId, editTitle, editContent, editDate, editTime, editPinned, setEditTitle, setEditContent, setEditDate, setEditTime, setEditPinned, startEdit, handleUpdate, setConfirmDeleteId, setEditingId, formatDate }: any) {
   const isEditing = editingId === item.id;
 
   return (
