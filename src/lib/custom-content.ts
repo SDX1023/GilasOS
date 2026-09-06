@@ -261,7 +261,7 @@ export async function loadReviewersFromSupabase(): Promise<{ courseId: string; m
   return result;
 }
 
-export async function saveReviewerToSupabase(courseId: string, moduleId: string, reviewer: any) {
+export async function saveReviewerToSupabase(courseId: string | null, moduleId: string, reviewer: any) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
