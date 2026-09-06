@@ -557,6 +557,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       case "divider":
         return (
           <div style={{ ...wrapperStyle, padding: "8px 8px" }} className="block-wrapper" {...hoverHandlers}
+            ref={(el) => { if (el) refs.current.set(block.id, el); }}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)} tabIndex={0}
             onFocus={() => setActiveBlock(block.id)}>
             {handle}
@@ -567,9 +568,9 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       case "image":
         return (
           <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}
+            ref={(el) => { if (el) refs.current.set(block.id, el); }}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)} tabIndex={0}
             onFocus={() => setActiveBlock(block.id)}
-            onClick={() => setActiveBlock(block.id)}
             data-block-id={block.id}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
@@ -579,12 +580,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
             </div>
             {block.src ? (
               <div style={{ marginLeft: 30, marginTop: 8, position: "relative", cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}>
-                <img src={block.src} alt={block.alt || ""} style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} />
+                onClick={(e) => { e.preventDefault(); openImagePicker(block.id); }}>
+                <img src={block.src} alt={block.alt || ""} style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} draggable={false} />
               </div>
             ) : (
               <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}>
+                onClick={(e) => { e.preventDefault(); openImagePicker(block.id); }}>
                 Click to upload or paste an image
               </div>
             )}
@@ -592,7 +593,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "code":
         return (
-          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}>
+          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}
+            ref={(el) => { if (el) refs.current.set(block.id, el); }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
               <Code size={14} style={{ color: "var(--os-text-dim)" }} />
@@ -624,7 +626,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
         const delCol = (ci: number) => { if (cols <= 1) return; update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)) }); };
         return (
-          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}
+            ref={(el) => { if (el) refs.current.set(block.id, el); }}>
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -671,7 +674,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
   return (
     <div style={{ position: "relative", padding: "0 16px 120px" }}>
-      <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }}
+      <input ref={imageInputRef} type="file" accept="image/*"
+        style={{ position: "absolute", width: 0, height: 0, visibility: "hidden", overflow: "hidden" }}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file && imageTargetId) handleImageFile(file, imageTargetId);
@@ -679,10 +683,10 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
           setImageTargetId(null);
         }} />
       <style>{`
-        .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; pointer-events: none; }
-        .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; pointer-events: auto; }
+        .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; }
+        .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; }
         .block-wrapper:hover .block-handle:hover, .block-wrapper:hover .block-delete:hover { opacity: 1; }
-        .block-wrapper:focus-within .block-handle, .block-wrapper:focus-within .block-delete { opacity: 0.5; pointer-events: auto; }
+        .block-wrapper:focus-within .block-handle, .block-wrapper:focus-within .block-delete { opacity: 0.5; }
         .block-wrapper:focus-within .block-handle:hover, .block-wrapper:focus-within .block-delete:hover { opacity: 1; }
         .block-handle { display: flex; align-items: center; gap: 2px; padding-top: 4px; flex-shrink: 0; cursor: grab; }
         .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
