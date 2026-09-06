@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useModuleDetail } from "@/hooks/use-db";
 import { loadCustomContent } from "@/lib/custom-content";
 import { isAdmin } from "@/lib/admin";
-import { ChevronRight, FileText, Brain, BookOpen, Plus, Pencil } from "lucide-react";
+import { ChevronRight, FileText, Brain, BookOpen, Plus, Pencil, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { deleteModuleContent } from "@/lib/db";
 
 export default function ModulePage({ params }: { params: Promise<{ course: string; module: string }> }) {
   const { course: courseSlug, module: moduleSlug } = use(params);
   const { course, module: mod, notes, moduleContents, loading } = useModuleDetail(courseSlug, moduleSlug);
   const [admin, setAdmin] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => { setAdmin(isAdmin()); }, []);
 
@@ -23,12 +26,20 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
     return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
   }
 
+  const handleDeleteContent = async () => {
+    if (!confirmDeleteId) return;
+    await deleteModuleContent(confirmDeleteId);
+    setConfirmDeleteId(null);
+    window.location.reload();
+  };
+
   if (!mod) {
     return <div className="page-container"><p className="text-secondary">Module not found.</p></div>;
   }
 
   return (
     <div className="page-container">
+      <ConfirmDialog open={!!confirmDeleteId} title="Delete Content?" message="This will permanently delete this content." confirmLabel="Delete" danger onConfirm={handleDeleteContent} onCancel={() => setConfirmDeleteId(null)} />
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--os-text-dim)", marginBottom: 8 }}>
           <Link href="/subjects" style={{ color: "var(--os-text-dim)", textDecoration: "none" }}>Subjects</Link>
@@ -53,9 +64,14 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
               </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {moduleContents.map((content) => (
-                  <Link key={content.id} href={`/subjects/${courseSlug}/${moduleSlug}/content/${content.id}`} className="glass-card-link" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{content.title}</span>
-                  </Link>
+                  <div key={content.id} className="glass-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>
+                    <Link href={`/subjects/${courseSlug}/${moduleSlug}/content/${content.id}`} style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)", textDecoration: "none", fontWeight: 500 }}>
+                      {content.title}
+                    </Link>
+                    <button onClick={() => setConfirmDeleteId(content.id)} style={{ padding: 4, borderRadius: 4, background: "none", border: "none", color: "#ef4444", cursor: "pointer", flexShrink: 0, display: "flex" }} title="Delete content">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 ))}
                 {moduleContents.length === 0 && <p className="text-secondary text-sm">No content yet.</p>}
               </div>
