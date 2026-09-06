@@ -667,12 +667,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                 {block.src && (
                   <>
                     <div style={{ display: "flex", gap: 1, marginRight: 4, padding: "2px 4px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid var(--os-glass-border)" }}>
-                      {(["left", "center", "right"] as const).map(a => (
-                        <button key={a} title={`Align ${a}`}
+                      {(["left", "right"] as const).map(a => (
+                        <button key={a} title={`Image on ${a}`}
                           onMouseDown={(e) => e.stopPropagation()}
-                          onClick={(e) => { e.stopPropagation(); update(block.id, { align: block.align === a ? undefined : a }); }}
-                          style={{ padding: "2px 6px", borderRadius: 3, background: block.align === a ? "rgba(109,40,217,0.3)" : "none", border: "none", cursor: "pointer", color: block.align === a ? "#c084fc" : "var(--os-text-dim)", fontSize: 11 }}>
-                          {a === "left" ? "⫷" : a === "center" ? "⫿" : "⫸"}
+                          onClick={(e) => { e.stopPropagation(); update(block.id, { align: block.align === a ? "left" : a }); }}
+                          style={{ padding: "2px 6px", borderRadius: 3, background: (block.align || "left") === a ? "rgba(109,40,217,0.3)" : "none", border: "none", cursor: "pointer", color: (block.align || "left") === a ? "#c084fc" : "var(--os-text-dim)", fontSize: 11 }}>
+                          {a === "left" ? "◧" : "◨"}
                         </button>
                       ))}
                     </div>
@@ -686,28 +686,27 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               </div>
             </div>
             {block.src ? (
-              <div style={{
-                marginLeft: block.align === "left" ? 0 : block.align === "right" ? "auto" : 30,
-                marginRight: block.align === "right" ? 0 : block.align === "left" ? "auto" : 0,
-                marginTop: 8,
-                position: "relative",
-                width: block.width ? `${block.width}%` : block.align ? "50%" : "80%",
-                minWidth: 60,
-                float: block.align === "left" || block.align === "right" ? block.align : undefined,
-                maxWidth: block.align ? "50%" : undefined,
-              }}>
-                <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block", pointerEvents: "none" }} draggable={false} />
-                <div onMouseDown={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || (block.align ? 50 : 80) };
-                  document.body.style.cursor = "ew-resize";
-                  document.body.style.userSelect = "none";
-                }}
-                  style={{ position: "absolute", right: -6, top: 0, bottom: 0, width: 8, cursor: "ew-resize", borderRadius: 4, background: "rgba(255,255,255,0.1)", border: "1px solid var(--os-glass-border)", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  className="block-resize-handle">
-                  <div style={{ width: 2, height: 20, borderRadius: 1, background: "var(--os-text-dim)" }} />
+              <div style={{ display: "flex", gap: 12, marginTop: 8, marginLeft: 30, alignItems: "flex-start", flexDirection: (block.align || "left") === "right" ? "row-reverse" : "row" }}>
+                <div style={{ position: "relative", width: block.width ? `${block.width}%` : "40%", minWidth: 80, flexShrink: 0 }}>
+                  <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block", pointerEvents: "none" }} draggable={false} />
+                  <div onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || 40 };
+                    document.body.style.cursor = "ew-resize";
+                    document.body.style.userSelect = "none";
+                  }}
+                    style={{ position: "absolute", right: -6, top: 0, bottom: 0, width: 8, cursor: "ew-resize", borderRadius: 4, background: "rgba(255,255,255,0.1)", border: "1px solid var(--os-glass-border)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    className="block-resize-handle">
+                    <div style={{ width: 2, height: 20, borderRadius: 1, background: "var(--os-text-dim)" }} />
+                  </div>
                 </div>
+                <div contentEditable suppressContentEditableWarning
+                  data-placeholder="Write text next to the image..."
+                  onBlur={(e) => update(block.id, { caption: e.currentTarget.textContent || "" })}
+                  style={{ flex: 1, outline: "none", minHeight: 40, fontSize: 14, color: "var(--os-text-primary)", paddingTop: 4 }}
+                  dangerouslySetInnerHTML={{ __html: block.caption || "" }}
+                />
               </div>
             ) : (
               <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
@@ -715,15 +714,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                 Click to upload or paste an image
               </div>
             )}
-            {block.src && (
-              <div contentEditable suppressContentEditableWarning
-                data-placeholder="Add a caption..."
-                onBlur={(e) => update(block.id, { caption: e.currentTarget.textContent || "" })}
-                style={{ marginLeft: block.align ? 0 : 30, marginTop: 4, padding: "2px 4px", fontSize: 12, color: "var(--os-text-dim)", fontStyle: "italic", outline: "none", textAlign: block.align || "left", minWidth: 60 }}
-                dangerouslySetInnerHTML={{ __html: block.caption || "" }}
-              />
-            )}
-            {block.align && <div style={{ clear: "both" }} />}
           </div>
         );
       case "code":

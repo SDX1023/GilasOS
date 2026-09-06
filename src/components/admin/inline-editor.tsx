@@ -307,25 +307,21 @@ export function markdownToHtml(md: string): string {
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, src) => {
     const sm = alt.match(/<!--(style:.*?)-->/);
     const pm = alt.match(/<!--pos:([^,]+),([^>]+)-->/);
-    const am = alt.match(/<!--align:(left|center|right)-->/);
+    const am = alt.match(/<!--align:(left|right)-->/);
     const cm = alt.match(/<!--caption:(.*?)-->/);
     const cleanAlt = alt.replace(/<!--.*?-->/g, "").trim();
-    const baseStyle = sm ? sm[1].replace("style:", "") : "";
+    const smText = sm ? sm[1].replace("style:", "") : "";
+    const widthMatch = smText.match(/width:(\d+)%/);
+    const width = widthMatch ? widthMatch[1] : "40";
     const posAttrs = pm ? ` data-x="${pm[1]}" data-y="${pm[2]}"` : "";
-    const align = am?.[1];
-    const caption = cm?.[1];
-    let alignStyle = "";
-    if (align === "left") alignStyle = "float:left;margin:0 16px 8px 0;max-width:50%;";
-    else if (align === "right") alignStyle = "float:right;margin:0 0 8px 16px;max-width:50%;";
-    else if (align === "center") alignStyle = "display:block;margin:8px auto;max-width:80%;";
-    const finalStyle = [baseStyle, alignStyle].filter(Boolean).join("");
-    const styleAttr = finalStyle ? ` style="${finalStyle}"` : "";
-    const captionHtml = caption ? `<figcaption style="font-size:12px;color:var(--os-text-dim);font-style:italic;text-align:${align || "center"};margin-top:4px">${caption}</figcaption>` : "";
-    const floatClear = align === "left" || align === "right" ? `<div style="clear:both"></div>` : "";
-    if (captionHtml) {
-      return `<figure${posAttrs ? ` ${posAttrs}` : ""} style="margin:8px 0;${align === "left" ? "float:left;max-width:50%" : align === "right" ? "float:right;max-width:50%" : ""}"><img src="${src}" alt="${cleanAlt}"${styleAttr}>${captionHtml}</figure>${floatClear}`;
+    const align = am?.[1] || "left";
+    const caption = cm?.[1] || "";
+    const imgStyle = `width:${width}%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);flex-shrink:0`;
+    const direction = align === "right" ? "row-reverse" : "row";
+    if (caption) {
+      return `<div style="display:flex;gap:12px;align-items:flex-start;flex-direction:${direction};margin:8px 0"${posAttrs ? ` ${posAttrs}` : ""}><img src="${src}" alt="${cleanAlt}" style="${imgStyle}"><div style="flex:1;min-height:40px;padding-top:4px;font-size:14px">${caption}</div></div>`;
     }
-    return `<img src="${src}" alt="${cleanAlt}"${styleAttr}${posAttrs}>`;
+    return `<img src="${src}" alt="${cleanAlt}" style="${smText}${posAttrs ? "" : ""}"${posAttrs}>`;
   });
 
   html = html.replace(/<!--table-col-widths:([^>]+)-->/g, (_m: string, cw: string) => {

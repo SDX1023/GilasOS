@@ -131,10 +131,23 @@ export default function ArchivePage() {
   const [editCatTitle, setEditCatTitle] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteCat, setConfirmDeleteCat] = useState<string | null>(null);
+  const [columnHeadings, setColumnHeadings] = useState<Record<string, string>>({});
+  const [editingHeading, setEditingHeading] = useState<string | null>(null);
+  const [editHeadingValue, setEditHeadingValue] = useState("");
+  const [customColumns, setCustomColumns] = useState<{ key: string; label: string }[]>([]);
+  const [customData, setCustomData] = useState<Record<string, Record<string, string>>>({});
+  const [showAddColumn, setShowAddColumn] = useState(false);
+  const [newColumnLabel, setNewColumnLabel] = useState("");
 
   useEffect(() => {
     const password = sessionStorage.getItem("archive_admin");
     setIsAdmin(password === "SDX102310");
+    const savedHeadings = localStorage.getItem("archive_column_headings");
+    const savedCustomCols = localStorage.getItem("archive_custom_columns");
+    const savedCustomData = localStorage.getItem("archive_custom_data");
+    if (savedHeadings) setColumnHeadings(JSON.parse(savedHeadings));
+    if (savedCustomCols) setCustomColumns(JSON.parse(savedCustomCols));
+    if (savedCustomData) setCustomData(JSON.parse(savedCustomData));
     loadData();
   }, []);
 
@@ -237,6 +250,43 @@ export default function ArchivePage() {
     if (selectedCategoryId === id) setSelectedCategoryId(null);
     loadData();
   };
+
+  const saveHeading = (key: string) => {
+    const updated = { ...columnHeadings, [key]: editHeadingValue };
+    setColumnHeadings(updated);
+    localStorage.setItem("archive_column_headings", JSON.stringify(updated));
+    setEditingHeading(null);
+  };
+
+  const addCustomColumn = () => {
+    if (!newColumnLabel.trim()) return;
+    const key = `custom_${Date.now()}`;
+    const updated = [...customColumns, { key, label: newColumnLabel.trim() }];
+    setCustomColumns(updated);
+    localStorage.setItem("archive_custom_columns", JSON.stringify(updated));
+    setNewColumnLabel("");
+    setShowAddColumn(false);
+  };
+
+  const removeCustomColumn = (key: string) => {
+    const updated = customColumns.filter(c => c.key !== key);
+    setCustomColumns(updated);
+    localStorage.setItem("archive_custom_columns", JSON.stringify(updated));
+    const newData = { ...customData };
+    Object.keys(newData).forEach(id => { delete newData[id][key]; });
+    setCustomData(newData);
+    localStorage.setItem("archive_custom_data", JSON.stringify(newData));
+  };
+
+  const updateCustomData = (entryId: string, key: string, value: string) => {
+    const updated = { ...customData };
+    if (!updated[entryId]) updated[entryId] = {};
+    updated[entryId] = { ...updated[entryId], [key]: value };
+    setCustomData(updated);
+    localStorage.setItem("archive_custom_data", JSON.stringify(updated));
+  };
+
+  const headingLabel = (defaultKey: string, defaultLabel: string) => columnHeadings[defaultKey] || defaultLabel;
 
   const filteredEntries = entries
     .filter(e => {
@@ -389,13 +439,57 @@ export default function ArchivePage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}>
-                <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Competition</th>
-                <th onClick={() => setTypeSort(typeSort === "asc" ? "desc" : typeSort === "desc" ? "" : "asc")} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
-                  Type {typeSort === "asc" ? "↑" : typeSort === "desc" ? "↓" : "↕"}
-                </th>
-                <th onClick={() => setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc")} style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
-                  Year {yearSort === "asc" ? "↑" : yearSort === "desc" ? "↓" : "↕"}
-                </th>
+                {["competition", "type", "year"].map(key => (
+                  <th key={key}
+                    onClick={() => {
+                      if (isAdmin && editingHeading !== key) { setEditingHeading(key); setEditHeadingValue(headingLabel(key, key.charAt(0).toUpperCase() + key.slice(1))); }
+                      if (key === "type") setTypeSort(typeSort === "asc" ? "desc" : typeSort === "desc" ? "" : "asc");
+                      if (key === "year") setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc");
+                    }}
+                    onDoubleClick={() => { if (isAdmin) { setEditingHeading(key); setEditHeadingValue(headingLabel(key, key.charAt(0).toUpperCase() + key.slice(1))); } }}
+                    style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
+                    {editingHeading === key ? (
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                        <input value={editHeadingValue} onChange={e => setEditHeadingValue(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") saveHeading(key); if (e.key === "Escape") setEditingHeading(null); }}
+                          onBlur={() => saveHeading(key)} autoFocus
+                          style={{ padding: "2px 6px", fontSize: 11, background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-accent)", borderRadius: 4, color: "var(--os-text-primary)", outline: "none", width: 100 }} />
+                      </div>
+                    ) : (
+                      <>{headingLabel(key, key.charAt(0).toUpperCase() + key.slice(1))} {key === "type" ? (typeSort === "asc" ? "↑" : typeSort === "desc" ? "↓" : "↕") : key === "year" ? (yearSort === "asc" ? "↑" : yearSort === "desc" ? "↓" : "↕") : ""}</>
+                    )}
+                  </th>
+                ))}
+                {customColumns.map(col => (
+                  <th key={col.key}
+                    onDoubleClick={() => { if (isAdmin) { setEditingHeading(col.key); setEditHeadingValue(col.label); } }}
+                    style={{ textAlign: "left", padding: "14px 12px", fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
+                    {editingHeading === col.key ? (
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                        <input value={editHeadingValue} onChange={e => setEditHeadingValue(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") { const updated = customColumns.map(c => c.key === col.key ? { ...c, label: editHeadingValue } : c); setCustomColumns(updated); localStorage.setItem("archive_custom_columns", JSON.stringify(updated)); setEditingHeading(null); } if (e.key === "Escape") setEditingHeading(null); }}
+                          onBlur={() => { const updated = customColumns.map(c => c.key === col.key ? { ...c, label: editHeadingValue } : c); setCustomColumns(updated); localStorage.setItem("archive_custom_columns", JSON.stringify(updated)); setEditingHeading(null); }}
+                          autoFocus
+                          style={{ padding: "2px 6px", fontSize: 11, background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-accent)", borderRadius: 4, color: "var(--os-text-primary)", outline: "none", width: 100 }} />
+                        <button onClick={(e) => { e.stopPropagation(); removeCustomColumn(col.key); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: 2, fontSize: 10 }}>✕</button>
+                      </div>
+                    ) : (
+                      <>{col.label}</>
+                    )}
+                  </th>
+                ))}
+                {isAdmin && <th style={{ width: 60 }}>
+                  {showAddColumn ? (
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                      <input value={newColumnLabel} onChange={e => setNewColumnLabel(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") addCustomColumn(); if (e.key === "Escape") setShowAddColumn(false); }}
+                        placeholder="Name" autoFocus
+                        style={{ padding: "2px 6px", fontSize: 10, background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-accent)", borderRadius: 4, color: "var(--os-text-primary)", outline: "none", width: 80 }} />
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowAddColumn(true)} style={{ background: "none", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: 4, color: "var(--os-text-dim)", cursor: "pointer", padding: "2px 6px", fontSize: 10 }} title="Add column">+</button>
+                  )}
+                </th>}
                 {isAdmin && <th style={{ width: 60 }}></th>}
               </tr>
             </thead>
@@ -403,7 +497,7 @@ export default function ArchivePage() {
               {filteredEntries.map((entry) => (
                 <tr key={entry.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   {editingId === entry.id ? (
-                    <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 20px" }}>
+                      <td colSpan={isAdmin ? 4 + customColumns.length : 3 + customColumns.length} style={{ padding: "12px 20px" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 120px", gap: 10 }}>
                           <input className="glass-input" value={editValues.competition} onChange={(e) => setEditValues({ ...editValues, competition: e.target.value })} placeholder="Competition" />
@@ -429,6 +523,17 @@ export default function ArchivePage() {
                       <td style={{ padding: "14px 12px", fontSize: 14, color: "var(--os-text-secondary)", whiteSpace: "nowrap" }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Calendar size={14} /> {entry.year || "—"}</span>
                       </td>
+                      {customColumns.map(col => (
+                        <td key={col.key} style={{ padding: "14px 12px", fontSize: 14 }}>
+                          {isAdmin ? (
+                            <input className="glass-input" value={customData[entry.id]?.[col.key] || ""}
+                              onChange={e => updateCustomData(entry.id, col.key, e.target.value)}
+                              placeholder={col.label} style={{ width: 100, fontSize: 13, padding: "4px 8px" }} />
+                          ) : (
+                            <span style={{ color: "var(--os-text-secondary)" }}>{customData[entry.id]?.[col.key] || "—"}</span>
+                          )}
+                        </td>
+                      ))}
                       {isAdmin && (
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", gap: 4 }}>
