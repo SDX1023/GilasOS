@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase, addModule } from "@/lib/custom-content";
-import { Brain, Trash2, ChevronRight, ChevronDown, Plus, Pencil, Check, X, GripVertical, Share2 } from "lucide-react";
+import { Brain, Trash2, ChevronRight, ChevronDown, Plus, Pencil, Check, X, GripVertical, Share2, Layers } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
