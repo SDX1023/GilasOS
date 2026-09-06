@@ -52,37 +52,33 @@ export default function ModulePage({ params }: { params: Promise<{ course: strin
       </div>
 
       <div className="module-layout" style={{ display: "flex", gap: 32 }}>
-        {/* Left: Content (admin only) */}
+        {/* Left: Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {admin && (
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                <BookOpen size={20} /> Content
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <BookOpen size={20} /> Content
+              {admin && (
                 <Link href={`/editor/content?course=${courseSlug}&module=${moduleSlug}`} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--os-accent)", textDecoration: "none" }}>
                   <Plus size={14} /> <span>New</span>
                 </Link>
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {moduleContents.map((content) => (
-                  <div key={content.id} className="glass-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>
-                    <Link href={`/subjects/${courseSlug}/${moduleSlug}/content/${content.id}`} style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)", textDecoration: "none", fontWeight: 500 }}>
-                      {content.title}
-                    </Link>
+              )}
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {moduleContents.map((content) => (
+                <div key={content.id} className="glass-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px" }}>
+                  <Link href={`/subjects/${courseSlug}/${moduleSlug}/content/${content.id}`} style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--os-text-primary)", textDecoration: "none", fontWeight: 500 }}>
+                    {content.title}
+                  </Link>
+                  {admin && (
                     <button onClick={() => setConfirmDeleteId(content.id)} style={{ padding: 4, borderRadius: 4, background: "none", border: "none", color: "#ef4444", cursor: "pointer", flexShrink: 0, display: "flex" }} title="Delete content">
                       <Trash2 size={14} />
                     </button>
-                  </div>
-                ))}
-                {moduleContents.length === 0 && <p className="text-secondary text-sm">No content yet.</p>}
-              </div>
+                  )}
+                </div>
+              ))}
+              {moduleContents.length === 0 && <p className="text-secondary text-sm">No content yet.</p>}
             </div>
-          )}
-          {!admin && (
-            <div className="empty-state">
-              <BookOpen size={32} style={{ color: "var(--os-text-dim)", marginBottom: 12, opacity: 0.5 }} />
-              <p className="text-secondary text-sm">Select a note or content from the sidebar to view it.</p>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Right: Notes + Flashcards */}
