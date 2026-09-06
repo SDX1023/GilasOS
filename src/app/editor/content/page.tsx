@@ -36,7 +36,7 @@ function ContentEditorContent() {
 
   const handleSave = async (data: { title: string; slug: string; content: string }) => {
     try {
-      const id = contentId || `${courseId}/${moduleId}/${data.title.toLowerCase().replace(/\s+/g, "-")}`;
+      const id = contentId || data.slug;
       if (existingContent) {
         await updateModuleContent(existingContent.id, { title: data.title, content: data.content });
       } else {

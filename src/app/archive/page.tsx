@@ -114,6 +114,7 @@ export default function ArchivePage() {
   const [editLabels, setEditLabels] = useState<string[]>([]);
   const [typeSort, setTypeSort] = useState<"asc" | "desc" | "">("");
   const [yearSort, setYearSort] = useState<"asc" | "desc" | "">("desc");
+  const [selectedType, setSelectedType] = useState<string>("all");
 
   useEffect(() => {
     const password = sessionStorage.getItem("archive_admin");
@@ -203,17 +204,21 @@ export default function ArchivePage() {
     setYearSort(yearSort === "asc" ? "desc" : yearSort === "desc" ? "" : "asc");
   };
 
-  const sortedEntries = [...entries].sort((a, b) => {
-    if (typeSort) {
-      const cmp = (a.type || "").localeCompare(b.type || "");
-      if (cmp !== 0) return typeSort === "asc" ? cmp : -cmp;
-    }
-    if (yearSort) {
-      const diff = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
-      if (diff !== 0) return yearSort === "asc" ? diff : -diff;
-    }
-    return 0;
-  });
+  const sortedEntries = [...entries]
+    .filter(e => selectedType === "all" || (e.type || "").toLowerCase() === selectedType.toLowerCase())
+    .sort((a, b) => {
+      if (typeSort) {
+        const cmp = (a.type || "").localeCompare(b.type || "");
+        if (cmp !== 0) return typeSort === "asc" ? cmp : -cmp;
+      }
+      if (yearSort) {
+        const diff = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
+        if (diff !== 0) return yearSort === "asc" ? diff : -diff;
+      }
+      return 0;
+    });
+
+  const uniqueTypes = [...new Set(entries.map(e => e.type).filter(Boolean))].sort();
 
   if (!user) {
     return (
@@ -246,6 +251,19 @@ export default function ArchivePage() {
           </button>
         )}
       </div>
+
+      {uniqueTypes.length > 0 && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+          <button onClick={() => setSelectedType("all")} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedType === "all" ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedType === "all" ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedType === "all" ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
+            All
+          </button>
+          {uniqueTypes.map(type => (
+            <button key={type} onClick={() => setSelectedType(type)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedType === type ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedType === type ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedType === type ? "var(--os-accent)" : "var(--os-text-secondary)" }}>
+              {type}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showAddForm && (
         <div className="glass-panel" style={{ marginBottom: 24 }}>
