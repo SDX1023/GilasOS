@@ -22,7 +22,7 @@ export interface ParsedAnkiDeck {
 let sqlPromise: ReturnType<typeof initSqlJs> | null = null;
 
 async function getSQL() {
-  if (!sqlPromise) sqlPromise = initSqlJs();
+  if (!sqlPromise) sqlPromise = initSqlJs({ locateFile: (file: string) => `/${file}` });
   return sqlPromise;
 }
 
