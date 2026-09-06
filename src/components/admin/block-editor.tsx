@@ -62,12 +62,10 @@ function parseBlocks(md: string): Block[] {
       blocks.push({ id: uid(), type: "code", content: code.join("\n"), alt: lang });
       continue;
     }
-    // Table: | col | col | pattern
     if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
       const rows: string[][] = [];
       while (i < lines.length && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|")) {
         const row = lines[i].trim().slice(1, -1).split("|").map(c => c.trim());
-        // Skip separator row (|---|---|)
         if (!row.every(c => /^[-:]+$/.test(c))) {
           rows.push(row);
         }
@@ -151,7 +149,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
-  const refs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const refs = useRef<Map<string, HTMLElement>>(new Map());
   const menuInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -161,7 +159,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
   useEffect(() => {
     const nb = parseBlocks(content);
-    if (JSON.stringify(nb.map(b => ({ t: b.type, c: b.content }))) !== JSON.stringify(blocks.map(b => ({ t: b.type, c: b.content })))) {
+    if (JSON.stringify(nb.map(b => ({ t: b.type, c: b.content, s: b.src }))) !== JSON.stringify(blocks.map(b => ({ t: b.type, c: b.content, s: b.src })))) {
       setBlocks(nb);
     }
   }, [content]);
@@ -176,7 +174,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       if (p.length <= 1) return p;
       const next = p.filter(b => b.id !== id);
       setTimeout(() => {
-        const el = refs.current.get(next[Math.min(idx - 1, next.length - 1)]?.id);
+        const focusIdx = Math.min(idx, next.length - 1);
+        const el = refs.current.get(next[focusIdx]?.id);
         el?.focus();
       }, 0);
       return next;
@@ -191,7 +190,21 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       next.splice(idx + 1, 0, nb);
       return next;
     });
-    setTimeout(() => refs.current.get(nb.id)?.focus(), 0);
+    setTimeout(() => {
+      const el = refs.current.get(nb.id);
+      if (el) el.focus();
+      else {
+        const fallback = document.querySelector(`[data-block-id="${nb.id}"]`) as HTMLElement;
+        fallback?.focus();
+      }
+    }, 50);
+  }, []);
+
+  const focusBlock = useCallback((blockId: string) => {
+    setTimeout(() => {
+      const el = refs.current.get(blockId);
+      if (el) el.focus();
+    }, 50);
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>, blockId: string) => {
@@ -230,14 +243,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       }
     }
 
-    // Inline formatting shortcuts
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
       if (e.key === "b") { e.preventDefault(); document.execCommand("bold"); }
       if (e.key === "i") { e.preventDefault(); document.execCommand("italic"); }
       if (e.key === "e") { e.preventDefault(); document.execCommand("insertHTML", false, `<code style="background:rgba(109,40,217,0.12);padding:1px 5px;border-radius:4px;color:#c084fc;font-size:0.9em">${window.getSelection()?.toString() || ""}</code>`); }
     }
 
-    // Markdown shortcuts
     const content = block.content;
     if (content === "" || content === "#") {
       const shortcuts: Record<string, Block["type"]> = {
@@ -254,7 +265,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       }
     }
 
-    // Slash command
     if (e.key === "/" && block.content === "") {
       e.preventDefault();
       const el = refs.current.get(blockId);
@@ -268,7 +278,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
     }
   }, [blocks, addAfter, remove, update]);
 
-  // Floating toolbar on text selection
   useEffect(() => {
     const handler = () => {
       const sel = window.getSelection();
@@ -288,7 +297,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
     };
   }, []);
 
-  // Image paste
   const handlePaste = useCallback((e: React.ClipboardEvent, blockId: string) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -299,16 +307,36 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          update(blockId, { type: "image", src: reader.result as string, alt: "pasted image" });
-          addAfter(blockId);
+          const imgBlock: Block = { id: uid(), type: "image", content: "pasted image", src: reader.result as string, alt: "pasted image" };
+          setBlocks(prev => {
+            const idx = prev.findIndex(b => b.id === blockId);
+            const block = prev[idx];
+            if (block && block.type === "paragraph" && block.content === "") {
+              const next = [...prev];
+              next[idx] = imgBlock;
+              return next;
+            }
+            const next = [...prev];
+            next.splice(idx + 1, 0, imgBlock);
+            return next;
+          });
+          const newId = uid();
+          setTimeout(() => {
+            const nb: Block = { id: uid(), type: "paragraph", content: "" };
+            setBlocks(prev => {
+              const idx = prev.findIndex(b => b.id === blockId);
+              const next = [...prev];
+              next.splice(idx + 2, 0, nb);
+              return next;
+            });
+          }, 0);
         };
         reader.readAsDataURL(file);
         return;
       }
     }
-  }, [update, addAfter]);
+  }, []);
 
-  // Drag and drop
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
     setDragId(id);
     e.dataTransfer.effectAllowed = "move";
@@ -345,7 +373,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       next.splice(idx + 1, 0, nb);
       return next;
     });
-    setTimeout(() => refs.current.get(nb.id)?.focus(), 0);
+    setTimeout(() => refs.current.get(nb.id)?.focus(), 50);
   }, []);
 
   const filteredBlocks = BLOCK_TYPES.filter(b =>
@@ -368,9 +396,31 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       transition: "background 0.15s, border-color 0.15s",
     };
 
+    const handleBlockKeyDown = (e: KeyboardEvent<HTMLElement>, blockId: string, isContentEditable: boolean = false) => {
+      if (isContentEditable) return;
+      const block = blocks.find(b => b.id === blockId);
+      if (!block) return;
+
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        addAfter(blockId);
+      }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        if (block.type === "image" && !block.src) {
+          remove(blockId);
+        } else if (block.type === "divider") {
+          remove(blockId);
+        } else if (block.type !== "paragraph" && block.content === "") {
+          update(blockId, { type: "paragraph" });
+        } else {
+          remove(blockId);
+        }
+      }
+    };
+
     const handle = (
       <div draggable onDragStart={(e) => handleDragStart(e, block.id)} onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-        style={{ display: "flex", alignItems: "center", gap: 2, paddingTop: 4, flexShrink: 0, cursor: "grab", opacity: isActive ? 0.6 : 0, transition: "opacity 0.15s" }}
         className="block-handle">
         <GripVertical size={14} style={{ color: "var(--os-text-dim)" }} />
         <button onClick={(e) => { e.stopPropagation(); const el = refs.current.get(block.id); if (el) { const r = el.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.left }); setShowMenu(block.id); setMenuFilter(""); } }}
@@ -382,7 +432,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
     const delBtn = (
       <button onClick={(e) => { e.stopPropagation(); remove(block.id); }}
-        style={{ padding: 4, borderRadius: 4, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", opacity: isActive ? 0.6 : 0, transition: "opacity 0.15s", flexShrink: 0, display: "flex" }}
         className="block-delete">
         <Trash2 size={12} />
       </button>
@@ -401,7 +450,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       onFocus: () => setActiveBlock(block.id),
     });
 
-    // Show/hide handles on hover
     const hoverHandlers = {
       onMouseEnter: () => { setActiveBlock(block.id); },
     };
@@ -409,7 +457,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
     switch (block.type) {
       case "heading1":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div {...editableProps("flex-1")} style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
             {delBtn}
@@ -417,7 +465,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "heading2":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div {...editableProps("flex-1")} style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
             {delBtn}
@@ -425,7 +473,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "heading3":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div {...editableProps("flex-1")} style={{ fontSize: 20, fontWeight: 500, lineHeight: 1.3, outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
             {delBtn}
@@ -433,7 +481,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "bullet":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <span style={{ color: "var(--os-text-dim)", marginTop: 4, flexShrink: 0 }}>•</span>
             <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
@@ -442,7 +490,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "numbered":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <span style={{ color: "var(--os-text-dim)", marginTop: 4, flexShrink: 0, width: 20, textAlign: "right" }}>{block.numbering || 1}.</span>
             <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} />
@@ -451,7 +499,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "checkbox":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <input type="checkbox" checked={block.checked} onChange={(e) => update(block.id, { checked: e.target.checked })}
               style={{ marginTop: 4, flexShrink: 0, accentColor: "var(--os-accent)" }} />
@@ -461,7 +509,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "quote":
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div style={{ borderLeft: "3px solid var(--os-accent)", paddingLeft: 12, flex: 1, fontStyle: "italic", color: "var(--os-text-secondary)" }}>
               <div {...editableProps("")} style={{ outline: "none", minHeight: "1.4em", wordBreak: "break-word" }} />
@@ -480,7 +528,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         const c = colors[block.src || "note"] || colors.note;
         const Icon = c.icon;
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div style={{ borderLeft: `3px solid ${c.border}`, background: c.bg, borderRadius: "0 8px 8px 0", padding: "10px 14px", flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -495,7 +543,9 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       }
       case "divider":
         return (
-          <div style={{ ...wrapperStyle, padding: "8px 8px" }} {...hoverHandlers}>
+          <div style={{ ...wrapperStyle, padding: "8px 8px" }} className="block-wrapper" {...hoverHandlers}
+            onKeyDown={(e) => handleBlockKeyDown(e, block.id)} tabIndex={0}
+            onFocus={() => setActiveBlock(block.id)}>
             {handle}
             <hr style={{ flex: 1, border: "none", borderTop: "1px solid var(--os-glass-border)", margin: "8px 0" }} />
             {delBtn}
@@ -503,7 +553,10 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "image":
         return (
-          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} {...hoverHandlers}>
+          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}
+            onKeyDown={(e) => handleBlockKeyDown(e, block.id)} tabIndex={0}
+            onFocus={() => setActiveBlock(block.id)}
+            data-block-id={block.id}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
               <ImageIcon size={14} style={{ color: "var(--os-text-dim)" }} />
@@ -516,7 +569,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               </div>
             ) : (
               <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   const input = document.createElement("input");
                   input.type = "file";
                   input.accept = "image/*";
@@ -536,7 +590,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         );
       case "code":
         return (
-          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} {...hoverHandlers}>
+          <div style={{ ...wrapperStyle, flexDirection: "column", alignItems: "stretch" }} className="block-wrapper" {...hoverHandlers}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
               <Code size={14} style={{ color: "var(--os-text-dim)" }} />
@@ -544,6 +598,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               {delBtn}
             </div>
             <textarea value={block.content} onChange={(e) => update(block.id, { content: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  addAfter(block.id);
+                }
+              }}
               style={{ marginLeft: 30, marginTop: 8, padding: 12, background: "rgba(0,0,0,0.3)", borderRadius: 8, fontFamily: "'SF Mono', monospace", fontSize: 13, color: "#c084fc", border: "1px solid var(--os-glass-border)", outline: "none", resize: "vertical", minHeight: 60, tabSize: 2 }}
               spellCheck={false} />
           </div>
@@ -562,7 +622,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
         const delCol = (ci: number) => { if (cols <= 1) return; update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)) }); };
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -598,7 +658,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       }
       default:
         return (
-          <div style={wrapperStyle} {...hoverHandlers}>
+          <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}>
             {handle}
             <div {...editableProps("flex-1")} style={{ outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" }} data-placeholder="Type '/' for commands..." />
             {delBtn}
@@ -610,9 +670,14 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   return (
     <div style={{ position: "relative", padding: "0 16px 120px" }}>
       <style>{`
-        .block-handle, .block-delete { opacity: 0 !important; }
-        div:hover > .block-handle, div:hover > .block-delete { opacity: 0.5 !important; }
-        div:hover > .block-handle:hover, div:hover > .block-delete:hover { opacity: 1 !important; }
+        .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+        .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; pointer-events: auto; }
+        .block-wrapper:hover .block-handle:hover, .block-wrapper:hover .block-delete:hover { opacity: 1; }
+        .block-wrapper:focus-within .block-handle, .block-wrapper:focus-within .block-delete { opacity: 0.5; pointer-events: auto; }
+        .block-wrapper:focus-within .block-handle:hover, .block-wrapper:focus-within .block-delete:hover { opacity: 1; }
+        .block-handle { display: flex; align-items: center; gap: 2px; padding-top: 4px; flex-shrink: 0; cursor: grab; }
+        .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
+        .block-delete:hover { color: #ef4444; }
         [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
       `}</style>
 
@@ -628,14 +693,18 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
       <button onClick={() => {
         const last = blocks[blocks.length - 1];
-        if (last && last.content === "" && last.type === "paragraph") refs.current.get(last.id)?.focus();
-        else addAfter(blocks[blocks.length - 1]?.id || "", "paragraph");
+        if (last && last.content === "" && last.type === "paragraph") {
+          refs.current.get(last.id)?.focus();
+        } else {
+          const nb: Block = { id: uid(), type: "paragraph", content: "" };
+          setBlocks(prev => [...prev, nb]);
+          setTimeout(() => refs.current.get(nb.id)?.focus(), 50);
+        }
       }}
         style={{ width: "100%", padding: "12px 8px", background: "none", border: "none", color: "var(--os-text-dim)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
         <Plus size={16} /> Add a block
       </button>
 
-      {/* Floating toolbar */}
       {floatingToolbar && (
         <div style={{
           position: "fixed", top: floatingToolbar.top, left: floatingToolbar.left,
@@ -664,7 +733,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         </div>
       )}
 
-      {/* Slash command menu */}
       {showMenu && (
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setShowMenu(null)} />
