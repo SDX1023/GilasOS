@@ -40,12 +40,12 @@ export async function exportToPdf(element: HTMLElement, filename: string) {
   element.style.borderRadius = origBorderRadius;
   pdfStyle.remove();
 
-  const imgWidth = 210; // A4 width in mm
-  const pageHeight = 297; // A4 height in mm
+  const imgWidth = 215.9; // Letter width in mm (8.5")
+  const pageHeight = 279.4; // Letter height in mm (11")
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
   const imgData = canvas.toDataURL("image/png");
 
-  const pdf = new jsPDF("p", "mm", "a4");
+  const pdf = new jsPDF("p", "mm", "letter");
   let position = 0;
   let remainingHeight = imgHeight;
 
