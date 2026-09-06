@@ -50,7 +50,7 @@ export default function PdfToFlashcardsPage() {
     try {
       const reviewer = { title: deckName, cards: generatedCards };
       const cat = existingCategories.find((c) => c.title === targetModule);
-      await saveReviewerToSupabase(cat?.id || targetModule || "pdf-cards", "custom", reviewer);
+      await saveReviewerToSupabase(cat?.id || null, "custom", reviewer);
       setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!");
       setTimeout(() => setSaveMsg(""), 3000);
     } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
