@@ -1,18 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Upload, Loader2, Save, ChevronDown, Check, X, Layers } from "lucide-react";
+import { Upload, Loader2, Save, ChevronDown, Check, Layers } from "lucide-react";
 import { saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { parseAnkiFile, ParsedAnkiDeck, preloadAnkiParser } from "@/lib/anki-parser";
 
 export default function ImportAnkiPage() {
   const { user } = useAuth();
-  const [decks, setDecks] = useState<ParsedAnkiDeck[]>([]);
+  const [decks, setDecks] = useState<{ name: string; cards: { front: string; back: string; hint?: string }[] }[]>([]);
   const [isParsing, setIsParsing] = useState(false);
-  const [parserReady, setParserReady] = useState(false);
   const [lastError, setLastError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -32,11 +30,7 @@ export default function ImportAnkiPage() {
       });
   }, [user]);
 
-  useEffect(() => {
-    preloadAnkiParser().then(() => setParserReady(true)).catch(() => {});
-  }, []);
-
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith(".apkg")) {
@@ -45,16 +39,21 @@ export default function ImportAnkiPage() {
     }
     setIsParsing(true); setLastError(""); setDecks([]); setSavedDecks(new Set());
     try {
-      const parsed = await parseAnkiFile(file);
-      if (parsed.length === 0) throw new Error("No decks with cards found in this file");
-      setDecks(parsed);
-      setSelectedDecks(new Set(parsed.map((_, i) => i)));
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/import-anki", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to parse Anki file");
+      if (!data.decks || data.decks.length === 0) throw new Error("No decks with cards found in this file");
+      setDecks(data.decks);
+      setSelectedDecks(new Set(data.decks.map((_: any, i: number) => i)));
     } catch (err: any) {
       setLastError(err.message || "Failed to parse Anki file");
     } finally {
       setIsParsing(false);
+      e.target.value = "";
     }
-  }, []);
+  };
 
   const toggleDeck = (index: number) => {
     setSelectedDecks((prev) => {
@@ -78,8 +77,7 @@ export default function ImportAnkiPage() {
       for (const i of selectedDecks) {
         const deck = decks[i];
         if (!deck || savedDecks.has(i)) continue;
-        const reviewer = { title: deck.name, cards: deck.cards };
-        await saveReviewerToSupabase(courseId, "custom", reviewer);
+        await saveReviewerToSupabase(courseId, "custom", { title: deck.name, cards: deck.cards });
         saved++;
         setSavedDecks((prev) => new Set([...prev, i]));
       }
@@ -116,22 +114,14 @@ export default function ImportAnkiPage() {
       </div>
 
       <div className="grid-2">
-        {/* Input */}
         <div className="glass-panel">
           <h2 style={{ fontWeight: 600, marginBottom: 16 }}>Upload Anki File</h2>
-          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: isParsing || !parserReady ? "wait" : "pointer", marginBottom: 16, position: "relative", opacity: !parserReady && !isParsing ? 0.6 : 1 }}>
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: isParsing ? "wait" : "pointer", marginBottom: 16, position: "relative" }}>
             {isParsing ? <Loader2 size={20} style={{ color: "var(--os-text-dim)", animation: "spin 1s linear infinite" }} /> : <Upload size={20} style={{ color: "var(--os-text-dim)" }} />}
-            <span className="text-secondary text-sm">{isParsing ? "Parsing file..." : !parserReady ? "Loading parser..." : "Upload .apkg file"}</span>
-            <input type="file" accept=".apkg" onChange={handleFileUpload} disabled={isParsing || !parserReady}
-              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: isParsing || !parserReady ? "wait" : "pointer" }} />
+            <span className="text-secondary text-sm">{isParsing ? "Parsing file on server..." : "Upload .apkg file"}</span>
+            <input type="file" accept=".apkg" onChange={handleFileUpload} disabled={isParsing}
+              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: isParsing ? "wait" : "pointer" }} />
           </label>
-
-          {isParsing && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 16 }}>
-              <Loader2 size={18} style={{ animation: "spin 1s linear infinite", color: "var(--os-accent)" }} />
-              <span className="text-secondary text-sm">Parsing Anki file...</span>
-            </div>
-          )}
 
           {lastError && (
             <div style={{ padding: 12, borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 16 }}>
@@ -204,14 +194,13 @@ export default function ImportAnkiPage() {
                 <button onClick={saveDecks} disabled={selectedDecks.size === 0 || saving}
                   className="glass-btn glass-btn-primary"
                   style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", fontSize: 13, opacity: selectedDecks.size === 0 || saving ? 0.5 : 1 }}>
-                  <Save size={12} /> {saving ? "Saving..." : `Save ${selectedDecks.size > 0 ? `${selectedDecks.size} ` : ""}Deck${selectedDecks.size !== 1 ? "s" : ""}`}
+                  <Save size={12} /> {saving ? "Saving..." : `Save${selectedDecks.size > 0 ? ` ${selectedDecks.size}` : ""} Deck${selectedDecks.size !== 1 ? "s" : ""}`}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Preview */}
         <div className="glass-panel">
           <h2 style={{ fontWeight: 600, marginBottom: 16 }}>
             Card Preview {selectedCards > 0 && <span className="text-dim" style={{ fontWeight: 400, fontSize: 13 }}>({selectedCards} cards selected)</span>}
