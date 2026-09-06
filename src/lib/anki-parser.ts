@@ -155,6 +155,10 @@ async function parseAnkiDB(data: ArrayBuffer): Promise<ParsedAnkiDeck[]> {
   return result;
 }
 
+export async function preloadAnkiParser() {
+  await getSQL();
+}
+
 export async function parseAnkiFile(file: File): Promise<ParsedAnkiDeck[]> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(arrayBuffer);

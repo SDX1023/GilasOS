@@ -6,12 +6,13 @@ import { Upload, Loader2, Save, ChevronDown, Check, X, Layers } from "lucide-rea
 import { saveReviewerToSupabase } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { parseAnkiFile, ParsedAnkiDeck } from "@/lib/anki-parser";
+import { parseAnkiFile, ParsedAnkiDeck, preloadAnkiParser } from "@/lib/anki-parser";
 
 export default function ImportAnkiPage() {
   const { user } = useAuth();
   const [decks, setDecks] = useState<ParsedAnkiDeck[]>([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [parserReady, setParserReady] = useState(false);
   const [lastError, setLastError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
@@ -30,6 +31,10 @@ export default function ImportAnkiPage() {
         setExistingCategories(data || []);
       });
   }, [user]);
+
+  useEffect(() => {
+    preloadAnkiParser().then(() => setParserReady(true)).catch(() => {});
+  }, []);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -114,11 +119,11 @@ export default function ImportAnkiPage() {
         {/* Input */}
         <div className="glass-panel">
           <h2 style={{ fontWeight: 600, marginBottom: 16 }}>Upload Anki File</h2>
-          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: "pointer", marginBottom: 16, position: "relative" }}>
-            <Upload size={20} style={{ color: "var(--os-text-dim)" }} />
-            <span className="text-secondary text-sm">{isParsing ? "Parsing..." : "Upload .apkg file"}</span>
-            <input type="file" accept=".apkg" onChange={handleFileUpload} disabled={isParsing}
-              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: isParsing ? "wait" : "pointer" }} />
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "32px 16px", borderRadius: 12, border: "1.5px dashed rgba(255,255,255,0.1)", cursor: isParsing || !parserReady ? "wait" : "pointer", marginBottom: 16, position: "relative", opacity: !parserReady && !isParsing ? 0.6 : 1 }}>
+            {isParsing ? <Loader2 size={20} style={{ color: "var(--os-text-dim)", animation: "spin 1s linear infinite" }} /> : <Upload size={20} style={{ color: "var(--os-text-dim)" }} />}
+            <span className="text-secondary text-sm">{isParsing ? "Parsing file..." : !parserReady ? "Loading parser..." : "Upload .apkg file"}</span>
+            <input type="file" accept=".apkg" onChange={handleFileUpload} disabled={isParsing || !parserReady}
+              style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", top: 0, left: 0, cursor: isParsing || !parserReady ? "wait" : "pointer" }} />
           </label>
 
           {isParsing && (
