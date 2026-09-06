@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export const runtime = "nodejs";
+
+let sqlPromise: ReturnType<typeof initSqlJs> | null = null;
+
+async function getSQL() {
+  if (!sqlPromise) {
+    const wasmPath = join(process.cwd(), "node_modules", "sql.js", "dist", "sql-wasm.wasm");
+    const wasmBinary = readFileSync(wasmPath);
+    sqlPromise = initSqlJs({ wasmBinary: wasmBinary.buffer });
+  }
+  return sqlPromise;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const dbData = await dbFile.async("arraybuffer");
 
-    const SQL = await initSqlJs();
+    const SQL = await getSQL();
     const db = new SQL.Database(new Uint8Array(dbData));
 
     const tables: string[] = [];
