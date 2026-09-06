@@ -71,8 +71,11 @@ export function Navbar() {
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 50,
-      borderBottom: "1px solid var(--os-glass-border)",
-      background: "var(--os-glass)", backdropFilter: "blur(20px)",
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(10, 14, 23, 0.6)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
     }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
