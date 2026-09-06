@@ -9,7 +9,7 @@ export interface ParsedAnkiDeck {
 let sqlPromise: ReturnType<typeof initSqlJs> | null = null;
 
 async function getSQL() {
-  if (!sqlPromise) sqlPromise = initSqlJs({ locateFile: () => "/sql-wasm-browser.wasm" });
+  if (!sqlPromise) sqlPromise = initSqlJs({ locateFile: () => "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.wasm" });
   return sqlPromise;
 }
 
