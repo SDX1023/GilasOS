@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Music, X } from "lucide-react";
+import { Music, X, Minus } from "lucide-react";
 
 const PLAYLIST_ID = "68ZULOlqdmWGGTeEsp5lup";
 const STORAGE_KEY = "gilasos-music-player";
@@ -294,22 +294,32 @@ export function MusicPlayer() {
                 · {TRACKS.length} songs
               </span>
             </div>
-            <button 
-              onClick={() => setOpen(false)}
-              style={{ 
-                padding: 4, 
-                background: "none", 
-                border: "none", 
-                cursor: "pointer", 
-                color: "#666",
-                display: "flex",
-                borderRadius: "4px",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e5e5"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
-            >
-              <X size={14} />
-            </button>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  padding: 4, background: "none", border: "none",
+                  cursor: "pointer", color: "#666", display: "flex", borderRadius: "4px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e5e5"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
+                title="Minimize"
+              >
+                <Minus size={14} />
+              </button>
+              <button
+                onClick={() => { setOpen(false); setStarted(false); }}
+                style={{
+                  padding: 4, background: "none", border: "none",
+                  cursor: "pointer", color: "#666", display: "flex", borderRadius: "4px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e5e5"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "#666"; }}
+                title="Stop"
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
 
           <div data-spotify-host style={{
