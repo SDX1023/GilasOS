@@ -108,30 +108,59 @@ export default function DecksPage() {
     }
 
     const courseDecks = decks.filter((d) => d.course_id === shareCourseId);
-    let sharedCount = 0;
+    const categoryTitle = courses.find(c => c.id === shareCourseId)?.title || "Category";
+    const bundledDecks: { title: string; cards: { front: string; back: string; hint: string }[] }[] = [];
 
     for (const deck of courseDecks) {
       const { data: cards } = await supabase.from("custom_deck_cards").select("front, back, hint").eq("deck_id", deck.id).order("sort_order");
-      const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", deck.id).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
-      if (existing) { sharedCount++; continue; }
-
-      const { data, error } = await supabase.from("shared_decks").insert({
-        user_id: user.id, reviewer_id: deck.id, title: deck.title, card_count: cards?.length || 0,
-        cards_json: (cards || []).map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
-        shared_with_user_id: sharedWithId,
-      }).select().single();
-
-      if (data) sharedCount++;
-      else if (error) {
-        const { data: fb } = await supabase.from("shared_decks").insert({
-          user_id: user.id, reviewer_id: deck.id, title: deck.title, card_count: cards?.length || 0,
-          cards_json: (cards || []).map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
-        }).select().single();
-        if (fb) sharedCount++;
-      }
+      bundledDecks.push({
+        title: deck.title,
+        cards: (cards || []).map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      });
     }
 
-    setShareLinks(sharedCount > 0 ? [`${sharedCount} deck${sharedCount > 1 ? "s" : ""} shared`] : []);
+    const totalCards = bundledDecks.reduce((sum, d) => sum + d.cards.length, 0);
+
+    const { data: existing } = await supabase.from("shared_decks").select("id")
+      .eq("reviewer_id", `__category__${shareCourseId}`)
+      .eq("user_id", user.id)
+      .eq("shared_with_user_id", sharedWithId)
+      .maybeSingle();
+
+    if (existing) {
+      if (!sharedWithId) {
+        await navigator.clipboard.writeText(`${window.location.origin}/shared/${existing.id}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+      setShareLinks(["Category already shared"]);
+      setSharing(false);
+      return;
+    }
+
+    const { data, error } = await supabase.from("shared_decks").insert({
+      user_id: user.id,
+      reviewer_id: `__category__${shareCourseId}`,
+      title: categoryTitle,
+      card_count: totalCards,
+      cards_json: { is_category: true, category_title: categoryTitle, decks: bundledDecks },
+      shared_with_user_id: sharedWithId,
+    }).select().single();
+
+    if (error || !data) {
+      setShareError("Failed to share category");
+      setSharing(false);
+      return;
+    }
+
+    if (!sharedWithId) {
+      await navigator.clipboard.writeText(`${window.location.origin}/shared/${data.id}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setShareLinks([`${bundledDecks.length} deck${bundledDecks.length > 1 ? "s" : ""} shared`]);
+    setSharing(false);
+  }
     setShareLinks(links);
     setSharing(false);
   }

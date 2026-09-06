@@ -121,42 +121,53 @@ export default function FlashcardsPage() {
     }
 
     const courseDecks = allReviewers.filter((r) => r.courseId === shareCourseId);
-    let sharedCount = 0;
+    const bundledDecks = courseDecks.map((entry) => ({
+      title: entry.reviewer.title,
+      cards: (entry.reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+    }));
 
-    for (const entry of courseDecks) {
-      const reviewer = entry.reviewer;
-      const reviewerId = reviewer.id;
+    const totalCards = bundledDecks.reduce((sum, d) => sum + d.cards.length, 0);
 
-      const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", userId).eq("shared_with_user_id", sharedWithId).maybeSingle();
-      if (existing) { sharedCount++; continue; }
+    const { data: existing } = await supabase.from("shared_decks").select("id")
+      .eq("reviewer_id", `__category__${shareCourseId}`)
+      .eq("user_id", userId)
+      .eq("shared_with_user_id", sharedWithId)
+      .maybeSingle();
 
-      const { data, error } = await supabase.from("shared_decks").insert({
-        user_id: userId,
-        reviewer_id: reviewerId,
-        course_id: entry.courseId,
-        module_id: entry.moduleId,
-        title: reviewer.title,
-        card_count: reviewer.cards?.length || 0,
-        cards_json: (reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
-        shared_with_user_id: sharedWithId,
-      }).select().single();
-
-      if (data) sharedCount++;
-      else if (error) {
-        const { data: fallbackData } = await supabase.from("shared_decks").insert({
-          user_id: userId,
-          reviewer_id: reviewerId,
-          course_id: entry.courseId,
-          module_id: entry.moduleId,
-          title: reviewer.title,
-          card_count: reviewer.cards?.length || 0,
-          cards_json: (reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
-        }).select().single();
-        if (fallbackData) sharedCount++;
+    if (existing) {
+      if (!sharedWithId) {
+        await navigator.clipboard.writeText(`${window.location.origin}/shared/${existing.id}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       }
+      setShareLinks(["Category already shared"]);
+      setSharing(false);
+      return;
     }
 
-    setShareLinks(sharedCount > 0 ? [`${sharedCount} deck${sharedCount > 1 ? "s" : ""} shared`] : []);
+    const { data, error } = await supabase.from("shared_decks").insert({
+      user_id: userId,
+      reviewer_id: `__category__${shareCourseId}`,
+      title: shareCourseId,
+      card_count: totalCards,
+      cards_json: { is_category: true, category_title: shareCourseId, decks: bundledDecks },
+      shared_with_user_id: sharedWithId,
+    }).select().single();
+
+    if (error || !data) {
+      setShareError("Failed to share category");
+      setSharing(false);
+      return;
+    }
+
+    if (!sharedWithId) {
+      await navigator.clipboard.writeText(`${window.location.origin}/shared/${data.id}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setShareLinks([`${bundledDecks.length} deck${bundledDecks.length > 1 ? "s" : ""} shared`]);
+    setSharing(false);
+  }
     setShareLinks(links);
     setSharing(false);
   }
