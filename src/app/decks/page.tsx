@@ -49,7 +49,7 @@ export default function DecksPage() {
   const [dragType, setDragType] = useState<"deck" | "category" | null>(null);
   const [showCram, setShowCram] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "deck" | "course"; id: string } | null>(null);
-  const [categorySort, setCategorySort] = useState<"name" | "date" | "decks">("name");
+  const [categorySort, setCategorySort] = useState<"custom" | "name" | "date" | "decks">("custom");
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCourseId, setShareCourseId] = useState<string | null>(null);
   const [shareRecipient, setShareRecipient] = useState("");
@@ -299,14 +299,15 @@ export default function DecksPage() {
         const draggedCatId = raw;
         if (draggedCatId && draggedCatId !== courseId && courseId) {
           const supabase = getSupabase();
-          const dragIdx = courses.findIndex(c => c.id === draggedCatId);
-          const dropIdx = courses.findIndex(c => c.id === courseId);
+          const dragIdx = grouped.findIndex(c => c.id === draggedCatId);
+          const dropIdx = grouped.findIndex(c => c.id === courseId);
           if (dragIdx === -1 || dropIdx === -1) { setDraggedId(null); setDropTarget(null); setDragType(null); return; }
-          const reordered = [...courses];
+          const reordered = [...grouped];
           const [moved] = reordered.splice(dragIdx, 1);
           reordered.splice(dropIdx, 0, moved);
-          setCourses(reordered);
-          const updates = reordered.map((c, i) => supabase.from("deck_courses").update({ sort_order: i }).eq("id", c.id));
+          const courseOrderMap = reordered.map((c, i) => ({ id: c.id, sort_order: i }));
+          setCourses(prev => prev.map(c => { const found = courseOrderMap.find(m => m.id === c.id); return found ? { ...c, sort_order: found.sort_order } : c; }));
+          const updates = courseOrderMap.map(({ id, sort_order }) => supabase.from("deck_courses").update({ sort_order }).eq("id", id));
           await Promise.all(updates);
         }
       } else {
@@ -322,17 +323,10 @@ export default function DecksPage() {
     setDraggedId(null); setDropTarget(null); setDragType(null);
   };
 
-  const handleCategoryDragOver = (e: React.DragEvent, courseId: string) => {
-    if (dragType !== "category") return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDropTarget(courseId);
-  };
-
   const filtered = decks.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()));
   const ungrouped = filtered.filter(d => !d.course_id);
   const groupedRaw = courses.map(c => ({ ...c, decks: filtered.filter(d => d.course_id === c.id) })).filter(c => c.decks.length > 0 || !searchQuery);
-  const grouped = [...groupedRaw].sort((a, b) => {
+  const grouped = categorySort === "custom" ? groupedRaw : [...groupedRaw].sort((a, b) => {
     if (categorySort === "name") return a.title.localeCompare(b.title);
     if (categorySort === "date") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     if (categorySort === "decks") return b.decks.length - a.decks.length;
@@ -457,7 +451,8 @@ export default function DecksPage() {
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search decks..." style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
             </div>
             <div style={{ position: "relative" }}>
-              <select value={categorySort} onChange={(e) => setCategorySort(e.target.value as "name" | "date" | "decks")} style={{ padding: "10px 28px 10px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none", appearance: "none", cursor: "pointer" }}>
+              <select value={categorySort} onChange={(e) => setCategorySort(e.target.value as "custom" | "name" | "date" | "decks")} style={{ padding: "10px 28px 10px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none", appearance: "none", cursor: "pointer" }}>
+                <option value="custom">Custom</option>
                 <option value="name">Name</option>
                 <option value="date">Date</option>
                 <option value="decks">Decks</option>
@@ -486,21 +481,18 @@ export default function DecksPage() {
                 key={course.id}
                 className={`glass-card ${dropTarget === course.id && dragType === "category" ? "deck-drop-target" : ""}`}
                 style={{ padding: 0, overflow: "hidden", opacity: draggedId === course.id && dragType === "category" ? 0.4 : 1, transition: "opacity 0.15s" }}
-                onDragOver={(e) => dragType === "category" ? handleCategoryDragOver(e, course.id) : handleDragOver(e, course.id)}
+                onDragOver={(e) => { if (dragType === "category") { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropTarget(course.id); } else { handleDragOver(e, course.id); } }}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, course.id)}
               >
-                <div onClick={() => toggleCourse(course.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", background: "rgba(109,40,217,0.06)", borderBottom: expandedCourses[course.id] !== false ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
-                  <span
-                    draggable
-                    onDragStart={(e) => { e.stopPropagation(); handleCategoryDragStart(e, course.id); }}
-                    onDragEnd={handleDragEnd}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ cursor: "grab", color: "var(--os-text-dim)", display: "flex", alignItems: "center", flexShrink: 0 }}
-                    title="Drag to reorder"
-                  >
-                    <GripVertical size={14} />
-                  </span>
+                <div
+                  draggable
+                  onDragStart={(e) => { e.stopPropagation(); handleCategoryDragStart(e, course.id); }}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => toggleCourse(course.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", cursor: "pointer", background: "rgba(109,40,217,0.06)", borderBottom: expandedCourses[course.id] !== false ? "1px solid rgba(255,255,255,0.06)" : "none" }}
+                >
+                  <GripVertical size={14} style={{ color: "var(--os-text-dim)", flexShrink: 0, cursor: "grab" }} />
                   {expandedCourses[course.id] !== false ? <ChevronDown size={16} style={{ color: "var(--os-accent)", flexShrink: 0 }} /> : <ChevronRight size={16} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />}
                   <FolderOpen size={16} style={{ color: "var(--os-accent)" }} />
                   {editingCourseId === course.id ? (
