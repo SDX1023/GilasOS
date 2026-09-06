@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target, Share2 } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
 import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards } from "@/lib/user-data";
@@ -248,6 +248,13 @@ export default function DeckStudyPage() {
   const [cramMode, setCramMode] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
   const [flashImage, setFlashImage] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
@@ -291,6 +298,77 @@ export default function DeckStudyPage() {
   useEffect(() => {
     fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!showShareModal || !user) return;
+    const supabase = getSupabase();
+    supabase.from("friends").select("friend_id").eq("user_id", user.id).eq("status", "accepted")
+      .then(async ({ data }) => {
+        if (!data?.length) { setFriends([]); return; }
+        const ids = data.map((d: any) => d.friend_id);
+        const { data: profiles } = await supabase.from("user_profiles").select("user_id, username").in("user_id", ids);
+        setFriends(profiles || []);
+      });
+  }, [showShareModal, user]);
+
+  async function handleShare() {
+    if (!user) return;
+    setSharing(true);
+    setShareError("");
+    const supabase = getSupabase();
+
+    let sharedWithId: string | null = null;
+    if (shareRecipient.trim()) {
+      const { data: recipient } = await supabase.from("user_profiles").select("user_id").eq("username", shareRecipient.trim()).maybeSingle();
+      if (!recipient) { setShareError("User not found"); setSharing(false); return; }
+      sharedWithId = recipient.user_id;
+    }
+
+    const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", deckId).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
+    if (existing) {
+      const link = `${window.location.origin}/shared/${existing.id}`;
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      setSharing(false);
+      setShared(true);
+      setShowShareModal(false);
+      return;
+    }
+
+    const { data, error } = await supabase.from("shared_decks").insert({
+      user_id: user.id,
+      reviewer_id: deckId,
+      title: deckTitle,
+      card_count: cards.length,
+      cards_json: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      shared_with_user_id: sharedWithId,
+    }).select().single();
+
+    if (error || !data) {
+      const { data: fallbackData } = await supabase.from("shared_decks").insert({
+        user_id: user.id,
+        reviewer_id: deckId,
+        title: deckTitle,
+        card_count: cards.length,
+        cards_json: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+      }).select().single();
+      if (fallbackData) {
+        const link = `${window.location.origin}/shared/${fallbackData.id}`;
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } else {
+      const link = `${window.location.origin}/shared/${data.id}`;
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setSharing(false);
+    setShared(true);
+    setShowShareModal(false);
+  }
 
   function pickRandom(type: string): string | null {
     const pool = flashImages[type] || [];
@@ -890,6 +968,9 @@ export default function DeckStudyPage() {
             <button onClick={() => setAddingCard(!addingCard)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
               <Plus size={15} /> Add Card
             </button>
+            <button onClick={() => { setShowShareModal(true); setShareRecipient(""); setShareError(""); setShared(false); setCopied(false); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
+              <Share2 size={15} /> Share
+            </button>
           </div>
         </div>
 
@@ -1085,6 +1166,39 @@ export default function DeckStudyPage() {
           ))}
         </div>
       </div>
+
+      {showShareModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowShareModal(false)}>
+          <div className="glass-panel" style={{ width: 400, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Share Deck</h3>
+            {friends.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with a friend</label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {friends.map((f) => (
+                    <button key={f.user_id} onClick={() => setShareRecipient(shareRecipient === f.username ? "" : f.username)} style={{
+                      padding: "4px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      background: shareRecipient === f.username ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                      border: shareRecipient === f.username ? "1px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)",
+                      color: shareRecipient === f.username ? "#fff" : "var(--os-text-secondary)",
+                    }}>{f.username}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Or enter username manually</label>
+            <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
+            {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
+            {shared && copied && <p style={{ fontSize: 12, color: "#22c55e", marginTop: 4 }}>Link copied to clipboard!</p>}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setShowShareModal(false)} className="glass-btn glass-btn-ghost" style={{ flex: 1 }}>Cancel</button>
+              <button onClick={handleShare} disabled={sharing || shared} className="glass-btn glass-btn-primary" style={{ flex: 1 }}>
+                {sharing ? "Sharing..." : shared ? "Shared!" : "Share"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
