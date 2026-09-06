@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       if (!entry.dir) zipFiles.push(path);
     });
 
-    const dbFile = zip.file("collection.anki21") || zip.file("collection.anki2");
+    const dbFile = zip.file("collection.anki21b") || zip.file("collection.anki21") || zip.file("collection.anki2");
     if (!dbFile) {
       return NextResponse.json({ error: "Invalid Anki file — no database found", debug: { zipFiles } }, { status: 400 });
     }
