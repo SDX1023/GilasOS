@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   BookOpen,
-  Timer,
+  Layers,
   FileText,
   CheckSquare,
   Trophy,
