@@ -8,8 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target, Share2 } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
-import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, getDueCards, sortCardsByDue, ratingFromResult } from "@/lib/user-data";
-import { scheduleCard, getDefaultState, CardState } from "@/lib/fsrs";
+import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, sortWeakCardsFirst } from "@/lib/user-data";
+import { getDefaultState, updateCardState, CardState } from "@/lib/fsrs";
 import { earnBadge } from "@/lib/badges";
 
 const formulaCache: Record<string, { formula: string; explanation: string } | null> = {};
@@ -579,9 +579,7 @@ export default function DeckStudyPage() {
     if (shuffled) {
       q = [...cards].sort(() => Math.random() - 0.5);
     } else if (user && schedules.size > 0) {
-      q = sortCardsByDue(cards, schedules);
-      const due = getDueCards(q, schedules);
-      q = due.length > 0 ? due : q;
+      q = sortWeakCardsFirst(cards, schedules);
     } else {
       q = [...cards];
     }
@@ -614,11 +612,9 @@ export default function DeckStudyPage() {
       const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
       logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
 
-      // FSRS: schedule the card based on the result
       const key = `${current.front}:::${current.back}`;
       const currentState = schedules.get(key) || getDefaultState();
-      const rating = ratingFromResult(result);
-      const newState = scheduleCard(currentState, rating);
+      const newState = updateCardState(currentState, result);
       setSchedules((prev) => new Map(prev).set(key, newState));
       saveCardSchedule(user.id, deckId, current.front, current.back, newState).catch(() => {});
 

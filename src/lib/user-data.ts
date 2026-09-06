@@ -600,9 +600,9 @@ export async function loadWeakCards(userId: string, deckId?: string): Promise<{ 
   return Array.from(map.values()).filter((e) => (e.forgot + e.dont_know) > e.known);
 }
 
-// --- FSRS Spaced Repetition ---
+// --- Card Scheduling (weak cards first) ---
 
-import { CardState, getDefaultState, scheduleCard, isDue } from "./fsrs";
+import { CardState, getDefaultState, updateCardState, isWeak } from "./fsrs";
 
 export async function loadCardSchedules(
   userId: string,
@@ -611,19 +611,17 @@ export async function loadCardSchedules(
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("card_schedules")
-    .select("card_front, card_back, stability, difficulty, due, last_review, reps, lapses")
+    .select("card_front, card_back, known, forgot, dont_know, reps")
     .eq("user_id", userId)
     .eq("deck_id", deckId);
   if (error || !data) return new Map();
   const map = new Map<string, CardState>();
   for (const row of data) {
     map.set(`${row.card_front}:::${row.card_back}`, {
-      stability: row.stability,
-      difficulty: row.difficulty,
-      due: new Date(row.due).getTime(),
-      lastReview: row.last_review ? new Date(row.last_review).getTime() : 0,
+      known: row.known,
+      forgot: row.forgot,
+      dontKnow: row.dont_know,
       reps: row.reps,
-      lapses: row.lapses,
     });
   }
   return map;
@@ -643,46 +641,26 @@ export async function saveCardSchedule(
       deck_id: deckId,
       card_front: cardFront,
       card_back: cardBack,
-      stability: state.stability,
-      difficulty: state.difficulty,
-      due: new Date(state.due).toISOString(),
-      last_review: state.lastReview ? new Date(state.lastReview).toISOString() : null,
+      known: state.known,
+      forgot: state.forgot,
+      dont_know: state.dontKnow,
       reps: state.reps,
-      lapses: state.lapses,
     },
     { onConflict: "user_id,deck_id,card_front,card_back" }
   );
 }
 
-export function getDueCards(
-  cards: { front: string; back: string }[],
-  schedules: Map<string, CardState>
-): { front: string; back: string }[] {
-  const now = Date.now();
-  return cards.filter((c) => {
-    const state = schedules.get(`${c.front}:::${c.back}`);
-    if (!state) return true; // new card, always due
-    return now >= state.due;
-  });
-}
-
-export function sortCardsByDue(
+export function sortWeakCardsFirst(
   cards: { front: string; back: string }[],
   schedules: Map<string, CardState>
 ): { front: string; back: string }[] {
   return [...cards].sort((a, b) => {
     const sa = schedules.get(`${a.front}:::${a.back}`);
     const sb = schedules.get(`${b.front}:::${b.back}`);
-    const dueA = sa ? sa.due : 0;
-    const dueB = sb ? sb.due : 0;
-    return dueA - dueB;
+    const aWeak = sa ? isWeak(sa) : false;
+    const bWeak = sb ? isWeak(sb) : false;
+    if (aWeak && !bWeak) return -1;
+    if (!aWeak && bWeak) return 1;
+    return 0;
   });
-}
-
-export function ratingFromResult(
-  result: "known" | "forgot" | "dont_know"
-): 1 | 2 | 3 | 4 {
-  if (result === "dont_know") return 1;
-  if (result === "forgot") return 2;
-  return 3;
 }
