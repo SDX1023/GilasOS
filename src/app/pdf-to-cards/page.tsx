@@ -21,7 +21,7 @@ export default function PdfToFlashcardsPage() {
   const [targetModule, setTargetModule] = useState("pdf-cards");
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
-  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  const [existingCategories, setExistingCategories] = useState<{ id: string; title: string }[]>([]);
   const [cooldown, setCooldown] = useState(() => {
     if (typeof window === "undefined") return 0;
     const until = localStorage.getItem("flashcard-cooldown-until");
@@ -38,9 +38,9 @@ export default function PdfToFlashcardsPage() {
   useEffect(() => {
     if (!user) return;
     const supabase = getSupabase();
-    supabase.from("deck_courses").select("title").eq("user_id", user.id).order("sort_order")
-      .then(({ data }: { data: { title: string }[] | null }) => {
-        setExistingCategories((data || []).map((c: { title: string }) => c.title));
+    supabase.from("deck_courses").select("id, title").eq("user_id", user.id).order("sort_order")
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => {
+        setExistingCategories(data || []);
       });
   }, [user]);
 
@@ -49,7 +49,8 @@ export default function PdfToFlashcardsPage() {
     setSaving(true); setSaveMsg("");
     try {
       const reviewer = { title: deckName, cards: generatedCards };
-      await saveReviewerToSupabase(PDF_COURSE_ID, targetModule || "pdf-cards", reviewer);
+      const cat = existingCategories.find((c) => c.title === targetModule);
+      await saveReviewerToSupabase(cat?.id || targetModule || "pdf-cards", "custom", reviewer);
       setDeckName(""); setGeneratedCards([]); setPdfText(""); setSaveMsg("Deck saved!");
       setTimeout(() => setSaveMsg(""), 3000);
     } catch (err: any) { setLastError(err.message); } finally { setSaving(false); }
@@ -164,7 +165,15 @@ export default function PdfToFlashcardsPage() {
                       if (e.key === "Enter" && newCategory.trim()) { setTargetModule(newCategory.trim()); setShowNewCategory(false); }
                       if (e.key === "Escape") { setShowNewCategory(false); setNewCategory(""); }
                     }} />
-                    <button onClick={() => { if (newCategory.trim()) { setTargetModule(newCategory.trim()); setShowNewCategory(false); } }} className="glass-btn glass-btn-primary" style={{ padding: "6px 10px", fontSize: 12 }}>Add</button>
+                    <button onClick={async () => {
+                      if (!newCategory.trim() || !user) return;
+                      const supabase = getSupabase();
+                      const { data } = await supabase.from("deck_courses").insert({ user_id: user.id, title: newCategory.trim() }).select("id, title").single();
+                      if (data) setExistingCategories((prev) => [...prev, data]);
+                      setTargetModule(newCategory.trim());
+                      setShowNewCategory(false);
+                      setNewCategory("");
+                    }} className="glass-btn glass-btn-primary" style={{ padding: "6px 10px", fontSize: 12 }}>Add</button>
                     <button onClick={() => { setShowNewCategory(false); setNewCategory(""); }} className="glass-btn" style={{ padding: "6px 10px", fontSize: 12 }}>Cancel</button>
                   </div>
                 ) : (
@@ -179,7 +188,7 @@ export default function PdfToFlashcardsPage() {
                       style={{ width: 180, appearance: "none", paddingRight: 28, cursor: "pointer" }}
                     >
                       {existingCategories.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat.id} value={cat.title}>{cat.title}</option>
                       ))}
                       <option value="pdf-cards">pdf-cards (default)</option>
                       <option value="__new__">+ Create new category</option>
