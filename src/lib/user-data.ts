@@ -650,10 +650,10 @@ export async function saveCardSchedule(
   );
 }
 
-export function sortWeakCardsFirst(
-  cards: { front: string; back: string }[],
+export function sortWeakCardsFirst<T extends { front: string; back: string }>(
+  cards: T[],
   schedules: Map<string, CardState>
-): { front: string; back: string }[] {
+): T[] {
   return [...cards].sort((a, b) => {
     const sa = schedules.get(`${a.front}:::${a.back}`);
     const sb = schedules.get(`${b.front}:::${b.back}`);

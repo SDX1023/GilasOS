@@ -33,7 +33,7 @@ export function useDesktopIcons(): DesktopIcon[] {
     { id: "pdf", label: "PDF to Cards", icon: <FileText size={28} />, href: "/pdf-to-cards", color: "#06b6d4" },
     { id: "anki", label: "Import Anki", icon: <Layers size={28} />, href: "/import-anki", color: "#f97316" },
     { id: "leaderboard", label: "Leaderboard", icon: <Trophy size={28} />, href: "/leaderboard", color: "#eab308" },
-    { id: "pomodoro", label: "Pomodoro", icon: <Clock size={28} />, onClick: () => pomodoro?.toggle?.(), color: "#ef4444" },
+    { id: "pomodoro", label: "Pomodoro", icon: <Clock size={28} />, onClick: () => pomodoro?.isRunning ? pomodoro?.pause() : pomodoro?.start(), color: "#ef4444" },
   ];
 }
 

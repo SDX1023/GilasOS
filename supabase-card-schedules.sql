@@ -1,6 +1,3 @@
--- Simple card tracking table
--- Tracks known/forgot/dontKnow counts per card
-
 CREATE TABLE IF NOT EXISTS card_schedules (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
