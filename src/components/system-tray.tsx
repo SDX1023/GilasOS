@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wifi, Volume2, Battery, Bell, ChevronUp } from "lucide-react";
+import { Wifi, Volume2, Battery, Bell, Moon, Sun, Monitor } from "lucide-react";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
+import Link from "next/link";
 
 export function SystemTray() {
   const [time, setTime] = useState("");
-  const [date, setDate] = useState("");
   const [showTray, setShowTray] = useState(false);
   const pomodoro = usePomodoroSafe();
 
@@ -14,7 +14,6 @@ export function SystemTray() {
     const update = () => {
       const now = new Date();
       setTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-      setDate(now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }));
     };
     update();
     const interval = setInterval(update, 1000);
@@ -25,28 +24,10 @@ export function SystemTray() {
     <div style={{ position: "relative" }}>
       <button
         onClick={() => setShowTray(!showTray)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "4px 10px",
-          borderRadius: 8,
-          background: showTray ? "rgba(255,255,255,0.08)" : "transparent",
-          border: "none",
-          color: "var(--os-text-secondary)",
-          cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 500,
-          transition: "background 0.15s",
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
-        onMouseLeave={(e) => { if (!showTray) e.currentTarget.style.background = "transparent"; }}
+        className="taskbar-time"
+        title="System Tray"
       >
-        <Wifi size={13} />
-        <Volume2 size={13} />
-        <Battery size={13} />
-        <Bell size={13} />
-        <span>{time}</span>
+        {time}
       </button>
 
       {showTray && (
@@ -56,47 +37,59 @@ export function SystemTray() {
             position: "absolute",
             bottom: "100%",
             right: 0,
-            marginBottom: 8,
-            width: 280,
-            borderRadius: 14,
+            marginBottom: 12,
+            width: 320,
+            borderRadius: 16,
             background: "var(--os-glass)",
             border: "1px solid var(--os-glass-border)",
-            backdropFilter: "blur(24px)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+            backdropFilter: "blur(30px)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
             zIndex: 999,
-            padding: 16,
+            overflow: "hidden",
           }}>
-            {/* Clock */}
-            <div style={{ textAlign: "center", marginBottom: 16 }}>
-              <p style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1 }}>{time}</p>
-              <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>{date}</p>
+            {/* Header with clock */}
+            <div style={{
+              padding: "20px 20px 16px",
+              borderBottom: "1px solid var(--os-glass-border)",
+              textAlign: "center",
+            }}>
+              <p style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, lineHeight: 1 }}>{time}</p>
+              <p style={{ fontSize: 13, color: "var(--os-text-dim)", marginTop: 4 }}>
+                {new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              </p>
             </div>
 
-            {/* Quick settings */}
+            {/* Quick toggles */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(4, 1fr)",
               gap: 8,
-              marginBottom: 16,
+              padding: "16px",
             }}>
               {[
-                { icon: <Wifi size={16} />, label: "Wi-Fi", active: true },
-                { icon: <Volume2 size={16} />, label: "Sound", active: true },
-                { icon: <Battery size={16} />, label: "Battery", active: true },
+                { icon: <Wifi size={18} />, label: "Wi-Fi", active: true },
+                { icon: <Volume2 size={18} />, label: "Sound", active: true },
+                { icon: <Battery size={18} />, label: "Battery", active: true },
+                { icon: <Moon size={18} />, label: "Dark", active: true },
               ].map((item) => (
                 <button key={item.label} style={{
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 4,
-                  padding: "10px 4px",
-                  borderRadius: 10,
+                  gap: 6,
+                  padding: "12px 4px",
+                  borderRadius: 12,
                   background: item.active ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.04)",
-                  border: `1px solid ${item.active ? "rgba(109,40,217,0.3)" : "var(--os-glass-border)"}`,
+                  border: "none",
                   color: item.active ? "var(--os-accent)" : "var(--os-text-dim)",
                   cursor: "pointer",
                   fontSize: 10,
-                }}>
+                  fontWeight: 500,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = item.active ? "rgba(109,40,217,0.3)" : "rgba(255,255,255,0.08)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = item.active ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.04)"}
+                >
                   {item.icon}
                   <span>{item.label}</span>
                 </button>
@@ -106,20 +99,41 @@ export function SystemTray() {
             {/* Pomodoro status */}
             {pomodoro?.isRunning && (
               <div style={{
-                padding: 10,
-                borderRadius: 10,
+                margin: "0 16px 16px",
+                padding: 12,
+                borderRadius: 12,
                 background: "rgba(239,68,68,0.1)",
-                border: "1px solid rgba(239,68,68,0.2)",
+                border: "1px solid rgba(239,68,68,0.15)",
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                fontSize: 12,
+                justifyContent: "space-between",
+                fontSize: 13,
                 color: "#ef4444",
               }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", animation: "pulse 2s infinite" }} />
-                Pomodoro: {pomodoro.timeLeft || "00:00"}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", animation: "pulse 2s infinite" }} />
+                  Pomodoro Timer
+                </div>
+                <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                  {pomodoro.timeLeft || "00:00"}
+                </span>
               </div>
             )}
+
+            {/* Footer links */}
+            <div style={{
+              padding: "12px 16px",
+              borderTop: "1px solid var(--os-glass-border)",
+              display: "flex",
+              justifyContent: "space-between",
+            }}>
+              <Link href="/settings" onClick={() => setShowTray(false)} style={{
+                fontSize: 12, color: "var(--os-text-dim)", textDecoration: "none",
+              }}>
+                Settings
+              </Link>
+              <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>GilasOS v1.0</span>
+            </div>
           </div>
         </>
       )}
