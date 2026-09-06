@@ -7,13 +7,10 @@ function forceDarkText(root: HTMLElement) {
     const s = el as HTMLElement;
     s.style.color = "#1a1a1a";
     s.style.opacity = "1";
-    if (s.tagName === "SPAN" && s.style.color) {
-      s.style.color = "#1a1a1a";
-    }
   }
 }
 
-function restoreElements(root: HTMLElement, snapshots: Map<HTMLElement, string>) {
+function restoreElements(snapshots: Map<HTMLElement, string>) {
   for (const [el, orig] of snapshots) {
     el.style.color = orig || "";
     el.style.opacity = "";
@@ -23,11 +20,13 @@ function restoreElements(root: HTMLElement, snapshots: Map<HTMLElement, string>)
 export async function exportToPdf(element: HTMLElement, filename: string) {
   const margin = 12.7; // 0.5 inch in mm
 
-  const origBg = element.style.background;
-  const origBorder = element.style.border;
-  const origBorderRadius = element.style.borderRadius;
-  const origPadding = element.style.padding;
-  const origMaxWidth = element.style.maxWidth;
+  const origStyles = {
+    bg: element.style.background,
+    border: element.style.border,
+    borderRadius: element.style.borderRadius,
+    padding: element.style.padding,
+    maxWidth: element.style.maxWidth,
+  };
 
   element.style.background = "#ffffff";
   element.style.border = "none";
@@ -36,10 +35,8 @@ export async function exportToPdf(element: HTMLElement, filename: string) {
   element.style.maxWidth = "100%";
 
   const snapshots = new Map<HTMLElement, string>();
-  const allEls = element.querySelectorAll("*");
-  for (const el of allEls) {
-    const s = el as HTMLElement;
-    snapshots.set(s, s.style.color);
+  for (const el of element.querySelectorAll("*")) {
+    snapshots.set(el as HTMLElement, (el as HTMLElement).style.color);
   }
   forceDarkText(element);
 
@@ -50,30 +47,35 @@ export async function exportToPdf(element: HTMLElement, filename: string) {
     logging: false,
   });
 
-  element.style.background = origBg;
-  element.style.border = origBorder;
-  element.style.borderRadius = origBorderRadius;
-  element.style.padding = origPadding;
-  element.style.maxWidth = origMaxWidth;
-  restoreElements(element, snapshots);
+  Object.assign(element.style, origStyles);
+  restoreElements(snapshots);
 
-  const contentWidth = 215.9 - margin * 2; // usable width inside margins
-  const pageHeight = 279.4 - margin * 2;   // usable height inside margins
-  const imgHeight = (canvas.height * contentWidth) / canvas.width;
-  const imgData = canvas.toDataURL("image/png");
+  const contentWidthMm = 215.9 - margin * 2;
+  const contentHeightMm = 279.4 - margin * 2;
+  const scale = contentWidthMm / canvas.width;
+  const contentHeightPx = contentHeightMm / scale;
+  const totalHeightPx = canvas.height;
 
   const pdf = new jsPDF("p", "mm", "letter");
-  let position = margin;
-  let remainingHeight = imgHeight;
+  let srcY = 0;
+  let page = 0;
 
-  pdf.addImage(imgData, "PNG", margin, margin, contentWidth, imgHeight);
-  remainingHeight -= pageHeight;
+  while (srcY < totalHeightPx) {
+    if (page > 0) pdf.addPage();
 
-  while (remainingHeight > 0) {
-    position = margin - (pageHeight * (Math.ceil(imgHeight / pageHeight) - Math.ceil(remainingHeight / pageHeight)));
-    pdf.addPage();
-    pdf.addImage(imgData, "PNG", margin, position, contentWidth, imgHeight);
-    remainingHeight -= pageHeight;
+    const sliceHeight = Math.min(contentHeightPx, totalHeightPx - srcY);
+    const sliceCanvas = document.createElement("canvas");
+    sliceCanvas.width = canvas.width;
+    sliceCanvas.height = sliceHeight;
+    const ctx = sliceCanvas.getContext("2d")!;
+    ctx.drawImage(canvas, 0, srcY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+    const sliceData = sliceCanvas.toDataURL("image/png");
+    const sliceHeightMm = sliceHeight * scale;
+    pdf.addImage(sliceData, "PNG", margin, margin, contentWidthMm, sliceHeightMm);
+
+    srcY += contentHeightPx;
+    page++;
   }
 
   pdf.save(`${filename}.pdf`);
