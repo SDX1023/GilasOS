@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { FileText, Upload, Loader2, Save, ChevronDown } from "lucide-react";
 import { saveReviewerToSupabase, loadReviewersFromSupabase } from "@/lib/custom-content";
+import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
 const PDF_COURSE_ID = "pdf-generated";
@@ -38,8 +39,8 @@ export default function PdfToFlashcardsPage() {
     if (!user) return;
     const supabase = getSupabase();
     supabase.from("deck_courses").select("title").eq("user_id", user.id).order("sort_order")
-      .then(({ data }) => {
-        setExistingCategories((data || []).map((c) => c.title));
+      .then(({ data }: { data: { title: string }[] | null }) => {
+        setExistingCategories((data || []).map((c: { title: string }) => c.title));
       });
   }, [user]);
 
