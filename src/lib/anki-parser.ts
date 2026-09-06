@@ -8,8 +8,44 @@ export interface ParsedAnkiDeck {
 
 let sqlPromise: ReturnType<typeof initSqlJs> | null = null;
 
+const WASM_URL = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.wasm";
+const WASM_CACHE_KEY = "sql-wasm-cache-v1";
+
+async function loadWasmBinary(): Promise<ArrayBuffer> {
+  // Check IndexedDB cache
+  const cached = await new Promise<ArrayBuffer | null>((resolve) => {
+    const req = indexedDB.open("anki-parser-db", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("files");
+    req.onsuccess = () => {
+      const tx = req.result.transaction("files", "readonly");
+      const get = tx.objectStore("files").get(WASM_CACHE_KEY);
+      get.onsuccess = () => resolve(get.result || null);
+      get.onerror = () => resolve(null);
+    };
+    req.onerror = () => resolve(null);
+  });
+
+  if (cached) return cached;
+
+  // Download and cache
+  const resp = await fetch(WASM_URL);
+  const buf = await resp.arrayBuffer();
+
+  const wreq = indexedDB.open("anki-parser-db", 1);
+  wreq.onupgradeneeded = () => wreq.result.createObjectStore("files");
+  wreq.onsuccess = () => {
+    const tx = wreq.result.transaction("files", "readwrite");
+    tx.objectStore("files").put(buf, WASM_CACHE_KEY);
+  };
+
+  return buf;
+}
+
 async function getSQL() {
-  if (!sqlPromise) sqlPromise = initSqlJs({ locateFile: () => "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.11.0/sql-wasm.wasm" });
+  if (!sqlPromise) {
+    const wasmBinary = await loadWasmBinary();
+    sqlPromise = initSqlJs({ wasmBinary });
+  }
   return sqlPromise;
 }
 
