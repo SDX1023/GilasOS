@@ -326,10 +326,12 @@ export default function DeckStudyPage() {
 
     const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", deckId).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
     if (existing) {
-      const link = `${window.location.origin}/shared/${existing.id}`;
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (!sharedWithId) {
+        const link = `${window.location.origin}/shared/${existing.id}`;
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
       setSharing(false);
       setShared(true);
       setShowShareModal(false);
@@ -353,13 +355,13 @@ export default function DeckStudyPage() {
         card_count: cards.length,
         cards_json: cards.map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
       }).select().single();
-      if (fallbackData) {
+      if (fallbackData && !sharedWithId) {
         const link = `${window.location.origin}/shared/${fallbackData.id}`;
         await navigator.clipboard.writeText(link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
-    } else {
+    } else if (!sharedWithId) {
       const link = `${window.location.origin}/shared/${data.id}`;
       await navigator.clipboard.writeText(link);
       setCopied(true);

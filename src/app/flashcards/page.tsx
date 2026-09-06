@@ -121,17 +121,14 @@ export default function FlashcardsPage() {
     }
 
     const courseDecks = allReviewers.filter((r) => r.courseId === shareCourseId);
-    const links: string[] = [];
+    let sharedCount = 0;
 
     for (const entry of courseDecks) {
       const reviewer = entry.reviewer;
       const reviewerId = reviewer.id;
 
       const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", userId).eq("shared_with_user_id", sharedWithId).maybeSingle();
-      if (existing) {
-        links.push(`${window.location.origin}/shared/${existing.id}`);
-        continue;
-      }
+      if (existing) { sharedCount++; continue; }
 
       const { data, error } = await supabase.from("shared_decks").insert({
         user_id: userId,
@@ -144,9 +141,8 @@ export default function FlashcardsPage() {
         shared_with_user_id: sharedWithId,
       }).select().single();
 
-      if (data) {
-        links.push(`${window.location.origin}/shared/${data.id}`);
-      } else if (error) {
+      if (data) sharedCount++;
+      else if (error) {
         const { data: fallbackData } = await supabase.from("shared_decks").insert({
           user_id: userId,
           reviewer_id: reviewerId,
@@ -156,15 +152,11 @@ export default function FlashcardsPage() {
           card_count: reviewer.cards?.length || 0,
           cards_json: (reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
         }).select().single();
-        if (fallbackData) links.push(`${window.location.origin}/shared/${fallbackData.id}`);
+        if (fallbackData) sharedCount++;
       }
     }
 
-    if (links.length > 0) {
-      await navigator.clipboard.writeText(links.join("\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    }
+    setShareLinks(sharedCount > 0 ? [`${sharedCount} deck${sharedCount > 1 ? "s" : ""} shared`] : []);
     setShareLinks(links);
     setSharing(false);
   }

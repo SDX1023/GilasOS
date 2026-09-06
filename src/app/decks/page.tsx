@@ -108,12 +108,12 @@ export default function DecksPage() {
     }
 
     const courseDecks = decks.filter((d) => d.course_id === shareCourseId);
-    const links: string[] = [];
+    let sharedCount = 0;
 
     for (const deck of courseDecks) {
       const { data: cards } = await supabase.from("custom_deck_cards").select("front, back, hint").eq("deck_id", deck.id).order("sort_order");
       const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", deck.id).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
-      if (existing) { links.push(`${window.location.origin}/shared/${existing.id}`); continue; }
+      if (existing) { sharedCount++; continue; }
 
       const { data, error } = await supabase.from("shared_decks").insert({
         user_id: user.id, reviewer_id: deck.id, title: deck.title, card_count: cards?.length || 0,
@@ -121,17 +121,17 @@ export default function DecksPage() {
         shared_with_user_id: sharedWithId,
       }).select().single();
 
-      if (data) links.push(`${window.location.origin}/shared/${data.id}`);
+      if (data) sharedCount++;
       else if (error) {
         const { data: fb } = await supabase.from("shared_decks").insert({
           user_id: user.id, reviewer_id: deck.id, title: deck.title, card_count: cards?.length || 0,
           cards_json: (cards || []).map((c) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
         }).select().single();
-        if (fb) links.push(`${window.location.origin}/shared/${fb.id}`);
+        if (fb) sharedCount++;
       }
     }
 
-    if (links.length > 0) { await navigator.clipboard.writeText(links.join("\n")); setCopied(true); setTimeout(() => setCopied(false), 3000); }
+    setShareLinks(sharedCount > 0 ? [`${sharedCount} deck${sharedCount > 1 ? "s" : ""} shared`] : []);
     setShareLinks(links);
     setSharing(false);
   }

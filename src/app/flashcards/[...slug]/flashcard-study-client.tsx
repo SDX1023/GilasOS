@@ -637,10 +637,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const reviewerId = reviewer.id;
     const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", user.id).eq("shared_with_user_id", sharedWithId).maybeSingle();
     if (existing) {
-      const link = `${window.location.origin}/shared/${existing.id}`;
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (!sharedWithId) {
+        const link = `${window.location.origin}/shared/${existing.id}`;
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
       setSharing(false);
       setShared(true);
       setShowShareModal(false);
@@ -657,8 +659,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
       shared_with_user_id: sharedWithId,
     }).select().single();
     if (error || !data) {
-      console.error("Primary share failed:", error);
-      const { data: fallbackData, error: fallbackError } = await supabase.from("shared_decks").insert({
+      const { data: fallbackData } = await supabase.from("shared_decks").insert({
         user_id: user.id,
         reviewer_id: reviewerId,
         course_id: courseSlug,
@@ -667,16 +668,13 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
         card_count: cards.length,
         cards_json: cards.map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
       }).select().single();
-      if (fallbackError) {
-        console.error("Fallback share also failed:", fallbackError);
-      }
-      if (fallbackData) {
+      if (fallbackData && !sharedWithId) {
         const link = `${window.location.origin}/shared/${fallbackData.id}`;
         await navigator.clipboard.writeText(link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
-    } else {
+    } else if (!sharedWithId) {
       const link = `${window.location.origin}/shared/${data.id}`;
       await navigator.clipboard.writeText(link);
       setCopied(true);
