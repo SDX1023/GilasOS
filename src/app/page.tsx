@@ -27,10 +27,10 @@ export default function Home() {
       color: "#8b5cf6",
     },
     {
-      icon: Timer,
-      title: "Pomodoro",
-      description: "Stay focused and track time",
-      href: "/pomodoro",
+      icon: Layers,
+      title: "My Decks",
+      description: "Custom flashcard decks",
+      href: "/decks",
       color: "#8b5cf6",
     },
     {

@@ -287,7 +287,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
       deckId = existingDeck.id;
       await supabase
         .from("custom_decks")
-        .update({ card_count: reviewer.cards?.length || 0, updated_at: new Date().toISOString() })
+        .update({ card_count: reviewer.cards?.length || 0, course_id: courseId || null, updated_at: new Date().toISOString() })
         .eq("id", deckId);
     } else {
       // Generate explicit UUID since the column may not have a DEFAULT
@@ -303,6 +303,7 @@ export async function saveReviewerToSupabase(courseId: string, moduleId: string,
           title: reviewer.title || "Untitled Deck",
           description: "Imported from shared deck",
           card_count: reviewer.cards?.length || 0,
+          course_id: courseId || null,
         })
         .select()
         .single();
@@ -367,6 +368,8 @@ export async function migrateLocalStorageToSupabase() {
   if (!user) return;
 
   const local = loadCustomContent();
+  if (local.courses.length === 0) return;
+
   for (const course of local.courses) {
     for (const mod of course.modules) {
       for (const reviewer of mod.reviewers) {
@@ -374,6 +377,7 @@ export async function migrateLocalStorageToSupabase() {
       }
     }
   }
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 export async function fetchDeckCards(deckId: string) {

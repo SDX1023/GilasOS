@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive } from "lucide-react";
+import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive, Layers } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#8b5cf6" },
   { icon: Sparkles, title: "Study", href: "/study", color: "#6d28d9" },
-  { icon: Timer, title: "Pomodoro", href: "/pomodoro", color: "#10b981" },
+  { icon: Layers, title: "My Decks", href: "/decks", color: "#8b5cf6" },
   { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#f59e0b" },
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#ec4899" },
   { icon: Users, title: "Friends", href: "/friends", color: "#06b6d4" },
