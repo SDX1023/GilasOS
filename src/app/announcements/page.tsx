@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { Megaphone, Plus, Trash2, Pencil, Check, X, Pin, Calendar, Clock } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface Announcement {
   id: string;
@@ -74,8 +75,9 @@ export default function AnnouncementsPage() {
     fetchItems();
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this announcement?")) return;
     const supabase = getSupabase();
     await supabase.from("announcements").delete().eq("id", id);
     fetchItems();
@@ -109,6 +111,7 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="page-container">
+      <ConfirmDialog open={!!confirmDeleteId} title="Delete Announcement?" message="This will permanently delete this announcement." confirmLabel="Delete" danger onConfirm={() => { if (confirmDeleteId) { handleDelete(confirmDeleteId); setConfirmDeleteId(null); } }} onCancel={() => setConfirmDeleteId(null)} />
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
@@ -228,7 +231,7 @@ function AnnouncementCard({ item, isAdmin, editingId, editTitle, editContent, ed
             {isAdmin && (
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                 <button onClick={() => startEdit(item)} style={{ padding: 6, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 6, color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={14} /></button>
-                <button onClick={() => handleDelete(item.id)} style={{ padding: 6, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
+                <button onClick={() => setConfirmDeleteId(item.id)} style={{ padding: 6, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
               </div>
             )}
           </div>

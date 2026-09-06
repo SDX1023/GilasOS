@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle } from "lucide-react";
 import { CramTab } from "@/components/cram-tab";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface DeckCourse {
   id: string;
@@ -46,6 +47,7 @@ export default function DecksPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [showCram, setShowCram] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "deck" | "course"; id: string } | null>(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -99,12 +101,25 @@ export default function DecksPage() {
   };
 
   const handleDeleteDeck = async (id: string) => {
-    if (!confirm("Delete this deck and all its cards?")) return;
+    setConfirmDelete({ type: "deck", id });
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!confirmDelete) return;
+    const { type, id } = confirmDelete;
     const supabase = getSupabase();
-    await supabase.from("custom_deck_cards").delete().eq("deck_id", id);
-    await supabase.from("custom_decks").delete().eq("id", id);
-    setDecks(decks.filter(d => d.id !== id));
-    setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    if (type === "deck") {
+      await supabase.from("custom_deck_cards").delete().eq("deck_id", id);
+      await supabase.from("custom_decks").delete().eq("id", id);
+      setDecks(decks.filter(d => d.id !== id));
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    } else {
+      await supabase.from("deck_courses").delete().eq("id", id);
+      await supabase.from("custom_decks").update({ course_id: null }).eq("course_id", id);
+      setCourses(courses.filter(c => c.id !== id));
+      setDecks(decks.map(d => d.course_id === id ? { ...d, course_id: null } : d));
+    }
+    setConfirmDelete(null);
   };
 
   const handleCreateCourse = async () => {
@@ -125,12 +140,7 @@ export default function DecksPage() {
   };
 
   const handleDeleteCourse = async (id: string) => {
-    if (!confirm("Delete this category? Decks will become uncategorized.")) return;
-    const supabase = getSupabase();
-    await supabase.from("deck_courses").delete().eq("id", id);
-    await supabase.from("custom_decks").update({ course_id: null }).eq("course_id", id);
-    setCourses(courses.filter(c => c.id !== id));
-    setDecks(decks.map(d => d.course_id === id ? { ...d, course_id: null } : d));
+    setConfirmDelete({ type: "course", id });
   };
 
   const moveDeckToCourse = async (deckId: string, courseId: string | null) => {
@@ -217,6 +227,7 @@ export default function DecksPage() {
 
   return (
     <div className="page-container">
+      <ConfirmDialog open={!!confirmDelete} title={confirmDelete?.type === "deck" ? "Delete Deck?" : "Delete Category?"} message={confirmDelete?.type === "deck" ? "Delete this deck and all its cards? This cannot be undone." : "Delete this category? Decks will become uncategorized."} confirmLabel="Delete" danger onConfirm={confirmDeleteAction} onCancel={() => setConfirmDelete(null)} />
       <style>{`
         .deck-dragging { opacity: 0.4; }
         .deck-drop-target { outline: 2px dashed var(--os-accent); outline-offset: -2px; background: rgba(109,40,217,0.08) !important; }

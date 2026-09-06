@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface ArchiveEntry {
   id: string;
@@ -161,8 +162,9 @@ export default function ArchivePage() {
     }
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   const deleteEntry = async (id: string) => {
-    if (!confirm("Delete this entry?")) return;
     const supabase = getSupabase();
     await supabase.from("archive_entries").delete().eq("id", id);
     loadEntries();
@@ -228,6 +230,7 @@ export default function ArchivePage() {
 
   return (
     <div className="page-container">
+      <ConfirmDialog open={!!confirmDeleteId} title="Delete Entry?" message="This will permanently delete this archive entry." confirmLabel="Delete" danger onConfirm={() => { if (confirmDeleteId) { deleteEntry(confirmDeleteId); setConfirmDeleteId(null); } }} onCancel={() => setConfirmDeleteId(null)} />
       <div className="flex-between" style={{ marginBottom: 32 }}>
         <div>
           <h1 className="page-title"><Archive size={28} /> Archive</h1>
@@ -325,7 +328,7 @@ export default function ArchivePage() {
                         <td style={{ padding: "14px 20px" }}>
                           <div style={{ display: "flex", gap: 4 }}>
                             <button onClick={() => startEdit(entry)} style={{ background: "none", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={14} /></button>
-                            <button onClick={() => deleteEntry(entry.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
+                            <button onClick={() => setConfirmDeleteId(entry.id)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={14} /></button>
                           </div>
                         </td>
                       )}

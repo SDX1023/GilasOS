@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { Link as LinkIcon, User, BookOpen, ChevronRight, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface SharedDeck {
   id: string;
@@ -24,9 +25,10 @@ export default function SharedDecksPage() {
   const [decks, setDecks] = useState<SharedDeck[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleDelete = async (deckId: string) => {
-    if (!user || !confirm("Delete this shared deck?")) return;
+    if (!user) return;
     setDeleting(deckId);
     const supabase = getSupabase();
     await supabase.from("shared_decks").delete().eq("id", deckId).eq("user_id", user.id);
@@ -101,6 +103,7 @@ export default function SharedDecksPage() {
 
   return (
     <div className="page-container" style={{ maxWidth: 640 }}>
+      <ConfirmDialog open={!!confirmDeleteId} title="Delete Shared Deck?" message="This will permanently delete this shared deck." confirmLabel="Delete" danger onConfirm={() => { if (confirmDeleteId) { handleDelete(confirmDeleteId); setConfirmDeleteId(null); } }} onCancel={() => setConfirmDeleteId(null)} />
       <div style={{ marginBottom: 32 }}>
         <h1 className="page-title"><LinkIcon size={28} /> Shared Decks</h1>
         <p className="page-subtitle">Flashcard decks shared by the community</p>
@@ -131,7 +134,7 @@ export default function SharedDecksPage() {
                 <ChevronRight size={16} style={{ color: "var(--os-text-dim)", flexShrink: 0 }} />
                 {user && user.id === deck.user_id && (
                   <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(deck.id); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteId(deck.id); }}
                     disabled={deleting === deck.id}
                     style={{ padding: 6, borderRadius: 8, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", cursor: deleting === deck.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: deleting === deck.id ? 0.5 : 1 }}
                     title="Delete shared deck"

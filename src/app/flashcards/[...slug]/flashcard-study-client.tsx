@@ -353,6 +353,20 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const total = knownCount + forgotCount + dontKnowCount;
     if (total > 0 && user) {
       saveStudyStats(user.id, knownCount, forgotCount, dontKnowCount, total).catch(() => {});
+      const duration = sessionStartRef.current > 0 ? Math.round((Date.now() - sessionStartRef.current) / 1000) : 0;
+      if (duration > 0) {
+        saveStudySession(user.id, {
+          session_type: "flashcards",
+          subject: courseSlug || "Custom",
+          module: moduleSlug || undefined,
+          deck_title: reviewer?.title || undefined,
+          duration_seconds: duration,
+          cards_studied: total,
+          known: knownCount,
+          forgot: forgotCount,
+          dont_know: dontKnowCount,
+        }).catch(() => {});
+      }
     }
   }
 

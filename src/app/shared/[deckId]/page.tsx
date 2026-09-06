@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { saveReviewerToSupabase } from "@/lib/custom-content";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { User, ArrowLeft, BookOpen, Save, Check, Trash2 } from "lucide-react";
 import Link from "next/link";
 
@@ -185,8 +186,10 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
     }
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = async () => {
-    if (!user || !deck || deck.user_id !== user.id || !confirm("Delete this shared deck?")) return;
+    if (!user || !deck || deck.user_id !== user.id) return;
     setDeleting(true);
     const supabase = getSupabase();
     await supabase.from("shared_decks").delete().eq("id", deck.id).eq("user_id", user.id);
@@ -235,6 +238,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
 
   return (
     <div className="page-container" style={{ maxWidth: 700 }}>
+      <ConfirmDialog open={showDeleteConfirm} title="Delete Shared Deck?" message="This will permanently delete this shared deck." confirmLabel="Delete" danger onConfirm={handleDelete} onCancel={() => setShowDeleteConfirm(false)} />
       <Link
         href="/shared"
         style={{
@@ -275,7 +279,7 @@ export default function SharedDeckPage({ params }: { params: Promise<{ deckId: s
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {user && user.id === deck.user_id && (
               <button
-                onClick={handleDelete}
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={deleting}
                 className="glass-btn"
                 style={{
