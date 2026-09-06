@@ -369,6 +369,11 @@ export default function DecksPage() {
               </button>
             )}
             {!creating && (
+              <Link href="/import-anki" className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, textDecoration: "none" }}>
+                <Layers size={15} /> Import Anki
+              </Link>
+            )}
+            {!creating && (
               <button onClick={() => setCreating(true)} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
                 <Plus size={15} /> New Deck
               </button>

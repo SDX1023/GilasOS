@@ -323,6 +323,9 @@ export default function FlashcardsPage() {
             <Link href="/pdf-to-cards" className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Brain size={14} /> Generate from PDF
             </Link>
+            <Link href="/import-anki" className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Layers size={14} /> Import Anki
+            </Link>
           </div>
         </div>
       ) : (
