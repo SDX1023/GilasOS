@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle, Share2 } from "lucide-react";
+import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle, Share2, ArrowUpDown } from "lucide-react";
 import { CramTab } from "@/components/cram-tab";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
@@ -48,6 +48,7 @@ export default function DecksPage() {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [showCram, setShowCram] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ type: "deck" | "course"; id: string } | null>(null);
+  const [categorySort, setCategorySort] = useState<"name" | "date" | "decks">("name");
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCourseId, setShareCourseId] = useState<string | null>(null);
   const [shareRecipient, setShareRecipient] = useState("");
@@ -298,7 +299,13 @@ export default function DecksPage() {
 
   const filtered = decks.filter(d => d.title.toLowerCase().includes(searchQuery.toLowerCase()));
   const ungrouped = filtered.filter(d => !d.course_id);
-  const grouped = courses.map(c => ({ ...c, decks: filtered.filter(d => d.course_id === c.id) })).filter(c => c.decks.length > 0 || !searchQuery);
+  const groupedRaw = courses.map(c => ({ ...c, decks: filtered.filter(d => d.course_id === c.id) })).filter(c => c.decks.length > 0 || !searchQuery);
+  const grouped = [...groupedRaw].sort((a, b) => {
+    if (categorySort === "name") return a.title.localeCompare(b.title);
+    if (categorySort === "date") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (categorySort === "decks") return b.decks.length - a.decks.length;
+    return 0;
+  });
   const toggleCourse = (id: string) => setExpandedCourses(prev => ({ ...prev, [id]: prev[id] === false ? true : false }));
 
   if (!user) {
@@ -412,9 +419,19 @@ export default function DecksPage() {
         )}
 
         {decks.length > 0 && (
-          <div style={{ position: "relative", marginBottom: 16 }}>
-            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search decks..." style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: "var(--os-text-dim)" }} />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search decks..." style={{ width: "100%", padding: "10px 14px 10px 38px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
+            </div>
+            <div style={{ position: "relative" }}>
+              <select value={categorySort} onChange={(e) => setCategorySort(e.target.value as "name" | "date" | "decks")} style={{ padding: "10px 28px 10px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)", borderRadius: 10, color: "var(--os-text-primary)", fontSize: 13, outline: "none", appearance: "none", cursor: "pointer" }}>
+                <option value="name">Name</option>
+                <option value="date">Date</option>
+                <option value="decks">Decks</option>
+              </select>
+              <ArrowUpDown size={14} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--os-text-dim)" }} />
+            </div>
           </div>
         )}
 
