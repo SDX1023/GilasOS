@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { decompressSync } from "fzstd";
 
 export const runtime = "nodejs";
 
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       if (!entry.dir) zipFiles.push(path);
     });
 
-    // Try multiple database files - newer Anki uses .anki21b (not SQLite), older uses .anki2
+    // Try multiple database files - .anki21b is zstd-compressed SQLite
     const dbCandidates = ["collection.anki21b", "collection.anki21", "collection.anki2"];
     let db: any = null;
     let dbUsed = "";
@@ -42,9 +43,12 @@ export async function POST(req: NextRequest) {
       const f = zip.file(name);
       if (!f) continue;
       try {
-        const data = await f.async("arraybuffer");
-        db = new SQL.Database(new Uint8Array(data));
-        // Verify it's a valid database by running a simple query
+        let rawData = await f.async("arraybuffer");
+        // .anki21b is zstandard-compressed SQLite
+        if (name === "collection.anki21b") {
+          rawData = decompressSync(new Uint8Array(rawData)).buffer;
+        }
+        db = new SQL.Database(new Uint8Array(rawData));
         db.exec("SELECT 1");
         dbUsed = name;
         break;
