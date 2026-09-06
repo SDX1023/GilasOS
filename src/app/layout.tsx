@@ -1,4 +1,7 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { AuthWrapper } from "@/components/auth-wrapper";
 import { Navbar } from "@/components/navbar";
@@ -12,20 +15,17 @@ import CustomizationLoader from "@/components/customization-loader";
 import BackgroundOverlay from "@/components/background-overlay";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { MusicPlayer } from "@/components/music-player";
-import "./globals.css";
-
-export const metadata: Metadata = {
-  title: "GilasOS - The Ultimate GILAS Reviewer",
-  description: "Guts. Instincts. Luck. Attitude. Skill.",
-  manifest: "/manifest.json",
-  themeColor: "#6d28d9",
-};
+import { StartMenu, DesktopIcons } from "@/components/os-desktop";
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [startMenuOpen, setStartMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -37,9 +37,30 @@ export default function RootLayout({
                   <ScrollToTop />
                   <CustomizationLoader />
                   <BackgroundOverlay />
-                  <Navbar />
-                  <main className="app-main">{children}</main>
-                  <Taskbar />
+                  {!isLanding && <Navbar />}
+                  <main className="app-main" style={{
+                    paddingTop: isLanding ? 0 : 72,
+                    paddingBottom: isLanding ? 0 : 72,
+                  }}>
+                    {!isLanding && (
+                      <div className="os-desktop" style={{
+                        position: "fixed",
+                        top: 56,
+                        left: 0,
+                        right: 0,
+                        bottom: 56,
+                        overflow: "auto",
+                        zIndex: 0,
+                      }}>
+                        <DesktopIcons />
+                      </div>
+                    )}
+                    <div style={{ position: "relative", zIndex: 1 }}>
+                      {children}
+                    </div>
+                  </main>
+                  {!isLanding && <Taskbar onStartClick={() => setStartMenuOpen(!startMenuOpen)} />}
+                  <StartMenu isOpen={startMenuOpen} onClose={() => setStartMenuOpen(false)} />
                 </div>
                 <FloatingTimer />
                 <PixelPet />

@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target, Share2 } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
-import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards } from "@/lib/user-data";
+import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, getDueCards, sortCardsByDue, ratingFromResult } from "@/lib/user-data";
+import { scheduleCard, getDefaultState, CardState } from "@/lib/fsrs";
 import { earnBadge } from "@/lib/badges";
 
 const formulaCache: Record<string, { formula: string; explanation: string } | null> = {};
@@ -551,7 +552,14 @@ export default function DeckStudyPage() {
     setEditingId(null);
   };
 
-  const startReview = () => {
+  const [schedules, setSchedules] = useState<Map<string, CardState>>(new Map());
+
+  useEffect(() => {
+    if (!user || !deckId) return;
+    loadCardSchedules(user.id, deckId).then(setSchedules);
+  }, [user, deckId]);
+
+  const startReview = async () => {
     const stored = localStorage.getItem(sessionKey);
     if (stored && !shuffled) {
       try {
@@ -567,7 +575,16 @@ export default function DeckStudyPage() {
         }
       } catch {}
     }
-    const q = shuffled ? [...cards].sort(() => Math.random() - 0.5) : [...cards];
+    let q: typeof cards;
+    if (shuffled) {
+      q = [...cards].sort(() => Math.random() - 0.5);
+    } else if (user && schedules.size > 0) {
+      q = sortCardsByDue(cards, schedules);
+      const due = getDueCards(q, schedules);
+      q = due.length > 0 ? due : q;
+    } else {
+      q = [...cards];
+    }
     setQueue(q); setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
     setKnownCount(0); setForgotCount(0); setDontKnowCount(0);
     setTypedAnswer(""); setAnswerChecked(false);
@@ -596,6 +613,15 @@ export default function DeckStudyPage() {
     if (user && current) {
       const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
       logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
+
+      // FSRS: schedule the card based on the result
+      const key = `${current.front}:::${current.back}`;
+      const currentState = schedules.get(key) || getDefaultState();
+      const rating = ratingFromResult(result);
+      const newState = scheduleCard(currentState, rating);
+      setSchedules((prev) => new Map(prev).set(key, newState));
+      saveCardSchedule(user.id, deckId, current.front, current.back, newState).catch(() => {});
+
       showFlash(result === "known" ? "know" : result === "dont_know" ? "dontknow" : "forgot");
     }
     if (dontKnow) setDontKnowCount(d => d + 1); else if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);

@@ -663,23 +663,20 @@ body {
    ============================================================ */
 .taskbar {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
   z-index: 9999;
-  padding: 8px 16px;
-  background: rgba(10, 14, 23, 0.85);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  background: var(--os-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--os-glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  max-width: 90vw;
-  overflow-x: auto;
+  padding: 0 16px;
 }
 
 .taskbar-item {
@@ -1380,8 +1377,8 @@ a:active {
   .flashcard-actions { justify-content: flex-start; }
   .flashcard-actions .glass-btn { font-size: 12px; padding: 6px 10px; }
   .flashcard-actions .glass-btn svg { width: 14px; height: 14px; }
-  .taskbar { bottom: 12px; padding: 6px 10px; gap: 2px; }
-  .taskbar-item { padding: 8px 10px; font-size: 0; }
+  .taskbar { height: 48px; padding: 0 8px; }
+  .taskbar-item { padding: 6px 8px; font-size: 0; }
   .taskbar-item svg { width: 18px; height: 18px; }
   .taskbar-time { display: none; }
   .module-layout { flex-direction: column !important; }
@@ -1528,10 +1525,8 @@ a:active {
 
 .light .taskbar {
   background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(0, 0, 0, 0.03) inset;
+  border-top-color: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(24px);
 }
 
 .light .taskbar-item:hover {
@@ -1620,13 +1615,9 @@ a:active {
    ============================================================ */
 @media (max-width: 768px) {
   .taskbar {
-    bottom: 10px;
-    padding: 6px 10px;
-    border-radius: 14px;
-    gap: 1px;
-    max-width: calc(100vw - 24px);
-    overflow-x: auto;
-    justify-content: center;
+    height: 48px;
+    padding: 0 8px;
+    gap: 2px;
   }
 
   .taskbar-time {
