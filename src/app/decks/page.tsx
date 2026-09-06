@@ -161,9 +161,6 @@ export default function DecksPage() {
     setShareLinks([`${bundledDecks.length} deck${bundledDecks.length > 1 ? "s" : ""} shared`]);
     setSharing(false);
   }
-    setShareLinks(links);
-    setSharing(false);
-  }
 
   useEffect(() => {
     const handleDeckUpdate = () => fetchData();

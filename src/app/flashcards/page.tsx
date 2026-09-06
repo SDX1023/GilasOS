@@ -168,9 +168,6 @@ export default function FlashcardsPage() {
     setShareLinks([`${bundledDecks.length} deck${bundledDecks.length > 1 ? "s" : ""} shared`]);
     setSharing(false);
   }
-    setShareLinks(links);
-    setSharing(false);
-  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
