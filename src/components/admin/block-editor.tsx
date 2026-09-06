@@ -15,6 +15,10 @@ interface Block {
   rows?: string[][];
   width?: number;
   colWidths?: number[];
+  align?: "left" | "center" | "right";
+  caption?: string;
+  x?: number;
+  y?: number;
 }
 
 interface BlockEditorProps {
@@ -38,6 +42,8 @@ function parseBlocks(md: string): Block[] {
     if (imgMatch) {
       const altRaw = imgMatch[1];
       const styleMatch = altRaw.match(/<!--style:width:(\d+)%/);
+      const alignMatch = altRaw.match(/<!--align:(left|center|right)-->/);
+      const captionMatch = altRaw.match(/<!--caption:(.*?)-->/);
       const cleanAlt = altRaw.replace(/<!--.*?-->/g, "").trim();
       let width: number | undefined;
       if (styleMatch) {
@@ -46,7 +52,7 @@ function parseBlocks(md: string): Block[] {
         const wMatch = lines[i + 1].match(/^<!--img-width:(\d+)-->/);
         if (wMatch) { width = parseInt(wMatch[1]); i++; }
       }
-      blocks.push({ id: uid(), type: "image", content: cleanAlt, src: imgMatch[2], alt: cleanAlt, width });
+      blocks.push({ id: uid(), type: "image", content: cleanAlt, src: imgMatch[2], alt: cleanAlt, width, align: alignMatch?.[1] as Block["align"], caption: captionMatch?.[1] });
       i++; continue;
     }
     const cwMatch = line.match(/^<!--table-col-widths:([^>]+)-->/);
@@ -124,8 +130,11 @@ function toMarkdown(blocks: Block[]): string {
       }
       case "divider": return "---";
       case "image": {
-        const w = b.width ? `<!--style:width:${b.width}%;max-width:${b.width}%;display:block;-->` : "";
-        const alt = (b.alt || b.content) + w;
+        const parts: string[] = [];
+        if (b.width) parts.push(`<!--style:width:${b.width}%;max-width:${b.width}%;display:block;-->`);
+        if (b.align) parts.push(`<!--align:${b.align}-->`);
+        if (b.caption) parts.push(`<!--caption:${b.caption}-->`);
+        const alt = (b.alt || b.content) + parts.join("");
         return `![${alt}](${b.src})`;
       }
       case "code": return `\`\`\`${b.alt || ""}\n${b.content}\n\`\`\``;
@@ -654,23 +663,44 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               {handle}
               <ImageIcon size={14} style={{ color: "var(--os-text-dim)" }} />
               <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Image{block.width ? ` (${block.width}%)` : ""}</span>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
+              <div style={{ marginLeft: "auto", display: "flex", gap: 2, alignItems: "center" }}>
                 {block.src && (
-                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}
-                    style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid var(--os-glass-border)", color: "var(--os-text-dim)", fontSize: 11, cursor: "pointer" }}>
-                    Change
-                  </button>
+                  <>
+                    <div style={{ display: "flex", gap: 1, marginRight: 4, padding: "2px 4px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid var(--os-glass-border)" }}>
+                      {(["left", "center", "right"] as const).map(a => (
+                        <button key={a} title={`Align ${a}`}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); update(block.id, { align: block.align === a ? undefined : a }); }}
+                          style={{ padding: "2px 6px", borderRadius: 3, background: block.align === a ? "rgba(109,40,217,0.3)" : "none", border: "none", cursor: "pointer", color: block.align === a ? "#c084fc" : "var(--os-text-dim)", fontSize: 11 }}>
+                          {a === "left" ? "⫷" : a === "center" ? "⫿" : "⫸"}
+                        </button>
+                      ))}
+                    </div>
+                    <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}
+                      style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid var(--os-glass-border)", color: "var(--os-text-dim)", fontSize: 11, cursor: "pointer" }}>
+                      Change
+                    </button>
+                  </>
                 )}
                 {delBtn}
               </div>
             </div>
             {block.src ? (
-              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", width: block.width ? `${block.width}%` : "80%", minWidth: 60 }}>
+              <div style={{
+                marginLeft: block.align === "left" ? 0 : block.align === "right" ? "auto" : 30,
+                marginRight: block.align === "right" ? 0 : block.align === "left" ? "auto" : 0,
+                marginTop: 8,
+                position: "relative",
+                width: block.width ? `${block.width}%` : block.align ? "50%" : "80%",
+                minWidth: 60,
+                float: block.align === "left" || block.align === "right" ? block.align : undefined,
+                maxWidth: block.align ? "50%" : undefined,
+              }}>
                 <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block", pointerEvents: "none" }} draggable={false} />
                 <div onMouseDown={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || 80 };
+                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || (block.align ? 50 : 80) };
                   document.body.style.cursor = "ew-resize";
                   document.body.style.userSelect = "none";
                 }}
@@ -685,6 +715,15 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                 Click to upload or paste an image
               </div>
             )}
+            {block.src && (
+              <div contentEditable suppressContentEditableWarning
+                data-placeholder="Add a caption..."
+                onBlur={(e) => update(block.id, { caption: e.currentTarget.textContent || "" })}
+                style={{ marginLeft: block.align ? 0 : 30, marginTop: 4, padding: "2px 4px", fontSize: 12, color: "var(--os-text-dim)", fontStyle: "italic", outline: "none", textAlign: block.align || "left", minWidth: 60 }}
+                dangerouslySetInnerHTML={{ __html: block.caption || "" }}
+              />
+            )}
+            {block.align && <div style={{ clear: "both" }} />}
           </div>
         );
       case "code":
@@ -731,7 +770,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         };
         return (
           <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}
-            ref={(el) => { if (el) refs.current.set(block.id, el); }}>
+            ref={(el) => { if (el) refs.current.set(block.id, el); }}
+            data-block-id={block.id}>
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
@@ -809,6 +849,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
         .block-delete:hover { color: #ef4444; }
         [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
+        [data-placeholder][data-placeholder]:empty::before { content: attr(data-placeholder); }
         .table-col-resize-handle { background: var(--os-accent); opacity: 0.4; transition: opacity 0.15s, width 0.1s; }
         .table-col-resize-handle:hover, .table-col-resize-handle:active { opacity: 1; width: 4px; right: -2px; background: var(--os-accent); }
         .block-resize-handle { opacity: 0.5; transition: opacity 0.15s; }
