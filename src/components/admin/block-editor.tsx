@@ -13,6 +13,8 @@ interface Block {
   indent?: number;
   numbering?: number;
   rows?: string[][];
+  width?: number;
+  colWidths?: number[];
 }
 
 interface BlockEditorProps {
@@ -32,8 +34,34 @@ function parseBlocks(md: string): Block[] {
     const line = lines[i];
     if (line.trim() === "") { i++; continue; }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { blocks.push({ id: uid(), type: "divider", content: "" }); i++; continue; }
-    const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    if (img) { blocks.push({ id: uid(), type: "image", content: img[1], src: img[2], alt: img[1] }); i++; continue; }
+    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgMatch) {
+      const altRaw = imgMatch[1];
+      const styleMatch = altRaw.match(/<!--style:width:(\d+)%/);
+      const cleanAlt = altRaw.replace(/<!--.*?-->/g, "").trim();
+      let width: number | undefined;
+      if (styleMatch) {
+        width = parseInt(styleMatch[1]);
+      } else if (i + 1 < lines.length) {
+        const wMatch = lines[i + 1].match(/^<!--img-width:(\d+)-->/);
+        if (wMatch) { width = parseInt(wMatch[1]); i++; }
+      }
+      blocks.push({ id: uid(), type: "image", content: cleanAlt, src: imgMatch[2], alt: cleanAlt, width });
+      i++; continue;
+    }
+    const cwMatch = line.match(/^<!--table-col-widths:([^>]+)-->/);
+    if (cwMatch && i + 1 < lines.length && lines[i + 1].trim().startsWith("|")) {
+      const colWidths = cwMatch[1].split(",").map(Number).filter(n => !isNaN(n));
+      i++;
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|")) {
+        const row = lines[i].trim().slice(1, -1).split("|").map(c => c.trim());
+        if (!row.every(c => /^[-:]+$/.test(c))) { rows.push(row); }
+        i++;
+      }
+      if (rows.length > 0) { blocks.push({ id: uid(), type: "table", content: "", rows, colWidths }); }
+      continue;
+    }
     if (line.startsWith("### ")) { blocks.push({ id: uid(), type: "heading3", content: line.substring(4) }); i++; continue; }
     if (line.startsWith("## ")) { blocks.push({ id: uid(), type: "heading2", content: line.substring(3) }); i++; continue; }
     if (line.startsWith("# ")) { blocks.push({ id: uid(), type: "heading1", content: line.substring(2) }); i++; continue; }
@@ -66,14 +94,10 @@ function parseBlocks(md: string): Block[] {
       const rows: string[][] = [];
       while (i < lines.length && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|")) {
         const row = lines[i].trim().slice(1, -1).split("|").map(c => c.trim());
-        if (!row.every(c => /^[-:]+$/.test(c))) {
-          rows.push(row);
-        }
+        if (!row.every(c => /^[-:]+$/.test(c))) { rows.push(row); }
         i++;
       }
-      if (rows.length > 0) {
-        blocks.push({ id: uid(), type: "table", content: "", rows });
-      }
+      if (rows.length > 0) { blocks.push({ id: uid(), type: "table", content: "", rows }); }
       continue;
     }
     blocks.push({ id: uid(), type: "paragraph", content: line });
@@ -99,16 +123,21 @@ function toMarkdown(blocks: Block[]): string {
         return `> ${em[b.src || "note"] || "📝"} ${b.content}`;
       }
       case "divider": return "---";
-      case "image": return `![${b.alt || b.content}](${b.src})`;
+      case "image": {
+        const w = b.width ? `<!--style:width:${b.width}%;max-width:${b.width}%;display:block;-->` : "";
+        const alt = (b.alt || b.content) + w;
+        return `![${alt}](${b.src})`;
+      }
       case "code": return `\`\`\`${b.alt || ""}\n${b.content}\n\`\`\``;
       case "table": {
         if (!b.rows || b.rows.length === 0) return "";
         const cols = Math.max(...b.rows.map(r => r.length));
         const normalized = b.rows.map(r => { const row = [...r]; while (row.length < cols) row.push(""); return row; });
+        const cw = b.colWidths ? `<!--table-col-widths:${b.colWidths.join(",")}-->\n` : "";
         const header = `| ${normalized[0].join(" | ")} |`;
         const sep = `| ${normalized[0].map(() => "---").join(" | ")} |`;
         const body = normalized.slice(1).map(r => `| ${r.join(" | ")} |`).join("\n");
-        return header + "\n" + sep + (body ? "\n" + body : "");
+        return cw + header + "\n" + sep + (body ? "\n" + body : "");
       }
       default: return b.content;
     }
@@ -154,6 +183,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imageTargetId, setImageTargetId] = useState<string | null>(null);
   const outgoingChange = useRef(false);
+  const resizeRef = useRef<{ blockId: string; type: "image" | "col"; colIndex?: number; startX: number; startVal: number; startVal2?: number } | null>(null);
 
   useEffect(() => {
     const md = toMarkdown(blocks);
@@ -306,6 +336,44 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       document.removeEventListener("keyup", handler);
     };
   }, []);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const r = resizeRef.current;
+      const dx = e.clientX - r.startX;
+      if (r.type === "image") {
+        const container = document.querySelector(`[data-block-id="${r.blockId}"]`)?.getBoundingClientRect();
+        if (!container) return;
+        const newPct = Math.max(10, Math.min(100, r.startVal + (dx / container.width) * 100));
+        update(r.blockId, { width: Math.round(newPct) });
+      } else if (r.type === "col") {
+        const block = blocks.find(b => b.id === r.blockId);
+        if (!block || !block.rows) return;
+        const tableEl = document.querySelector(`[data-block-id="${r.blockId}"] table`) as HTMLTableElement;
+        if (!tableEl) return;
+        const tableWidth = tableEl.getBoundingClientRect().width;
+        const colCount = Math.max(...block.rows.map(row => row.length));
+        const cw = block.colWidths?.length === colCount ? [...block.colWidths] : new Array(colCount).fill(Math.round(100 / colCount));
+        const colW = r.startVal;
+        const newW = Math.max(5, Math.min(80, colW + (dx / tableWidth) * 100));
+        const delta = newW - colW;
+        cw[r.colIndex!] = Math.round(newW);
+        const nextCi = r.colIndex! + 1;
+        if (nextCi < cw.length) {
+          cw[nextCi] = Math.max(5, Math.round(r.startVal2! - delta));
+        }
+        update(r.blockId, { colWidths: cw });
+      }
+    };
+    const onMouseUp = () => { resizeRef.current = null; document.body.style.cursor = ""; document.body.style.userSelect = ""; };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [blocks, update]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent, blockId: string) => {
     const items = e.clipboardData?.items;
@@ -585,13 +653,24 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {handle}
               <ImageIcon size={14} style={{ color: "var(--os-text-dim)" }} />
-              <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Image</span>
+              <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Image{block.width ? ` (${block.width}%)` : ""}</span>
               {delBtn}
             </div>
             {block.src ? (
-              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", cursor: "pointer" }}
+              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", cursor: "pointer", width: block.width ? `${block.width}%` : "100%", minWidth: 60 }}
                 onClick={(e) => { e.preventDefault(); openImagePicker(block.id); }}>
-                <img src={block.src} alt={block.alt || ""} style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }} draggable={false} />
+                <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block" }} draggable={false} />
+                <div onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || 100 };
+                  document.body.style.cursor = "ew-resize";
+                  document.body.style.userSelect = "none";
+                }}
+                  style={{ position: "absolute", right: -4, bottom: -4, width: 16, height: 16, cursor: "ew-resize", borderRadius: 3, background: "var(--os-glass)", border: "1px solid var(--os-glass-border)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6 }}
+                  className="block-resize-handle">
+                  <svg width="8" height="8" viewBox="0 0 8 8"><path d="M7 1L1 7M7 4L4 7M7 7L7 7" stroke="var(--os-text-dim)" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </div>
               </div>
             ) : (
               <div style={{ marginLeft: 30, marginTop: 8, padding: "12px 16px", border: "1px dashed var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-dim)", fontSize: 13, cursor: "pointer" }}
@@ -625,6 +704,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       case "table": {
         const rows = block.rows || [["", ""], ["", ""]];
         const cols = Math.max(...rows.map(r => r.length));
+        const cw = block.colWidths?.length === cols ? block.colWidths : null;
         const updateCell = (ri: number, ci: number, val: string) => {
           const newRows = rows.map(r => [...r]);
           while (newRows[ri].length <= ci) newRows[ri].push("");
@@ -632,15 +712,23 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
           update(block.id, { rows: newRows });
         };
         const addRow = () => { update(block.id, { rows: [...rows, new Array(cols).fill("")] }); };
-        const addCol = () => { update(block.id, { rows: rows.map(r => [...r, ""]) }); };
+        const addCol = () => {
+          const newCw = cw ? [...cw, Math.round(100 / (cols + 1))] : null;
+          update(block.id, { rows: rows.map(r => [...r, ""]), colWidths: newCw });
+        };
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
-        const delCol = (ci: number) => { if (cols <= 1) return; update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)) }); };
+        const delCol = (ci: number) => {
+          if (cols <= 1) return;
+          const newCw = cw ? cw.filter((_, i) => i !== ci) : null;
+          update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)), colWidths: newCw });
+        };
         return (
           <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}
             ref={(el) => { if (el) refs.current.set(block.id, el); }}>
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: cw ? "fixed" : "auto" }}>
+                {cw && <colgroup>{cw.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>}
                 <tbody>
                   {rows.map((row, ri) => (
                     <tr key={ri}>
@@ -654,6 +742,21 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                             }}
                             style={{ outline: "none", padding: "8px 10px", minHeight: "1.4em", wordBreak: "break-word", background: ri === 0 ? "rgba(255,255,255,0.03)" : "transparent" }}
                             dangerouslySetInnerHTML={{ __html: renderInline(cell) }} />
+                          {ri === 0 && ci < cols - 1 && (
+                            <div
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                const currentW = cw ? cw[ci] : Math.round(100 / cols);
+                                const nextW = cw ? cw[ci + 1] : Math.round(100 / cols);
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: currentW, startVal2: nextW };
+                                document.body.style.cursor = "col-resize";
+                                document.body.style.userSelect = "none";
+                              }}
+                              style={{ position: "absolute", right: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 2 }}
+                              className="table-col-resize-handle"
+                            />
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -701,6 +804,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
         .block-delete:hover { color: #ef4444; }
         [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
+        .table-col-resize-handle { opacity: 0; transition: opacity 0.15s; }
+        .block-wrapper:hover .table-col-resize-handle { opacity: 1; }
+        .table-col-resize-handle:hover, .table-col-resize-handle:active { background: var(--os-accent); width: 4px; right: -2px; border-radius: 2px; }
+        .block-resize-handle { opacity: 0; transition: opacity 0.15s; }
+        .block-wrapper:hover .block-resize-handle { opacity: 0.6; }
+        .block-resize-handle:hover { opacity: 1 !important; }
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>

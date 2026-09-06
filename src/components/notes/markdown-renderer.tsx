@@ -90,10 +90,10 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
         prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
         prose-code:text-pink-600 dark:prose-code:text-pink-400 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
         prose-strong:text-foreground
-        prose-img:rounded-lg prose-img:shadow-md
+        prose-img:rounded-lg prose-img:shadow-md prose-img:max-w-[80%] prose-img:mx-auto
         prose-li:my-0.5
         prose-ul:list-disc prose-ol:list-decimal
-        prose-table:border prose-th:border prose-td:border
+        prose-table:border prose-th:border prose-td:border prose-table:max-w-full
         prose-blockquote:border-l-primary prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:bg-muted/50 prose-blockquote:rounded-r-lg"
       dangerouslySetInnerHTML={{ __html: htmlContent }}
     />

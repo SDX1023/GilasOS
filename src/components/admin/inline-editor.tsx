@@ -314,6 +314,10 @@ export function markdownToHtml(md: string): string {
     return `<img src="${src}" alt="${cleanAlt}"${posAttrs}>`;
   });
 
+  html = html.replace(/<!--table-col-widths:([^>]+)-->/g, (_m: string, cw: string) => {
+    return `<data-table-colwidths value="${cw}">`;
+  });
+
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
   html = html.replace(/`(.+?)`/g, "<code>$1</code>");
@@ -330,19 +334,78 @@ export function markdownToHtml(md: string): string {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   html = html.replace(/\[\[([^\]]+)\]\]/g, '<span class="wiki-link">[[$1]]</span>');
 
+  const parseRow = (line: string) => line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim());
+
+  function renderTable(colWidths: string | null, headerLine: string, bodyLines: string[]) {
+    const headers = parseRow(headerLine);
+    const body = bodyLines.map(parseRow);
+    const colCount = headers.length;
+    const cw = colWidths ? colWidths.split(",").map(Number) : null;
+    let colGroup = "";
+    if (cw && cw.length === colCount) {
+      colGroup = "<colgroup>" + cw.map(w => `<col style="width:${w}%">`).join("") + "</colgroup>";
+    }
+    const thHtml = headers.map(h => `<th style="padding:8px 12px;text-align:left;border:1px solid var(--os-glass-border);background:rgba(255,255,255,0.03);font-weight:600">${h}</th>`).join("");
+    const rowsHtml = body.map(row => {
+      const cells = row.map(c => `<td style="padding:8px 12px;border:1px solid var(--os-glass-border)">${c}</td>`).join("");
+      return `<tr>${cells}</tr>`;
+    }).join("");
+    return `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">${colGroup}<thead><tr>${thHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+  }
+
   const lines = html.split("\n");
   const processed: string[] = [];
-  for (const line of lines) {
+  let pendingImgWidth: string | null = null;
+  let pendingTableColWidths: string | null = null;
+  let tableLines: string[] = [];
+  let inTable = false;
+  let tableColWidths: string | null = null;
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
     const t = line.trim();
-    if (
-      t.startsWith("<h") || t.startsWith("<ul") || t.startsWith("<ol") || t.startsWith("<li") ||
+    const imgW = t.match(/<!--img-width:(\d+)-->/);
+    if (imgW) { pendingImgWidth = imgW[1]; continue; }
+    const tblCw = t.match(/<data-table-colwidths value="([^"]+)">/);
+    if (tblCw) { pendingTableColWidths = tblCw[1]; continue; }
+    if (pendingImgWidth && t.startsWith("<img ")) {
+      if (line.includes("style=")) {
+        processed.push(line.replace(/style="/, `style="width:${pendingImgWidth}%;`));
+      } else {
+        processed.push(line.replace(/>$/, ` style="width:${pendingImgWidth}%;display:block;">`));
+      }
+      pendingImgWidth = null;
+      continue;
+    }
+    if (t.startsWith("|") && t.endsWith("|")) {
+      if (!inTable) {
+        inTable = true;
+        tableLines = [];
+        tableColWidths = pendingTableColWidths;
+        pendingTableColWidths = null;
+      }
+      tableLines.push(t);
+      continue;
+    }
+    if (inTable) {
+      processed.push(renderTable(tableColWidths, tableLines[0], tableLines.slice(2)));
+      inTable = false;
+      tableLines = [];
+      tableColWidths = null;
+      idx--;
+      continue;
+    }
+    if (t.startsWith("<h") || t.startsWith("<ul") || t.startsWith("<ol") || t.startsWith("<li") ||
       t.startsWith("<blockquote") || t.startsWith("<hr") || t.startsWith("<img") ||
-      t.startsWith("</") || t.startsWith("<div") || t.startsWith("<span") || t === ""
+      t.startsWith("</") || t.startsWith("<div") || t.startsWith("<span") || t.startsWith("<table") || t === ""
     ) {
       processed.push(line);
     } else {
       processed.push(`<p>${t}</p>`);
     }
+  }
+  if (inTable) {
+    processed.push(renderTable(tableColWidths, tableLines[0], tableLines.slice(2)));
   }
   return processed.join("\n");
 }
