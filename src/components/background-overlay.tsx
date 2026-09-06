@@ -8,6 +8,7 @@ export const THEME_MAP: Record<string, string> = {
   "#1a0205": "Spiderman",
   "#05001a": "Galaxy",
   "#0a0008": "Resident Evil",
+  "#1a1205": "Bear",
 };
 
 function themeFromColor(color: string | null): string | null {
@@ -53,7 +54,7 @@ export default function BackgroundOverlay() {
 
   if (!theme) return null;
 
-  const opacity = theme === "Galaxy" ? 0.75 : theme === "Resident Evil" ? 0.4 : 0.35;
+  const opacity = theme === "Galaxy" ? 0.75 : theme === "Resident Evil" ? 0.4 : theme === "Bear" ? 0.5 : 0.35;
 
   return (
     <div

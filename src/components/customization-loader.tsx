@@ -38,6 +38,7 @@ const wallpapers: Record<string, string[]> = {
   "#0a1018": ["#0a1018", "#152030"],
   "#1a0f18": ["#1a0f18", "#2d1a28"],
   "#0f1a12": ["#0f1a12", "#1a2d1c"],
+  "#1a1205": ["#1a1205", "#2d1b05"],
 };
 
 const accents: Record<string, string> = {

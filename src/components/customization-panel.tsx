@@ -37,6 +37,7 @@ const wallpaperGroups: Record<WallpaperTab, { name: string; colors: string[] }[]
     { name: "Spiderman", colors: ["#1a0205", "#001040"] },
     { name: "Galaxy", colors: ["#05001a", "#1a003a"] },
     { name: "Resident Evil", colors: ["#0a0008", "#1a0010"] },
+    { name: "Bear", colors: ["#1a1205", "#2d1b05"] },
   ],
   Pastel: [
     { name: "Lilac Dream", colors: ["#1a1025", "#2d1a40"] },

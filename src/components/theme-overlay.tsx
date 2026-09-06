@@ -10,6 +10,7 @@ export default function ThemeOverlay({ theme }: ThemeOverlayProps) {
   if (theme === "Spiderman") return <SpidermanOverlay />;
   if (theme === "Galaxy") return <GalaxyOverlay />;
   if (theme === "Resident Evil") return <ResidentEvilOverlay />;
+  if (theme === "Bear") return <BearOverlay />;
   return null;
 }
 
@@ -237,6 +238,96 @@ function ResidentEvilOverlay() {
 
       {/* Red vignette */}
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(80,0,0,0.15) 100%)" }} />
+    </div>
+  );
+}
+
+function BearOverlay() {
+  const pawPrints = React.useMemo(() =>
+    Array.from({ length: 18 }, (_, i) => ({
+      x: (Math.sin(i * 127.1 + 33) * 0.5 + 0.5) * 90 + 5,
+      y: (Math.sin(i * 311.7 + 77) * 0.5 + 0.5) * 85 + 5,
+      rot: (i * 47) % 360,
+      scale: 0.6 + (i % 4) * 0.15,
+      delay: i * 0.4,
+      dur: 4 + (i % 3) * 2,
+    })), []);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <style>{`
+        @keyframes bearFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes honeyDrip { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+        @keyframes pawFade { 0%,100% { opacity: 0.06; } 50% { opacity: 0.12; } }
+        @keyframes honeycombPulse { 0%,100% { opacity: 0.06; } 50% { opacity: 0.1; } }
+      `}</style>
+
+      {/* Warm amber base glow */}
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 30% 20%, rgba(180,120,40,0.12), transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(160,100,30,0.08), transparent 40%)" }} />
+
+      {/* Honeycomb pattern */}
+      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0, opacity: 0.06, animation: "honeycombPulse 8s ease-in-out infinite" }}>
+        <defs>
+          <pattern id="honeycomb" width="56" height="48" patternUnits="userSpaceOnUse" patternTransform="scale(1.8)">
+            <path d="M28,0 L56,14 L56,34 L28,48 L0,34 L0,14 Z" fill="none" stroke="#d4a020" strokeWidth="0.8" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#honeycomb)" />
+      </svg>
+
+      {/* Bear silhouette — bottom-left corner, peeking up */}
+      <svg width="220" height="260" viewBox="0 0 220 260" style={{ position: "absolute", bottom: "-10px", left: "3%", opacity: 0.12, animation: "bearFloat 6s ease-in-out infinite" }}>
+        {/* Head */}
+        <ellipse cx="110" cy="80" rx="65" ry="58" fill="#8B5E3C" />
+        {/* Ears */}
+        <circle cx="58" cy="35" r="22" fill="#8B5E3C" />
+        <circle cx="58" cy="35" r="13" fill="#6B3F1F" />
+        <circle cx="162" cy="35" r="22" fill="#8B5E3C" />
+        <circle cx="162" cy="35" r="13" fill="#6B3F1F" />
+        {/* Eyes */}
+        <circle cx="88" cy="72" r="6" fill="#1a1205" />
+        <circle cx="132" cy="72" r="6" fill="#1a1205" />
+        <circle cx="86" cy="70" r="2" fill="rgba(255,255,255,0.4)" />
+        <circle cx="130" cy="70" r="2" fill="rgba(255,255,255,0.4)" />
+        {/* Nose + mouth */}
+        <ellipse cx="110" cy="92" rx="10" ry="7" fill="#5C3A1E" />
+        <path d="M110,99 Q110,115 98,118" fill="none" stroke="#5C3A1E" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M110,99 Q110,115 122,118" fill="none" stroke="#5C3A1E" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Body */}
+        <ellipse cx="110" cy="195" rx="80" ry="65" fill="#8B5E3C" />
+        {/* Belly patch */}
+        <ellipse cx="110" cy="190" rx="45" ry="40" fill="#A67B5B" opacity="0.5" />
+        {/* Arms */}
+        <ellipse cx="38" cy="170" rx="25" ry="18" fill="#8B5E3C" transform="rotate(-20, 38, 170)" />
+        <ellipse cx="182" cy="170" rx="25" ry="18" fill="#8B5E3C" transform="rotate(20, 182, 170)" />
+        {/* Paw pads */}
+        <circle cx="30" cy="178" r="5" fill="#6B3F1F" opacity="0.6" />
+        <circle cx="190" cy="178" r="5" fill="#6B3F1F" opacity="0.6" />
+      </svg>
+
+      {/* Scattered paw prints */}
+      <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+        {pawPrints.map((p, i) => (
+          <g key={i} transform={`translate(${p.x}%, ${p.y}%) rotate(${p.rot}) scale(${p.scale})`}
+            style={{ animation: `pawFade ${p.dur}s ease-in-out ${p.delay}s infinite` }}>
+            <ellipse cx="0" cy="6" rx="5" ry="6" fill="#d4a020" opacity="0.08" />
+            <circle cx="-4" cy="-2" r="2.5" fill="#d4a020" opacity="0.08" />
+            <circle cx="0" cy="-4" r="2.5" fill="#d4a020" opacity="0.08" />
+            <circle cx="4" cy="-2" r="2.5" fill="#d4a020" opacity="0.08" />
+          </g>
+        ))}
+      </svg>
+
+      {/* Honey drip accents top-right */}
+      <svg width="160" height="120" viewBox="0 0 160 120" style={{ position: "absolute", top: "8%", right: "5%", opacity: 0.08 }}>
+        <path d="M40,0 Q40,25 35,40 Q30,55 40,65 L40,120" fill="none" stroke="#d4a020" strokeWidth="3" strokeLinecap="round" style={{ animation: "honeyDrip 4s ease-in-out infinite" }} />
+        <ellipse cx="40" cy="65" rx="6" ry="8" fill="#d4a020" opacity="0.5" />
+        <path d="M100,0 Q100,35 95,50 Q90,68 100,78 L100,120" fill="none" stroke="#d4a020" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "honeyDrip 5s ease-in-out 1s infinite" }} />
+        <ellipse cx="100" cy="78" rx="5" ry="7" fill="#d4a020" opacity="0.4" />
+      </svg>
+
+      {/* Warm honey vignette */}
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(100,60,15,0.12) 100%)" }} />
     </div>
   );
 }
