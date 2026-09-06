@@ -197,6 +197,11 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes pulseGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(var(--os-accent-rgb), 0.2); }
   50% { box-shadow: 0 0 40px rgba(var(--os-accent-rgb), 0.4); }
