@@ -295,9 +295,9 @@ export default function ArchivePage() {
 
       {/* Main category tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => { setSelectedCategoryId(null); setSelectedType("all"); }} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedCategoryId === null ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedCategoryId === null ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedCategoryId === null ? "var(--os-accent)" : "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
-          <Archive size={12} /> All
-        </button>
+          <button onClick={() => { setSelectedCategoryId(null); setSelectedType("all"); }} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: selectedCategoryId === null ? "rgba(109,40,217,0.2)" : "rgba(0,0,0,0.15)", border: selectedCategoryId === null ? "1px solid var(--os-accent)" : "1px solid var(--os-glass-border)", color: selectedCategoryId === null ? "var(--os-accent)" : "var(--os-text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+            <Archive size={12} /> COMPETITIONS
+          </button>
         {categories.map(cat => (
           <div key={cat.id} style={{ display: "flex", alignItems: "center" }}>
             {editingCatId === cat.id ? (
