@@ -40,16 +40,31 @@ export async function POST(req: NextRequest) {
     const tRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
     if (tRes.length) tRes[0].values.forEach((r: any[]) => tables.push(r[0]));
 
+    // Debug: count rows in key tables
+    const debug: Record<string, any> = { tables };
+    for (const t of ["cards", "notes", "col"]) {
+      if (tables.includes(t)) {
+        const cnt = db.exec(`SELECT COUNT(*) FROM "${t}"`);
+        debug[`${t}_count`] = cnt.length ? cnt[0].values[0][0] : 0;
+      }
+    }
+
     // Use SQL JOIN to avoid JS number precision issues with large Anki IDs
     const deckCards = new Map<string, { front: string; back: string; hint?: string }[]>();
 
     // Try the direct JOIN approach first
     if (tables.includes("cards") && tables.includes("notes")) {
-      const joinResult = db.exec(`
-        SELECT c.did, n.flds
+      // Try JOIN with CAST to handle type mismatches
+      let joinResult = db.exec(`
+        SELECT CAST(c.did AS TEXT), n.flds
         FROM cards c
-        JOIN notes n ON c.nid = n.id
+        JOIN notes n ON CAST(c.nid AS TEXT) = CAST(n.id AS TEXT)
       `);
+      if (!joinResult.length || !joinResult[0].values.length) {
+        // Fallback: try without CAST
+        joinResult = db.exec(`SELECT c.did, n.flds FROM cards c JOIN notes n ON c.nid = n.id`);
+      }
+      debug.join_rows = joinResult.length ? joinResult[0].values.length : 0;
       if (joinResult.length) {
         for (const row of joinResult[0].values) {
           const deckId = String(row[0]);
@@ -109,7 +124,7 @@ export async function POST(req: NextRequest) {
       result.push({ name: deckNames.get(deckId) || `Deck ${deckId}`, cards });
     }
 
-    return NextResponse.json({ decks: result, debug: { tables, noteCount: deckCards.size } });
+    return NextResponse.json({ decks: result, debug });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to parse Anki file" }, { status: 500 });
   }

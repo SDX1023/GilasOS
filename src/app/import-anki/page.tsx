@@ -12,6 +12,7 @@ export default function ImportAnkiPage() {
   const [decks, setDecks] = useState<{ name: string; cards: { front: string; back: string; hint?: string }[] }[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const [lastError, setLastError] = useState("");
+  const [debug, setDebug] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [targetModule, setTargetModule] = useState("");
@@ -47,6 +48,7 @@ export default function ImportAnkiPage() {
       if (!data.decks || data.decks.length === 0) throw new Error("No decks with cards found in this file");
       setDecks(data.decks);
       setSelectedDecks(new Set(data.decks.map((_: any, i: number) => i)));
+      setDebug(data.debug);
     } catch (err: any) {
       setLastError(err.message || "Failed to parse Anki file");
     } finally {
@@ -126,6 +128,13 @@ export default function ImportAnkiPage() {
           {lastError && (
             <div style={{ padding: 12, borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", marginBottom: 16 }}>
               <p style={{ fontSize: 13, color: "#ef4444", fontWeight: 500 }}>{lastError}</p>
+            </div>
+          )}
+
+          {debug && (
+            <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--os-glass-border)", marginBottom: 16, fontSize: 11, fontFamily: "monospace", color: "var(--os-text-dim)" }}>
+              <p>Tables: {debug.tables?.join(", ")}</p>
+              {debug.cards_count !== undefined && <p>Cards rows: {debug.cards_count} · Notes rows: {debug.note_count} · Join rows: {debug.join_rows}</p>}
             </div>
           )}
 
