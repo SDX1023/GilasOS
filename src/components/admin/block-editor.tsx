@@ -151,8 +151,6 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   const [floatingToolbar, setFloatingToolbar] = useState<{ top: number; left: number } | null>(null);
   const refs = useRef<Map<string, HTMLElement>>(new Map());
   const menuInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const [imageTargetId, setImageTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     const md = toMarkdown(blocks);
@@ -346,9 +344,18 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
   }, [update]);
 
   const openImagePicker = useCallback((blockId: string) => {
-    setImageTargetId(blockId);
-    setTimeout(() => imageInputRef.current?.click(), 0);
-  }, []);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.display = "none";
+    document.body.appendChild(input);
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (file) handleImageFile(file, blockId);
+      document.body.removeChild(input);
+    }, { once: true });
+    input.click();
+  }, [handleImageFile]);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
     setDragId(id);
@@ -433,10 +440,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
     };
 
     const handle = (
-      <div draggable onDragStart={(e) => handleDragStart(e, block.id)} onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-        className="block-handle">
-        <GripVertical size={14} style={{ color: "var(--os-text-dim)" }} />
-        <button onClick={(e) => { e.stopPropagation(); const el = refs.current.get(block.id); if (el) { const r = el.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.left }); setShowMenu(block.id); setMenuFilter(""); } }}
+      <div style={{ display: "flex", alignItems: "center", gap: 2, paddingTop: 4, flexShrink: 0 }}>
+        <div draggable onDragStart={(e) => handleDragStart(e, block.id)} onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+          className="block-handle" style={{ cursor: "grab" }}>
+          <GripVertical size={14} style={{ color: "var(--os-text-dim)" }} />
+        </div>
+        <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); const el = refs.current.get(block.id); if (el) { const r = el.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.left }); setShowMenu(block.id); setMenuFilter(""); } }}
           style={{ padding: 2, borderRadius: 4, background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", display: "flex" }}>
           <Plus size={12} />
         </button>
@@ -674,21 +683,13 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
 
   return (
     <div style={{ position: "relative", padding: "0 16px 120px" }}>
-      <input ref={imageInputRef} type="file" accept="image/*"
-        style={{ position: "absolute", width: 0, height: 0, visibility: "hidden", overflow: "hidden" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file && imageTargetId) handleImageFile(file, imageTargetId);
-          e.target.value = "";
-          setImageTargetId(null);
-        }} />
       <style>{`
         .block-handle, .block-delete { opacity: 0; transition: opacity 0.15s; }
         .block-wrapper:hover .block-handle, .block-wrapper:hover .block-delete { opacity: 0.5; }
         .block-wrapper:hover .block-handle:hover, .block-wrapper:hover .block-delete:hover { opacity: 1; }
         .block-wrapper:focus-within .block-handle, .block-wrapper:focus-within .block-delete { opacity: 0.5; }
         .block-wrapper:focus-within .block-handle:hover, .block-wrapper:focus-within .block-delete:hover { opacity: 1; }
-        .block-handle { display: flex; align-items: center; gap: 2px; padding-top: 4px; flex-shrink: 0; cursor: grab; }
+        .block-handle { display: flex; align-items: center; padding-top: 4px; flex-shrink: 0; }
         .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
         .block-delete:hover { color: #ef4444; }
         [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
