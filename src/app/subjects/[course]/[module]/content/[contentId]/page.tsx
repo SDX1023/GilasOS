@@ -69,7 +69,13 @@ export default function ContentViewerPage({
         </div>
       </div>
 
-      <div ref={contentRef}>
+      <div ref={contentRef} style={{
+        background: "rgba(12, 17, 28, 0.5)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 16,
+        padding: "32px 40px",
+        backdropFilter: "blur(12px)",
+      }}>
         <MarkdownRenderer content={content.content || ""} allLinksMap={{}} />
       </div>
     </div>

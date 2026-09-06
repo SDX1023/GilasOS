@@ -118,53 +118,70 @@ export function MusicPlayer() {
     return () => {};
   }, [started]);
 
-  // Hide mini player when panel is open or quiz is active
+  // Move iframe between mini and panel
+  useEffect(() => {
+    const iframe = miniIframeRef.current;
+    const panelContainer = panelRef.current?.querySelector("[data-spotify-host]");
+    if (!iframe || !panelContainer) return;
+
+    if (open) {
+      // Move into panel
+      iframe.style.cssText = `
+        width: 100%; height: 100%; border: none; position: static;
+        border-radius: 0; opacity: 1; pointer-events: auto;
+        box-shadow: none; border: none;
+      `;
+      panelContainer.appendChild(iframe);
+    } else {
+      // Move back to body as mini player
+      iframe.style.cssText = `
+        position:fixed; bottom:80px; right:24px; width:320px; height:80px;
+        border:none; border-radius:12px; z-index:9999; opacity:0.6;
+        pointer-events:auto; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      `;
+      document.body.appendChild(iframe);
+    }
+  }, [open]);
+
+  // Hide when quiz is active
   useEffect(() => {
     const iframe = miniIframeRef.current;
     if (!iframe) return;
 
     const updateVisibility = () => {
       const quizActive = document.body.classList.contains("quiz-active");
-      if (open || quizActive) {
+      if (quizActive) {
         iframe.style.transform = "translateX(9999px)";
         iframe.style.pointerEvents = "none";
         iframe.style.opacity = "0";
-      } else if (started) {
+      } else if (!open) {
         iframe.style.transform = "";
         iframe.style.pointerEvents = "auto";
         iframe.style.opacity = "0.6";
-      } else {
-        iframe.style.transform = "translateX(9999px)";
-        iframe.style.pointerEvents = "none";
-        iframe.style.opacity = "0";
       }
     };
 
     updateVisibility();
-
     const observer = new MutationObserver(updateVisibility);
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
-
     return () => observer.disconnect();
-  }, [open, started]);
+  }, [open]);
 
   // Hover effect for mini player
   useEffect(() => {
     const iframe = miniIframeRef.current;
-    if (!iframe) return;
+    if (!iframe || open) return;
 
     const handleMouseEnter = () => {
-      if (!open) {
-        iframe.style.opacity = "0.85";
-        iframe.style.transform = "scale(1.02)";
-      }
+      iframe.style.opacity = "0.85";
+      iframe.style.transform = "scale(1.02)";
     };
 
     const handleMouseLeave = () => {
-      if (!open) {
-        iframe.style.opacity = "0.6";
-        iframe.style.transform = "scale(1)";
-      }
+      iframe.style.opacity = "0.6";
+      iframe.style.transform = "scale(1)";
     };
 
     iframe.addEventListener('mouseenter', handleMouseEnter);
@@ -295,7 +312,7 @@ export function MusicPlayer() {
             </button>
           </div>
 
-          <div style={{
+          <div data-spotify-host style={{
             width: "100%",
             height: 152,
             borderRadius: "12px",
@@ -304,18 +321,6 @@ export function MusicPlayer() {
             border: "1px solid rgba(255,255,255,0.06)",
             background: "rgba(0,0,0,0.3)",
           }}>
-            <iframe
-              key="panel-embed"
-              src={EMBED_URL}
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              title="Spotify Player"
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-              }}
-            />
           </div>
 
           <div style={{ 
