@@ -713,13 +713,13 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         };
         const addRow = () => { update(block.id, { rows: [...rows, new Array(cols).fill("")] }); };
         const addCol = () => {
-          const newCw = cw ? [...cw, Math.round(100 / (cols + 1))] : null;
+          const newCw = cw ? [...cw, Math.round(100 / (cols + 1))] : undefined;
           update(block.id, { rows: rows.map(r => [...r, ""]), colWidths: newCw });
         };
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
         const delCol = (ci: number) => {
           if (cols <= 1) return;
-          const newCw = cw ? cw.filter((_, i) => i !== ci) : null;
+          const newCw = cw ? cw.filter((_, i) => i !== ci) : undefined;
           update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)), colWidths: newCw });
         };
         return (
