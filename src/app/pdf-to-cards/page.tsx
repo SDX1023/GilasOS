@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { FileText, Upload, Loader2, Save } from "lucide-react";
-import { saveReviewerToSupabase } from "@/lib/custom-content";
+import { FileText, Upload, Loader2, Save, ChevronDown } from "lucide-react";
+import { saveReviewerToSupabase, loadReviewersFromSupabase } from "@/lib/custom-content";
 import { useAuth } from "@/lib/auth-context";
 
 const PDF_COURSE_ID = "pdf-generated";
@@ -18,6 +18,9 @@ export default function PdfToFlashcardsPage() {
   const [lastError, setLastError] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [targetModule, setTargetModule] = useState("pdf-cards");
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
   const [cooldown, setCooldown] = useState(() => {
     if (typeof window === "undefined") return 0;
     const until = localStorage.getItem("flashcard-cooldown-until");
@@ -30,6 +33,14 @@ export default function PdfToFlashcardsPage() {
     const t = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadReviewersFromSupabase().then((reviewers) => {
+      const categories = [...new Set(reviewers.map((r) => r.courseId))].filter(Boolean).sort();
+      setExistingCategories(categories);
+    });
+  }, [user]);
 
   const saveDeck = async () => {
     if (!deckName.trim() || generatedCards.length === 0) return;
@@ -143,9 +154,37 @@ export default function PdfToFlashcardsPage() {
           <div className="flex-between" style={{ marginBottom: 16 }}>
             <h2 style={{ fontWeight: 600 }}>Generated Cards ({generatedCards.length})</h2>
             {generatedCards.length > 0 && (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
                 <input className="glass-input" value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name" style={{ width: 140 }} />
-                <input className="glass-input" value={targetModule} onChange={(e) => setTargetModule(e.target.value)} placeholder="Module (default: pdf-cards)" style={{ width: 160 }} />
+                {showNewCategory ? (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <input className="glass-input" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="New category name" style={{ width: 160 }} autoFocus onKeyDown={(e) => {
+                      if (e.key === "Enter" && newCategory.trim()) { setTargetModule(newCategory.trim()); setShowNewCategory(false); }
+                      if (e.key === "Escape") { setShowNewCategory(false); setNewCategory(""); }
+                    }} />
+                    <button onClick={() => { if (newCategory.trim()) { setTargetModule(newCategory.trim()); setShowNewCategory(false); } }} className="glass-btn glass-btn-primary" style={{ padding: "6px 10px", fontSize: 12 }}>Add</button>
+                    <button onClick={() => { setShowNewCategory(false); setNewCategory(""); }} className="glass-btn" style={{ padding: "6px 10px", fontSize: 12 }}>Cancel</button>
+                  </div>
+                ) : (
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={targetModule}
+                      onChange={(e) => {
+                        if (e.target.value === "__new__") { setShowNewCategory(true); setNewCategory(""); }
+                        else setTargetModule(e.target.value);
+                      }}
+                      className="glass-input"
+                      style={{ width: 180, appearance: "none", paddingRight: 28, cursor: "pointer" }}
+                    >
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="pdf-cards">pdf-cards (default)</option>
+                      <option value="__new__">+ Create new category</option>
+                    </select>
+                    <ChevronDown size={14} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--os-text-dim)" }} />
+                  </div>
+                )}
                 <button onClick={saveDeck} disabled={!deckName.trim() || saving} className="glass-btn glass-btn-primary" style={{ display: "flex", alignItems: "center", gap: 4, padding: "8px 14px", fontSize: 13, opacity: !deckName.trim() || saving ? 0.5 : 1 }}>
                   <Save size={12} /> {saving ? "Saving..." : "Save"}
                 </button>

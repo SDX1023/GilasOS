@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { loadCustomContent, deleteReviewer, loadReviewersFromSupabase, deleteReviewerFromSupabase, saveReviewerToSupabase, addModule } from "@/lib/custom-content";
-import { Brain, Trash2, ChevronRight, ChevronDown, Plus, Pencil, Check, X, GripVertical } from "lucide-react";
+import { Brain, Trash2, ChevronRight, ChevronDown, Plus, Pencil, Check, X, GripVertical, Share2 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -60,6 +60,14 @@ export default function FlashcardsPage() {
   const [dragOverModule, setDragOverModule] = useState<string | null>(null);
   const [addingModuleTo, setAddingModuleTo] = useState<string | null>(null);
   const [newModuleName, setNewModuleName] = useState("");
+  const [showShareCourseModal, setShowShareCourseModal] = useState(false);
+  const [shareCourseId, setShareCourseId] = useState<string | null>(null);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shareLinks, setShareLinks] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -85,6 +93,81 @@ export default function FlashcardsPage() {
       setMounted(true);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!showShareCourseModal || !userId) return;
+    const supabase = getSupabase();
+    supabase.from("friends").select("friend_id").eq("user_id", userId).eq("status", "accepted")
+      .then(async ({ data }) => {
+        if (!data?.length) { setFriends([]); return; }
+        const ids = data.map((d: any) => d.friend_id);
+        const { data: profiles } = await supabase.from("user_profiles").select("user_id, username").in("user_id", ids);
+        setFriends(profiles || []);
+      });
+  }, [showShareCourseModal, userId]);
+
+  async function handleShareCourse() {
+    if (!userId || !shareCourseId) return;
+    setSharing(true);
+    setShareError("");
+    setShareLinks([]);
+    const supabase = getSupabase();
+
+    let sharedWithId: string | null = null;
+    if (shareRecipient.trim()) {
+      const { data: recipient } = await supabase.from("user_profiles").select("user_id").eq("username", shareRecipient.trim()).maybeSingle();
+      if (!recipient) { setShareError("User not found"); setSharing(false); return; }
+      sharedWithId = recipient.user_id;
+    }
+
+    const courseDecks = allReviewers.filter((r) => r.courseId === shareCourseId);
+    const links: string[] = [];
+
+    for (const entry of courseDecks) {
+      const reviewer = entry.reviewer;
+      const reviewerId = reviewer.id;
+
+      const { data: existing } = await supabase.from("shared_decks").select("id").eq("reviewer_id", reviewerId).eq("user_id", userId).eq("shared_with_user_id", sharedWithId).maybeSingle();
+      if (existing) {
+        links.push(`${window.location.origin}/shared/${existing.id}`);
+        continue;
+      }
+
+      const { data, error } = await supabase.from("shared_decks").insert({
+        user_id: userId,
+        reviewer_id: reviewerId,
+        course_id: entry.courseId,
+        module_id: entry.moduleId,
+        title: reviewer.title,
+        card_count: reviewer.cards?.length || 0,
+        cards_json: (reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+        shared_with_user_id: sharedWithId,
+      }).select().single();
+
+      if (data) {
+        links.push(`${window.location.origin}/shared/${data.id}`);
+      } else if (error) {
+        const { data: fallbackData } = await supabase.from("shared_decks").insert({
+          user_id: userId,
+          reviewer_id: reviewerId,
+          course_id: entry.courseId,
+          module_id: entry.moduleId,
+          title: reviewer.title,
+          card_count: reviewer.cards?.length || 0,
+          cards_json: (reviewer.cards || []).map((c: any) => ({ front: c.front, back: c.back, hint: c.hint || "" })),
+        }).select().single();
+        if (fallbackData) links.push(`${window.location.origin}/shared/${fallbackData.id}`);
+      }
+    }
+
+    if (links.length > 0) {
+      await navigator.clipboard.writeText(links.join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+    setShareLinks(links);
+    setSharing(false);
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -273,6 +356,13 @@ export default function FlashcardsPage() {
                   >
                     <Plus size={14} /> Module
                   </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowShareCourseModal(true); setShareCourseId(course.courseId); setShareRecipient(""); setShareError(""); setShareLinks([]); setCopied(false); }}
+                    style={{ padding: "6px 10px", marginRight: 12, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--os-text-dim)", fontFamily: "Inter, sans-serif", borderRadius: 6, flexShrink: 0 }}
+                    title="Share all decks in this course"
+                  >
+                    <Share2 size={14} /> Share
+                  </button>
                 </div>
 
                 {courseOpen && (
@@ -436,6 +526,55 @@ export default function FlashcardsPage() {
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
               <button onClick={() => setDeleteTarget(null)} className="glass-btn glass-btn-ghost">Cancel</button>
               <button onClick={handleDelete} className="glass-btn" style={{ background: "#ef4444", color: "#fff" }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareCourseModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }} onClick={() => setShowShareCourseModal(false)}>
+          <div className="glass-panel" style={{ maxWidth: 420, width: "100%", margin: "0 16px" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Share Category</h3>
+            <p className="text-secondary text-sm" style={{ marginBottom: 12 }}>
+              Share all <strong>{shareCourseId}</strong> decks ({allReviewers.filter((r) => r.courseId === shareCourseId).length} decks)
+            </p>
+            {friends.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Share with a friend</label>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {friends.map((f) => (
+                    <button key={f.user_id} onClick={() => setShareRecipient(shareRecipient === f.username ? "" : f.username)} style={{
+                      padding: "4px 10px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                      background: shareRecipient === f.username ? "var(--os-accent)" : "rgba(255,255,255,0.05)",
+                      border: shareRecipient === f.username ? "1px solid var(--os-accent)" : "1px solid rgba(255,255,255,0.1)",
+                      color: shareRecipient === f.username ? "#fff" : "var(--os-text-secondary)",
+                    }}>{f.username}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Or enter username manually</label>
+            <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
+            {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
+            {shareLinks.length > 0 && (
+              <div style={{ marginTop: 8, padding: 10, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8 }}>
+                <p style={{ fontSize: 12, color: "#10b981", fontWeight: 500 }}>
+                  {copied ? "Links copied to clipboard!" : `${shareLinks.length} deck link${shareLinks.length > 1 ? "s" : ""} generated`}
+                </p>
+                <div style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 4, maxHeight: 80, overflowY: "auto" }}>
+                  {shareLinks.map((link, i) => (
+                    <div key={i} style={{ marginTop: 2, wordBreak: "break-all" }}>{link}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setShowShareCourseModal(false)} className="glass-btn glass-btn-ghost" style={{ flex: 1 }}>{shareLinks.length > 0 ? "Done" : "Cancel"}</button>
+              {shareLinks.length === 0 && (
+                <button onClick={handleShareCourse} disabled={sharing} className="glass-btn glass-btn-primary" style={{ flex: 1 }}>
+                  {sharing ? "Sharing..." : "Share All Decks"}
+                </button>
+              )}
             </div>
           </div>
         </div>
