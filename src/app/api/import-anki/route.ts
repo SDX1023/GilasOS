@@ -26,9 +26,15 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
 
+    // Debug: list all files in the ZIP with sizes
+    const zipFiles: Record<string, number> = {};
+    zip.forEach((path, entry) => {
+      if (!entry.dir) zipFiles[path] = entry._data ? (entry._data as any).uncompressedSize || 0 : 0;
+    });
+
     const dbFile = zip.file("collection.anki21") || zip.file("collection.anki2");
     if (!dbFile) {
-      return NextResponse.json({ error: "Invalid Anki file — no database found" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid Anki file — no database found", debug: { zipFiles } }, { status: 400 });
     }
 
     const dbData = await dbFile.async("arraybuffer");
@@ -41,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (tRes.length) tRes[0].values.forEach((r: any[]) => tables.push(r[0]));
 
     // Debug: count rows in key tables
-    const debug: Record<string, any> = { tables };
+    const debug: Record<string, any> = { tables, zipFiles };
     for (const t of ["cards", "notes", "col"]) {
       if (tables.includes(t)) {
         const cnt = db.exec(`SELECT COUNT(*) FROM "${t}"`);
