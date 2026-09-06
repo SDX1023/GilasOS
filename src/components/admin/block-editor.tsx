@@ -792,6 +792,19 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                               className="table-col-resize-handle"
                             />
                           )}
+                          {ri === 0 && ci === cols - 1 && (
+                            <div
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci] };
+                                document.body.style.cursor = "col-resize";
+                                document.body.style.userSelect = "none";
+                              }}
+                              style={{ position: "absolute", right: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 2, borderRadius: 2 }}
+                              className="table-col-resize-handle"
+                            />
+                          )}
                         </td>
                       ))}
                     </tr>
