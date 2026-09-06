@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { AuthWrapper } from "@/components/auth-wrapper";
@@ -15,7 +15,7 @@ import CustomizationLoader from "@/components/customization-loader";
 import BackgroundOverlay from "@/components/background-overlay";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { MusicPlayer } from "@/components/music-player";
-import { StartMenu, DesktopIcons } from "@/components/os-desktop";
+import { StartMenu } from "@/components/os-desktop";
 
 export default function RootLayout({
   children,
@@ -38,27 +38,7 @@ export default function RootLayout({
                   <CustomizationLoader />
                   <BackgroundOverlay />
                   {!isLanding && <Navbar />}
-                  <main className="app-main" style={{
-                    paddingTop: isLanding ? 0 : 72,
-                    paddingBottom: isLanding ? 0 : 72,
-                  }}>
-                    {!isLanding && (
-                      <div className="os-desktop" style={{
-                        position: "fixed",
-                        top: 56,
-                        left: 0,
-                        right: 0,
-                        bottom: 56,
-                        overflow: "auto",
-                        zIndex: 0,
-                      }}>
-                        <DesktopIcons />
-                      </div>
-                    )}
-                    <div style={{ position: "relative", zIndex: 1 }}>
-                      {children}
-                    </div>
-                  </main>
+                  <main className="app-main">{children}</main>
                   {!isLanding && <Taskbar onStartClick={() => setStartMenuOpen(!startMenuOpen)} />}
                   <StartMenu isOpen={startMenuOpen} onClose={() => setStartMenuOpen(false)} />
                 </div>
