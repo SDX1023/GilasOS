@@ -2,12 +2,43 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export async function exportToPdf(element: HTMLElement, filename: string) {
+  const origBg = element.style.background;
+  const origBorder = element.style.border;
+  const origBorderRadius = element.style.borderRadius;
+
+  element.style.background = "#ffffff";
+  element.style.border = "none";
+  element.style.borderRadius = "0";
+  element.style.padding = "24px";
+
+  const pdfStyle = document.createElement("style");
+  pdfStyle.id = "pdf-export-style";
+  pdfStyle.textContent = `
+    .markdown-viewer p, .markdown-viewer li { color: #1a1a1a !important; }
+    .markdown-viewer h1 { color: #000000 !important; border-bottom-color: #e5e7eb !important; }
+    .markdown-viewer h2 { color: #111827 !important; border-bottom-color: #e5e7eb !important; }
+    .markdown-viewer h3 { color: #374151 !important; }
+    .markdown-viewer strong { color: #000000 !important; }
+    .markdown-viewer a { color: #2563eb !important; }
+    .markdown-viewer code { color: #dc2626 !important; background: #f3f4f6 !important; }
+    .markdown-viewer blockquote { border-left-color: #7c3aed !important; background: #f5f3ff !important; color: #374151 !important; }
+    .markdown-viewer th, .markdown-viewer td { border-color: #d1d5db !important; color: #1a1a1a !important; }
+    .markdown-viewer th { background: #f9fafb !important; }
+    .markdown-viewer hr { border-top-color: #e5e7eb !important; }
+  `;
+  document.head.appendChild(pdfStyle);
+
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
     logging: false,
   });
+
+  element.style.background = origBg;
+  element.style.border = origBorder;
+  element.style.borderRadius = origBorderRadius;
+  pdfStyle.remove();
 
   const imgWidth = 210; // A4 width in mm
   const pageHeight = 297; // A4 height in mm
