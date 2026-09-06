@@ -359,21 +359,10 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       } else if (r.type === "col") {
         const block = blocks.find(b => b.id === r.blockId);
         if (!block || !block.rows) return;
-        const tableEl = document.querySelector(`[data-block-id="${r.blockId}"] table`) as HTMLTableElement;
-        if (!tableEl) return;
-        const tableWidth = tableEl.getBoundingClientRect().width;
         const colCount = Math.max(...block.rows.map(row => row.length));
-        const cw = block.colWidths?.length === colCount ? [...block.colWidths] : new Array(colCount).fill(Math.round(100 / colCount));
-        const colW = r.startVal;
-        const newW = Math.max(5, Math.min(80, colW + (dx / tableWidth) * 100));
-        const delta = newW - colW;
-        cw[r.colIndex!] = Math.round(newW);
-        const nextCi = r.colIndex! + 1;
-        if (nextCi < cw.length) {
-          cw[nextCi] = Math.max(5, Math.round(r.startVal2! - delta));
-        } else if (r.colIndex! > 0) {
-          cw[r.colIndex! - 1] = Math.max(5, Math.round(r.startVal2! - delta));
-        }
+        const cw = block.colWidths?.length === colCount ? [...block.colWidths] : new Array(colCount).fill(120);
+        const newW = Math.max(40, Math.round(r.startVal! + dx));
+        cw[r.colIndex!] = newW;
         update(r.blockId, { colWidths: cw });
       }
     };
@@ -742,7 +731,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       case "table": {
         const rows = block.rows || [["", ""], ["", ""]];
         const cols = Math.max(...rows.map(r => r.length));
-        const cw = block.colWidths?.length === cols ? block.colWidths : new Array(cols).fill(Math.round(100 / cols));
+        const cw = block.colWidths?.length === cols ? block.colWidths : new Array(cols).fill(120);
         const updateCell = (ri: number, ci: number, val: string) => {
           const newRows = rows.map(r => [...r]);
           while (newRows[ri].length <= ci) newRows[ri].push("");
@@ -751,7 +740,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         };
         const addRow = () => { update(block.id, { rows: [...rows, new Array(cols).fill("")] }); };
         const addCol = () => {
-          const newCw = [...cw, Math.round(100 / (cols + 1))];
+          const newCw = [...cw, 120];
           update(block.id, { rows: rows.map(r => [...r, ""]), colWidths: newCw });
         };
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
@@ -767,7 +756,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
-                <colgroup>{cw.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
+                <colgroup>{cw.map((w, i) => <col key={i} style={{ width: `${w}px` }} />)}</colgroup>
                 <tbody>
                   {rows.map((row, ri) => (
                     <tr key={ri}>
@@ -786,7 +775,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci + 1] };
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci] };
                                 document.body.style.cursor = "col-resize";
                                 document.body.style.userSelect = "none";
                               }}
@@ -799,7 +788,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci - 1] };
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci] };
                                 document.body.style.cursor = "col-resize";
                                 document.body.style.userSelect = "none";
                               }}

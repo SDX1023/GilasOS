@@ -353,7 +353,7 @@ export function markdownToHtml(md: string): string {
     const cw = colWidths ? colWidths.split(",").map(Number) : null;
     let colGroup = "";
     if (cw && cw.length === colCount) {
-      colGroup = "<colgroup>" + cw.map(w => `<col style="width:${w}%">`).join("") + "</colgroup>";
+      colGroup = "<colgroup>" + cw.map(w => `<col style="width:${w}px">`).join("") + "</colgroup>";
     }
     const thHtml = headers.map(h => `<th style="padding:8px 12px;text-align:left;border:1px solid var(--os-glass-border);background:rgba(255,255,255,0.03);font-weight:600">${h}</th>`).join("");
     const rowsHtml = body.map(row => {
