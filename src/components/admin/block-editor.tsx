@@ -155,6 +155,7 @@ function toMarkdown(blocks: Block[]): string {
 
 function renderInline(text: string): string {
   return text
+    .replace(/\n/g, "<br>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, '<code style="background:rgba(109,40,217,0.12);padding:1px 5px;border-radius:4px;color:#c084fc;font-size:0.9em">$1</code>')
@@ -267,6 +268,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         return;
       }
       addAfter(blockId);
+      return;
+    }
+
+    if (e.key === "Enter" && e.shiftKey) {
+      e.preventDefault();
+      document.execCommand("insertHTML", false, "<br>");
       return;
     }
 
@@ -535,7 +542,11 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       dangerouslySetInnerHTML: { __html: renderInline(block.content) },
       className: cls,
       style: { outline: "none", minHeight: "1.4em", flex: 1, wordBreak: "break-word" } as React.CSSProperties,
-      onBlur: (e: React.FocusEvent<HTMLDivElement>) => update(block.id, { content: e.currentTarget.textContent || "" }),
+      onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
+        const html = e.currentTarget.innerHTML;
+        const text = html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+        update(block.id, { content: text });
+      },
       onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => handleKeyDown(e, block.id),
       onPaste: (e: React.ClipboardEvent) => handlePaste(e, block.id),
       onFocus: () => setActiveBlock(block.id),
