@@ -43,12 +43,12 @@ export async function POST(req: NextRequest) {
       const f = zip.file(name);
       if (!f) continue;
       try {
-        let rawData = await f.async("arraybuffer");
+        let rawData: ArrayBuffer | Uint8Array = await f.async("arraybuffer");
         // .anki21b is zstandard-compressed SQLite
         if (name === "collection.anki21b") {
-          rawData = decompress(new Uint8Array(rawData)).buffer;
+          rawData = decompress(new Uint8Array(rawData));
         }
-        db = new SQL.Database(new Uint8Array(rawData));
+        db = new SQL.Database(rawData instanceof Uint8Array ? rawData : new Uint8Array(rawData));
         db.exec("SELECT 1");
         dbUsed = name;
         break;
