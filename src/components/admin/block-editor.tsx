@@ -371,6 +371,8 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         const nextCi = r.colIndex! + 1;
         if (nextCi < cw.length) {
           cw[nextCi] = Math.max(5, Math.round(r.startVal2! - delta));
+        } else if (r.colIndex! > 0) {
+          cw[r.colIndex! - 1] = Math.max(5, Math.round(r.startVal2! - delta));
         }
         update(r.blockId, { colWidths: cw });
       }
@@ -792,12 +794,12 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                               className="table-col-resize-handle"
                             />
                           )}
-                          {ri === 0 && ci === cols - 1 && (
+                          {ri === 0 && ci === cols - 1 && ci > 0 && (
                             <div
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci] };
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci - 1] };
                                 document.body.style.cursor = "col-resize";
                                 document.body.style.userSelect = "none";
                               }}
