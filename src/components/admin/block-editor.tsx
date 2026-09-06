@@ -654,22 +654,29 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               {handle}
               <ImageIcon size={14} style={{ color: "var(--os-text-dim)" }} />
               <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>Image{block.width ? ` (${block.width}%)` : ""}</span>
-              {delBtn}
+              <div style={{ marginLeft: "auto", display: "flex", gap: 4, alignItems: "center" }}>
+                {block.src && (
+                  <button onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); openImagePicker(block.id); }}
+                    style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid var(--os-glass-border)", color: "var(--os-text-dim)", fontSize: 11, cursor: "pointer" }}>
+                    Change
+                  </button>
+                )}
+                {delBtn}
+              </div>
             </div>
             {block.src ? (
-              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", cursor: "pointer", width: block.width ? `${block.width}%` : "100%", minWidth: 60 }}
-                onClick={(e) => { e.preventDefault(); openImagePicker(block.id); }}>
-                <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block" }} draggable={false} />
+              <div style={{ marginLeft: 30, marginTop: 8, position: "relative", width: block.width ? `${block.width}%` : "80%", minWidth: 60 }}>
+                <img src={block.src} alt={block.alt || ""} style={{ width: "100%", maxHeight: 400, borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", display: "block", pointerEvents: "none" }} draggable={false} />
                 <div onMouseDown={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || 100 };
+                  resizeRef.current = { blockId: block.id, type: "image", startX: e.clientX, startVal: block.width || 80 };
                   document.body.style.cursor = "ew-resize";
                   document.body.style.userSelect = "none";
                 }}
-                  style={{ position: "absolute", right: -4, bottom: -4, width: 16, height: 16, cursor: "ew-resize", borderRadius: 3, background: "var(--os-glass)", border: "1px solid var(--os-glass-border)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6 }}
+                  style={{ position: "absolute", right: -6, top: 0, bottom: 0, width: 8, cursor: "ew-resize", borderRadius: 4, background: "rgba(255,255,255,0.1)", border: "1px solid var(--os-glass-border)", display: "flex", alignItems: "center", justifyContent: "center" }}
                   className="block-resize-handle">
-                  <svg width="8" height="8" viewBox="0 0 8 8"><path d="M7 1L1 7M7 4L4 7M7 7L7 7" stroke="var(--os-text-dim)" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  <div style={{ width: 2, height: 20, borderRadius: 1, background: "var(--os-text-dim)" }} />
                 </div>
               </div>
             ) : (
@@ -704,7 +711,7 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
       case "table": {
         const rows = block.rows || [["", ""], ["", ""]];
         const cols = Math.max(...rows.map(r => r.length));
-        const cw = block.colWidths?.length === cols ? block.colWidths : null;
+        const cw = block.colWidths?.length === cols ? block.colWidths : new Array(cols).fill(Math.round(100 / cols));
         const updateCell = (ri: number, ci: number, val: string) => {
           const newRows = rows.map(r => [...r]);
           while (newRows[ri].length <= ci) newRows[ri].push("");
@@ -713,22 +720,22 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         };
         const addRow = () => { update(block.id, { rows: [...rows, new Array(cols).fill("")] }); };
         const addCol = () => {
-          const newCw = cw ? [...cw, Math.round(100 / (cols + 1))] : undefined;
+          const newCw = [...cw, Math.round(100 / (cols + 1))];
           update(block.id, { rows: rows.map(r => [...r, ""]), colWidths: newCw });
         };
         const delRow = (ri: number) => { if (rows.length <= 1) return; update(block.id, { rows: rows.filter((_, i) => i !== ri) }); };
         const delCol = (ci: number) => {
           if (cols <= 1) return;
-          const newCw = cw ? cw.filter((_, i) => i !== ci) : undefined;
-          update(block.id, { rows: rows.map(r => r.filter((_, i) => i !== ci)), colWidths: newCw });
+          const newCw = cw.filter((_: number, i: number) => i !== ci);
+          update(block.id, { rows: rows.map(r => r.filter((_: string, i: number) => i !== ci)), colWidths: newCw });
         };
         return (
           <div style={wrapperStyle} className="block-wrapper" {...hoverHandlers}
             ref={(el) => { if (el) refs.current.set(block.id, el); }}>
             {handle}
             <div style={{ flex: 1, overflow: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: cw ? "fixed" : "auto" }}>
-                {cw && <colgroup>{cw.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>}
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
+                <colgroup>{cw.map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
                 <tbody>
                   {rows.map((row, ri) => (
                     <tr key={ri}>
@@ -747,13 +754,11 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                const currentW = cw ? cw[ci] : Math.round(100 / cols);
-                                const nextW = cw ? cw[ci + 1] : Math.round(100 / cols);
-                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: currentW, startVal2: nextW };
+                                resizeRef.current = { blockId: block.id, type: "col", colIndex: ci, startX: e.clientX, startVal: cw[ci], startVal2: cw[ci + 1] };
                                 document.body.style.cursor = "col-resize";
                                 document.body.style.userSelect = "none";
                               }}
-                              style={{ position: "absolute", right: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 2 }}
+                              style={{ position: "absolute", right: -3, top: 0, bottom: 0, width: 6, cursor: "col-resize", zIndex: 2, borderRadius: 2 }}
                               className="table-col-resize-handle"
                             />
                           )}
@@ -804,12 +809,10 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
         .block-delete { padding: 4px; border-radius: 4px; background: none; border: none; cursor: pointer; color: var(--os-text-dim); flex-shrink: 0; display: flex; }
         .block-delete:hover { color: #ef4444; }
         [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--os-text-dim); opacity: 0.5; pointer-events: none; }
-        .table-col-resize-handle { opacity: 0; transition: opacity 0.15s; }
-        .block-wrapper:hover .table-col-resize-handle { opacity: 1; }
-        .table-col-resize-handle:hover, .table-col-resize-handle:active { background: var(--os-accent); width: 4px; right: -2px; border-radius: 2px; }
-        .block-resize-handle { opacity: 0; transition: opacity 0.15s; }
-        .block-wrapper:hover .block-resize-handle { opacity: 0.6; }
-        .block-resize-handle:hover { opacity: 1 !important; }
+        .table-col-resize-handle { background: var(--os-accent); opacity: 0.4; transition: opacity 0.15s, width 0.1s; }
+        .table-col-resize-handle:hover, .table-col-resize-handle:active { opacity: 1; width: 4px; right: -2px; background: var(--os-accent); }
+        .block-resize-handle { opacity: 0.5; transition: opacity 0.15s; }
+        .block-resize-handle:hover { opacity: 1; background: var(--os-accent) !important; }
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
