@@ -4,17 +4,26 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { NoteEditor } from "@/components/admin/note-editor";
 import { getModuleContent, createModuleContent, updateModuleContent } from "@/lib/db";
+import { isAdmin } from "@/lib/admin";
+
 function ContentEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const courseId = searchParams.get("course") || "";
   const moduleId = searchParams.get("module") || "";
   const contentId = searchParams.get("id") || "";
+  const [admin, setAdmin] = useState(false);
 
   const [existingContent, setExistingContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const adminStatus = isAdmin();
+    setAdmin(adminStatus);
+    if (!adminStatus) {
+      setLoading(false);
+      return;
+    }
     if (contentId) {
       getModuleContent(courseId, moduleId, contentId).then((content) => {
         setExistingContent(content);
@@ -54,6 +63,14 @@ function ContentEditorContent() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <p className="text-secondary animate-pulse">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p className="text-secondary">Access denied. Admin only.</p>
       </div>
     );
   }

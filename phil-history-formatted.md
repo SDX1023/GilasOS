@@ -1,0 +1,419 @@
+# Philippine History - Spanish Period
+
+## Age of Discovery & Early Expeditions
+
+### The Magellan Expedition (1519-1522)
+Ferdinand Magellan, a Portuguese in the service of the Spanish crown, was looking for a westward route to the Spice Islands of Indonesia. On March 16, 1521, Magellan's expedition landed on Homonhon island in the Philippines. He was the first European to reach the islands. Rajah Humabon of Cebu was friendly with Magellan and embraced Christianity, but their enemy, Lapu-Lapu was not. Humabon wanted Magellan to kill Lapu-Lapu while Magellan wanted to convert Lapu-Lapu into Christianity. On April 17, 1521, Magellan sailed to Mactan and ensuing battle killed Magellan by the natives lead by Lapu-Lapu. Out of the five ships and more than 300 men who left on the Magellan expedition in 1519, only one ship (the Victoria) and 18 men returned to Seville, Spain on September 6, 1522. Nevertheless, the said expedition was considered historic because it marked the first circumnavigation of the globe and proved that the world was round.
+
+Juan Sebastian de Elcano, the master of ship "Concepcion" took over the command of the expedition after the death of Magellan and captained the ship "Victoria" back to Spain. He and his men earned the distinction of being the first to circumnavigate the world in one full journey. After Magellan's death in Cebu, it took 16 more months for Elcano to return to Spain. The Magellan expedition started off through the westward route and returning to Spain by going east; Magellan and Elcano's entire voyage took almost three years to complete.
+
+### Spain Sends Other Expeditions
+After Spain had celebrated Elcano's return, King Charles I decided that Spain should conquer the Philippines. Five subsequent expeditions were then sent to the Islands. These were led by Garcia Jofre Loaisa (1525), Sebastian Cabot (1526), Alvaro de Saavedra (1527), Rudy Lopez de Villalobos (1542) and Miguel Lopez de Legazpi (1564). Only the last two actually reached the Philippines; and only Legazpi succeeded in colonizing the Islands.
+
+### The Villalobos Expedition (1542-1543)
+Ruy Lopez de Villalobos set sail for the Philippines from Navidad, Mexico on November 1, 1542. He followed the route taken by Magellan and reached Mindanao on February 2, 1543. He established a colony in Sarangani but could not stay long because of insufficient food supply. His fleet left the island and landed on Tidore in the Moluccas, where they were captured by the Portuguese.
+
+Villalobos is remembered for naming our country "Islas Filipinas," in honor of King Charles' son, Prince Philip, who later became king of Spain.
+
+### The Legazpi Expedition (1564-1574)
+Since none of the expedition after Magellan from Loaisa to Villalobos had succeeded in taking over the Philippines, King Charles I stopped sending colonizers to the Islands. However, when Philip II succeeded his father to the throne in 1556, he instructed Luis de Velasco, the viceroy of Mexico, to prepare a new expedition – to be headed by Miguel Lopez de Legazpi, who would be accompanied by Andres de Urdaneta, a priest who had survived the Loaisa mission.
+
+On February 13, 1565, Legaspi's expedition landed in Cebu island. After a short struggle with the natives, he proceeded to Leyte, then to Camiguin and to Bohol. There Legaspi made a blood compact with the chieftain, Datu Sikatuna as a sign of friendship. Legaspi was able to obtain spices and gold in Bohol due to his friendship with Sikatuna. On April 27, 1565, Legaspi returned to Cebu; destroyed the town of Raja Tupas and establish a settlement. On orders of the King Philip II, 2,100 men arrived from Mexico. They built the port of Fuerza de San Pedro which became the Spanish trading outpost and stronghold for the region.
+
+Hearing of the riches of Manila, an expedition of 300 men headed by Martin de Goiti left Cebu for Manila. They found the islands of Panay and Mindoro. Goiti arrived in Manila on May 8, 1570. At first they were welcomed by the natives and formed an alliance with Rajah Suliman, their Muslim king but as the locals sensed the true objectives of the Spaniards, a battle between the troops of Suliman and the Spaniards erupted. Because the Spaniards are more heavily armed, the Spaniards were able to conquer Manila. Soon after Miguel Lopez de Legazpi arrived to join Goiti in Manila. Legaspi built alliances and made peace with Rajahs Suliman, Lakandula and Matanda. In 1571, Legaspi ordered the construction of the walled city of Intramuros and proclaimed it as the seat of government of the colony and the capital of the islands. In 1572, Legaspi died and was buried at the San Agustin Church in Intramuros. In 1574, Manila was bestowed the title "Insigne y Siempre Leal Ciudad de España" (Distinguished and ever loyal city of Spain) by King Philip II of Spain.
+
+---
+
+## Spanish Colonial Administration
+
+### The Galleon Trade
+When the Spaniards came to the Philippines, our ancestors were already trading with China, Japan, Siam, India, Cambodia, Borneo and the Moluccas. The Spanish government continued trade relations with these countries, and Manila became the center of commerce in the East. The Spaniards closed the ports of Manila to all countries except Mexico. Thus, the Manila–Acapulco Trade, better known as the "Galleon Trade" was born. The Galleon Trade was a government monopoly. Only two galleons were used: One sailed from Acapulco to Manila with some 500,000 pesos worth of goods, spending 120 days at sea; the other sailed from Manila to Acapulco with some 250,000 pesos worth of goods spending 90 days at sea.
+
+It also allowed modern, liberal ideas to enter the country, eventually inspiring the movement for independence from Spain. And because the Spaniards were so engrossed in making profits from the Galleon Trade, they hardly had any time to further exploit our natural resources.
+
+### Basco's Reforms
+Filipino farmers and traders finally had a taste of prosperity when Governor General Jose Basco y Vargas instituted reforms intended to free the economy from its dependence on Chinese and Mexican trade. Basco implemented a "general economic plan" aimed at making the Philippines self sufficient. He established the "Economic Society of Friends of the Country", which gave incentives to farmers for planting cotton, spices, and sugarcane; encouraged miners to extract gold, silver, tin, and copper; and rewarded investors for scientific discoveries they made.
+
+### Tobacco Monopoly
+The tobacco industry was placed under government control during the administration of Governor General Basco. In 1781, a tobacco monopoly was implemented in the Cagayan Valley, Ilocos Norte, Ilocos Sur, La Union, Isabela, Abra, Nueva Ecija, and Marinduque. Each of these provinces planted nothing but tobacco and sold their harvest only to the government at a pre-designated price, leaving little for the farmers. No other province was allowed to plant tobacco. The government exported the tobacco to other countries and also part of it to the cigarette factories in Manila.
+
+### The Secularization of Priests During Spanish Period
+
+### The Opening of the Suez Canal (1869)
+The Suez Canal, which connected the Red Sea and the Mediterranean Sea, was inaugurated in 1869. It was built by a French engineer named Ferdinand de Lesseps. By passing through the Canal, vessels journeying between Barcelona and Manila no longer had to pass by the Cape of Good Hope, at the southern tip of Africa. Thus, they were able to shorten their traveling time from three months to 32 days.
+
+Thanks to the Suez Canal, trading in the Philippines became increasingly profitable. More and more foreign merchants and businessmen came to the colony, bringing with them a lot of progressive ideas. The Filipinos not only gained more knowledge and information about the world at large; they also gained the desire for freedom and improvement in their lives.
+
+### The Secularization Controversy
+Two kinds of priests served the Catholic Church in the Philippines. These were the regulars and the seculars. Regular priests belonged to religious orders. Their main task was to spread Christianity. Examples were the Franciscans, Recollects, Dominicans, and Augustinians. Secular priests did not belong to any religious order. They were trained specifically to run the parishes and were under the supervision of the bishops.
+
+Conflict began when the bishops insisted on visiting the parishes that were being run by regular priests. It was their duty, they argued, to check on the administration of these parishes. But the regular priests refused these visits, saying that they were not under the bishop's jurisdiction. They threatened to abandon their parishes if the bishops persisted.
+
+In 1774, Archbishop Basilio Santa Justa decided to uphold the diocese's authority over the parishes and accepted the resignations of the regular priests. He assigned secular priests to take their place. Since there were not enough seculars to fill all the vacancies the Archbishop hastened the ordination of Filipino seculars. A royal decree was also issued on November 9, 1774, which provided for the secularization of all parishes or the transfer of parochial administration from the regular friars to the secular priests.
+
+The regulars resented the move because they considered the Filipinos unfit for the priesthood. Among other reasons they cited the Filipinos' brown skin, lack of education, and inadequate experience.
+
+The controversy became more intense when the Jesuits returned to the Philippines. They had been exiled from the country because of certain policies of the order that the Spanish authorities did not like.
+
+The issue soon took on a racial slant. The Spaniards were clearly favouring their own regular priest over Filipino priests.
+
+Monsignor Pedro Pelaez, ecclesiastical governor of the Church, sided with the Filipinos. Unfortunately, he died in an earthquake that destroyed the Manila Cathedral in 1863. After his death, other priests took his place in fighting for the secularization movement. Among them were Fathers Mariano Gomez, Jose Burgos and Jacinto Zamora.
+
+---
+
+## The Death of Gomburza & The Propaganda Movement
+
+### The Death of Gomburza (1872)
+In February 17, 1872, Fathers Mariano Gomez, Jose Burgos and Jocinto Zamora (Gomburza), all Filipino priests, were executed by the Spanish colonizers on charges of subversion. The charges against Fathers Gomez, Burgos and Zamora was their alleged complicity in the uprising of workers at the Cavite Naval Yard. The death of Gomburza awakened strong feelings of anger and resentment among the Filipinos. They questioned Spanish authorities and demanded reforms. The martyrdom of the three priests apparently helped to inspire the organization of the Propaganda Movement, which aimed to seek reforms and inform Spain of the abuses of its colonial government.
+
+### The Propaganda Movement
+The illustrados led the Filipinos' quest for reforms. Because of their education and newly acquired wealth, they felt more confident about voicing out popular grievances. However, since the illustrados themselves were a result of the changes that the Spanish government had been slowly implementing, the group could not really push very hard for the reforms it wanted. The illustrados did not succeed in easing the sufferings of the Filipinos; but from this group arose another faction called the intelligentsia. The intelligentsia also wanted reforms; but they were more systematic and used a peaceful means called the Propaganda Movement.
+
+### Goals of the Propaganda Movement
+Members of the Propaganda Movement were called propagandists or reformists. They worked inside and outside the Philippines. Their objectives were to seek:
+- Recognition of the Philippines as a province of Spain
+- Equal status for both Filipinos and Spaniards
+- Philippine representation in the Spanish Cortes
+- Secularization of Philippine parishes
+- Recognition of human rights
+
+The Propaganda Movement never asked for Philippine independence because its members believed that once Spain realized the pitiful state of the country, the Spaniards would implement the changes the Filipinos were seeking.
+
+### The Propagandists
+The Filipinos in Europe were much more active in seeking reforms than those in Manila. They could be divided into three groups: The first included Filipinos who had been exiled to the Marianas Islands in 1872 after being implicated in the Cavite Mutiny. After two many years in the Marianas, they proceeded to Madrid and Barcelona because they could no longer return to the Philippines. The second group consisted of illustrados in the Philippines who had been sent to Europe for their education. The third group was composed of Filipinos who had fled their country to avoid punishment for a crime, or simply because they could not stand Spanish atrocities any longer. Still, not all Filipinos living in Spain were members of the Propaganda Movement. Jose Rizal, Graciano Lopez Jaena and Marcelo H. del Pilar were its most prominent members.
+
+Lopez Jaena was a brilliant orator who wrote such pieces as "Fray Botod," "Esperanza," and "La Hija del Fraile," which all criticized the abuses of Spanish friars in the Philippines. Del Pilar was an excellent writer and speaker who put up the newspaper Diarion Tagalog in 1882. His favorite topic was the friars. Some of his most popular writings included "Caiingat Cayo", "Dasalan at Tocsohan," and "Ang Sampung Kautusan ng mga Prayle". "Caingat Cayo" was a pamphlet answering the criticisms received by Jose Rizal's novel Noli Me Tangere. "Dasalan…" was parody of the prayer books used by the Church, while "Ang Sampung Kautusan…" was a satirical take on the Ten Commandments, which highly ridiculed the Spanish friars.
+
+Jose Rizal was recognized as the great novelist of the Propaganda Movement. He was the first Filipino become famous for his written works. He wrote a poem entitled "Sa Aking mga Kababata" when he was only eight years old. His novels, Noli Me Tangere and El Filibusterismo, clearly depicted the sufferings of the Filipinos and the rampant abuses committed by the friars in the colony. Because of his criticisms of the government and the friars, Rizal made a lot of enemies. He was executed at Bagumbayan (later renamed Luneta Park and now called Rizal Park) on December 30, 1896.
+
+The writings produced by the Propaganda Movement inspired Andres Bonifacio and other radicals to establish the Katipunan and set the Philippine Revolution in place.
+
+### La Liga Filipina (1892)
+In 1892, Jose Rizal (full name: Jose Protacio Mercado Rizal y Alonzo) returned to the Philippines and proposed the establishment of a civic organization called "La Liga Filipina." On July 3, 1892, the following were elected as its officers: Ambrosio Salvador, president; Agustin dela Rosa, fiscal; Bonifacio Arevalo, treasurer; and Deodato Arellano, secretary. Rizal functioned as its adviser.
+
+- Unite the whole country
+- Protect and assist all members
+- Fight violence and injustice
+- Support education
+- Study and implement reforms
+
+La Liga Filipina had no intention of rising up in arms against the government; but the Spanish officials still felt threatened. On July 6, 1892 only three days after La Liga Filipina's establishment, Jose Rizal was secretly arrested. The next day, Governor General Eulogio Despujol ordered Rizal's deportation to Dapitan, a small, secluded town in Zamboanga.
+
+La Liga Filipina's membership was active in the beginning; but later, they began to drift apart. The rich members wanted to continue supporting the Propaganda Movement; but the others seemed to have lost all hope that reforms could still be granted. Andres Bonifacio was one of those who believed that the only way to achieve meaningful change was through a bloody revolution.
+
+### La Solidaridad (1889)
+In order to help achieve its goals, the Propaganda Movement put up its own newspaper, called La Solidaridad. The Soli, as the reformists fondly called their official organ, came out once every two weeks. The first issue saw print was published on November 15, 1895.
+
+The Solidaridad's first editor was Graciano Lopez Jaena. Marcelo H. del Pilar took over in October 1889. Del Pilar managed the Soli until it stopped publication due to lack of funds.
+
+### Why the Propaganda Movement Failed
+The propaganda movement did not succeed in its pursuit of reforms. The colonial government did not agree to any of its demands. Spain itself was undergoing a lot of internal problems all that time, which could explain why the mother country failed to heed the Filipino's petitions. The friars, on the other hand, were at the height of their power and displayed even more arrogance in flaunting their influence. They had neither the time nor the desire to listen to the voice of the people.
+
+Many of the reformists showed a deep love for their country, although they still failed to maintain a united front. Because most of them belonged to the upper middle class, they had to exercise caution in order to safeguard their wealth and other private interests. Personal differences and petty quarrels, apart from the lack of funds, were also a hindrance to the movement's success. Lastly, no other strong and charismatic leader emerged from the group aside from Jose Rizal.
+
+---
+
+## The Katipunan & The Philippine Revolution
+
+### The Katipunan is Born (1892)
+Andres Bonifacio was also a member of La Liga Filipina, although he soon lost hope in gaining reforms though peaceful means. This feeling was especially heightened when Jose Rizal was exiled to Dapitan. Bonifacio became convinced that the only way the Philippines could gain independence was through a revolution.
+
+Bonifacio then founded the "Katastaasang Kagalanggalangang Katipuanan ng mga Anak ng Bayan" (KKK) on July 7, 1892 in a house on Azcarraga street (now Claro M. Recto), in Tondo Manila.
+
+The Katipunan had colorful beginnings. As a symbol of the member's loyalty, they performed the solemn rite of sanduguan (blood compact), wherein each one signed his name with his own blood.
+
+The members agreed to recruit more people using the "triangle system" of enlistment. Each original member would recruit two new members who were not related to each other. Each new member would do the same thing, and so on down the line. Members were also asked to contribute one Real (about 25 centavos) each month in order to raise funds for the association.
+
+The KKK members agreed on the following objectives:
+- The political goal was to completely separate the Philippines from Spain after declaring the country's independence.
+- The moral goal was to teach the Filipinos good manners, cleanliness, hygiene, fine morals, and how to guard themselves against religious fanaticism.
+- The civic goal was to encourage Filipinos to help themselves and to defend the poor oppressed.
+
+The "Kataastaasang Sanggunian" (supreme council) was the highest governing body of the Katipunan. It was headed by a supremo, or president. Each province had a "Sangguaniang Bayan" (Provincial Council) and each town had a "Sangguniang Balangay" (Popular Council).
+
+The Leaders of the Katipunan:
+- Deodato Arellano - Supremo
+- Valentine Diaz - Treasurer
+- Ladislao Diwa - Fiscal
+- Andres Bonifacio - Controller
+- Teodora Plata - Secretary
+
+### Jose Rizal and the Katipunan
+Jose Rizal never became involved in the organization and activities of the Katipunan; but the Katipuneros still looked up to him as a leader. In fact, Rizal's name was used as a password among the society's highest-ranking members, who were called bayani.
+
+Andres Bonifacio had already known Rizal during his La Liga Filipina days, although Rizal did not know Bonifacio personally. Nevertheless, Bonifacio so respected Rizal's intelligence and talent that in June 1896, he sent Dr. Pio Valenzuela to Dapitan to seek Rizal's advice on the planned revolution.
+
+Rizal told Valenzuela that the timing was not right for a revolution. The people were not yet ready and they did not have enough weapons. He suggested that the Katipunan obtain the support of wealthy and influential Filipinos first, in order to gain financial assistance. He also recommended Antonio Luna as commander of its armed forces, since Luna had much knowledge and expertise in military tactics.
+
+Valenzuela returned to Manila on June 26 and relayed Rizal's advice to Bonifacio, who admitted that it would indeed be fatal for the Filipinos to fight without enough weapons. However, there was no stopping the Revolution. Bonifacio ordered his men to prepare for battle. He directed them to store enough food and other supplies. Battle plans were made with the help of Emilio Jacinto. It was suggested that the revolutionary headquarters be located near the seas or mountains to provide for an easy retreat, if necessary.
+
+### The Katipunan is Discovered (August 19, 1896)
+Rumors about a secret revolutionary society had long been in circulation, although no solid evidence could be found to support them. The big break as far as the Spanish authorities was concerned, came on August 19, 1896 when a KKK member, Teodoro Patiño told his sister Honoria about the existence of the Katipunan. Patiño was a worker in the printing press of Diario de Manila. Honoria was then living with nuns in a Mandaluyong orphanage.
+
+The information upset Honoria so much that she told the orphanage's Mother Superior, Sor Teresa de Jesus, what her brother had revealed. Sor Teresa suggested they seek the advice of Father Mariano Gil, the parish priest of Tondo.
+
+After hearing Patiño's revelations, Father Mariano Gil—accompanied by several Guardias Civiles immediately searched the premises of Diario de Manila and found evidence of the Katipunan's existence. The governor general was quickly informed. The printing press was padlocked and hundreds of suspected KKK members were arrested.
+
+### The Cry of Pugadlawin (August 23, 1896)
+News about the discovery of the Katipunan spread to Manila and nearby suburbs, and Andres Bonifacio immediately called for a general meeting. Various wings of the Katipunan gathered at the house of Juan Ramos in Pugadlawin on August 23, 1896. Ramos was the son of Melchora Aquino, also known as "Tandang Sora" and was later acknowledged as the Mother of the Katipunan.
+
+Bonifacio asked his men whether they were willing to fight to the bitter end. Everyone shouted their approval, except for Teodoro Plata, who thought that it was too soon for a revolution. Heartened by his men's response, Bonifacio then asked them to tear their cedulas (residence certificates) to pieces, as a sign of their defiance and determination to rise against the Spaniards. The men immediately tore up their cedulas, shouting, Mabuhay ang Pilipinas (long live the Philippines) — known as the Cry of Pugadlawin.
+
+### The Katipunan in Cavite
+Cavite soon became the center of the Revolution, and the Katipuneros there divided themselves into the Magdalo and Magdiwang factions. Baldomero Aguinaldo, brother of Emilio Aguinaldo, headed the Magdalo group, which was stationed in Kawit. General Mariano Alvarez led the Magdiwang group, which was stationed in Noveleta.
+
+The two groups fought in separate battles. Emilio Aguinaldo overran Kawit on August 31, 1896, while Alvarez attacked Noveleta. In Bacoor, Aguinaldo tried to intercept Spanish reinforcements coming from Manila; but he was repulsed and forced to retreat to nearby Imus. Here, on the morning of September 5, he defeated the Spanish troops under the command of General Aguirre. A hundred Spaniards were killed and 60 weapons were confiscated. Aguinaldo was hailed as a hero. The adoring Caviteños referred to him as "General Miong" and no longer "Kapitan Miong."
+
+General Aguinaldo's numerous victories in the battlefield made him the acknowledged revolutionary leader in Cavite. He issued a proclamation on October 31, 1896 enjoining the people to take courage and continue fighting for Philippine independence.
+
+Owing to the defeat of the Spaniards in Cavite, Camilo de Polavieja replaced Ramon Blanco as governor general on December 13, 1896. Polavieja was more successful than his predecessor and slowly regained one-third of the province.
+
+### Andres Bonifacio's Execution (May 10, 1897)
+While Aguinaldo was recognized as leader by the Magdalo faction, Bonifacio was recognized as the leader of the Katipunan by the Magdiwang faction. An assembly was held in Imus, Cavite on December 31, 1897 to settle the leadership issue but was not successful. Then on March 22, another assembly was held at Tejeros (known as the Tejeros Convention) to elect officers of the revolutionary government. Aguinaldo won as president while Bonifacio was relegated as the Director of the Interior. Bonifacio rejected the elections and declared it void. Bonifacio later formed the Naic Military Agreement, essentially creating a government contending Aguinaldo's. Soon after, Bonifacio was captured, stood trial, and was sentenced to death by a War Council of Aguinaldo's government. Aguinaldo initially commuted the sentence to deportation but later reversed the commutation upon pressure from Pio Del Pilar and other officers. On orders from General Mariano Noriel, Andres Bonifacio was executed at the foothills of Mt. Buntis by Major Lazaro Makapagal on May 10, 1897.
+
+### The Revolution Continues
+Bonifacio's death did not deter the Filipinos from fighting for their freedom. The Spanish government, for its part, doubled its efforts in trying to control Cavite, which was considered the seat of the Revolution. When Governor General Primo de Rivera replaced Camilo Polavieja on April 27, 1897, he immediately marched to Naic, Cavite to persuade the Filipinos to surrender. The rebels, however, stood their ground.
+
+Aguinaldo realized that Cavite was no longer safe for his men. They moved to Batangas, where they temporarily set up camp in the town of Talisay. However, Spanish soldiers were able to pursue them there. Thus, they retreated to Morong on June 10, 1897 and proceeded to Biak-na-Bato in Bulacan.
+
+### The Biak-na-Bato Republic (1897)
+Emilio Aguinaldo established his headquarters in Biak-na-Bato in Bulacan province. The news immediately spread throughout the country, and the revolutionaries were once more in high spirits. General Iianera, who was in Nueva Ecija, declared his support for Aguinaldo. In July 1897, Aguinaldo established the Biak-na-Bato Republic and issued a proclamation stating the following demands:
+- Expulsion of the friars and the return of the friar lands to the Filipinos
+- Representation of the Philippines in the Spanish Cortes
+- Freedom of the press and of religion
+- Abolition of the government's power to banish Filipinos
+- Equality for all before the law
+
+A charter based on the Cuban Constitution was also drafted by Felix Ferrer and Isabelo Artacho. It was signed on November 1, 1897. The Biak-na-Bato Constitution provided for the establishment of a Supreme council that would serve as the highest governing body of the Republic. It also outlined certain basic human rights, such as freedom of religion, freedom of the press, and the right to education. Emilio Aguinaldo and Mariano Trias were elected Supreme Council president and vice president, respectively.
+
+### The Pact of Biak-na-Bato (December 15, 1897)
+Pedro Paterno, a Spaniard born in the Philippines volunteered to act as negotiator between Aguinaldo and Gov. Primo de Rivera in order to end the clashes. Paterno's effort paid off when on, December 15, 1897, he signed the Pact as the representative of the revolutionaries, and de Rivera as the representative of the Spanish government. The Leaders are: Emilio Aguinaldo - President, Mariano Trias - Vice President, Antonio Montenegro - Secretary, Baldomero Aguinaldo - Treasurer, and Emilio Riego de Dios.
+
+On December 23, 1897, Generals Celestino Tejero and Ricardo Monet of the Spanish army arrived in Biak-na-Bato and became hostages of the rebels. A ceasefire was declared by both camps and an agreement between Aguinaldo and the Spanish forces was made — that the Spanish government will grant self-rule to the Philippines in 3 years if Aguinaldo went to exile and surrender his arms. In exchange, Aguinaldo will receive P800,000 (Mexican Pesos) as remuneration to the revolutionaries and an amnesty. After receiving a partial payment of P400,000, Aguinaldo left for Hong Kong on December 27, 1897. Some Filipino generals, however, did not believe in the sincerity of the Spaniards. They refused to surrender their arms. Nevertheless, the Te Deum was still sung on January 23, 1898.
+
+### The Biak-na-Bato Pact Fails
+The Filipinos and the Spaniards did not trust each other. As a result, periodic clashes between the two groups still took place even after Aguinaldo's departure from the country. The Spanish did not pay the entire agreed amount.
+
+---
+
+## The Spanish-American War
+
+### The US Helps Cuba
+One year before the historic Cry of Pugad Lawin, a revolution broke out in Cuba — another Spanish Colony that rose against the rampant abuses of the Spaniards. It became independent in 1898 after three years of revolt, with the help of United States. The Americans were supportive of the Cubans for various reasons:
+- First — the US is a free country and Advocated democracy and freedom.
+- 2nd — the US wants to protect its huge economic interest in Cuba, in the amount of $50,000,000.
+- 3rd — a lot of stories reached the United States about Spanish maltreatment of Americans living in Cuba and this greatly angered the US citizens.
+- Finally, since Cuba was located very near the US it was deemed covered by the protective mantle of the Monroe Doctrine.
+
+### The US Interest in the Philippines
+At that time, Assistant Secretary of the Navy Theodore Roosevelt, wanted a war to erupt between the US and Spain so he could strengthen and expand the US Navy, he immediately put his plan into place. On February 25, 1896, he ordered Commodore George Dewey to make Hong Kong the headquarters of the American Asiatic Squadron. He also directed Dewey to attack Manila Bay and destroy the Spanish fleet, the moment hostilities between Spain and US break out.
+
+### The Spanish-American War
+Spain did not relish American intervention in its affairs. However, with the Philippine and Cuban revolutions going on, it could not afford to add the Americans to its enemy list, especially since the United States had more advanced technology and weaponry. In the face of Spain's declining power, it tried to repair its rift with the US in order to avoid a disastrous war. On February 15, 1898, however a fateful event accrued in Cuba. The American warship Maine was blown up in Havana harbor, resulting in the death of its 260 officers and crewmembers. Although it was not proven that the Spaniards had sunk the Maine, the Americans called for war against Spain. Roosevelt was one of many US officials who considered the destruction of the Maine as act of treason and supported the declaration of war.
+
+Spain declared war on the United States on April 23, 1898. The United States declared war against Spain on April 25, 1898. On May 1, 1898, the United States Navy led by Commodore George Dewey crushed the Spanish squadron in Manila Bay and the Spanish naval base at Sangley Point in Cavite. By June, 1898, the American had control of portions of the Philippine islands. The Spanish-American War ended with the Treaty of Paris signed on December 10, 1898. The treaty conferred ownership of the Spanish colonies of Guam, Puerto Rico and the Philippines to the United States. In turn, the U.S. paid Spain US$ 20 million.
+
+### The Battle of Manila Bay (May 1, 1898)
+George Dewey, then a Commodore United States Navy's Asiatic Squadron was waiting in Hong Kong when He received a cable from the then secretary of Navy, Theodore Roosevelt, stating that the war had begun between the US and Spain. Dewey sailed from Hong Kong on board his flagship Olympia with six other heavily armed ships. He brought with him a report on the location of the Spanish ships in Corregidor and Manila at dawn of May 1, 1898. Dewey entered Manila Bay almost undetected. When he saw the Spanish ships, which were under the command of General Patricio Montoya, he ordered his men to fire. The battle began at 5:41 in the morning and by 12:30 of the same day, the Spaniards were raising the white flag in surrender. Although The Spanish ships outnumbered those of the Americans; the weapons of the Americans were far more superior to those of the Spaniards. The battle proved to be too costly for the Spaniards, who lost 167 men and had 214 others wounded. As for the Americans, no ships were destroyed, and no soldier was killed or injured. The Battle of Manila Bay is considered one of the easiest encounters ever won in world history.
+
+### The Siege of Manila
+By June 1898, General Emilio Aguinaldo had captured the whole of Luzon and was ready to storm Manila with the help of Gregorio del Pilar, Artemio Recarte, Antonio Montenegro, Pantaleon Garcia, and many other able generals. At that time, the term "Manila" referred to the walled city of Intramuros. Aguinaldo's men surrounded the walls of Intramuros. Nearby areas like Tondo, Sta. Cruz, San Juan, and Caloocan were likewise secured. The Spaniards stubbornly hoped for the arrival of reinforcements from the Spanish mainland, but none ever came. Aguinaldo on the other hand, was firmly convinced that it just was a matter of days before the Spaniards surrendered. Therefore, he started planning for the declaration of Philippine independence.
+
+---
+
+## The Philippine Revolutionary Government
+
+### The Malolos Congress (1898)
+Emilio Aguinaldo issued a decree on July 18, 1898 asking for the election of delegates to the revolutionary congress, another decree was promulgated five days later, which declared that Aguinaldo would appoint representatives of congress because holding elections is not practical at that time. He appointed 50 delegates in all (but this number fluctuated from time to time). In accordance with these two decrees, Aguinaldo assembled the Revolutionary Congress at the Brasoain Church in Malolos, Bulacan on September 15, 1898.
+
+The atmosphere was festive and the Pasig Band played the national anthem. After Aguinaldo had read his speech congressional elections were held among the delegates present. The following were among the most important achievements of the Malolos Congress:
+1. In September 29, 1898, ratified the declaration of Philippine independence held at Kawit, Cavite on June 12, 1898
+2. Passage of a law that allowed the Philippines to borrow P 20 million from banks for government expenses
+3. Establishment of the Universidad Literatura de Filipinas and other schools
+4. Drafting of the Philippine Constitution
+5. Declaring war against the United States on June 12, 1899
+
+### The Malolos Constitution
+A committee headed by Felipe Calderon and aided by Cayetano Arellano, the constitution was drafted, for the first time by representatives of the Filipino people and it is the first republican constitution in Asia. The constitution was inspired by the constitutions of Mexico, Guatemala, Costa Rica, Brazil, Belgium and France. After some minor revisions (mainly due to the objections of Apolinario Mabini), the final draft of the constitution was presented to Aguinaldo. This paved the way to launching the first Philippine Republic. It established a democratic, republican government with three branches — the Executive, Legislative and the Judicial branches. It called for the separation of church and state. The executive powers were to be exercised by the president of the republic with the help of his cabinet. Judicial powers were given to the Supreme Court and other lower courts to be created by law. The Chief justice of the Supreme Court was to be elected by the legislature with the concurrence of the President and his Cabinet.
+
+### The First Philippine Republic (January 21, 1899)
+The first Philippine Republic was inaugurated in Malolos, Bulacan on January 21, 1899. After being proclaimed president, Emilio Aguinaldo took his oath of office. The constitution was read article by article and followed by a military parade. Apolinario Mabini was elected as a prime minister. The other cabinet secretaries were: Teodoro Sandico, interior; Baldomero Aguinaldo, war; Gen. Mariano Trias, finance & war; Apolinario Mabini, foreign affairs; Gracio Gonzaga for welfare, Aguedo Velarde, public instruction; Maximo Paterno, public works & communication; and Leon María Guerrero for agriculture, trade & commerce.
+
+### The Philippine National Anthem
+Aguinaldo commissioned Julian Felipe, a composer from Cavite province was asked to write an instrumental march for the proclamation of independence ceremony. The original title was "Marcha Filipina Magdalo". This was later changed to "Marcha Nacional Filipina". The lyrics was added in August 1899 based on the poem titled "Filipinas" by Jose Palma. The original lyrics was written in Spanish, then to English (when the Flag Law was abolished during the American period) then later, was translated to Tagalog, which underwent another change of title to "Lupang Hinirang", the Philippine National Anthem.
+
+---
+
+## Filipino-American Hostilities (1899-1901)
+
+Emilio Aguinaldo agreed to hold a peace conference between Filipino and American leaders. The conference lasted from January 9 to 29 in 1899. It ended without definite results, because the Americans were actually just biding time, waiting for more reinforcements to arrive from the US. Hostilities finally exploded between the Filipinos and Americans on February 4, 1899 in San Juan. An American soldier named Robert Grayson, saw 4 armed Filipino men on San Juan Del Monte Bridge and ordered them to stop, but they ignored him. This prompted Grayson to fire at the men, who immediately fired back. The following day MacArthur ordered his troops to openly engage the Filipinos in battle. The Filipino American War was on. From San Juan, American soldiers marched on to Pasig and nearby areas. In a matter of days, they were able to overrun Guadalupe, Pateros, Marikina, and Caloocan.
+
+General Antonio Luna and his men showed great heroism when they attacked Manila on the night of February 24, 1899. They burned the living quarters of the Americans in Tondo and Binondo, and reached as far as Azcarraga Street (now Claro M. Recto Avenue), where they met by formidable American troops. Luna was forced to retreat to Polo, Bulacan two days later. When American reinforcements arrived in the Philippines, General Elwell Otis immediately attacked the northern part of Manila, while General Henry Lawton went to the south. General Arthur MacArthur, Jr. marched to Malolos, which was then the capital of the Philippine Republic. Malolos was taken on March 31, 1899. By this time, however, Aguinaldo had already moved his headquarters to San Fernando, Pampanga. General Fredrick Funston crossed the Pampanga River in April 1899 and entered San Fernando. On May 5, the Americans had gained control of Pampanga. Fortunately, Aguinaldo was able to flee to San Isidro, Nueva Ecija.
+
+### The Death of Antonio Luna
+A significant event that greatly weakened Aguinaldo's forces was the death of General Antonio Luna, acknowledged as the best and most brilliant military strategist of the Philippine Revolution. He was brave, intelligent, and well educated; but he also had a fiery temper, and was a strict disciplinarian. His harsh and rough manner earned him a lot of enemies, who latter plotted to kill him. In June 1899 Luna was at his command post in Bayambang, Pangasinan when he received a telegram allegedly sent by Aguinaldo. The telegram instructed him to proceed to Aguinaldo's headquarters in Cabanatuan, Nueva Ecija. On June 5, Luna arrived at the headquarters, a convent on the town plaza in Cabanatuan, but was told that Aguinaldo left for Tarlac. Angry, Luna went out of the convent and was met and killed by Captain Pedro Janolino with Kawit, Cavite troops. General Luna was buried at the nearby churchyard. Aguinaldo's role on his death is not clear and his killers were never charged or investigated.
+
+### Aguinaldo Flees
+Philippine military strategies began to fail with the death of Antonio Luna. The generals started to disagree among themselves, and the Filipinos began losing battles. On November 13, 1899, General Emilio Aguinaldo fled to Calasiao, Pangasinan with his wife, son, mother, sister, and some Cabinet members. The Americans followed in hot pursuit; but Aguinaldo still managed to elude them. However, he soon realized that being constantly on the run put the women in his group at great disadvantage. So, on December 25, 1899, he surrendered them to the American. Aguinaldo then continued his march from Pangasinan to Palanan, Isabela. There he stayed for some time, since the place was mountainous and difficult to approach. Aguinaldo's loyal men guarded all roads leading to the area.
+
+### Aguinaldo is Captured (March 23, 1901)
+Gen. Funston plotted the capture of Gen. Emilio Aguinaldo. On the night of March 6, 1901, He boarded the American warship Vicksburg and docked at Casiguran Bay on March 14. From Palanan Funston group reached Aguinaldo's headquarters in Palanan on March 23, 1901. The Macabebe Scouts pretended to have been sent by Luna, with the American officials as their prisoners. Thus Aguinaldo had no idea of his impending capture until Tal Placido of the Macabebe Scouts embraced him. The Americans then declared the arrest of Aguinaldo and his men in the name of the United States government. Aguinaldo was brought to Manila and presented to then military Governor-General Arthur MacArthur, Jr. (father of General Douglas MacArthur) at Malacanang Palace. On April 19, 1901 he finally pledged allegiance to the United States.
+
+### The Philippine Revolution Ends
+The first to yield to the Americans was by General Simon Ola. He surrendered to Colonel Harry Bandoltz in Guinobatan Albay on September 25, 1903. Other revolutionaries soon followed.
+
+---
+
+## American Colonial Period
+
+### Military Government
+General Wesley Merritt was the highest-ranking American official in the Philippines after Spaniards surrendered Manila on August 13, 1898. He established a military government and became the first American Military governor of the Philippines. The objectives of the Military government are:
+1. To establish peace and order to the Philippines
+2. To prepare Philippines for civil governance
+
+The government in the Philippines can be classified into opposition and collaboration. The Americans used propaganda and other means to win the Filipinos to their side.
+
+### The Schurman Commission (1899)
+The first commission was chaired by Dr. Jacob G. Schurman, president of Cornell University. Thus it became known as the Schurman Commission. Their group arrived in the Philippines on February 4, 1899. The commission proposed the following:
+1. Establish civil governments in areas where peace and order had been restored
+2. Set up a bicameral legislature with members of the lower house to be all elective
+3. Appoint American and Filipino member of the Upper house to head the cabinet
+4. Preserve Philippine natural resources
+5. Create a civil service system
+6. Assign highly qualified Filipinos to important government positions
+
+The US Congress adopted all the recommendations of the Schurman commission.
+
+### The Taft Commission (1900)
+On March 16, 1900, United States President William McKinley appointed the then Judge William Howard Taft to head the second Philippine Commission, which would also be known as the Taft Commission. Taft would become Governor-General of the Philippines and later, the president of the U.S.
+
+McKinley wanted to hasten the transition of the Philippine military government into a civil one. The Taft Commission was given executive and legislative powers it could use to achieve the President's objective.
+
+The Commission arrives in the Philippines on June 3, 1900. It began legislative work on September 1, the first law it passed set aside P2 million for the construction of roads and bridges. From September 1900 to August 1902, the Commission was able to enact 440 pieces of legislation for the Philippines. Some of these laws included the Municipal and Provincial codes, which established municipal and provincial governments all over the country, and laws organizing the Philippine Constabulary and the country's judicial system. Aside from enacting laws the commission also visited various provinces and helped in the government peace efforts.
+
+### The Spooner Amendment
+The modification sponsored by Senator John C. Spooner, allowed the US president to fully administer the Philippines. Thus, the military government of the Philippines was replaced with a civil one albeit temporary pending the legislation of permanent colonial government by the United States.
+
+### Civil Government under Taft (1901)
+The Philippine civil government was inaugurated on July 4, 1901, with William Howard Taft as its first governor, the powers and duties of a governor were passed on to Taft. The Taft Commission continued functioning as legislative body. Cayetano Arellano was the first Filipino to hold a high position of government — he was named Chief Justice of the Supreme Court on May 28, 1899. Gregorio Araneta was appointed as Secretary of Justice and finance. Trinidad Pardo de Tavera, Benito Legarda, and Jose Luzuriaga were selected as members of the Philippine Commission.
+
+### The Philippine Bill of 1902 (Cooper Act)
+United States Congressman Henry Allen Cooper sponsored the Philippine Bill of 1902, also known as the Cooper Act. The bill proposed the creation and administration of a civil government in the Philippines. President Theodore Roosevelt signed it into law in July 2, 1902.
+
+Here are some of the more important provisions of the Cooper Act:
+- Ratification of all changes introduced in the Philippine government by the president of the U.S., such as the establishment of the Philippine Commission, the office of the civil governor and the Supreme Court
+- Extension of the American Bill of Rights to the Filipinos except the right of trial by jury
+- Creation of bicameral legislative body, with the Philippine Commission as the upper house and a still-to-be-elected Philippine Assembly as the Lower House
+- Retention of the executive powers of the civil governor, who was also president of the Philippine Commission
+- Designation of the Philippine Commission as the legislating authority for non-Christian tribes
+- Retention of the Judicial powers of the Supreme Court and other lower courts
+- Appointment of two Filipino resident commissioners who would represent the Philippines in the US Congress but would not enjoy voting rights
+- Conservation of Philippine natural resources
+
+The bill contained 3 provisions that had to be fulfilled first before the Philippine Assembly could be established — these were the:
+- Complete restoration of peace and order in the Philippines
+- Accomplishment of a Nationwide census
+- Two years of peace and order after the publication of the census
+
+### The Philippine Assembly (1907)
+The assembly was inaugurated on October 16, 1907 at the Manila Grand Opera House, with US Secretary of War William Howard Taft as guest of honor. Sergio Osmeña was elected Speaker while Manuel Quezon was elected Majority Floor leader. The Recognition of the Philippine Assembly paved the way for the establishment of the bicameral Philippine Legislature. The Assembly functioned as the lower House, while the Philippine Commission served as the upper house.
+
+### Resident Commissioners
+Benito Legarda and Pablo Ocampo were the first commissioners. Other Filipinos who occupied this position included Manuel Quezon, Jaime de Veyra, Teodoro Yangco, Isaro Gabaldon, and Camilo Osias.
+
+### The Jones Law (1916)
+To further train the Filipinos in the art of government, the U.S. Congress enacted the Jones Law on August 29, 1916. It was the first official document that clearly promised Philippine independence, as stated in its preamble, as soon as a stable government was established. The Jones Law or the Philippine Autonomy Act, replaced the Philippine Bill of 1902 as the framework of the Philippine government. It provided for the creation of the executive powers. The vice governor general, assisted by his Cabinet, would exercise executive powers. The vice governor would act concurrently as the Secretary of Education.
+
+### The Creation of the Council of State
+Upon the recommendation of Manuel L. Quezon and Sergio Osmeña, Governor General Francis Burton Harrison issued an executive order on October 16, 1918, creating the first Council of State in the Philippines. It was the Council's duty to advise the governor general on matters such as the creation of policies for administering government offices.
+
+The Council held meetings once a week and whenever the governor general called for one. It was composed of the governor general, the department secretaries, the speaker of the Lower House, and the Senate president. During Harrison's term, the executive and legislative branches of government worked harmoniously with each other.
+
+### The Os-Rox Mission (1931)
+One delegation, however, that met with partial success was the Os-Rox Mission, so called because it was headed by Sergio Osmeña and Manuel Roxas. The Os-Rox group went to the United States in 1931 and was able to influence the U.S. Congress to pass a pro-independence bill by Representative Butler Hare, Senator Henry Hawes, and Senator Bronson Cutting. The Hare-Hawes-Cutting Law provided for a 10-year transition period before the United States would recognize Philippine independence. U.S. President Herbert Hoover did not sign the bill; but both Houses of Congress ratified it. When the Os-Rox Mission presented the Hare-Hawes-Cutting Law to the Philippine Legislature, it was rejected by the American High Commissioner representing the US president in the country and the Philippine Senate, specifically the provision that gave the U.S. president the right to maintain land and other properties reserved for military use. Manuel Quezon was tasked to head another independence mission to the United States.
+
+### The Tydings-McDuffie Law (1934)
+In December 1933, Manuel L. Quezon returned to the Philippines from the United States with a slightly amended version of the Hare-Hawes-Cutting bill authored by Senator Millard Tydings and Representative McDuffie. President Franklin Delano Roosevelt, the new U.S. president, signed it into law on March 24, 1934. The Tydings-McDuffie Act (officially the Philippine Independence Act of the United States Congress; Public Law 73-127) or more popularly known as the Tydings-McDuffie Law provided for the establishment of the Commonwealth government for a period of ten years preparatory to the granting of Independence.
+
+---
+
+## Commonwealth Period (1935-1946)
+
+The Commonwealth era is the 10 year transitional period in Philippine history from 1935 to 1945 in preparation for independence from the United States as provided for under the Philippine Independence Act or more popularly known as the Tydings-McDuffie Law. The Commonwealth era was interrupted when the Japanese occupied the Philippines in January 2, 1942. The Commonwealth government, led by Manuel L. Quezon and Sergio S. Osmeña went into exile in the U.S., Quezon died of tuberculosis while in exile and Osmeña took over as president. At the same time, the Japanese forces installed a puppet government in Manila headed by Jose P. Laurel as president. This government is known as the Second Philippine Republic. On October 20, 1944, the Allied forces led by Gen. Douglas MacArthur landed on the island of Leyte to liberate the Philippines from the Japanese. Japan formally surrendered in September 2, 1945.
+
+After liberation, the Commonwealth government was restored. Congress convened in its first regular session on July 9, 1945. It was the first time the people's representatives have assembled since their election on November 11, 1941. Manuel Roxas was elected Senate President, and Elpidio Quirino was chosen President Pro Tempore. Jose Zulueta was speaker of the house, while Prospero Sanidad became speaker pro Tempore. The first law of this congress, enacted as Commonwealth Act 672, organized the Central Bank of the Philippines. The Commonwealth deal also tackled the issue of collaboration. In September 1945 the counter intelligence corps presented the people who were accused of having collaborated with, or given aid to, the Japanese. Included were prominent Filipinos who had been active in the puppet government that the Japanese had established. "A People's Court" was created to investigate and decide on the issue.
+
+Amidst this sad state of affairs, the third commonwealth elections were held on April 23, 1946. Sergio Osmeña and Manuel Roxas vied for the Presidency. Roxas won thus becoming the last president of the Philippine Commonwealth. The Commonwealth era formally ended when the United States granted independence to the Philippines, as scheduled on July 4, 1946.
+
+---
+
+## Japanese Occupation of the Philippines (1942-1945)
+
+### During World War II
+On December 8, 1941, Japan invaded the Philippines. Clark Air Base in Pampanga was first attacked and also Nichols Field outside Manila was attacked, then on December 22, the Japanese forces landed at the Lingayen Gulf and continued on to Manila. General Douglas MacArthur declared Manila an open city on the advice of Commonwealth President Manuel L. Quezon to avoid its destruction. Manila was occupied by the Japanese on January 2, 1942. MacArthur retreated with his troops to Bataan while the commonwealth government withdrew to Corregidor island before proceeding to the United States. The joint American and Filipino soldiers in Bataan finally surrendered on April 9, 1942. MacArthur escaped to Corregidor then proceeded to Australia. The 76,000 captured soldiers were forced to embark on the infamous "Death March" to a prison camp more than 100 kilometers north. An estimated 10,000 prisoners died due to thirst, hunger and exhaustion.
+
+### The Huks
+In the midst of fear and chaos, some farmers of Pampanga banded together and created local brigades for their protection. Luis Taruc, Juan Feleo, Castro Alejandrino, and other leaders of organized farmers held a meeting in February 1942 in Cabiao, Nueva Ecija. In that meeting, they agreed to fight the Japanese as a unified guerrilla army. Another meeting was held the following month, where in representatives from Tarlac, Pampanga and Nueva Ecija threshed out various details regarding their organization, which they agreed to call "Hukbo ng Bayan Laban sa mga Hapon" or HUKBALAHAP. Taruc was chosen to be the Leader of the group, with Alejandrino as his right hand man. The members were simply known as Huks!
+
+### The Philippine Executive Commission
+In accordance with the instructions of President Manuel Quezon to Jorge Vargas, the Filipino officials in Manila were told to enter into agreements and compromises with the Japanese to mitigate the sufferings of the people under the iron-clad rule of the Japanese. On January 23, 1942 the Philippine Executive Commission was established, with Vargas as chairman. The following was appointed as department heads: Benigno Aquino, Sr., interior; Antonio de las Alas, finance; Jose P. Laurel, justice; Claro M. Recto, education, health, and public welfare; and Quintin Paredes, public works and communication; Jose Yulo was named Chief Justice of the Supreme Court.
+
+The following month, an election was held for members of The Preparatory Commission for Philippine Independence (PCPI). The purpose of PCPI is to draw up a constitution for a free Philippines. Jose Laurel became its head. Against the will of the PCPI delegates the new Constitution was finalized on July 10, 1943. Two months later it was ratified by the KALIBAPI, which was the only political party allowed to exist at that time. KALIBAPI is the acronym for "Kapisanan sa Paglilingkod sa Bagong Pilipinas".
+
+The new constitution, which noticeably lacked a bill of rights contained 12 articles lifted from the 1935 constitution that fitted the wishes of the Japanese. It was meant to be in effect only temporarily, while the Philippines still in chaos. After the war, a new constitution would again be drafted for the new Philippine Republic.
+
+### The Second Republic (October 14, 1943)
+On September 20, 1943, the KALIBAPI — under the leadership of its director general, Benigno Aquino Sr. held a party convention to elect 54 members of the National Assembly. The Assembly was actually made up of 108 members; but half of this number was composed of incumbent governors and city mayors. Jose P. Laurel was elected as president of the second republic (the first republic was Aguinaldo's Malolos Republic) and both Benigno Aquino Sr. & Ramon Avancena as vice-presidents. The new republic was inaugurated on October 14, 1943 on the front steps of the legislative building in Manila. The Philippine flag was hoisted as the national anthem was played. Meanwhile, the Japanese started using propaganda to gain the trust and confidence of Filipinos who refused to cooperate with them. They hung giant posters and distribute their materials that contain such slogans as "the Philippines belong to the Filipinos." They also used newspapers, movies, and others to publicize the same idea. Promoting Japanese propaganda was one of the main objectives of the KALIBAPI, but still Japanese failed to gain the trust of the Filipinos.
+
+### Gen. Douglas MacArthur Returns (October 20, 1944)
+From Australia, Allied forces slowly advanced toward the Philippines, bombing several Japanese strongholds until they regained control of areas previously occupied by the enemy. The bombings began on September 21, 1944, and barely a month later, on October 20, 1944, the Americans landed triumphantly in Leyte. Once ashore, General Douglas MacArthur said; "I have Returned."
+
+Sergio Osmeña was Part of MacArthur's group. He had taken over Manuel L. Quezon as president after the latter passed away at Saranac Lake, New York on August 1944. From October 23 to October 26, 1944 the Americans engaged Japanese forces in the Battle of Leyte Gulf. Considered as the biggest naval battle in World History, this historic encounter almost destroyed the entire Japanese fleet and rendered it incapable of further attack. The US victory in the Battle of Leyte Gulf is said to have signaled the beginning of Philippine liberation from the Japanese.
+
+By mid-December, the American soldiers had reached Mindoro. The Japanese, meanwhile, secured other areas where they thought other American units would land. Nevertheless, US liberation forces successfully docked at Lingayen Gulf on January 9, 1945. The news alarmed the Japanese. Lt. Gen. Tomoyuki Yamashita, supreme commander of the Japanese troops in Manila, mobilized his kamikazes (Japanese suicide pilots); but they failed to stop Americans. The Japanese also deployed MAKAPILI units to defend Manila but neither succeeded.
+
+On December 8, 1944, President Laurel and his cabinet moved to Baguio upon orders of Yamashita, who is also known as the Tiger of Malaya. The Japanese forces retreated to Yamashita line — a jungle battlefront stretching along the Sierra Madre Mountains from Antipolo, Rizal to Aparri, Cagayan.
+
+The Japanese in Manila would not give up easily. In fact, it took 3 weeks of intense fighting before they finally surrendered on February 23. Gen. MacArthur continued to liberate other parts of the country. And finally proclaimed general freedom from the Japanese on July 4, 1945.
+
+---
+
+## Philippine Independence from the Americans (July 4, 1946)
+
+Freedom is among the rights that Filipinos did not enjoy during the Spanish rule. It was a struggle for the Philippine revolutionary leaders to achieve independence from foreign power. The Filipinos fought countless battles, resulting to bloody revolutions since the 19th century under the Spanish government. The Filipino forces were persistent to achieve independence for the country. In 1896, the Philippine Revolution started, which incriminated Jose Rizal resulting to his execution on allegations of treason and rouse the Katipunan in Cavite to organize in two groups creating conflict.
+
+At the break of the Spanish-American war, the Filipino leaders saw the war between Spain and America as an opportunity to free the Philippines from the claws of the Spanish colony; hence, supported the United States with military forces including indispensable intelligence. America summoned Aguinaldo to return to the Philippines from exile and with confidence towards the pleasant US relations, Aguinaldo anticipated independence from Spain with the help of America. Returning to the Philippines and leading the Filipino troops to hold the fort of Luzon with success except for Intramuros, Aguinaldo declared the Philippine Independence from the Spanish colonial government on June 12, 1898 under the First Philippine Republic.
+
+The Philippine National flag was held up, and swayed proudly before the joyous cries of the Filipinos by 4:20 in the afternoon at General Aguinaldo's balcony of his mansion in Kawit, Cavite. Albeit, the fact that Spain lost the battle to the Filipino troops, Admiral George Dewey schemed to convince the Spaniards to surrender to America. It was an act of betrayal by America that no sooner short-lived the celebration of Philippine independence when America annexed the Spanish colonies to include the Philippines. The Filipino forces were determined to continue their efforts against imperialist power leading to a bloody fight against the American Army in February 1899 when America refused to grant Philippines the long-sought Independence.
+
+The Philippine-American War erupted in February 4, 1899 in the struggle of the Filipinos for freedom conflicting with the interests of America to become a world power by establishing overseas empire to include the Philippines under the US imperial rule. The Filipino forces applied conventional, then guerrilla tactics in fighting against the US army as they become fully aware, under the leadership of General Emilio Aguinaldo, of the strength of the US military heavily equipped with superior firearms. Although, General Aguinaldo was captured in 1901, the insurgencies, particularly by the Muslim Moros in the Southern part of the Philippines continued. Nonetheless, America was preparing Philippines for independence that started with the creation of civil government. The US President Woodrow Wilson promised Philippine Independence and started to entrust authority over Filipino leaders with the establishment of the Philippine Senate by a democratic election. The Philippine Commonwealth, with elected President Manuel L. Quezon, was instituted in 1935 under the Tydings-McDuffie Act that granted Philippines its self-government, although the legislative power was not absolute, which still required approval from the US President. At that time, it was a good start towards the eventual Philippine Independence.
+
+When the events were gearing towards Philippine independence as promised by the United States of America, the Japanese invasion and occupation bolstered in a surprise. Bataan was surrendered to the Japanese but President Quezon along with Osmeña fled to America. World War II broke out that created immense damage to Filipinos with roughly about one million casualties. After the war, Manuel Roxas was elected President in April 1946 for the independent Second Republic of the Philippines. In a formal declaration, the American flag was lowered in Luneta, Manila and raised the Filipino National flag in tri-color of red, white, and blue looked up by proud Filipinos. Finally, independence was granted to the Republic of the Philippines dated July 4, 1946. The National anthem of the Philippines was played next to America's. It was indeed a moment of liberating glory, for all Filipinos after pools of blood were shed in many revolutions.
+
+July 4, however, holds less inspiration for the Filipinos according to the elected President of the Republic of the Philippines in 1961, Diosdado Macapagal. Macapagal believes that the June 12, 1898 declaration of the Philippine independence by General Emilio Aguinaldo brings to memory the heroes of the revolution and therefore, Philippine independence is best commemorated in honor of the Filipino revolutionary heroes. Hence, President Macapagal changed the date of celebration of the Philippine independence from July 4 to June 12, which the Filipinos celebrate each year up to this time.
+
+---
+
+## The Philippines During Martial Law (1972-1986)
+
+### Proclamation of Martial Law (September 21, 1972)
+On September 21, 1972, President Ferdinand E. Marcos placed the Philippines under Martial Law. The declaration issued under Proclamation 1081 suspended the civil rights and imposed military authority in the country. Marcos defended the declaration stressing the need for extra powers to quell the rising wave of violence allegedly caused by communists. The emergency rule was also intended to eradicate the roots of rebellion and promote a rapid trend for national development. The autocrat assured the country of the legality of Martial Law emphasizing the need for control over civil disobedience that displays lawlessness. Marcos explained citing the provisions from the Philippine Constitution that Martial Law is a strategic approach to legally defend the Constitution and protect the welfare of the Filipino people from the dangerous threats posed by Muslim rebel groups and Christian vigilantes that places national security at risk during the time. Marcos explained that martial law was not a military takeover but was then the only option to resolve the country's dilemma on rebellion that stages national chaos threatening the peace and order of the country. The emergency rule, according to Marcos's plan, was to lead the country into what he calls a "New Society".
+
+Marcos used several events to justify martial law. Threat to the country's security was intensifying following the re-establishment of the Communist Party of the Philippines (CPP) in 1968. Supporters of CPP's military arm, the New People's Army, also grew in numbers in Tarlac and other parts of the country. The alleged attempt on the life of then Minister of Defense Juan Ponce Enrile gave Marcos a window to declare Martial Law. Marcos announced the emergency rule the day after the shooting incident. Marcos also declared insurgency in the south caused by the clash between Muslims and Christians, which Marcos considered as a threat to national security. The Muslims were defending their ancestral land against the control of Christians who migrated in the area. The minority group organized the Moro National Liberation Front (MNLF) in Malaysia and pushed for the autonomy of Mindanao from the national government.
+
+The move was initially supported by most Filipinos and was viewed by some critics as a change that solved the massive corruption in the country. Martial law ceased the clash between the executive and legislative branches of the government and a bureaucracy characterized by special interest. Marcos started to implement reforms on social and political values that hindered effective modernization. To match the accomplishments of its Asian neighbors, Marcos imposed the need for self-sacrifice for the attainment of national welfare. His reforms targeted his rivals within the elite depriving them of their power and patronage but did not affect their supporters.
+
+Thirty-thousand opposition figures including Senator Benigno Aquino, journalists, student and labor activists were detained at military compounds under the President's command. The army and the Philippine Constabulary seized weapons and disbanded private armies controlled by prominent politicians and other influential figures. Marcos took control of the legislature and closed the Philippine Congress. Numerous media outfits were either closed down or operated under tight control. Marcos also allegedly funnelled millions of the country's money by placing some of his trusted supporters in strategic economic positions to channel resources to him. Experts call this the "crony capitalism."
+
+### The Deterioration of Political and Economic Condition
+The deterioration of the political and economic condition in the Philippines triggered the decline of support on Marcos' plans. More and more Filipinos took arms to dislodge the regime. Urban poor communities in the country's capital were organized by the Philippine Ecumenical Council for Community and were soon conducting protest masses and prayer rallies. These efforts including the exposure of numerous human rights violations pushed Marcos to hold an election in 1978 and 1981 in an aim to stabilize the country's chaotic condition. Marcos, in both events, won the election; however, his extended term as President of the Republic of the Philippines elicited an extensive opposition against his regime. Social unrest reached its height after former Senator Benigno Aquino was murdered. The incident sent thousands of Filipinos to the streets calling for Marcos' removal from post. Turning again to his electoral strategy, Marcos held a snap election in 1986 but what he hoped will satisfy the masses only increased their determination to end his rule that seated Corazon Aquino, widow of Benigno Aquino, as President of the Philippines ousting Marcos from Malacañang Palace and ending the twenty-one years of tyrant rule.
+
+---
+
+## EDSA People Power Revolution (1986)
+
+The Philippines was praised worldwide in 1986, when the so-called bloodless revolution erupted, called EDSA People Power's Revolution. February 25, 1986 marked a significant national event that has been engraved in the hearts and minds of every Filipino. This part of Philippine history gives us a strong sense of pride especially that other nations had attempted to emulate what we have shown the world of the true power of democracy. The true empowerment of democracy was exhibited in EDSA by its successful efforts to oust a tyrant by a demonstration without tolerance for violence and bloodshed. Prayers and rosaries strengthened by faith were the only weapons that the Filipinos used to recover their freedom from President Ferdinand Marcos's iron hands. The Epifanio de los Santos Avenue (EDSA) stretches 54 kilometers, where the peaceful demonstration was held on that fateful day. It was a day that gathered all Filipinos in unity with courage and faith to prevail democracy in the country. It was the power of the people, who assembled in EDSA, that restored the democratic Philippines, ending the oppressive Marcos regime. Hence, it came to be known as the EDSA People Power's Revolution.
+
+The revolution was a result of the long oppressed freedom and the life threatening abuses executed by the Marcos government to cite several events like human rights violation since the tyrannical Martial Law Proclamation in 1972. In the years that followed Martial Law started the suppressive and abusive years — incidents of assassination were rampant, particularly those who opposed the government, individuals and companies alike were subdued. The Filipinos reached the height of their patience when former Senator Benigno "Ninoy" Aquino, Sr. was shot and killed at the airport in August 21, 1983, upon his return to the Philippines from exile in the United States. Aquino's death marked the day that Filipinos learned to fight. His grieving wife, Corazon Cojuangco-Aquino showed the Filipinos and the world the strength and courage to claim back the democracy that Ferdinand Marcos arrested for his personal caprice. Considering the depressing economy of the country, Ninoy's death further intensified the contained resentment of the Filipinos. In the efforts to win back his popularity among the people, Marcos held a snap presidential election in February 7, 1986, where he was confronted with a strong and potent opposition, Corazon Aquino. It was the most corrupt and deceitful election held in Philippine history. There was an evident trace of electoral fraud as the tally of votes were declared with discrepancy between the official count by the COMELEC (Commission on Elections) and the count of NAMFREL (National Movement for Free Elections). Such blatant corruption in that election was the final straw of tolerance by the Filipinos of the Marcos regime. The demonstration started to break in the cry for democracy and the demand to oust Marcos from his seat at Malacañang Palace. The revolt commenced when Marcos' Defense Minister Juan Ponce Enrile and the Armed Forces Vice-Chief of Staff command of Fidel V. Ramos, both withdrew their support from the government and called upon the resignation of then President Marcos. They responsibly barricaded Camp Crame and Camp Aguinaldo and had their troops ready to combat against possible armed attack organized by Marcos and his troops. The Catholic Church represented by Archbishop Jaime Cardinal Sin along with the priests and nuns called for the support of all Filipinos who believed in democracy. Radyo Veritas aired the message of Cardinal Sin that summoned thousands of Filipinos to march the street of EDSA. It was an empowering demonstration that aimed to succeed peacefully with the intervention of faith. Nuns kneeled in front of tanks with rosaries in their hands and uttering their prayers.
+
+With the power of prayers, the armed marine troops under the command of Marcos withdrew from the site. Celebrities expressed their support putting up a presentation to showcase the injustices and the anomalies carried out by the Marcos administration. Finally, in the morning of February 25, 1986, Corazon Aquino took the presidential oath of office, administered by the Supreme Court Associate Justice Claudio Teehankee at Club Filipino located in San Juan. Aquino was proclaimed as the 11th President of the Republic of the Philippines. She was the first lady president of the country. People rejoiced over their victory proving the success of the EDSA People's Power Revolution, the historic peaceful demonstration. Although in 2001, there was an attempt to revive People Power in the efforts to oust then President Joseph Estrada, it was not as strong as the glorifying demonstration in 1986. The bloodless, People Power Revolution in EDSA renewed the power of the people, strengthened the meaning of democracy and restored the democratic institutions of government.

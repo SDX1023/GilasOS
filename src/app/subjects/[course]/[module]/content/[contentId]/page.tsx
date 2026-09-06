@@ -31,7 +31,7 @@ export default function ContentViewerPage({
     return <div className="page-container"><p className="text-secondary">Loading...</p></div>;
   }
 
-  if (!content || !admin) {
+  if (!content) {
     return <div className="page-container"><p className="text-secondary">Content not found.</p></div>;
   }
 
@@ -56,14 +56,18 @@ export default function ContentViewerPage({
         <div className="flex-between">
           <h1 className="page-title">{content.title}</h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Link href={`/editor/content?course=${courseSlug}&module=${moduleSlug}&id=${content.id}`} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-              <Pencil size={14} /> Edit
-            </Link>
+            {admin && (
+              <>
+                <Link href={`/editor/content?course=${courseSlug}&module=${moduleSlug}&id=${content.id}`} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <Pencil size={14} /> Edit
+                </Link>
+                <button onClick={() => setConfirmDelete(true)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#ef4444", borderColor: "rgba(239,68,68,0.3)" }}>
+                  <Trash2 size={14} /> Delete
+                </button>
+              </>
+            )}
             <button onClick={() => contentRef.current && exportToPdf(contentRef.current, content.title)} className="glass-btn glass-btn-ghost" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
               <Download size={14} /> Save PDF
-            </button>
-            <button onClick={() => setConfirmDelete(true)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#ef4444", borderColor: "rgba(239,68,68,0.3)" }}>
-              <Trash2 size={14} /> Delete
             </button>
           </div>
         </div>
