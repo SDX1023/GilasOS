@@ -22,7 +22,7 @@ input, textarea, [contenteditable="true"] {
 }
 
 ::selection {
-  background: transparent !important;
+  background: rgba(109, 40, 217, 0.35) !important;
   color: inherit !important;
 }
 

@@ -336,18 +336,29 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   useEffect(() => {
     if (!reviewMode || reviewComplete) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) return;
+      if ((e.ctrlKey || e.metaKey) || e.altKey) return;
       if (!reviewFlipped) {
         if (e.key === " " || e.key === "Enter") { e.preventDefault(); setReviewFlipped(true); }
       } else {
-        if (e.key === "1") { e.preventDefault(); document.getElementById("btn-forgot")?.click(); }
-        if (e.key === "2") { e.preventDefault(); document.getElementById("btn-dontknow")?.click(); }
-        if (e.key === "3") { e.preventDefault(); document.getElementById("btn-know")?.click(); }
+        if (e.key === "1" || e.key === "f") { e.preventDefault(); document.getElementById("btn-forgot")?.click(); }
+        if (e.key === "2" || e.key === "d") { e.preventDefault(); document.getElementById("btn-dontknow")?.click(); }
+        if (e.key === "3" || e.key === "a") { e.preventDefault(); document.getElementById("btn-know")?.click(); }
+        if (e.key === "c") {
+          const card = queue[queueIndex];
+          if (card) {
+            const text = `${card.front}\n${card.back}${card.hint ? `\nHint: ${card.hint}` : ""}`;
+            navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
+          }
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewMode, reviewFlipped, reviewComplete, typedAnswer, answerChecked]);
+  }, [reviewMode, reviewFlipped, reviewComplete, typedAnswer, answerChecked, queueIndex]);
 
   function saveProgressIfNeeded() {
     const total = knownCount + forgotCount + dontKnowCount;
@@ -935,7 +946,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   <>
                     <div onClick={() => setReviewFlipped(!reviewFlipped)}
                       className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", cursor: "pointer", userSelect: "text", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ width: "100%" }}>
                         <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)" }}>
                           <FlashFormulaLine text={reviewFlipped ? (swapped ? queue[queueIndex].front : queue[queueIndex].back) : (swapped ? queue[queueIndex].back : queue[queueIndex].front)} showFormulas={showFormulas} />
@@ -970,7 +981,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                   /* Identification card: type answer */
                   <>
                     <div className="flashcard-study-card"
-                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+                      style={{ width: "100%", maxWidth: 672, maxHeight: "55vh", overflowY: "auto", padding: "2rem", userSelect: "text", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", transition: "all 0.3s", background: "#1e293b", borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                       <div style={{ width: "100%" }}>
                         <p style={{ fontSize: "1.15rem", fontWeight: 500, lineHeight: 1.7, color: "var(--os-text-primary)", marginBottom: "1rem" }}>
                           <FlashFormulaLine text={swapped ? queue[queueIndex].back : queue[queueIndex].front} showFormulas={showFormulas} />
