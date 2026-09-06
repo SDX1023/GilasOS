@@ -133,7 +133,7 @@ export default function ImportAnkiPage() {
 
           {debug && (
             <div style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--os-glass-border)", marginBottom: 16, fontSize: 11, fontFamily: "monospace", color: "var(--os-text-dim)" }}>
-              <p>Tables: {debug.tables?.join(", ")}</p>
+              <p>Tables: {debug.tables?.join(", ")} · DB: {debug.dbUsed}</p>
               {debug.cards_count !== undefined && <p>Cards: {debug.cards_count} · Notes: {debug.notes_count} · Join: {debug.join_rows}</p>}
               {debug.zipFiles && <p>ZIP files: {debug.zipFiles.join(", ")}</p>}
             </div>

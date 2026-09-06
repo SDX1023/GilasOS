@@ -32,22 +32,38 @@ export async function POST(req: NextRequest) {
       if (!entry.dir) zipFiles.push(path);
     });
 
-    const dbFile = zip.file("collection.anki21b") || zip.file("collection.anki21") || zip.file("collection.anki2");
-    if (!dbFile) {
-      return NextResponse.json({ error: "Invalid Anki file — no database found", debug: { zipFiles } }, { status: 400 });
+    // Try multiple database files - newer Anki uses .anki21b (not SQLite), older uses .anki2
+    const dbCandidates = ["collection.anki21b", "collection.anki21", "collection.anki2"];
+    let db: any = null;
+    let dbUsed = "";
+    const SQL = await getSQL();
+
+    for (const name of dbCandidates) {
+      const f = zip.file(name);
+      if (!f) continue;
+      try {
+        const data = await f.async("arraybuffer");
+        db = new SQL.Database(new Uint8Array(data));
+        // Verify it's a valid database by running a simple query
+        db.exec("SELECT 1");
+        dbUsed = name;
+        break;
+      } catch {
+        db = null;
+        continue;
+      }
     }
 
-    const dbData = await dbFile.async("arraybuffer");
-
-    const SQL = await getSQL();
-    const db = new SQL.Database(new Uint8Array(dbData));
+    if (!db) {
+      return NextResponse.json({ error: "Could not read Anki database from file", debug: { zipFiles } }, { status: 400 });
+    }
 
     const tables: string[] = [];
     const tRes = db.exec("SELECT name FROM sqlite_master WHERE type='table'");
     if (tRes.length) tRes[0].values.forEach((r: any[]) => tables.push(r[0]));
 
     // Debug: count rows in key tables
-    const debug: Record<string, any> = { tables, zipFiles };
+    const debug: Record<string, any> = { tables, zipFiles, dbUsed };
     for (const t of ["cards", "notes", "col"]) {
       if (tables.includes(t)) {
         const cnt = db.exec(`SELECT COUNT(*) FROM "${t}"`);
