@@ -36,6 +36,18 @@ async function fetchFormula(text: string): Promise<{ formula: string; explanatio
   return null;
 }
 
+function checkTypeInAnswer(userInput: string, correctAnswer: string): boolean {
+  const strip = (s: string) => s.toLowerCase().replace(/^\s*[a-d]\.\s*/g, "").replace(/\s+/g, " ").trim();
+  const user = strip(userInput);
+  const correct = strip(correctAnswer);
+  if (!user || !correct) return false;
+  if (user === correct) return true;
+  if (correct.includes(user) || user.includes(correct)) return true;
+  const correctParts = correct.split(/\s*[;|,]\s*|\s+a\.\s*|\s+b\.\s*|\s+c\.\s*|\s+d\.\s*/).map(s => s.trim()).filter(Boolean);
+  if (correctParts.some(p => p.toLowerCase() === user || p.toLowerCase().includes(user) || user.includes(p.toLowerCase()))) return true;
+  return false;
+}
+
 function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boolean }) {
   const [result, setResult] = useState<{ formula: string; explanation: string } | null>(null);
   useEffect(() => {
@@ -236,6 +248,11 @@ export default function DeckStudyPage() {
   const [cramMode, setCramMode] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [flashImage, setFlashImage] = useState<string | null>(null);
+  const [flashVisible, setFlashVisible] = useState(false);
+  const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
+  const flashQueues = useRef<Record<string, string[]>>({});
+  const flashIndex = useRef<Record<string, number>>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -270,6 +287,34 @@ export default function DeckStudyPage() {
       date: new Date().toDateString(), queue, reviewIndex, knownCount, forgotCount, dontKnowCount, swapped,
     }));
   }, [queue, reviewIndex, knownCount, forgotCount, dontKnowCount, reviewMode, sessionKey, swapped]);
+
+  useEffect(() => {
+    fetch("/api/flash-images").then((r) => r.json()).then(setFlashImages).catch(() => {});
+  }, []);
+
+  function pickRandom(type: string): string | null {
+    const pool = flashImages[type] || [];
+    if (!pool.length) return null;
+    if (!flashQueues.current[type] || flashQueues.current[type].length === 0) {
+      flashQueues.current[type] = [...pool].sort(() => Math.random() - 0.5);
+      flashIndex.current[type] = 0;
+    }
+    const q = flashQueues.current[type];
+    const img = q[flashIndex.current[type] % q.length];
+    flashIndex.current[type]++;
+    if (flashIndex.current[type] >= q.length) { flashQueues.current[type] = [...pool].sort(() => Math.random() - 0.5); flashIndex.current[type] = 0; }
+    return img;
+  }
+
+  function showFlash(type: string) {
+    const img = pickRandom(type);
+    if (img) {
+      setFlashImage(img);
+      requestAnimationFrame(() => setFlashVisible(true));
+      setTimeout(() => setFlashVisible(false), 2500);
+      setTimeout(() => setFlashImage(null), 2800);
+    }
+  }
 
   const sessionStartRef = useRef(Date.now());
 
@@ -471,6 +516,7 @@ export default function DeckStudyPage() {
     if (user && current) {
       const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
       logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
+      showFlash(result === "known" ? "know" : result === "dont_know" ? "dontknow" : "forgot");
     }
     if (dontKnow) setDontKnowCount(d => d + 1); else if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);
     const next = queue.filter((_, i) => i !== reviewIndex);
@@ -495,6 +541,11 @@ export default function DeckStudyPage() {
     const card = queue[reviewIndex];
     return (
       <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "rgba(10,14,24,0.98)" }}>
+        {flashImage && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)", opacity: flashVisible ? 1 : 0, transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}>
+            <img src={flashImage} alt="" style={{ maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain", transform: flashVisible ? "scale(1)" : "scale(0.85)", opacity: flashVisible ? 1 : 0, transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <span style={{ fontSize: "1rem", fontWeight: 500 }}>{reviewComplete ? "Done" : queue.length}</span>
@@ -730,13 +781,13 @@ export default function DeckStudyPage() {
                             type="text"
                             value={typedAnswer}
                             onChange={(e) => setTypedAnswer(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === (swapped ? card.front : card.back).toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = checkTypeInAnswer(typedAnswer, swapped ? card.front : card.back); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                             placeholder="Type your answer..."
                             autoFocus
                             style={{ width: "100%", maxWidth: 400, padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: "1rem", outline: "none", textAlign: "center", fontFamily: "Inter, sans-serif" }}
                           />
                           <button
-                            onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === (swapped ? card.front : card.back).toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                            onClick={() => { if (typedAnswer.trim()) { const correct = checkTypeInAnswer(typedAnswer, swapped ? card.front : card.back); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                             disabled={!typedAnswer.trim()}
                             className="glass-btn-primary"
                             style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: typedAnswer.trim() ? 1 : 0.4 }}
