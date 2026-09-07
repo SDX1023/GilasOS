@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle, Share2, ArrowUpDown } from "lucide-react";
+import { Layers, Plus, Trash2, Pencil, Check, Play, Search, ChevronRight, ChevronDown, FolderOpen, FolderPlus, GripVertical, X, Target, AlertTriangle, Share2, ArrowUpDown, FileQuestion } from "lucide-react";
+import { saveQuiz } from "@/lib/user-data";
 import { CramTab } from "@/components/cram-tab";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
@@ -60,6 +61,7 @@ export default function DecksPage() {
   const [shareLinks, setShareLinks] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [friends, setFriends] = useState<{ user_id: string; username: string }[]>([]);
+  const [convertingDeckId, setConvertingDeckId] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!user) return;
@@ -213,6 +215,22 @@ export default function DecksPage() {
       setDecks(decks.map(d => d.course_id === id ? { ...d, course_id: null } : d));
     }
     setConfirmDelete(null);
+  };
+
+  const handleConvertToQuiz = async (deckId: string, deckTitle: string) => {
+    if (!user) return;
+    setConvertingDeckId(deckId);
+    try {
+      const supabase = getSupabase();
+      const { data: cards } = await supabase.from("custom_deck_cards").select("front, back").eq("deck_id", deckId).order("sort_order");
+      if (!cards || cards.length === 0) { setConvertingDeckId(null); return; }
+
+      const quizQuestions = cards.map((c: any) => ({ type: "identification", question: c.front, answer: c.back }));
+
+      const ok = await saveQuiz(user.id, `${deckTitle} Quiz`, `deck:${deckId}`, quizQuestions);
+      if (ok) { alert(`Quiz created with ${cards.length} questions! Find it in Study > My Quizzes.`); }
+    } catch (e) { console.error("Convert to quiz failed:", e); }
+    setConvertingDeckId(null);
   };
 
   const handleCreateCourse = async () => {
@@ -548,7 +566,7 @@ export default function DecksPage() {
                       if (sort === "cards") return b.card_count - a.card_count;
                       return 0;
                     }).map((deck) => (
-                      <DeckRow key={deck.id} deck={deck} courses={courses} editingId={editingId} editTitle={editTitle} editDesc={editDesc} editCourseId={editCourseId} selectedIds={selectedIds} draggedId={draggedId} setEditTitle={setEditTitle} setEditDesc={setEditDesc} setEditCourseId={setEditCourseId} setEditingId={setEditingId} handleUpdateDeck={handleUpdateDeck} handleDeleteDeck={handleDeleteDeck} toggleSelect={toggleSelect} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} />
+                      <DeckRow key={deck.id} deck={deck} courses={courses} editingId={editingId} editTitle={editTitle} editDesc={editDesc} editCourseId={editCourseId} selectedIds={selectedIds} draggedId={draggedId} convertingDeckId={convertingDeckId} setEditTitle={setEditTitle} setEditDesc={setEditDesc} setEditCourseId={setEditCourseId} setEditingId={setEditingId} handleUpdateDeck={handleUpdateDeck} handleDeleteDeck={handleDeleteDeck} handleConvertToQuiz={handleConvertToQuiz} toggleSelect={toggleSelect} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} />
                     ))}
                   </div>
                 )}
@@ -577,7 +595,7 @@ export default function DecksPage() {
                 {expandedCourses["__ungrouped__"] !== false && (
                   <div style={{ padding: "6px" }}>
                     {ungrouped.map((deck) => (
-                      <DeckRow key={deck.id} deck={deck} courses={courses} editingId={editingId} editTitle={editTitle} editDesc={editDesc} editCourseId={editCourseId} selectedIds={selectedIds} draggedId={draggedId} setEditTitle={setEditTitle} setEditDesc={setEditDesc} setEditCourseId={setEditCourseId} setEditingId={setEditingId} handleUpdateDeck={handleUpdateDeck} handleDeleteDeck={handleDeleteDeck} toggleSelect={toggleSelect} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} />
+                      <DeckRow key={deck.id} deck={deck} courses={courses} editingId={editingId} editTitle={editTitle} editDesc={editDesc} editCourseId={editCourseId} selectedIds={selectedIds} draggedId={draggedId} convertingDeckId={convertingDeckId} setEditTitle={setEditTitle} setEditDesc={setEditDesc} setEditCourseId={setEditCourseId} setEditingId={setEditingId} handleUpdateDeck={handleUpdateDeck} handleDeleteDeck={handleDeleteDeck} handleConvertToQuiz={handleConvertToQuiz} toggleSelect={toggleSelect} handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} />
                     ))}
                   </div>
                 )}
@@ -634,7 +652,7 @@ export default function DecksPage() {
   );
 }
 
-function DeckRow({ deck, courses, editingId, editTitle, editDesc, editCourseId, selectedIds, draggedId, setEditTitle, setEditDesc, setEditCourseId, setEditingId, handleUpdateDeck, handleDeleteDeck, toggleSelect, handleDragStart, handleDragEnd }: {
+function DeckRow({ deck, courses, editingId, editTitle, editDesc, editCourseId, selectedIds, draggedId, convertingDeckId, setEditTitle, setEditDesc, setEditCourseId, setEditingId, handleUpdateDeck, handleDeleteDeck, handleConvertToQuiz, toggleSelect, handleDragStart, handleDragEnd }: {
   deck: CustomDeck;
   courses: DeckCourse[];
   editingId: string | null;
@@ -643,12 +661,14 @@ function DeckRow({ deck, courses, editingId, editTitle, editDesc, editCourseId, 
   editCourseId: string;
   selectedIds: Set<string>;
   draggedId: string | null;
+  convertingDeckId: string | null;
   setEditTitle: (v: string) => void;
   setEditDesc: (v: string) => void;
   setEditCourseId: (v: string) => void;
   setEditingId: (v: string | null) => void;
   handleUpdateDeck: (id: string) => void;
   handleDeleteDeck: (id: string) => void;
+  handleConvertToQuiz: (id: string, title: string) => void;
   toggleSelect: (id: string) => void;
   handleDragStart: (e: React.DragEvent, id: string) => void;
   handleDragEnd: () => void;
@@ -693,6 +713,7 @@ function DeckRow({ deck, courses, editingId, editTitle, editDesc, editCourseId, 
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
         <Link href={`/decks/${deck.id}`} className="glass-btn" style={{ padding: "5px 12px", fontSize: 11, display: "flex", alignItems: "center", gap: 4, textDecoration: "none" }}><Play size={12} /> Study</Link>
+        <button onClick={() => handleConvertToQuiz(deck.id, deck.title)} disabled={convertingDeckId === deck.id} title="Convert to Quiz" style={{ padding: 5, background: "rgba(59,130,246,0.08)", border: "none", borderRadius: 5, color: convertingDeckId === deck.id ? "var(--os-text-dim)" : "#3b82f6", cursor: convertingDeckId === deck.id ? "wait" : "pointer", opacity: convertingDeckId === deck.id ? 0.5 : 1 }}><FileQuestion size={13} style={convertingDeckId === deck.id ? { animation: "spin 1s linear infinite" } : {}} /></button>
         <button onClick={() => { setEditingId(deck.id); setEditTitle(deck.title); setEditDesc(deck.description || ""); setEditCourseId(deck.course_id || ""); }} style={{ padding: 5, background: "rgba(255,255,255,0.05)", border: "none", borderRadius: 5, color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={13} /></button>
         <button onClick={() => handleDeleteDeck(deck.id)} style={{ padding: 5, background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 5, color: "#ef4444", cursor: "pointer" }}><Trash2 size={13} /></button>
       </div>
