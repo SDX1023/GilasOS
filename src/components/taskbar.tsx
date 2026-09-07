@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive, Layers, Tv, AlertCircle } from "lucide-react";
+import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive, Layers, Tv, AlertCircle, BarChart3 } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#60a5fa" },
@@ -15,6 +15,7 @@ const features = [
   { icon: Tv, title: "Doomscroll", href: "/doomscroll", color: "#f472b6" },
   { icon: Archive, title: "Archive", href: "/archive", color: "#f87171" },
   { icon: AlertCircle, title: "Wrong Answers", href: "/wrong-answers", color: "#ef4444" },
+  { icon: BarChart3, title: "Analytics", href: "/analytics", color: "#0ea5e9" },
 ];
 
 export function Taskbar() {
