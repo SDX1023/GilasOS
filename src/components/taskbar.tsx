@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive, Layers } from "lucide-react";
+import { BookOpen, Timer, FileText, CheckSquare, Trophy, Users, Sparkles, Archive, Layers, Tv } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#60a5fa" },
@@ -12,6 +12,7 @@ const features = [
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#34d399" },
   { icon: Users, title: "Friends", href: "/friends", color: "#22d3ee" },
   { icon: Trophy, title: "Leaderboard", href: "/leaderboard", color: "#facc15" },
+  { icon: Tv, title: "Doomscroll", href: "/doomscroll", color: "#f472b6" },
   { icon: Archive, title: "Archive", href: "/archive", color: "#f87171" },
 ];
 

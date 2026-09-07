@@ -664,3 +664,75 @@ export function sortWeakCardsFirst<T extends { front: string; back: string }>(
     return 0;
   });
 }
+
+// ========== DOOMSCROLL ==========
+
+export interface DoomscrollSettings {
+  benchmark_type: "cards" | "minutes" | "quizzes";
+  benchmark_target: number;
+  scroll_duration_min: number;
+}
+
+export interface DoomscrollUsage {
+  date: string;
+  seconds_used: number;
+  unlocked: boolean;
+}
+
+export async function loadDoomscrollSettings(userId: string): Promise<DoomscrollSettings> {
+  const supabase = getSupabase();
+  const { data } = await supabase.from("doomscroll_settings").select("*").eq("user_id", userId).single();
+  if (data) return { benchmark_type: data.benchmark_type, benchmark_target: data.benchmark_target, scroll_duration_min: data.scroll_duration_min };
+  // Defaults
+  return { benchmark_type: "cards", benchmark_target: 50, scroll_duration_min: 10 };
+}
+
+export async function saveDoomscrollSettings(userId: string, settings: DoomscrollSettings) {
+  const supabase = getSupabase();
+  await supabase.from("doomscroll_settings").upsert({ user_id: userId, ...settings, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+}
+
+export async function loadDoomscrollUsage(userId: string): Promise<DoomscrollUsage> {
+  const today = new Date().toDateString();
+  const supabase = getSupabase();
+  const { data } = await supabase.from("doomscroll_usage").select("*").eq("user_id", userId).eq("date", today).single();
+  if (data) return { date: data.date, seconds_used: data.seconds_used, unlocked: data.unlocked };
+  return { date: today, seconds_used: 0, unlocked: false };
+}
+
+export async function updateDoomscrollUsage(userId: string, secondsUsed: number, unlocked: boolean) {
+  const today = new Date().toDateString();
+  const supabase = getSupabase();
+  await supabase.from("doomscroll_usage").upsert({ user_id: userId, date: today, seconds_used: secondsUsed, unlocked }, { onConflict: "user_id,date" });
+}
+
+export async function getDoomscrollProgress(userId: string): Promise<{ current: number; target: number; type: string; unlocked: boolean }> {
+  const settings = await loadDoomscrollSettings(userId);
+  const today = new Date().toDateString();
+  const supabase = getSupabase();
+
+  let current = 0;
+
+  if (settings.benchmark_type === "cards") {
+    const { data } = await supabase.from("study_stats").select("cards_total").eq("user_id", userId).eq("date", today).single();
+    current = data?.cards_total || 0;
+  } else if (settings.benchmark_type === "minutes") {
+    const { data } = await supabase.from("study_sessions").select("duration_seconds").eq("user_id", userId);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    current = (data || []).filter((s: any) => new Date(s.created_at) >= todayStart).reduce((sum: number, s: any) => sum + (s.duration_seconds || 0), 0) / 60;
+  } else if (settings.benchmark_type === "quizzes") {
+    const { data } = await supabase.from("study_sessions").select("id").eq("user_id", userId).eq("session_type", "quiz");
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    current = (data || []).filter((s: any) => new Date(s.created_at) >= todayStart).length;
+  }
+
+  const usage = await loadDoomscrollUsage(userId);
+  const unlocked = current >= settings.benchmark_target || usage.unlocked;
+
+  // Auto-unlock if benchmark met
+  if (unlocked && !usage.unlocked) {
+    await updateDoomscrollUsage(userId, usage.seconds_used, true);
+  }
+
+  return { current: Math.round(current * 10) / 10, target: settings.benchmark_target, type: settings.benchmark_type, unlocked };
+}
