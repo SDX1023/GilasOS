@@ -138,6 +138,7 @@ export default function ArchivePage() {
   const [customData, setCustomData] = useState<Record<string, Record<string, string>>>({});
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [newColumnLabel, setNewColumnLabel] = useState("");
+  const [archiveSearch, setArchiveSearch] = useState("");
 
   useEffect(() => {
     const password = sessionStorage.getItem("archive_admin");
@@ -292,6 +293,11 @@ export default function ArchivePage() {
     .filter(e => {
       if (selectedCategoryId !== null && e.category_id !== selectedCategoryId) return false;
       if (selectedType !== "all" && (e.type || "").toLowerCase() !== selectedType.toLowerCase()) return false;
+      if (archiveSearch) {
+        const q = archiveSearch.toLowerCase();
+        const match = (e.competition || "").toLowerCase().includes(q) || (e.type || "").toLowerCase().includes(q) || (e.year || "").toLowerCase().includes(q);
+        if (!match) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -365,8 +371,24 @@ export default function ArchivePage() {
                   <div style={{ display: "flex", border: "1px solid var(--os-glass-border)", borderLeft: "none", borderRadius: "0 8px 8px 0", overflow: "hidden" }}>
                     <button onClick={() => { setEditingCatId(cat.id); setEditCatTitle(cat.title); }} style={{ padding: "6px 6px", background: "rgba(0,0,0,0.15)", border: "none", color: "var(--os-text-dim)", cursor: "pointer" }}><Pencil size={10} /></button>
                     <button onClick={() => setConfirmDeleteCat(cat.id)} style={{ padding: "6px 6px", background: "rgba(0,0,0,0.15)", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={10} /></button>
-                  </div>
-                )}
+        </div>
+      )}
+
+      {/* Search */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          value={archiveSearch}
+          onChange={(e) => setArchiveSearch(e.target.value)}
+          placeholder="Search competitions..."
+          style={{
+            width: "100%", padding: "8px 12px", fontSize: 13, borderRadius: 10,
+            background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)",
+            color: "var(--os-text-primary)", outline: "none",
+          }}
+          onFocus={(e) => e.currentTarget.style.borderColor = "var(--os-accent)"}
+          onBlur={(e) => e.currentTarget.style.borderColor = "var(--os-glass-border)"}
+        />
+      </div>
               </>
             )}
           </div>
