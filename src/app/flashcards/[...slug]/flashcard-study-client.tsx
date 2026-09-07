@@ -304,6 +304,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   reviewCompleteRef.current = reviewComplete;
   const userRef = useRef(user);
   userRef.current = user;
+  const sessionStartRef = useRef(0);
 
   useEffect(() => {
     if (!reviewCompleteRef.current || !userRef.current) return;
