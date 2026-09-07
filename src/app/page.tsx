@@ -8,7 +8,6 @@ import {
   CheckSquare,
   Trophy,
   Sparkles,
-  Flame,
 } from "lucide-react";
 
 export default function Home() {
@@ -54,13 +53,6 @@ export default function Home() {
       description: "Competition history",
       href: "/archive",
       color: "#ddd6fe",
-    },
-    {
-      icon: Flame,
-      title: "Streak",
-      description: "Track your daily progress",
-      href: "/streak",
-      color: "#f97316",
     },
   ];
 
