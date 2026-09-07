@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   try {
     const apiKey = process.env.YOUTUBE_API_KEY;
     const count = parseInt(req.nextUrl.searchParams.get("count") || "12");
+    const searchQuery = req.nextUrl.searchParams.get("q") || "";
 
     // If no API key, return fallback videos
     if (!apiKey) {
@@ -38,9 +39,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ videos: shuffled, fallback: true });
     }
 
-    // Try multiple search queries for variety
-    const queries = ["shorts funny", "shorts satisfying", "shorts amazing", "shorts trending", "shorts viral"];
-    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+    // Use user's search query or default random queries
+    const defaultQueries = ["shorts funny", "shorts satisfying", "shorts amazing", "shorts trending", "shorts viral"];
+    const randomQuery = searchQuery || defaultQueries[Math.floor(Math.random() * defaultQueries.length)];
 
     const searchParams = new URLSearchParams({
       key: apiKey,

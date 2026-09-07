@@ -671,6 +671,7 @@ export interface DoomscrollSettings {
   benchmark_type: "cards" | "minutes" | "quizzes";
   benchmark_target: number;
   scroll_duration_min: number;
+  search_query: string;
 }
 
 export interface DoomscrollUsage {
@@ -682,9 +683,9 @@ export interface DoomscrollUsage {
 export async function loadDoomscrollSettings(userId: string): Promise<DoomscrollSettings> {
   const supabase = getSupabase();
   const { data } = await supabase.from("doomscroll_settings").select("*").eq("user_id", userId).single();
-  if (data) return { benchmark_type: data.benchmark_type, benchmark_target: data.benchmark_target, scroll_duration_min: data.scroll_duration_min };
+  if (data) return { benchmark_type: data.benchmark_type, benchmark_target: data.benchmark_target, scroll_duration_min: data.scroll_duration_min, search_query: data.search_query || "" };
   // Defaults
-  return { benchmark_type: "cards", benchmark_target: 50, scroll_duration_min: 10 };
+  return { benchmark_type: "cards", benchmark_target: 50, scroll_duration_min: 10, search_query: "" };
 }
 
 export async function saveDoomscrollSettings(userId: string, settings: DoomscrollSettings) {

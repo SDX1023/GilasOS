@@ -55,7 +55,8 @@ export default function DoomscrollPage() {
   const fetchVideos = async () => {
     setFetchingVideos(true);
     try {
-      const res = await fetch(`${window.location.origin}/api/doomscroll?count=12`);
+      const q = settings.search_query ? `&q=${encodeURIComponent(settings.search_query)}` : "";
+      const res = await fetch(`${window.location.origin}/api/doomscroll?count=12${q}`);
       const data = await res.json();
       if (data.videos && data.videos.length > 0) {
         setVideos(data.videos);
@@ -173,6 +174,11 @@ export default function DoomscrollPage() {
               <label style={{ fontSize: 11, color: "var(--os-text-dim)", marginBottom: 4, display: "block" }}>Scroll Time (minutes)</label>
               <input type="number" value={settings.scroll_duration_min} onChange={(e) => setSettings({ ...settings, scroll_duration_min: parseInt(e.target.value) || 1 })} min={1} max={60} style={{ width: "100%", padding: "8px 10px", background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
             </div>
+            <div>
+              <label style={{ fontSize: 11, color: "var(--os-text-dim)", marginBottom: 4, display: "block" }}>Feed Search Term</label>
+              <input type="text" value={settings.search_query} onChange={(e) => setSettings({ ...settings, search_query: e.target.value })} placeholder="e.g. cats, gaming, cooking..." style={{ width: "100%", padding: "8px 10px", background: "rgba(0,0,0,0.3)", border: "1px solid var(--os-glass-border)", borderRadius: 8, color: "var(--os-text-primary)", fontSize: 13, outline: "none" }} />
+              <div style={{ fontSize: 10, color: "var(--os-text-dim)", marginTop: 4 }}>Leave empty for random trending content</div>
+            </div>
             <button onClick={handleSaveSettings} className="glass-btn glass-btn-primary" style={{ padding: "8px 16px", fontSize: 13, alignSelf: "flex-start" }}>Save Settings</button>
           </div>
         </div>
@@ -231,13 +237,29 @@ export default function DoomscrollPage() {
         </div>
       )}
 
+      {isUnlocked && !scrolling && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <div style={{ fontSize: 14, color: "var(--os-text-dim)", textAlign: "center" }}>
+            {timeLeft > 0 ? `You have ${formatTime(timeLeft)} of scroll time remaining` : "No scroll time remaining today"}
+          </div>
+        </div>
+      )}
+
+      {isUnlocked && scrolling && fetchingVideos && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <div style={{ fontSize: 14, color: "var(--os-text-dim)" }}>Loading videos...</div>
+        </div>
+      )}
+
+      {isUnlocked && scrolling && !fetchingVideos && videos.length === 0 && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <div style={{ fontSize: 14, color: "var(--os-text-dim)" }}>No videos loaded</div>
+          <button onClick={fetchVideos} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>Retry</button>
+        </div>
+      )}
+
       {isUnlocked && scrolling && videos.length > 0 && (
         <div ref={feedRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, position: "relative" }}>
-          {/* Navigation hints */}
-          <button onClick={goPrev} disabled={currentIdx === 0} style={{ position: "absolute", top: -30, padding: 4, background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 4, color: currentIdx === 0 ? "transparent" : "var(--os-text-dim)", cursor: currentIdx === 0 ? "default" : "pointer", zIndex: 2 }}>
-            <ChevronUp size={16} />
-          </button>
-
           {/* Current Video */}
           <div style={{ width: "100%", maxWidth: 400, aspectRatio: "9/16", borderRadius: 16, overflow: "hidden", background: "#000", position: "relative" }}>
             <iframe
@@ -253,28 +275,16 @@ export default function DoomscrollPage() {
             </div>
           </div>
 
-          <button onClick={goNext} style={{ position: "absolute", bottom: -30, padding: 4, background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 4, color: "var(--os-text-dim)", cursor: "pointer", zIndex: 2 }}>
-            <ChevronDown size={16} />
-          </button>
-
-          {/* Scroll indicator */}
-          <div style={{ fontSize: 11, color: "var(--os-text-dim)", textAlign: "center" }}>
-            {currentIdx + 1} / {videos.length} · Scroll or swipe to navigate
+          {/* Navigation */}
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <button onClick={goPrev} disabled={currentIdx === 0} style={{ padding: "8px 12px", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, color: currentIdx === 0 ? "transparent" : "var(--os-text-dim)", cursor: currentIdx === 0 ? "default" : "pointer" }}>
+              <ChevronUp size={18} />
+            </button>
+            <span style={{ fontSize: 12, color: "var(--os-text-dim)" }}>{currentIdx + 1} / {videos.length}</span>
+            <button onClick={goNext} style={{ padding: "8px 12px", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, color: "var(--os-text-dim)", cursor: "pointer" }}>
+              <ChevronDown size={18} />
+            </button>
           </div>
-        </div>
-      )}
-
-      {isUnlocked && !scrolling && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <div style={{ fontSize: 14, color: "var(--os-text-dim)", textAlign: "center" }}>
-            {timeLeft > 0 ? `You have ${formatTime(timeLeft)} of scroll time remaining` : "No scroll time remaining today"}
-          </div>
-        </div>
-      )}
-
-      {isUnlocked && scrolling && fetchingVideos && (
-        <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", color: "var(--os-text-dim)" }}>
-          Loading videos...
         </div>
       )}
     </div>

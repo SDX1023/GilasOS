@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS doomscroll_settings (
   benchmark_type TEXT NOT NULL DEFAULT 'cards', -- 'cards', 'minutes', 'quizzes'
   benchmark_target INT NOT NULL DEFAULT 50,      -- e.g. 50 cards, 30 minutes, 1 quiz
   scroll_duration_min INT NOT NULL DEFAULT 10,   -- minutes of scroll time unlocked
+  search_query TEXT NOT NULL DEFAULT '',         -- YouTube search term for feed
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(user_id)
