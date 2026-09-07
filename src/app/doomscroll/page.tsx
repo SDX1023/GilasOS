@@ -45,18 +45,23 @@ export default function DoomscrollPage() {
     })();
   }, [user]);
 
-  // Fetch videos when unlocked
+  // Fetch videos when scrolling starts
   useEffect(() => {
-    if (!progress?.unlocked || videos.length > 0 || fetchingVideos) return;
-    fetchVideos();
-  }, [progress?.unlocked]);
+    if (scrolling && videos.length === 0 && !fetchingVideos) {
+      fetchVideos();
+    }
+  }, [scrolling]);
 
   const fetchVideos = async () => {
     setFetchingVideos(true);
     try {
-      const res = await fetch(`/api/doomscroll?count=12`);
+      const res = await fetch(`${window.location.origin}/api/doomscroll?count=12`);
       const data = await res.json();
-      if (data.videos) setVideos(data.videos);
+      if (data.videos && data.videos.length > 0) {
+        setVideos(data.videos);
+      } else {
+        console.error("No videos returned:", data);
+      }
     } catch (e) { console.error("Failed to fetch videos:", e); }
     setFetchingVideos(false);
   };
