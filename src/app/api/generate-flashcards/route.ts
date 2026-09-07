@@ -120,6 +120,16 @@ function buildPrompt(chunkText: string, idx: number, total: number): string {
 
 IMPORTANT: This text uses BULLET POINTS (●). Convert each bullet into a Q&A flashcard.
 
+CRITICAL RULE - SELF-CONTAINED QUESTIONS:
+- Every question (front) must make complete sense on its own, WITHOUT needing to read the source material
+- Include the specific topic, subject, or context in each question
+- Bad: "How many words does this sentence contain?" (which sentence?)
+- Good: "How many words does the sentence 'The cat sat on the mat' contain?"
+- Bad: "What year was it?" (what event?)
+- Good: "What year did the Battle of Mactan happen?"
+- Bad: "Who is he?" (who?)
+- Good: "Who is Lapu-Lapu?"
+
 RULES:
 - EVERY bullet point (●) becomes at least one flashcard
 - For each bullet: extract the key fact and turn it into a question
@@ -143,11 +153,20 @@ ${chunkText}`;
 
 IMPORTANT: This text contains Q&A pairs. Extract each Q&A as a flashcard.
 
+CRITICAL RULE - SELF-CONTAINED QUESTIONS:
+- Every question (front) must make complete sense on its own, WITHOUT needing to read the source material
+- If the original question lacks context, ADD the context to the question
+- Bad: "How many words does this sentence contain?" (which sentence?)
+- Good: "How many words does the sentence 'The cat sat on the mat' contain?"
+- Bad: "What year was it?" (what event?)
+- Good: "What year did the Battle of Mactan happen?"
+
 RULES:
 - For each "Q: ..." and "ANS: ..." pair: Q becomes "front", ANS becomes "back"
 - For each "Question: ..." and "Answer: ..." pair: Question becomes "front", Answer becomes "back"
 - For each "___? ... Answer: ___" pattern: The question becomes "front", the answer becomes "back"
 - Keep the exact wording of questions and answers
+- If a question is vague, make it more specific by adding context from the text
 - Return ONLY JSON array: [{"front":"...","back":"..."}]
 
 CONTENT:
@@ -161,6 +180,18 @@ ${chunkText}`;
     return `Generate STUDY FLASHCARDS from this text. ${ctx}
 
 IMPORTANT: This text is in PARAGRAPH format. Extract key facts as Q&A pairs.
+
+CRITICAL RULE - SELF-CONTAINED QUESTIONS:
+- Every question (front) must make complete sense on its own, WITHOUT needing to read the source material
+- Include the specific topic, subject, or context in each question
+- Bad: "How many words does this sentence contain?" (which sentence?)
+- Good: "How many words does the sentence 'The cat sat on the mat' contain?"
+- Bad: "What year was it?" (what event?)
+- Good: "What year did the Battle of Mactan happen?"
+- Bad: "Who is he?" (who?)
+- Good: "Who is Lapu-Lapu?"
+- Bad: "What happened?" (what event?)
+- Good: "What happened during the Cry of Pugad Lawin?"
 
 EXTRACTION RULES:
 1. For each person: "Who is [NAME]?" -> "Their role/achievement/significance"
