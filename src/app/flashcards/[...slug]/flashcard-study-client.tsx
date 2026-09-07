@@ -138,8 +138,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   const [flashImage, setFlashImage] = useState<string | null>(null);
   const [flashVisible, setFlashVisible] = useState(false);
   const [flashImages, setFlashImages] = useState<Record<string, string[]>>({});
+  const [flashEnabled, setFlashEnabled] = useState(() => { if (typeof window !== "undefined") { const v = localStorage.getItem("gilasos-flash-enabled"); return v === null ? true : v === "true"; } return true; });
   const flashQueues = useRef<Record<string, string[]>>({});
-  const sessionStartRef = useRef<number>(0);
   const flashIndex = useRef<Record<string, number>>({});
   const [cardLevels, setCardLevels] = useState<Record<number, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -458,12 +458,13 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   }
 
   function showFlash(type: string) {
+    if (!flashEnabled) return;
     const img = pickRandom(type);
     if (img) {
       setFlashImage(img);
       requestAnimationFrame(() => setFlashVisible(true));
-      setTimeout(() => setFlashVisible(false), 2500);
-      setTimeout(() => setFlashImage(null), 2800);
+      setTimeout(() => setFlashVisible(false), 1200);
+      setTimeout(() => setFlashImage(null), 1500);
     }
   }
 
@@ -952,8 +953,11 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                         {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                       </div>
                     </div>
-                    <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
-                      {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
+                    <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--os-text-dim)" }}>
+                      <span>{!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}</span>
+                      <button onClick={() => { const next = !flashEnabled; setFlashEnabled(next); localStorage.setItem("gilasos-flash-enabled", String(next)); }} title={flashEnabled ? "Image flash ON" : "Image flash OFF"} style={{ padding: "2px 8px", fontSize: 11, background: flashEnabled ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.06)", border: `1px solid ${flashEnabled ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.1)"}`, borderRadius: 6, color: flashEnabled ? "#4ade80" : "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                        {flashEnabled ? "Flash ON" : "Flash OFF"}
+                      </button>
                     </div>
                     <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
                       {!reviewFlipped ? (
