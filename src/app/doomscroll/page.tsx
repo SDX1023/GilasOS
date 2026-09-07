@@ -52,16 +52,14 @@ export default function DoomscrollPage() {
     }
   }, [scrolling]);
 
-  const fetchVideos = async () => {
+  const fetchVideos = async (append = false) => {
     setFetchingVideos(true);
     try {
       const q = settings.search_query ? `&q=${encodeURIComponent(settings.search_query)}` : "";
       const res = await fetch(`${window.location.origin}/api/doomscroll?count=12${q}`);
       const data = await res.json();
       if (data.videos && data.videos.length > 0) {
-        setVideos(data.videos);
-      } else {
-        console.error("No videos returned:", data);
+        setVideos(prev => append ? [...prev, ...data.videos] : data.videos);
       }
     } catch (e) { console.error("Failed to fetch videos:", e); }
     setFetchingVideos(false);
@@ -91,9 +89,16 @@ export default function DoomscrollPage() {
 
   // Navigate videos
   const goNext = useCallback(() => {
-    if (currentIdx < videos.length - 1) setCurrentIdx(currentIdx + 1);
-    else { fetchVideos(); setCurrentIdx(0); }
-  }, [currentIdx, videos.length]);
+    if (currentIdx < videos.length - 1) {
+      setCurrentIdx(currentIdx + 1);
+      // Pre-fetch more when near the end
+      if (currentIdx >= videos.length - 3 && !fetchingVideos) fetchVideos(true);
+    } else {
+      // At the end — fetch more and keep going
+      if (!fetchingVideos) fetchVideos(true);
+      setCurrentIdx(currentIdx + 1);
+    }
+  }, [currentIdx, videos.length, fetchingVideos]);
 
   const goPrev = useCallback(() => {
     if (currentIdx > 0) setCurrentIdx(currentIdx - 1);
