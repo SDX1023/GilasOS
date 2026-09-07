@@ -148,7 +148,6 @@ export default function WeeklySummary({ onClose }: { onClose?: () => void }) {
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: "#0a0e18",
-        borderRadius: 16,
         scale: 2,
       });
       const link = document.createElement("a");
