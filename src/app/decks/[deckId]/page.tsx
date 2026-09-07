@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target, Share2 } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
-import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, sortWeakCardsFirst } from "@/lib/user-data";
+import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, sortWeakCardsFirst, saveWrongAnswer } from "@/lib/user-data";
 import { getDefaultState, updateCardState, CardState } from "@/lib/fsrs";
 import { earnBadge } from "@/lib/badges";
 
@@ -649,6 +649,9 @@ export default function DeckStudyPage() {
     if (user && current) {
       const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
       logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
+      if (result !== "known") {
+        saveWrongAnswer(user.id, current.front, current.back, deckId, "", current.hint || "").catch(() => {});
+      }
 
       const key = `${current.front}:::${current.back}`;
       const currentState = schedules.get(key) || getDefaultState();

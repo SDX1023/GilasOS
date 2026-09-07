@@ -6,7 +6,7 @@ import { loadCustomContent, saveCustomContent } from "@/lib/custom-content";
 import { getSupabase } from "@/lib/supabase";
 import { ChevronRight, Download, Pencil, Check, X, Play, Plus, Trash2, Search, Bookmark, Shuffle, Timer, Share2, Copy, Target } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession, logCardResult, loadWeakCards } from "@/lib/user-data";
+import { saveUserFlashcard, saveStudyStats, toggleBookmark, loadBookmarkedCards, saveStudySession, logCardResult, loadWeakCards, saveWrongAnswer } from "@/lib/user-data";
 import { usePomodoroSafe } from "@/components/pomodoro/pomodoro-context";
 import { MathRenderer } from "@/components/math-renderer";
 import { earnBadge } from "@/lib/badges";
@@ -533,7 +533,10 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   function handleDontKnow() {
     showFlash("dontknow");
     const current = queue[queueIndex];
-    if (user && current) logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "dont_know").catch(() => {});
+    if (user && current) {
+      logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "dont_know").catch(() => {});
+      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch(() => {});
+    }
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setDontKnowCount((d) => d + 1);
@@ -547,7 +550,10 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
   function handleForgot() {
     showFlash("forgot");
     const current = queue[queueIndex];
-    if (user && current) logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "forgot").catch(() => {});
+    if (user && current) {
+      logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "forgot").catch(() => {});
+      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch(() => {});
+    }
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
     setForgotCount((f) => f + 1);
@@ -903,6 +909,12 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
               >
                 {showFormulas ? "Σ On" : "Σ Off"}
               </button>
+              <button onClick={() => { const next = !flashEnabled; setFlashEnabled(next); localStorage.setItem("gilasos-flash-enabled", String(next)); }}
+                className="glass-btn"
+                style={{ padding: "6px 10px", fontSize: 12, ...(flashEnabled ? { background: "rgba(74,222,128,0.15)", color: "#4ade80", borderColor: "rgba(74,222,128,0.3)" } : {}) }}
+              >
+                {flashEnabled ? "Flash On" : "Flash Off"}
+              </button>
               <button onClick={exitReview} className="glass-btn" style={{ padding: "6px 10px", fontSize: 12 }}>
                 Exit
               </button>
@@ -954,11 +966,8 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                         {!reviewFlipped && queue[queueIndex].hint && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {queue[queueIndex].hint}</p>}
                       </div>
                     </div>
-                    <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--os-text-dim)" }}>
-                      <span>{!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}</span>
-                      <button onClick={() => { const next = !flashEnabled; setFlashEnabled(next); localStorage.setItem("gilasos-flash-enabled", String(next)); }} title={flashEnabled ? "Image flash ON" : "Image flash OFF"} style={{ padding: "2px 8px", fontSize: 11, background: flashEnabled ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.06)", border: `1px solid ${flashEnabled ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.1)"}`, borderRadius: 6, color: flashEnabled ? "#4ade80" : "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                        {flashEnabled ? "Flash ON" : "Flash OFF"}
-                      </button>
+                    <div style={{ marginTop: "0.75rem", fontSize: 12, color: "var(--os-text-dim)" }}>
+                      {!reviewFlipped ? "Space/Enter to flip" : "1 = Forgot  2 = Don't Know  3 = Know"}
                     </div>
                     <div style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
                       {!reviewFlipped ? (

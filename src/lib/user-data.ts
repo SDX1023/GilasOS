@@ -580,6 +580,22 @@ export async function logCardResult(userId: string, deckId: string, cardFront: s
   });
 }
 
+export async function saveWrongAnswer(userId: string, front: string, back: string, source?: string, subject?: string, hint?: string) {
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from("wrong_answers")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("front", front)
+    .eq("back", back)
+    .eq("mastered", false)
+    .maybeSingle();
+  if (existing) return;
+  await supabase.from("wrong_answers").insert({
+    user_id: userId, front, back, source: source || "", subject: subject || "", hint: hint || "",
+  });
+}
+
 export async function loadWeakCards(userId: string, deckId?: string): Promise<{ front: string; back: string; deck_id: string; forgot: number; known: number; dont_know: number }[]> {
   const supabase = getSupabase();
   let query = supabase.from("card_results").select("card_front, card_back, deck_id, result").eq("user_id", userId);
