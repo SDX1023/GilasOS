@@ -39,44 +39,56 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ videos: shuffled, fallback: true });
     }
 
-    // Use user's search query or default random queries
+    // Build search queries — split by comma if multiple topics
     const defaultQueries = ["shorts funny", "shorts satisfying", "shorts amazing", "shorts trending", "shorts viral"];
-    let randomQuery = searchQuery || defaultQueries[Math.floor(Math.random() * defaultQueries.length)];
-    // Always include "shorts" to avoid music videos
-    if (!randomQuery.toLowerCase().includes("shorts")) {
-      randomQuery = randomQuery + " shorts";
+    let queries: string[] = [];
+    if (searchQuery) {
+      queries = searchQuery.split(",").map((q: string) => q.trim()).filter(Boolean).map((q: string) => q.toLowerCase().includes("shorts") ? q : q + " shorts");
+    }
+    if (queries.length === 0) {
+      queries = [defaultQueries[Math.floor(Math.random() * defaultQueries.length)]];
     }
 
-    const searchParams = new URLSearchParams({
-      key: apiKey,
-      part: "snippet",
-      type: "video",
-      q: randomQuery,
-      order: "viewCount",
-      maxResults: String(Math.min(count, 50)),
-    });
+    // Fetch from each query (up to 3 to avoid rate limits)
+    const allVideos: any[] = [];
+    for (const q of queries.slice(0, 3)) {
+      try {
+        const searchParams = new URLSearchParams({
+          key: apiKey,
+          part: "snippet",
+          type: "video",
+          q,
+          order: "viewCount",
+          maxResults: String(Math.min(count, 20)),
+        });
+        const res = await fetch(`${YOUTUBE_API}/search?${searchParams}`);
+        if (res.ok) {
+          const data = await res.json();
+          for (const item of data.items || []) {
+            allVideos.push({
+              id: item.id.videoId,
+              title: item.snippet.title,
+              channel: item.snippet.channelTitle,
+              thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
+              publishedAt: item.snippet.publishedAt,
+            });
+          }
+        }
+      } catch {}
+    }
 
-    const res = await fetch(`${YOUTUBE_API}/search?${searchParams}`);
-    if (!res.ok) {
+    // Deduplicate by video ID
+    const seen = new Set<string>();
+    const unique = allVideos.filter((v: any) => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
+
+    if (unique.length === 0) {
       const shuffled = [...FALLBACK_VIDEOS].sort(() => Math.random() - 0.5).slice(0, count);
       return NextResponse.json({ videos: shuffled, fallback: true });
     }
 
-    const data = await res.json();
-    const videos = (data.items || []).map((item: any) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-      publishedAt: item.snippet.publishedAt,
-    }));
-
-    if (videos.length === 0) {
-      const shuffled = [...FALLBACK_VIDEOS].sort(() => Math.random() - 0.5).slice(0, count);
-      return NextResponse.json({ videos: shuffled, fallback: true });
-    }
-
-    return NextResponse.json({ videos });
+    // Shuffle and return
+    const shuffled = unique.sort(() => Math.random() - 0.5).slice(0, count);
+    return NextResponse.json({ videos: shuffled });
   } catch (e) {
     console.error("Doomscroll API error:", e);
     const shuffled = [...FALLBACK_VIDEOS].sort(() => Math.random() - 0.5).slice(0, 12);
