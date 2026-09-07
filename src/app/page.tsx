@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -8,9 +9,13 @@ import {
   CheckSquare,
   Trophy,
   Sparkles,
+  Calendar,
 } from "lucide-react";
+import DailyChallenges from "@/components/daily-challenges";
+import WeeklySummary from "@/components/weekly-summary";
 
 export default function Home() {
+  const [showWeekly, setShowWeekly] = useState(false);
   const features = [
     {
       icon: BookOpen,
@@ -98,6 +103,23 @@ export default function Home() {
               little website created by me! See you guys soonest:)
             </p>
           </div>
+
+          {/* Daily Challenges + Weekly Summary */}
+          <div style={{ maxWidth: 480, margin: "0 auto 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <DailyChallenges />
+            <button onClick={() => setShowWeekly(true)} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.02)", color: "#94a3b8", fontSize: 12, fontWeight: 500,
+              cursor: "pointer", transition: "all 0.15s", fontFamily: "inherit",
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "#e2e8f0"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.color = "#94a3b8"; }}
+            >
+              <Calendar size={14} /> View Weekly Summary
+            </button>
+          </div>
+          {showWeekly && <WeeklySummary onClose={() => setShowWeekly(false)} />}
 
           {/* Features Grid */}
           <div className="feature-grid">
