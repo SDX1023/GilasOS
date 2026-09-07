@@ -234,6 +234,7 @@ export default function DeckStudyPage() {
   const [reviewComplete, setReviewComplete] = useState(false);
   const [shuffled, setShuffled] = useState(false);
   const [queue, setQueue] = useState<DeckCard[]>([]);
+  const [history, setHistory] = useState<{ card: DeckCard; result: "known" | "forgot" | "dont_know" }[]>([]);
   const [knownCount, setKnownCount] = useState(0);
   const [forgotCount, setForgotCount] = useState(0);
   const [dontKnowCount, setDontKnowCount] = useState(0);
@@ -429,16 +430,25 @@ export default function DeckStudyPage() {
     if (!reviewMode) return;
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!reviewFlipped) setReviewFlipped(true); }
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!reviewFlipped) setReviewFlipped(true); else if (reviewFlipped) setReviewFlipped(false); }
       if (reviewFlipped) {
-        if (e.key === "1") nextCard(false);
-        if (e.key === "2") nextCard(false, true);
-        if (e.key === "3") nextCard(true);
+        if (e.key === "1" || e.key === "f") { e.preventDefault(); nextCard(false); }
+        if (e.key === "2" || e.key === "d") { e.preventDefault(); nextCard(false, true); }
+        if (e.key === "3" || e.key === "a") { e.preventDefault(); nextCard(true); }
+        if (e.key === "c") {
+          const card = queue[reviewIndex];
+          if (card) {
+            const text = `${card.front}\n${card.back}${card.hint ? `\nHint: ${card.hint}` : ""}`;
+            navigator.clipboard.writeText(text);
+          }
+        }
       }
+      if (e.key === "z" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undoLastCard(); }
+      if (e.key === "Escape" && reviewMode) { setReviewMode(false); setReviewComplete(false); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewMode, reviewFlipped, reviewIndex]);
+  }, [reviewMode, reviewFlipped, reviewIndex, queue]);
 
   const fetchDeck = async () => {
     if (!user) return;
@@ -561,6 +571,31 @@ export default function DeckStudyPage() {
     loadCardSchedules(user.id, deckId).then(setSchedules);
   }, [user, deckId]);
 
+  function buildSmartQueue(cardList: DeckCard[], scheds: Map<string, CardState>): DeckCard[] {
+    if (scheds.size === 0) return [...cardList].sort(() => Math.random() - 0.5);
+    const indexed = cardList.map((card) => {
+      const key = `${card.front}:::${card.back}`;
+      const state = scheds.get(key);
+      const weak = state ? state.forgot + state.dontKnow > state.known : false;
+      const weight = weak ? 4 : Math.max(1, 4 - (state?.reps || 0));
+      return { card, weight };
+    });
+    const result: DeckCard[] = [];
+    const remaining = [...indexed];
+    while (remaining.length > 0) {
+      const totalWeight = remaining.reduce((s, r) => s + r.weight, 0);
+      let r = Math.random() * totalWeight;
+      let picked = 0;
+      for (let i = 0; i < remaining.length; i++) {
+        r -= remaining[i].weight;
+        if (r <= 0) { picked = i; break; }
+      }
+      result.push(remaining[picked].card);
+      remaining.splice(picked, 1);
+    }
+    return result;
+  }
+
   const startReview = async () => {
     const stored = localStorage.getItem(sessionKey);
     if (stored && !shuffled) {
@@ -573,22 +608,23 @@ export default function DeckStudyPage() {
           if (data.swapped !== undefined) setSwapped(data.swapped);
           setReviewFlipped(false); setReviewComplete(false); setReviewMode(true);
           setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
+          setHistory([]);
           return;
         }
       } catch {}
     }
     let q: typeof cards;
     if (shuffled) {
-      q = [...cards].sort(() => Math.random() - 0.5);
+      q = buildSmartQueue(cards, schedules);
     } else if (user && schedules.size > 0) {
-      q = sortWeakCardsFirst(cards, schedules);
+      q = buildSmartQueue(cards, schedules);
     } else {
       q = [...cards];
     }
     setQueue(q); setReviewIndex(0); setReviewFlipped(false); setReviewComplete(false);
     setKnownCount(0); setForgotCount(0); setDontKnowCount(0);
     setTypedAnswer(""); setAnswerChecked(false);
-    setReviewMode(true);
+    setReviewMode(true); setHistory([]);
   };
 
   const startCram = async () => {
@@ -621,6 +657,7 @@ export default function DeckStudyPage() {
       saveCardSchedule(user.id, deckId, current.front, current.back, newState).catch(() => {});
 
       showFlash(result === "known" ? "know" : result === "dont_know" ? "dontknow" : "forgot");
+      setHistory((prev) => [...prev, { card: current, result }]);
     }
     if (dontKnow) setDontKnowCount(d => d + 1); else if (correct) setKnownCount(k => k + 1); else setForgotCount(f => f + 1);
     const next = queue.filter((_, i) => i !== reviewIndex);
@@ -628,6 +665,22 @@ export default function DeckStudyPage() {
     setQueue(next); setReviewIndex(reviewIndex >= next.length ? 0 : reviewIndex);
     setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
     setQuizKey(k => k + 1); setQuizAnswered(false); setQuizSelectedIndex(null);
+  };
+
+  const undoLastCard = () => {
+    if (history.length === 0) return;
+    const last = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    setQueue((prev) => {
+      const newQueue = [...prev];
+      newQueue.splice(reviewIndex, 0, last.card);
+      return newQueue;
+    });
+    if (last.result === "known") setKnownCount((k) => Math.max(0, k - 1));
+    else if (last.result === "forgot") setForgotCount((f) => Math.max(0, f - 1));
+    else setDontKnowCount((d) => Math.max(0, d - 1));
+    setReviewFlipped(false); setTypedAnswer(""); setAnswerChecked(false); setAnswerCorrect(false);
+    setReviewComplete(false);
   };
 
   const filtered = cards.filter(c => c.front.toLowerCase().includes(searchQuery.toLowerCase()) || c.back.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -691,6 +744,11 @@ export default function DeckStudyPage() {
             >
               {flashEnabled ? "Flash On" : "Flash Off"}
             </button>
+            {history.length > 0 && (
+              <button onClick={undoLastCard} className="glass-btn" title="Undo last card (Ctrl+Z)" style={{ opacity: 0.8 }}>
+                ↩
+              </button>
+            )}
             <button onClick={() => {
               if (timerRunning) { clearInterval(timerRef.current!); setTimerRunning(false); }
               else { setTimerRunning(true); timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000); }
