@@ -16,7 +16,7 @@ interface Video {
 export default function DoomscrollPage() {
   const { user } = useAuth();
   const [progress, setProgress] = useState<{ current: number; target: number; type: string; unlocked: boolean } | null>(null);
-  const [settings, setSettings] = useState<DoomscrollSettings>({ benchmark_type: "cards", benchmark_target: 50, scroll_duration_min: 10 });
+  const [settings, setSettings] = useState<DoomscrollSettings>({ benchmark_type: "cards", benchmark_target: 50, scroll_duration_min: 10, search_query: "" });
   const [usage, setUsage] = useState<{ seconds_used: number; unlocked: boolean }>({ seconds_used: 0, unlocked: false });
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
