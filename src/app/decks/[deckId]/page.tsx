@@ -685,6 +685,12 @@ export default function DeckStudyPage() {
             >
               {showFormulas ? "Σ On" : "Σ Off"}
             </button>
+            <button onClick={() => { const next = !flashEnabled; setFlashEnabled(next); localStorage.setItem("gilasos-flash-enabled", String(next)); }}
+              className="glass-btn"
+              style={flashEnabled ? { background: "rgba(74,222,128,0.15)", color: "#4ade80", borderColor: "rgba(74,222,128,0.3)" } : {}}
+            >
+              {flashEnabled ? "Flash On" : "Flash Off"}
+            </button>
             <button onClick={() => {
               if (timerRunning) { clearInterval(timerRef.current!); setTimerRunning(false); }
               else { setTimerRunning(true); timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000); }
@@ -808,11 +814,8 @@ export default function DeckStudyPage() {
                     </p>
                     {!reviewFlipped && card.hint && !swapped && <p style={{ fontSize: "0.9rem", marginTop: "1rem", fontStyle: "italic", color: "var(--os-text-dim)" }}>Hint: {card.hint}</p>}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12, color: "var(--os-text-dim)" }}>
-                    <span>{!reviewFlipped ? "Space/Enter to reveal" : "1 = Forgot  2 = Don't Know  3 = Know"}</span>
-                    <button onClick={() => { const next = !flashEnabled; setFlashEnabled(next); localStorage.setItem("gilasos-flash-enabled", String(next)); }} title={flashEnabled ? "Image flash ON" : "Image flash OFF"} style={{ padding: "2px 8px", fontSize: 11, background: flashEnabled ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.06)", border: `1px solid ${flashEnabled ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.1)"}`, borderRadius: 6, color: flashEnabled ? "#4ade80" : "var(--os-text-dim)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                      {flashEnabled ? "Flash ON" : "Flash OFF"}
-                    </button>
+                  <div style={{ fontSize: 12, color: "var(--os-text-dim)" }}>
+                    {!reviewFlipped ? "Space/Enter to reveal" : "1 = Forgot  2 = Don't Know  3 = Know"}
                   </div>
                   <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
                     {!reviewFlipped ? (
