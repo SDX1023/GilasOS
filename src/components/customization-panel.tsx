@@ -16,6 +16,7 @@ const WALLPAPER_TABS = ["Themes", "Standard", "Themed", "Pastel"] as const;
 type WallpaperTab = typeof WALLPAPER_TABS[number];
 
 const wallpaperGroups: Record<WallpaperTab, { name: string; colors: string[] }[]> = {
+  Themes: [],
   Standard: [
     { name: "Default Dark", colors: ["#0a0e18", "#1a1a2e"] },
     { name: "Midnight Blue", colors: ["#0f172a", "#1e3a5f"] },

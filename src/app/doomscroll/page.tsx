@@ -259,7 +259,7 @@ export default function DoomscrollPage() {
       {isUnlocked && scrolling && !fetchingVideos && videos.length === 0 && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
           <div style={{ fontSize: 14, color: "var(--os-text-dim)" }}>No videos loaded</div>
-          <button onClick={fetchVideos} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>Retry</button>
+          <button onClick={() => fetchVideos()} className="glass-btn" style={{ padding: "8px 16px", fontSize: 13 }}>Retry</button>
         </div>
       )}
 
