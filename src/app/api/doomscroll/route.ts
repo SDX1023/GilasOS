@@ -41,7 +41,11 @@ export async function GET(req: NextRequest) {
 
     // Use user's search query or default random queries
     const defaultQueries = ["shorts funny", "shorts satisfying", "shorts amazing", "shorts trending", "shorts viral"];
-    const randomQuery = searchQuery || defaultQueries[Math.floor(Math.random() * defaultQueries.length)];
+    let randomQuery = searchQuery || defaultQueries[Math.floor(Math.random() * defaultQueries.length)];
+    // Always include "shorts" to avoid music videos
+    if (!randomQuery.toLowerCase().includes("shorts")) {
+      randomQuery = randomQuery + " shorts";
+    }
 
     const searchParams = new URLSearchParams({
       key: apiKey,

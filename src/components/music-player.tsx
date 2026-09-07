@@ -90,6 +90,7 @@ export function MusicPlayer() {
     }
 
     if (!miniIframeRef.current) {
+      const isMobile = window.innerWidth < 640;
       const iframe = document.createElement("iframe");
       iframe.src = EMBED_URL;
       iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
@@ -97,10 +98,10 @@ export function MusicPlayer() {
       iframe.title = "Spotify Player";
       iframe.style.cssText = `
         position:fixed;
-        bottom:80px;
-        right:24px;
-        width:320px;
-        height:80px;
+        bottom:${isMobile ? "60px" : "80px"};
+        right:${isMobile ? "12px" : "24px"};
+        width:${isMobile ? "200px" : "320px"};
+        height:${isMobile ? "56px" : "80px"};
         border:none;
         border-radius:12px;
         z-index:9999;
@@ -134,8 +135,9 @@ export function MusicPlayer() {
       panelContainer.appendChild(iframe);
     } else {
       // Move back to body as mini player
+      const isMobile = window.innerWidth < 640;
       iframe.style.cssText = `
-        position:fixed; bottom:80px; right:24px; width:320px; height:80px;
+        position:fixed; bottom:${isMobile ? "60px" : "80px"}; right:${isMobile ? "12px" : "24px"}; width:${isMobile ? "200px" : "320px"}; height:${isMobile ? "56px" : "80px"};
         border:none; border-radius:12px; z-index:9999; opacity:0.6;
         pointer-events:auto; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         border: 1px solid rgba(255,255,255,0.08);
@@ -228,25 +230,25 @@ export function MusicPlayer() {
         }
       `}</style>
 
-      <button 
-        ref={btnRef} 
+      <button
+        ref={btnRef}
         onClick={() => { setOpen(!open); if (!started) setStarted(true); }}
         style={{
-          position: "fixed", 
-          bottom: 24, 
-          right: 24, 
-          width: 44, 
-          height: 44, 
-          borderRadius: "12px",
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          width: 36,
+          height: 36,
+          borderRadius: "10px",
           background: open ? "rgba(30,30,30,0.95)" : "rgba(20,20,20,0.9)",
           backdropFilter: "blur(20px)",
           border: "1px solid rgba(255,255,255,0.06)",
-          cursor: "pointer", 
-          display: "flex", 
-          alignItems: "center", 
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 2px 16px rgba(0,0,0,0.4)",
-          zIndex: 10000, 
+          zIndex: 10000,
           transition: "all 0.2s ease",
         }}
       >
@@ -265,16 +267,16 @@ export function MusicPlayer() {
 
       {open && (
         <div ref={panelRef} style={{
-          position: "fixed", 
-          bottom: 80, 
-          right: 24, 
-          width: 380,
+          position: "fixed",
+          bottom: 80,
+          right: 24,
+          width: "min(380px, calc(100vw - 48px))",
           background: "rgba(28, 28, 30, 0.95)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: "14px",
           boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-          zIndex: 10001, 
+          zIndex: 10001,
           overflow: "hidden",
           animation: "slideUp 0.2s ease",
           padding: "16px",
