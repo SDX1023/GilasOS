@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect, useRef } from "react";
 import CustomizationPanel from "@/components/customization-panel";
+import GlobalSearch from "@/components/global-search";
 
 const navItems = [
   { href: "/subjects", label: "Subjects", icon: BookOpen },
@@ -156,6 +157,7 @@ export function Navbar() {
               }}>
                 <Award size={15} />
               </Link>
+              <GlobalSearch />
               <button onClick={() => setShowCustomize(true)}
                 className="nav-link"
                 style={{
