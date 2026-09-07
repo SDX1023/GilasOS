@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ThemeOverlay from "./theme-overlay";
 import { THEME_MAP } from "./background-overlay";
+import { THEME_PRESETS, type ThemePreset } from "@/lib/theme-presets";
 import { useAuth } from "@/lib/auth-context";
 import { getSupabase } from "@/lib/supabase";
 
@@ -11,7 +12,7 @@ interface CustomizationPanelProps {
   onClose: () => void;
 }
 
-const WALLPAPER_TABS = ["Standard", "Themed", "Pastel"] as const;
+const WALLPAPER_TABS = ["Themes", "Standard", "Themed", "Pastel"] as const;
 type WallpaperTab = typeof WALLPAPER_TABS[number];
 
 const wallpaperGroups: Record<WallpaperTab, { name: string; colors: string[] }[]> = {
@@ -224,7 +225,53 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
         {/* Scrollable Content */}
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "14px 22px 0", scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
 
-          {/* Wallpaper Grid */}
+          {/* Themes Grid */}
+          {wallpaperTab === "Themes" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "20px" }}>
+            {THEME_PRESETS.map((preset) => (
+              <button key={preset.name} onClick={() => {
+                // Find wallpaper index
+                const wpIdx = allWallpapers.findIndex(w => w.colors[0] === preset.wallpaperColors[0]);
+                if (wpIdx !== -1) setSelectedWallpaper(wpIdx);
+                // Find accent index
+                const acIdx = accentColors.findIndex(a => a.color === preset.accent);
+                if (acIdx !== -1) setSelectedAccent(acIdx);
+                // Apply immediately for preview
+                document.documentElement.style.setProperty("--os-bg-primary", `linear-gradient(135deg, ${preset.wallpaperColors[0]}, ${preset.wallpaperColors[1]})`);
+                document.documentElement.style.setProperty("--os-accent", preset.accent);
+                document.documentElement.style.setProperty("--os-accent-rgb", preset.accentRgb);
+                window.dispatchEvent(new CustomEvent("gilasos-theme-change", { detail: { theme: null } }));
+              }}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "12px",
+                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer",
+                  transition: "all 0.2s", fontFamily: "inherit", textAlign: "left",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: "10px", flexShrink: 0,
+                  background: `linear-gradient(145deg, ${preset.wallpaperColors[0]}, ${preset.wallpaperColors[1]})`,
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  boxShadow: `0 0 0 2px ${preset.accent}40, 0 2px 8px ${preset.accent}30`,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px",
+                }}>
+                  {preset.icon}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "#e2e8f0" }}>{preset.name}</div>
+                  <div style={{ display: "flex", gap: "3px", marginTop: "4px" }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: preset.accent, border: "1px solid rgba(255,255,255,0.15)" }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: preset.wallpaperColors[0], border: "1px solid rgba(255,255,255,0.15)" }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: preset.wallpaperColors[1], border: "1px solid rgba(255,255,255,0.15)" }} />
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+          ) : (
+          /* Wallpaper Grid */
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", marginBottom: "20px" }}>
             {(wallpaperTab === "Themed" ? visibleThemed : currentGroup).map((wp, i) => {
               const globalIdx = getGlobalIndex(i);
@@ -259,6 +306,7 @@ export default function CustomizationPanel({ isOpen, onClose }: CustomizationPan
               );
             })}
           </div>
+          )}
 
           {/* Accent Colors */}
           <div style={{ marginBottom: "18px" }}>

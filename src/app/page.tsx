@@ -9,6 +9,7 @@ import {
   Trophy,
   Sparkles,
 } from "lucide-react";
+import { DailyStreak } from "@/components/daily-streak";
 
 export default function Home() {
   const features = [
@@ -97,6 +98,11 @@ export default function Home() {
               you bag a few competitions here and there. Regardless, I hope you enjoy this
               little website created by me! See you guys soonest:)
             </p>
+          </div>
+
+          {/* Daily Streak */}
+          <div style={{ maxWidth: 480, margin: "0 auto 24px" }}>
+            <DailyStreak />
           </div>
 
           {/* Features Grid */}
