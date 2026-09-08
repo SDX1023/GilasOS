@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Calculator, Play, Pause, SkipForward, RotateCcw, Trophy, Target, Clock, Zap, CheckCircle, XCircle, ChevronLeft } from "lucide-react";
+import { Play, Pause, SkipForward, RotateCcw, Trophy, Target, Clock, CheckCircle, XCircle, ChevronLeft, Zap, Flame, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 type Operation = "add" | "sub" | "mul" | "div" | "mix";
@@ -70,7 +70,6 @@ function generateQuestion(settings: Operation, digits: number, terms: number): Q
   }
 
   const expression = operands.map((o, i) => (i === 0 ? `${o}` : ` ${symbols[op]} ${o}`)).join("");
-
   return { operands, op, expression, answer: Math.round(answer * 1000) / 1000 };
 }
 
@@ -92,6 +91,14 @@ function formatTime(ms: number): string {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+const OP_CONFIG: Record<Operation, { symbol: string; label: string; color: string; gradient: string }> = {
+  add: { symbol: "+", label: "Add", color: "#22c55e", gradient: "from-emerald-500/20 to-emerald-500/5" },
+  sub: { symbol: "−", label: "Sub", color: "#60a5fa", gradient: "from-blue-500/20 to-blue-500/5" },
+  mul: { symbol: "×", label: "Mul", color: "#a78bfa", gradient: "from-violet-500/20 to-violet-500/5" },
+  div: { symbol: "÷", label: "Div", color: "#f59e0b", gradient: "from-amber-500/20 to-amber-500/5" },
+  mix: { symbol: "?", label: "Mix", color: "#f472b6", gradient: "from-pink-500/20 to-pink-500/5" },
+};
+
 export default function SpeedMathPage() {
   const [phase, setPhase] = useState<GamePhase>("setup");
   const [settings, setSettings] = useState<Settings>({
@@ -105,11 +112,15 @@ export default function SpeedMathPage() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [questionStart, setQuestionStart] = useState(0);
-  const [questionTime, setQuestionTime] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [flashCorrect, setFlashCorrect] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQ = questions[currentIndex];
+  const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0;
 
   useEffect(() => {
     if (phase === "playing") {
@@ -117,6 +128,24 @@ export default function SpeedMathPage() {
       return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (phase === "playing" && settings.timerMode === "countdown") {
+      const totalMs = settings.countdownMinutes * 60 * 1000;
+      countdownRef.current = setInterval(() => {
+        setElapsed((p) => {
+          if (p >= totalMs) {
+            if (countdownRef.current) clearInterval(countdownRef.current);
+            if (timerRef.current) clearInterval(timerRef.current);
+            setPhase("finished");
+            return totalMs;
+          }
+          return p + 100;
+        });
+      }, 100);
+      return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+    }
+  }, [phase, settings.timerMode, settings.countdownMinutes]);
 
   useEffect(() => {
     if (phase === "playing" && inputRef.current) inputRef.current.focus();
@@ -136,41 +165,47 @@ export default function SpeedMathPage() {
     setSelectedOption(null);
     setElapsed(0);
     setQuestionStart(Date.now());
+    setStreak(0);
+    setBestStreak(0);
+    setFlashCorrect(null);
     setPhase("playing");
   }, [settings]);
+
+  const advance = useCallback((correct: boolean) => {
+    setFlashCorrect(correct);
+    setTimeout(() => setFlashCorrect(null), 600);
+    setUserInput("");
+    setSelectedOption(null);
+
+    if (currentIndex + 1 >= questions.length) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setPhase("finished");
+    } else {
+      setCurrentIndex((p) => p + 1);
+      setQuestionStart(Date.now());
+    }
+  }, [currentIndex, questions.length]);
 
   const submitAnswer = useCallback((answer: number | null) => {
     if (!currentQ || answer === null) return;
     const timeMs = Date.now() - questionStart;
     const correct = Math.abs(answer - currentQ.answer) < 0.01;
-    const result: QuestionResult = { question: currentQ, userAnswer: answer, correct, timeMs };
-    setResults((p) => [...p, result]);
-    setUserInput("");
-    setSelectedOption(null);
-
-    if (currentIndex + 1 >= questions.length) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setPhase("finished");
+    setResults((p) => [...p, { question: currentQ, userAnswer: answer, correct, timeMs }]);
+    if (correct) {
+      setStreak((s) => { const n = s + 1; setBestStreak((b) => Math.max(b, n)); return n; });
     } else {
-      setCurrentIndex((p) => p + 1);
-      setQuestionStart(Date.now());
+      setStreak(0);
     }
-  }, [currentQ, currentIndex, questions.length, questionStart]);
+    advance(correct);
+  }, [currentQ, questionStart, advance]);
 
   const skipQuestion = useCallback(() => {
     if (!currentQ) return;
-    const result: QuestionResult = { question: currentQ, userAnswer: null, correct: false, timeMs: Date.now() - questionStart };
-    setResults((p) => [...p, result]);
-    setUserInput("");
-    setSelectedOption(null);
-    if (currentIndex + 1 >= questions.length) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setPhase("finished");
-    } else {
-      setCurrentIndex((p) => p + 1);
-      setQuestionStart(Date.now());
-    }
-  }, [currentQ, currentIndex, questions.length, questionStart]);
+    setResults((p) => [...p, { question: currentQ, userAnswer: null, correct: false, timeMs: Date.now() - questionStart }]);
+    setStreak(0);
+    advance(false);
+  }, [currentQ, questionStart, advance]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (phase === "playing") {
@@ -201,17 +236,15 @@ export default function SpeedMathPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const correct = results.filter((r) => r.correct).length;
-  const wrong = results.filter((r) => !r.correct && r.userAnswer !== null).length;
-  const skipped = results.filter((r) => r.userAnswer === null).length;
-  const accuracy = results.length > 0 ? Math.round((correct / results.length) * 100) : 0;
+  const correctCount = results.filter((r) => r.correct).length;
+  const wrongCount = results.filter((r) => !r.correct && r.userAnswer !== null).length;
+  const skippedCount = results.filter((r) => r.userAnswer === null).length;
+  const accuracy = results.length > 0 ? Math.round((correctCount / results.length) * 100) : 0;
   const avgTime = results.length > 0 ? Math.round(results.reduce((s, r) => s + r.timeMs, 0) / results.length / 1000 * 10) / 10 : 0;
-
-  const opLabels: Record<Operation, string> = { add: "Addition", sub: "Subtraction", mul: "Multiplication", div: "Division", mix: "Mixed" };
-  const opSymbol: Record<Operation, string> = { add: "+", sub: "−", mul: "×", div: "÷", mix: "?" };
+  const remainingSec = settings.timerMode === "countdown" ? Math.max(0, Math.floor((settings.countdownMinutes * 60 * 1000 - elapsed) / 1000)) : null;
 
   return (
-    <div style={{ minHeight: "100%" }}>
+    <div style={{ minHeight: "100%", position: "relative" }}>
       <div className="os-background">
         <div className="os-orb os-orb--1" />
         <div className="os-orb os-orb--2" />
@@ -219,7 +252,30 @@ export default function SpeedMathPage() {
         <div className="os-grid" />
       </div>
 
-      <div className="os-window" style={{ maxWidth: 700 }}>
+      {/* Flash overlay */}
+      {flashCorrect !== null && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 200, pointerEvents: "none",
+          background: flashCorrect ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+          animation: "flashFade 0.6s ease-out forwards",
+        }} />
+      )}
+
+      <style>{`
+        @keyframes flashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes slideUp { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .speed-math-input:focus { border-color: var(--os-accent) !important; box-shadow: 0 0 0 3px rgba(109,40,217,0.2); }
+        .speed-math-option { transition: all 0.15s; }
+        .speed-math-option:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .speed-math-option:active { transform: scale(0.97); }
+        .speed-math-btn { transition: all 0.15s; }
+        .speed-math-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .speed-math-btn:active { transform: scale(0.97); }
+      `}</style>
+
+      <div className="os-window" style={{ maxWidth: 680 }}>
         <div className="os-window-header">
           <div className="os-window-title">
             <span className="icon">⚡</span>
@@ -232,285 +288,330 @@ export default function SpeedMathPage() {
           </div>
         </div>
 
-        <div className="os-window-body" style={{ padding: "24px 28px" }}>
-          {/* SETUP PHASE */}
+        <div className="os-window-body" style={{ padding: 0, overflow: "hidden" }}>
+
+          {/* ==================== SETUP ==================== */}
           {phase === "setup" && (
-            <div>
+            <div style={{ padding: "28px 28px 24px", animation: "slideUp 0.3s ease" }}>
               <div style={{ textAlign: "center", marginBottom: 28 }}>
-                <Calculator size={36} color="var(--os-accent)" style={{ marginBottom: 8 }} />
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>Practice Arena</h2>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 16, margin: "0 auto 12px",
+                  background: "linear-gradient(135deg, var(--os-accent), #a855f7)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 4px 20px rgba(109,40,217,0.3)",
+                }}>
+                  <Zap size={28} color="#fff" />
+                </div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>Practice Arena</h2>
                 <p style={{ fontSize: 13, color: "var(--os-text-dim)" }}>Sharpen your calculation speed</p>
               </div>
 
               {/* Operation Selector */}
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 22 }}>
                 <label style={labelStyle}>Operation</label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-                  {(["add", "sub", "mul", "div", "mix"] as Operation[]).map((op) => (
-                    <button key={op} onClick={() => setSettings((s) => ({ ...s, operation: op }))} style={{
-                      ...chipStyle, fontWeight: settings.operation === op ? 600 : 400,
-                      background: settings.operation === op ? "var(--os-accent)" : undefined,
-                      color: settings.operation === op ? "#fff" : undefined,
-                      borderColor: settings.operation === op ? "var(--os-accent)" : undefined,
-                    }}>
-                      <span style={{ fontSize: 16 }}>{opSymbol[op]}</span>
-                      <span style={{ fontSize: 10 }}>{opLabels[op]}</span>
-                    </button>
-                  ))}
+                  {(["add", "sub", "mul", "div", "mix"] as Operation[]).map((op) => {
+                    const cfg = OP_CONFIG[op];
+                    const active = settings.operation === op;
+                    return (
+                      <button key={op} onClick={() => setSettings((s) => ({ ...s, operation: op }))}
+                        className="speed-math-btn"
+                        style={{
+                          padding: "12px 4px", borderRadius: 10, border: `1.5px solid ${active ? cfg.color : "rgba(255,255,255,0.08)"}`,
+                          background: active ? `${cfg.color}18` : "rgba(255,255,255,0.02)", cursor: "pointer",
+                          color: active ? cfg.color : "var(--os-text-secondary)",
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                        }}>
+                        <span style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{cfg.symbol}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{cfg.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Settings Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-                <div>
-                  <label style={labelStyle}>Digits</label>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {[1, 2, 3, 4].map((d) => (
-                      <button key={d} onClick={() => setSettings((s) => ({ ...s, digits: d }))} style={{
-                        ...chipSm, background: settings.digits === d ? "var(--os-accent)" : undefined,
-                        color: settings.digits === d ? "#fff" : undefined,
-                      }}>{d}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle}>Terms</label>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {[2, 3, 4, 5].map((t) => (
-                      <button key={t} onClick={() => setSettings((s) => ({ ...s, terms: t }))} style={{
-                        ...chipSm, background: settings.terms === t ? "var(--os-accent)" : undefined,
-                        color: settings.terms === t ? "#fff" : undefined,
-                      }}>{t}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label style={labelStyle}>Questions</label>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {[5, 10, 15, 20, 30].map((q) => (
-                      <button key={q} onClick={() => setSettings((s) => ({ ...s, questions: q }))} style={{
-                        ...chipSm, background: settings.questions === q ? "var(--os-accent)" : undefined,
-                        color: settings.questions === q ? "#fff" : undefined,
-                      }}>{q}</button>
-                    ))}
-                  </div>
-                </div>
+              {/* Settings */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 22 }}>
+                <SettingGroup label="Digits" options={[1, 2, 3, 4]} value={settings.digits} onChange={(v) => setSettings((s) => ({ ...s, digits: v }))} />
+                <SettingGroup label="Terms" options={[2, 3, 4, 5]} value={settings.terms} onChange={(v) => setSettings((s) => ({ ...s, terms: v }))} />
+                <SettingGroup label="Questions" options={[5, 10, 15, 20, 30]} value={settings.questions} onChange={(v) => setSettings((s) => ({ ...s, questions: v }))} />
                 <div>
                   <label style={labelStyle}>Timer</label>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => setSettings((s) => ({ ...s, timerMode: "stopwatch" }))} style={{
-                      ...chipSm, flex: 1, background: settings.timerMode === "stopwatch" ? "var(--os-accent)" : undefined,
-                      color: settings.timerMode === "stopwatch" ? "#fff" : undefined,
-                    }}>⏱ Stopwatch</button>
-                    <button onClick={() => setSettings((s) => ({ ...s, timerMode: "countdown" }))} style={{
-                      ...chipSm, flex: 1, background: settings.timerMode === "countdown" ? "var(--os-accent)" : undefined,
-                      color: settings.timerMode === "countdown" ? "#fff" : undefined,
-                    }}>⏳ Countdown</button>
+                    {(["stopwatch", "countdown"] as TimerMode[]).map((m) => (
+                      <button key={m} onClick={() => setSettings((s) => ({ ...s, timerMode: m }))} className="speed-math-btn"
+                        style={{
+                          ...chipBtn, flex: 1,
+                          background: settings.timerMode === m ? "var(--os-accent)" : undefined,
+                          color: settings.timerMode === m ? "#fff" : undefined,
+                          borderColor: settings.timerMode === m ? "var(--os-accent)" : undefined,
+                        }}>
+                        {m === "stopwatch" ? "⏱ Stopwatch" : "⏳ Countdown"}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 {settings.timerMode === "countdown" && (
-                  <div>
-                    <label style={labelStyle}>Countdown (min)</label>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {[1, 2, 3, 5, 10].map((m) => (
-                        <button key={m} onClick={() => setSettings((s) => ({ ...s, countdownMinutes: m }))} style={{
-                          ...chipSm, background: settings.countdownMinutes === m ? "var(--os-accent)" : undefined,
-                          color: settings.countdownMinutes === m ? "#fff" : undefined,
-                        }}>{m}m</button>
-                      ))}
-                    </div>
-                  </div>
+                  <SettingGroup label="Duration (min)" options={[1, 2, 3, 5, 10]} value={settings.countdownMinutes} onChange={(v) => setSettings((s) => ({ ...s, countdownMinutes: v }))} />
                 )}
                 <div>
                   <label style={labelStyle}>Input Mode</label>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button onClick={() => setSettings((s) => ({ ...s, inputMode: "manual" }))} style={{
-                      ...chipSm, flex: 1, background: settings.inputMode === "manual" ? "var(--os-accent)" : undefined,
-                      color: settings.inputMode === "manual" ? "#fff" : undefined,
-                    }}>⌨ Manual</button>
-                    <button onClick={() => setSettings((s) => ({ ...s, inputMode: "mcq" }))} style={{
-                      ...chipSm, flex: 1, background: settings.inputMode === "mcq" ? "var(--os-accent)" : undefined,
-                      color: settings.inputMode === "mcq" ? "#fff" : undefined,
-                    }}>🔘 MCQ</button>
+                    {(["manual", "mcq"] as InputMode[]).map((m) => (
+                      <button key={m} onClick={() => setSettings((s) => ({ ...s, inputMode: m }))} className="speed-math-btn"
+                        style={{
+                          ...chipBtn, flex: 1,
+                          background: settings.inputMode === m ? "var(--os-accent)" : undefined,
+                          color: settings.inputMode === m ? "#fff" : undefined,
+                          borderColor: settings.inputMode === m ? "var(--os-accent)" : undefined,
+                        }}>
+                        {m === "manual" ? "⌨ Type" : "🔘 MCQ"}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <button onClick={startGame} style={{
-                width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer",
-                background: "var(--os-accent)", color: "#fff", fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "opacity 0.15s",
-              }}>
-                <Play size={18} /> Start Practice
+              <button onClick={startGame} className="speed-math-btn"
+                style={{
+                  width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer",
+                  background: "linear-gradient(135deg, var(--os-accent), #7c3aed)", color: "#fff",
+                  fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  boxShadow: "0 4px 20px rgba(109,40,217,0.3)",
+                }}>
+                <Play size={18} fill="currentColor" /> Start Practice
               </button>
 
-              <div style={{ marginTop: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginBottom: 6, fontWeight: 600 }}>⌨ Keyboard Shortcuts</p>
+              <div style={{ marginTop: 18, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, fontSize: 11, color: "var(--os-text-dim)" }}>
-                  <span><kbd style={kbdStyle}>Enter</kbd> Submit answer</span>
-                  <span><kbd style={kbdStyle}>Tab</kbd> Skip question</span>
-                  <span><kbd style={kbdStyle}>P</kbd> Pause / Resume</span>
-                  <span><kbd style={kbdStyle}>1-4</kbd> Select MCQ option</span>
+                  <span><kbd style={kbd}>Enter</kbd> Submit</span>
+                  <span><kbd style={kbd}>Tab</kbd> Skip</span>
+                  <span><kbd style={kbd}>P</kbd> Pause</span>
+                  <span><kbd style={kbd}>1-4</kbd> MCQ select</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* PLAYING / PAUSED PHASE */}
+          {/* ==================== PLAYING ==================== */}
           {(phase === "playing" || phase === "paused") && currentQ && (
-            <div>
-              {/* Top Bar */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); setPhase("setup"); }} style={ghostBtn}>
-                  <ChevronLeft size={16} /> Exit
+            <div style={{ animation: "slideUp 0.2s ease" }}>
+              {/* Top bar */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.01)",
+              }}>
+                <button onClick={() => { if (timerRef.current) clearInterval(timerRef.current); if (countdownRef.current) clearInterval(countdownRef.current); setPhase("setup"); }}
+                  className="speed-math-btn" style={ghostBtn}>
+                  <ChevronLeft size={15} /> Exit
                 </button>
-                <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 13, color: "var(--os-text-secondary)" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Target size={14} color="#22c55e" /> {currentIndex + 1}/{questions.length}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {streak >= 2 && (
+                    <span style={{
+                      display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 8,
+                      background: "rgba(249,115,22,0.12)", color: "#f97316", fontSize: 11, fontWeight: 700,
+                    }}>
+                      <Flame size={12} /> {streak}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 12, color: "var(--os-text-dim)", fontWeight: 500, fontFamily: "monospace" }}>
+                    {currentIndex + 1}/{questions.length}
                   </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <Clock size={14} color="#60a5fa" /> {formatTime(elapsed)}
+                  <span style={{
+                    padding: "3px 8px", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "monospace",
+                    background: settings.timerMode === "countdown" && remainingSec !== null && remainingSec < 30
+                      ? "rgba(239,68,68,0.12)" : "rgba(96,165,250,0.1)",
+                    color: settings.timerMode === "countdown" && remainingSec !== null && remainingSec < 30
+                      ? "#ef4444" : "#60a5fa",
+                  }}>
+                    <Clock size={11} style={{ display: "inline", marginRight: 3, verticalAlign: -1 }} />
+                    {settings.timerMode === "countdown" && remainingSec !== null
+                      ? `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, "0")}`
+                      : formatTime(elapsed)}
                   </span>
-                  <button onClick={() => setPhase((p) => p === "paused" ? "playing" : "paused")} style={ghostBtn}>
-                    {phase === "paused" ? <Play size={14} /> : <Pause size={14} />}
+                  <button onClick={() => setPhase((p) => p === "paused" ? "playing" : "paused")} className="speed-math-btn" style={ghostBtn}>
+                    {phase === "paused" ? <Play size={13} /> : <Pause size={13} />}
                   </button>
                 </div>
               </div>
 
-              {/* Progress Bar */}
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 24, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${((currentIndex + 1) / questions.length) * 100}%`, background: "var(--os-accent)", borderRadius: 2, transition: "width 0.3s" }} />
+              {/* Progress */}
+              <div style={{ height: 3, background: "rgba(255,255,255,0.04)" }}>
+                <div style={{
+                  height: "100%", width: `${progress}%`,
+                  background: "linear-gradient(90deg, var(--os-accent), #a855f7)",
+                  transition: "width 0.3s ease", borderRadius: "0 2px 2px 0",
+                }} />
               </div>
 
               {phase === "paused" ? (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <Pause size={40} color="var(--os-text-dim)" style={{ marginBottom: 12 }} />
-                  <p style={{ fontSize: 16, color: "var(--os-text-secondary)", fontWeight: 600 }}>Paused</p>
-                  <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 4 }}>Press <kbd style={kbdStyle}>P</kbd> to resume</p>
+                <div style={{ padding: "60px 28px", textAlign: "center" }}>
+                  <Pause size={36} color="var(--os-text-dim)" style={{ marginBottom: 10, opacity: 0.5 }} />
+                  <p style={{ fontSize: 16, color: "var(--os-text-secondary)", fontWeight: 600, marginBottom: 4 }}>Paused</p>
+                  <p style={{ fontSize: 11, color: "var(--os-text-dim)" }}>Press <kbd style={kbd}>P</kbd> to resume</p>
                 </div>
               ) : (
-                <>
-                  {/* Question */}
-                  <div style={{ textAlign: "center", marginBottom: 32 }}>
+                <div style={{ padding: "20px 28px 24px" }}>
+                  {/* Question card */}
+                  <div style={{
+                    textAlign: "center", padding: "28px 20px", borderRadius: 16, marginBottom: 24,
+                    background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+                    position: "relative", overflow: "hidden",
+                  }}>
                     <div style={{
-                      fontSize: 36, fontWeight: 700, color: "var(--os-text-primary)",
-                      fontFamily: "'JetBrains Mono', monospace", letterSpacing: -1,
-                      padding: "24px 0", lineHeight: 1.3,
+                      fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em",
+                      color: OP_CONFIG[currentQ.op].color, marginBottom: 8,
                     }}>
-                      {currentQ.expression} = <span style={{ color: "var(--os-accent)" }}>?</span>
+                      {OP_CONFIG[currentQ.op].label}
+                    </div>
+                    <div style={{
+                      fontSize: 38, fontWeight: 700, color: "var(--os-text-primary)",
+                      fontFamily: "'JetBrains Mono', 'SF Mono', monospace", letterSpacing: -1, lineHeight: 1.2,
+                    }}>
+                      {currentQ.expression}
+                      <span style={{ color: "var(--os-accent)", margin: "0 4px" }}>=</span>
+                      <span style={{ color: "var(--os-accent)", animation: "pulse 1.5s ease infinite" }}>?</span>
                     </div>
                   </div>
 
-                  {/* Input Area */}
+                  {/* Input */}
                   {settings.inputMode === "manual" ? (
-                    <div style={{ marginBottom: 20 }}>
+                    <div>
                       <input
-                        ref={inputRef}
-                        type="text"
-                        inputMode="decimal"
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        placeholder="Type your answer..."
+                        ref={inputRef} type="text" inputMode="decimal"
+                        value={userInput} onChange={(e) => setUserInput(e.target.value)}
+                        placeholder="Type your answer"
+                        className="speed-math-input"
                         style={{
-                          width: "100%", padding: "14px 16px", fontSize: 20, fontWeight: 600,
-                          borderRadius: 12, border: "2px solid rgba(255,255,255,0.1)",
-                          background: "rgba(0,0,0,0.3)", color: "var(--os-text-primary)",
-                          outline: "none", textAlign: "center", fontFamily: "'JetBrains Mono', monospace",
-                          transition: "border-color 0.15s",
+                          width: "100%", padding: "14px 16px", fontSize: 22, fontWeight: 600,
+                          borderRadius: 12, border: "2px solid rgba(255,255,255,0.08)",
+                          background: "rgba(0,0,0,0.25)", color: "var(--os-text-primary)",
+                          outline: "none", textAlign: "center",
+                          fontFamily: "'JetBrains Mono', monospace", transition: "all 0.2s",
                         }}
                         autoFocus
                       />
                       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                        <button onClick={() => { const val = parseFloat(userInput); if (!isNaN(val)) submitAnswer(val); }} style={{ ...actionBtn, flex: 1, background: "var(--os-accent)", color: "#fff" }}>
-                          <CheckCircle size={16} /> Submit
+                        <button onClick={() => { const val = parseFloat(userInput); if (!isNaN(val)) submitAnswer(val); }}
+                          className="speed-math-btn" style={{ ...actionBtn, flex: 1, background: "linear-gradient(135deg, var(--os-accent), #7c3aed)", color: "#fff", boxShadow: "0 2px 12px rgba(109,40,217,0.3)" }}>
+                          <CheckCircle size={15} /> Submit
                         </button>
-                        <button onClick={skipQuestion} style={{ ...actionBtn, flex: 1, background: "rgba(255,255,255,0.06)", color: "var(--os-text-secondary)" }}>
-                          <SkipForward size={16} /> Skip
+                        <button onClick={skipQuestion} className="speed-math-btn"
+                          style={{ ...actionBtn, flex: 1, background: "rgba(255,255,255,0.05)", color: "var(--os-text-dim)" }}>
+                          <SkipForward size={15} /> Skip
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {currentQ.options?.map((opt, i) => (
-                        <button key={i} onClick={() => { setSelectedOption(opt); submitAnswer(opt); }} style={{
-                          padding: "16px 12px", borderRadius: 12, border: `2px solid ${selectedOption === opt ? "var(--os-accent)" : "rgba(255,255,255,0.08)"}`,
-                          background: selectedOption === opt ? "rgba(109,40,217,0.15)" : "rgba(255,255,255,0.03)",
-                          color: "var(--os-text-primary)", fontSize: 18, fontWeight: 600, cursor: "pointer",
-                          fontFamily: "'JetBrains Mono', monospace", transition: "all 0.15s",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                        }}>
-                          <span style={{ fontSize: 11, color: "var(--os-text-dim)", fontWeight: 500 }}>{i + 1}</span>
+                        <button key={i} onClick={() => { setSelectedOption(opt); submitAnswer(opt); }}
+                          className="speed-math-option"
+                          style={{
+                            padding: "18px 12px", borderRadius: 12,
+                            border: "1.5px solid rgba(255,255,255,0.08)",
+                            background: "rgba(255,255,255,0.02)",
+                            color: "var(--os-text-primary)", fontSize: 20, fontWeight: 600, cursor: "pointer",
+                            fontFamily: "'JetBrains Mono', monospace",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                          }}>
+                          <span style={{
+                            width: 22, height: 22, borderRadius: 6, fontSize: 11, fontWeight: 700,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(255,255,255,0.06)", color: "var(--os-text-dim)",
+                          }}>{i + 1}</span>
                           {opt}
                         </button>
                       ))}
                     </div>
                   )}
 
-                  {/* Streak */}
+                  {/* Last answer feedback */}
                   {results.length > 0 && (
-                    <div style={{ textAlign: "center" }}>
+                    <div style={{ textAlign: "center", marginTop: 16 }}>
                       <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-                        background: results[results.length - 1]?.correct ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        padding: "5px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                        background: results[results.length - 1]?.correct ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
                         color: results[results.length - 1]?.correct ? "#22c55e" : "#ef4444",
+                        border: `1px solid ${results[results.length - 1]?.correct ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`,
                       }}>
-                        {results[results.length - 1]?.correct ? "✓ Correct" : "✗ Wrong"}
+                        {results[results.length - 1]?.correct
+                          ? <><CheckCircle size={13} /> Correct!</>
+                          : <><XCircle size={13} /> {results[results.length - 1]?.userAnswer === null ? "Skipped" : `Wrong — ${results[results.length - 1]?.question.answer}`}</>}
                       </span>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           )}
 
-          {/* FINISHED PHASE */}
+          {/* ==================== FINISHED ==================== */}
           {phase === "finished" && (
-            <div>
+            <div style={{ padding: "28px 28px 24px", animation: "slideUp 0.3s ease" }}>
               <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <Trophy size={40} color="#fbbf24" style={{ marginBottom: 8 }} />
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)", marginBottom: 4 }}>Practice Complete!</h2>
+                <div style={{
+                  width: 56, height: 56, borderRadius: "50%", margin: "0 auto 10px",
+                  background: accuracy >= 80 ? "linear-gradient(135deg, #22c55e, #16a34a)" : accuracy >= 50 ? "linear-gradient(135deg, #eab308, #ca8a04)" : "linear-gradient(135deg, #ef4444, #dc2626)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: accuracy >= 80 ? "0 4px 20px rgba(34,197,94,0.3)" : accuracy >= 50 ? "0 4px 20px rgba(234,179,8,0.3)" : "0 4px 20px rgba(239,68,68,0.3)",
+                }}>
+                  <Trophy size={28} color="#fff" />
+                </div>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--os-text-primary)" }}>
+                  {accuracy >= 90 ? "Outstanding!" : accuracy >= 70 ? "Great Work!" : accuracy >= 50 ? "Not Bad!" : "Keep Practicing!"}
+                </h2>
+                <p style={{ fontSize: 12, color: "var(--os-text-dim)", marginTop: 2 }}>
+                  {settings.operation !== "mix" ? OP_CONFIG[settings.operation].label : "Mixed"} · {settings.digits} digit · {settings.terms} terms
+                </p>
               </div>
 
               {/* Stats */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
-                {[
-                  { label: "Score", value: `${correct}/${questions.length}`, color: "#22c55e", icon: <CheckCircle size={14} /> },
-                  { label: "Accuracy", value: `${accuracy}%`, color: accuracy >= 80 ? "#22c55e" : accuracy >= 50 ? "#eab308" : "#ef4444", icon: <Target size={14} /> },
-                  { label: "Avg Time", value: `${avgTime}s`, color: "#60a5fa", icon: <Clock size={14} /> },
-                  { label: "Wrong", value: `${wrong}`, color: "#ef4444", icon: <XCircle size={14} /> },
-                ].map((s) => (
-                  <div key={s.label} style={{
-                    padding: "12px 10px", borderRadius: 10, textAlign: "center",
-                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, color: s.color, marginBottom: 4 }}>{s.icon}<span style={{ fontSize: 18, fontWeight: 700 }}>{s.value}</span></div>
-                    <div style={{ fontSize: 10, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
-                  </div>
-                ))}
+                <StatCard icon={<CheckCircle size={15} />} label="Correct" value={`${correctCount}/${questions.length}`} color="#22c55e" />
+                <StatCard icon={<Target size={15} />} label="Accuracy" value={`${accuracy}%`} color={accuracy >= 80 ? "#22c55e" : accuracy >= 50 ? "#eab308" : "#ef4444"} />
+                <StatCard icon={<Clock size={15} />} label="Avg Time" value={`${avgTime}s`} color="#60a5fa" />
+                <StatCard icon={<Flame size={15} />} label="Best Streak" value={`${bestStreak}`} color="#f97316" />
               </div>
 
-              {/* Review */}
-              <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 20 }}>
+              {/* Review table */}
+              <div style={{
+                maxHeight: 280, overflowY: "auto", borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.06)", marginBottom: 20,
+              }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
-                    <tr style={{ color: "var(--os-text-dim)", textTransform: "uppercase", fontSize: 10, letterSpacing: "0.05em" }}>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>#</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>Question</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>Your Answer</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>Correct</th>
-                      <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>Time</th>
+                    <tr style={{ position: "sticky", top: 0, background: "rgba(10,14,24,0.95)", backdropFilter: "blur(8px)" }}>
+                      {["#", "Question", "Answer", "✓", "Time"].map((h, i) => (
+                        <th key={h} style={{
+                          textAlign: i === 4 ? "right" : i === 0 ? "center" : "left",
+                          padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)",
+                          fontSize: 10, fontWeight: 600, color: "var(--os-text-dim)",
+                          textTransform: "uppercase", letterSpacing: "0.05em",
+                        }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {results.map((r, i) => (
-                      <tr key={i} style={{ color: r.correct ? "#22c55e" : r.userAnswer === null ? "var(--os-text-dim)" : "#ef4444" }}>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>{i + 1}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)", fontFamily: "'JetBrains Mono', monospace" }}>{r.question.expression} = {r.question.answer}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)", fontFamily: "'JetBrains Mono', monospace" }}>{r.userAnswer ?? "Skipped"}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>{r.correct ? "✓" : "✗"}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid rgba(255,255,255,0.04)", textAlign: "right" }}>{(r.timeMs / 1000).toFixed(1)}s</td>
+                      <tr key={i} style={{
+                        background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
+                      }}>
+                        <td style={{ padding: "7px 10px", textAlign: "center", color: "var(--os-text-dim)" }}>{i + 1}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "'JetBrains Mono', monospace", color: "var(--os-text-secondary)" }}>{r.question.expression}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span style={{ color: r.userAnswer === null ? "var(--os-text-dim)" : r.correct ? "#22c55e" : "#ef4444" }}>
+                            {r.userAnswer ?? "—"}
+                          </span>
+                          <span style={{ color: "var(--os-text-dim)", margin: "0 4px" }}>→</span>
+                          <span style={{ color: "var(--os-text-secondary)" }}>{r.question.answer}</span>
+                        </td>
+                        <td style={{ padding: "7px 10px", textAlign: "center" }}>
+                          {r.correct ? <CheckCircle size={13} color="#22c55e" /> : r.userAnswer === null ? <span style={{ color: "var(--os-text-dim)", fontSize: 10 }}>skip</span> : <XCircle size={13} color="#ef4444" />}
+                        </td>
+                        <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "monospace", color: "var(--os-text-dim)" }}>{(r.timeMs / 1000).toFixed(1)}s</td>
                       </tr>
                     ))}
                   </tbody>
@@ -519,11 +620,13 @@ export default function SpeedMathPage() {
 
               {/* Actions */}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={startGame} style={{ ...actionBtn, flex: 1, background: "var(--os-accent)", color: "#fff" }}>
-                  <RotateCcw size={16} /> Practice Again
+                <button onClick={startGame} className="speed-math-btn"
+                  style={{ ...actionBtn, flex: 1, background: "linear-gradient(135deg, var(--os-accent), #7c3aed)", color: "#fff", boxShadow: "0 2px 12px rgba(109,40,217,0.3)" }}>
+                  <RotateCcw size={15} /> Practice Again
                 </button>
-                <button onClick={() => setPhase("setup")} style={{ ...actionBtn, flex: 1, background: "rgba(255,255,255,0.06)", color: "var(--os-text-secondary)" }}>
-                  <Calculator size={16} /> New Settings
+                <button onClick={() => setPhase("setup")} className="speed-math-btn"
+                  style={{ ...actionBtn, flex: 1, background: "rgba(255,255,255,0.05)", color: "var(--os-text-secondary)" }}>
+                  <TrendingUp size={15} /> New Settings
                 </button>
               </div>
             </div>
@@ -534,9 +637,39 @@ export default function SpeedMathPage() {
   );
 }
 
-const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, display: "block" };
-const chipStyle: React.CSSProperties = { padding: "8px 6px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 11, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.15s" };
-const chipSm: React.CSSProperties = { flex: 1, padding: "6px 4px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 500, textAlign: "center", transition: "all 0.15s" };
-const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 6, border: "none", background: "rgba(255,255,255,0.04)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 500 };
-const actionBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "opacity 0.15s" };
-const kbdStyle: React.CSSProperties = { display: "inline-block", padding: "1px 5px", borderRadius: 4, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", fontWeight: 600 };
+function SettingGroup({ label, options, value, onChange }: { label: string; options: number[]; value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <label style={labelStyle}>{label}</label>
+      <div style={{ display: "flex", gap: 4 }}>
+        {options.map((o) => (
+          <button key={o} onClick={() => onChange(o)} className="speed-math-btn"
+            style={{
+              ...chipBtn, background: value === o ? "var(--os-accent)" : undefined,
+              color: value === o ? "#fff" : undefined,
+              borderColor: value === o ? "var(--os-accent)" : undefined,
+            }}>{o}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      padding: "14px 10px", borderRadius: 12, textAlign: "center",
+      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+    }}>
+      <div style={{ color, marginBottom: 6, display: "flex", justifyContent: "center" }}>{icon}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "monospace" }}>{value}</div>
+      <div style={{ fontSize: 9, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, display: "block" };
+const chipBtn: React.CSSProperties = { flex: 1, padding: "7px 4px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 600, textAlign: "center", transition: "all 0.15s" };
+const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(255,255,255,0.04)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 500 };
+const actionBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.15s" };
+const kbd: React.CSSProperties = { display: "inline-block", padding: "1px 5px", borderRadius: 4, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontFamily: "monospace", fontWeight: 600 };
