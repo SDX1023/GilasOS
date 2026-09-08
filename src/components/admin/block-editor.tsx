@@ -910,6 +910,16 @@ export function BlockEditor({ content, onChange }: BlockEditorProps) {
               {btn.icon}
             </button>
           ))}
+          <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.1)", margin: "0 2px" }} />
+          <button title="Highlight"
+            onClick={() => { const sel = window.getSelection()?.toString() || "highlight"; document.execCommand("insertHTML", false, `<mark style="background:rgba(234,179,8,0.25);color:#fbbf24;padding:1px 5px;border-radius:3px;font-weight:500">${sel}</mark>`); }}
+            style={{ padding: "4px 7px", borderRadius: 4, background: "rgba(234,179,8,0.15)", border: "none", cursor: "pointer", color: "#fbbf24", fontSize: 11, fontWeight: 600 }}>HL</button>
+          <button title="Important"
+            onClick={() => { const sel = window.getSelection()?.toString() || "important"; document.execCommand("insertHTML", false, `<mark style="background:rgba(239,68,68,0.25);color:#f87171;padding:1px 5px;border-radius:3px;font-weight:500">${sel}</mark>`); }}
+            style={{ padding: "4px 7px", borderRadius: 4, background: "rgba(239,68,68,0.15)", border: "none", cursor: "pointer", color: "#f87171", fontSize: 11, fontWeight: 600 }}>IMP</button>
+          <button title="Question"
+            onClick={() => { const sel = window.getSelection()?.toString() || "question"; document.execCommand("insertHTML", false, `<mark style="background:rgba(59,130,246,0.25);color:#60a5fa;padding:1px 5px;border-radius:3px;font-weight:500">${sel}</mark>`); }}
+            style={{ padding: "4px 7px", borderRadius: 4, background: "rgba(59,130,246,0.15)", border: "none", cursor: "pointer", color: "#60a5fa", fontSize: 11, fontWeight: 600 }}>?</button>
         </div>
       )}
 

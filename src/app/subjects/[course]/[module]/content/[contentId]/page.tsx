@@ -74,11 +74,13 @@ export default function ContentViewerPage({
       </div>
 
       <div ref={contentRef} style={{
-        background: "rgba(12, 17, 28, 0.5)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 16,
-        padding: "32px 40px",
+        background: "rgba(10, 14, 24, 0.6)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: 6,
+        padding: 0,
         backdropFilter: "blur(12px)",
+        boxShadow: "0 2px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)",
+        overflow: "hidden",
       }}>
         <MarkdownRenderer content={content.content || ""} allLinksMap={{}} />
       </div>
