@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { use } from "react";
 import { getSupabase } from "@/lib/supabase";
-import { User, Music, ArrowLeft, UserPlus, UserCheck, Clock, Loader2 } from "lucide-react";
+import { User, Music, ArrowLeft, UserPlus, UserCheck, Clock, Loader2, Flame } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getSpriteUrl, getProfileSpriteUrl } from "@/components/pixel-pet/pet-sprites";
@@ -43,6 +43,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const [friendship, setFriendship] = useState<{ id: string; status: string; requester_id: string } | null>(null);
   const [friendLoading, setFriendLoading] = useState(false);
   const [userPet, setUserPet] = useState<UserPet | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [totalCards, setTotalCards] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -61,6 +63,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       }
       const { data: petData } = await supabase.from("user_pets").select("name, pet_type, color, sprite_url, bg, xp, level, mood").eq("user_id", userId).maybeSingle();
       if (petData) setUserPet(petData);
+
+      const { data: statsData } = await supabase.from("study_stats").select("date, cards_total").eq("user_id", userId).order("date", { ascending: false });
+      if (statsData && statsData.length > 0) {
+        let s = 0;
+        const today = new Date();
+        for (let i = 0; i < 365; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          if (statsData.some((r: any) => r.date === d.toDateString() && r.cards_total > 0)) s++;
+          else break;
+        }
+        setStreak(s);
+        setTotalCards(statsData.reduce((sum: number, r: any) => sum + (r.cards_total || 0), 0));
+      }
       setLoading(false);
     })();
   }, [userId]);
@@ -217,6 +233,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         </div>
         {profile.bio && (
           <p style={{ fontSize: 14, color: "var(--os-text-secondary)", lineHeight: 1.6, marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.35)" }}>{profile.bio}</p>
+        )}
+        {(streak > 0 || totalCards > 0) && (
+          <div style={{ display: "flex", gap: 12, marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: streak >= 7 ? "rgba(249,115,22,0.12)" : streak >= 3 ? "rgba(234,179,8,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${streak >= 7 ? "rgba(249,115,22,0.25)" : streak >= 3 ? "rgba(234,179,8,0.2)" : "rgba(255,255,255,0.06)"}` }}>
+              <Flame size={14} color={streak >= 7 ? "#f97316" : streak >= 3 ? "#eab308" : "#94a3b8"} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: streak >= 7 ? "#f97316" : streak >= 3 ? "#eab308" : "#94a3b8" }}>{streak} day streak</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8" }}>{totalCards.toLocaleString()} cards studied</span>
+            </div>
+          </div>
         )}
       </div>
 
