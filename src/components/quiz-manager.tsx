@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, updateQuizQuestions } from "@/lib/user-data";
 import { MathRenderer } from "@/components/math-renderer";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
-import { Plus, Trash2, Play, Save, Pencil, Check, X, ArrowLeft, Sparkles, Image as ImageIcon, Eye } from "lucide-react";
+import { Plus, Trash2, Play, Save, Pencil, Check, X, ArrowLeft, Sparkles, Image as ImageIcon, Eye, Download } from "lucide-react";
+import jsPDF from "jspdf";
 
 type View = "list" | "edit" | "take" | "results";
 type QuestionType = "mc" | "identification" | "image_occlusion" | "image_answer";
@@ -27,6 +28,61 @@ interface QuizManagerProps {
 
 function stripOptionPrefix(opt: string): string {
   return opt.replace(/^\s*[A-Da-d]\.\s*/, "").trim();
+}
+
+function exportQuizToPdf(title: string, questions: QuizQuestion[]) {
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageW = 210;
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.text(title, margin, y);
+  y += 10;
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(120);
+  pdf.text(`${questions.length} questions`, margin, y);
+  y += 10;
+  pdf.setDrawColor(200);
+  pdf.line(margin, y, pageW - margin, y);
+  y += 8;
+  questions.forEach((q, i) => {
+    if (y > 260) { pdf.addPage(); y = margin; }
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.setTextColor(40);
+    const qText = q.question || q.image_url || `Question ${i + 1}`;
+    const qLines = pdf.splitTextToSize(`Q${i + 1}: ${qText}`, contentW);
+    pdf.text(qLines, margin, y);
+    y += qLines.length * 5 + 3;
+    if (q.type === "mc" && q.options) {
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(80);
+      q.options.forEach((opt, j) => {
+        const prefix = ["A", "B", "C", "D"][j] || "";
+        const optLines = pdf.splitTextToSize(`  ${prefix}. ${stripOptionPrefix(opt)}`, contentW - 5);
+        pdf.text(optLines, margin + 5, y);
+        y += optLines.length * 4.5;
+      });
+      y += 2;
+    } else {
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(10);
+      pdf.setTextColor(120);
+      const aLines = pdf.splitTextToSize(`Answer: ${q.answer || "..."}`, contentW);
+      pdf.text(aLines, margin + 5, y);
+      y += aLines.length * 4.5 + 2;
+    }
+    if (i < questions.length - 1) {
+      pdf.setDrawColor(230);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 5;
+    }
+  });
+  pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
 }
 
 export default function QuizManager({ userId }: QuizManagerProps) {
@@ -535,6 +591,11 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                     className="glass-btn glass-btn-primary" style={{ padding: "6px 12px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", gap: 4, opacity: q.questions?.length ? 1 : 0.4 }}>
                     <Play size={12} /> Take
                   </button>
+                  {q.questions?.length > 0 && (
+                    <button onClick={() => exportQuizToPdf(q.title, q.questions || [])} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }} title="Save as PDF">
+                      <Download size={12} />
+                    </button>
+                  )}
                   {!isRenaming && (
                     <button onClick={() => { setRenamingId(q.id); setRenamingTitle(q.title); }} style={{ padding: 4, borderRadius: 4, color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }} title="Rename">
                       <Pencil size={14} />
