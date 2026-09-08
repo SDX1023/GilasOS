@@ -14,8 +14,6 @@ const navItems = [
   { href: "/study", label: "Study", icon: Sparkles },
   { href: "/decks", label: "My Decks", icon: Layers },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/announcements", label: "Announcements", icon: Megaphone },
-  { href: "/friends", label: "Friends", icon: Users },
 ];
 
 const toolItems = [
@@ -24,6 +22,11 @@ const toolItems = [
   { href: "/archive", label: "Archive", icon: Archive },
   { href: "/shared", label: "Shared", icon: LinkIcon },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/friends", label: "Friends", icon: Users },
+  { href: "/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/wrong-answers", label: "Wrong Answers", icon: FileText },
+  { href: "/analytics", label: "Analytics", icon: Trophy },
+  { href: "/doomscroll", label: "Doomscroll", icon: Trophy },
 ];
 
 export function Navbar() {
