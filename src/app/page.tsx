@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -16,6 +16,8 @@ import WeeklySummary from "@/components/weekly-summary";
 
 export default function Home() {
   const [showWeekly, setShowWeekly] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const features = [
     {
       icon: BookOpen,
@@ -105,6 +107,7 @@ export default function Home() {
           </div>
 
           {/* Daily Challenges + Weekly Summary */}
+          {mounted && (
           <div style={{ maxWidth: 480, margin: "0 auto 24px", display: "flex", flexDirection: "column", gap: 12 }}>
             <DailyChallenges />
             <button onClick={() => setShowWeekly(true)} style={{
@@ -119,6 +122,7 @@ export default function Home() {
               <Calendar size={14} /> View Weekly Summary
             </button>
           </div>
+          )}
           {showWeekly && <WeeklySummary onClose={() => setShowWeekly(false)} />}
 
           {/* Features Grid */}

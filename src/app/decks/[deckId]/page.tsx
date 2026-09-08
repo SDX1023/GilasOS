@@ -8,11 +8,60 @@ import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, Plus, Trash2, Pencil, Check, X, Play, Shuffle, Search, Layers, Eye, EyeOff, Timer, Sigma, Download, Target, Share2 } from "lucide-react";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
 import { MathRenderer } from "@/components/math-renderer";
+import jsPDF from "jspdf";
 import { saveStudyStats, saveStudySession, logCardResult, loadWeakCards, loadCardSchedules, saveCardSchedule, sortWeakCardsFirst, saveWrongAnswer } from "@/lib/user-data";
 import { getDefaultState, updateCardState, CardState } from "@/lib/fsrs";
 import { earnBadge } from "@/lib/badges";
 
 const formulaCache: Record<string, { formula: string; explanation: string } | null> = {};
+
+function exportDeckToPdf(title: string, cards: { front: string; back: string; hint?: string }[]) {
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageW = 210;
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = margin;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.text(title, margin, y);
+  y += 10;
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(120);
+  pdf.text(`${cards.length} cards`, margin, y);
+  y += 10;
+  pdf.setDrawColor(200);
+  pdf.line(margin, y, pageW - margin, y);
+  y += 8;
+  cards.forEach((card, i) => {
+    if (y > 270) { pdf.addPage(); y = margin; }
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.setTextColor(40);
+    const qLines = pdf.splitTextToSize(`Q${i + 1}: ${card.front}`, contentW);
+    pdf.text(qLines, margin, y);
+    y += qLines.length * 5 + 3;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(10);
+    pdf.setTextColor(80);
+    const aLines = pdf.splitTextToSize(`A: ${card.back}`, contentW);
+    pdf.text(aLines, margin, y);
+    y += aLines.length * 4.5;
+    if (card.hint) {
+      pdf.setFont("helvetica", "italic");
+      pdf.setTextColor(120);
+      const hLines = pdf.splitTextToSize(`Hint: ${card.hint}`, contentW);
+      pdf.text(hLines, margin, y);
+      y += hLines.length * 4.5;
+    }
+    if (i < cards.length - 1) {
+      pdf.setDrawColor(230);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 5;
+    }
+  });
+  pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`);
+}
 
 async function fetchFormula(text: string): Promise<{ formula: string; explanation: string } | null> {
   if (text in formulaCache) return formulaCache[text];
@@ -1063,6 +1112,9 @@ export default function DeckStudyPage() {
             </button>
             <button onClick={() => { setShowShareModal(true); setShareRecipient(""); setShareError(""); setShared(false); setCopied(false); }} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13 }}>
               <Share2 size={15} /> Share
+            </button>
+            <button onClick={() => exportDeckToPdf(deckTitle || "Deck", cards)} disabled={cards.length === 0} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", fontSize: 13, opacity: cards.length === 0 ? 0.4 : 1 }}>
+              <Download size={15} /> PDF
             </button>
           </div>
         </div>
