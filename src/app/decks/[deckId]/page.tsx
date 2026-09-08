@@ -87,12 +87,17 @@ async function fetchFormula(text: string): Promise<{ formula: string; explanatio
 }
 
 function checkTypeInAnswer(userInput: string, correctAnswer: string): boolean {
-  const strip = (s: string) => s.toLowerCase().replace(/^\s*[a-d]\.\s*/g, "").replace(/\s+/g, " ").trim();
+  const strip = (s: string) => s.toLowerCase().replace(/^\s*[a-d]\.\s*/g, "").replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
   const user = strip(userInput);
   const correct = strip(correctAnswer);
   if (!user || !correct) return false;
   if (user === correct) return true;
   if (correct.includes(user) || user.includes(correct)) return true;
+  const userWords = new Set(user.split(" ").filter((w) => w.length > 2));
+  const correctWords = correct.split(" ").filter((w) => w.length > 2);
+  const matched = correctWords.filter((w) => userWords.has(w)).length;
+  const overlap = matched / Math.max(correctWords.length, 1);
+  if (overlap >= 0.6) return true;
   const correctParts = correct.split(/\s*[;|,]\s*|\s+a\.\s*|\s+b\.\s*|\s+c\.\s*|\s+d\.\s*/).map(s => s.trim()).filter(Boolean);
   if (correctParts.some(p => p.toLowerCase() === user || p.toLowerCase().includes(user) || user.includes(p.toLowerCase()))) return true;
   return false;

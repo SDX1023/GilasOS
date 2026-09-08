@@ -56,6 +56,23 @@ function FlashFormulaLine({ text, showFormulas }: { text: string; showFormulas: 
   );
 }
 
+function checkTypeInAnswer(userInput: string, correctAnswer: string): boolean {
+  const strip = (s: string) => s.toLowerCase().replace(/^\s*[a-d]\.\s*/g, "").replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
+  const user = strip(userInput);
+  const correct = strip(correctAnswer);
+  if (!user || !correct) return false;
+  if (user === correct) return true;
+  if (correct.includes(user) || user.includes(correct)) return true;
+  const userWords = new Set(user.split(" ").filter((w) => w.length > 2));
+  const correctWords = correct.split(" ").filter((w) => w.length > 2);
+  const matched = correctWords.filter((w) => userWords.has(w)).length;
+  const overlap = matched / Math.max(correctWords.length, 1);
+  if (overlap >= 0.6) return true;
+  const correctParts = correct.split(/\s*[;|,]\s*|\s+a\.\s*|\s+b\.\s*|\s+c\.\s*|\s+d\.\s*/).map(s => s.trim()).filter(Boolean);
+  if (correctParts.some(p => p.toLowerCase() === user || p.toLowerCase().includes(user) || user.includes(p.toLowerCase()))) return true;
+  return false;
+}
+
 function exportFlashcardsToPdf(title: string, cards: any[]) {
   const pdf = new jsPDF("p", "mm", "a4");
   const pageW = 210;
@@ -1005,13 +1022,13 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
                               type="text"
                               value={typedAnswer}
                               onChange={(e) => setTypedAnswer(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === queue[queueIndex].back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                              onKeyDown={(e) => { if (e.key === "Enter" && typedAnswer.trim()) { const correct = checkTypeInAnswer(typedAnswer, queue[queueIndex].back); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                               placeholder="Type your answer..."
                               autoFocus
                               style={{ width: "100%", maxWidth: 400, padding: "12px 16px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.35)", color: "var(--os-text-primary)", fontSize: "1rem", outline: "none", textAlign: "center", fontFamily: "Inter, sans-serif" }}
                             />
                             <button
-                              onClick={() => { if (typedAnswer.trim()) { const correct = typedAnswer.trim().toLowerCase() === queue[queueIndex].back.toLowerCase(); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
+                              onClick={() => { if (typedAnswer.trim()) { const correct = checkTypeInAnswer(typedAnswer, queue[queueIndex].back); setAnswerCorrect(correct); setAnswerChecked(true); setReviewFlipped(true); } }}
                               disabled={!typedAnswer.trim()}
                               className="glass-btn-primary"
                               style={{ padding: "0.6rem 2rem", fontSize: "1rem", fontWeight: 500, opacity: typedAnswer.trim() ? 1 : 0.4 }}
