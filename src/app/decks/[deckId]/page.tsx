@@ -91,10 +91,12 @@ function checkTypeInAnswer(userInput: string, correctAnswer: string): boolean {
   const user = strip(userInput);
   const correct = strip(correctAnswer);
   if (!user || !correct) return false;
+  if (user.length < 3) return false;
   if (user === correct) return true;
   if (correct.includes(user) || user.includes(correct)) return true;
   const userWords = new Set(user.split(" ").filter((w) => w.length > 2));
   const correctWords = correct.split(" ").filter((w) => w.length > 2);
+  if (userWords.size < 2) return false;
   const matched = correctWords.filter((w) => userWords.has(w)).length;
   const overlap = matched / Math.max(correctWords.length, 1);
   if (overlap >= 0.6) return true;
@@ -669,7 +671,7 @@ export default function DeckStudyPage() {
     }
     let q: typeof cards;
     if (shuffled) {
-      q = buildSmartQueue(cards, schedules);
+      q = [...cards].sort(() => Math.random() - 0.5);
     } else if (user && schedules.size > 0) {
       q = buildSmartQueue(cards, schedules);
     } else {
