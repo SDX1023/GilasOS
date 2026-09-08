@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, RotateCcw, Trophy, Target, Clock, CheckCircle, XCircle, ChevronLeft, Zap, Flame, TrendingUp, Minus } from "lucide-react";
-import Link from "next/link";
 
 type Operation = "add" | "sub" | "mul" | "div" | "mix";
 type InputMode = "manual" | "mcq";
@@ -263,7 +262,7 @@ export default function SpeedMathPage() {
             <span>Speed Math</span>
           </div>
           <div className="os-window-controls">
-            <Link href="/" style={{ textDecoration: "none" }}><button className="close" title="Close">✕</button></Link>
+            <button className="close" title="Close" onClick={() => { if (timerRef.current) clearInterval(timerRef.current); if (countdownRef.current) clearInterval(countdownRef.current); setPhase("setup"); }}>✕</button>
           </div>
         </div>
 
