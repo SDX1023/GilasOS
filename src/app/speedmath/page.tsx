@@ -211,7 +211,7 @@ export default function SpeedMathPage() {
   const opSymbol: Record<Operation, string> = { add: "+", sub: "−", mul: "×", div: "÷", mix: "?" };
 
   return (
-    <div style={{ minHeight: "100%" }} onKeyDown={handleKeyDown}>
+    <div style={{ minHeight: "100%" }}>
       <div className="os-background">
         <div className="os-orb os-orb--1" />
         <div className="os-orb os-orb--2" />
