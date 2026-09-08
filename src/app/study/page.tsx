@@ -8,7 +8,6 @@ import { useCourses } from "@/hooks/use-db";
 import { saveQuizHistory, loadQuizHistory, deleteQuizHistory, loadBookmarkedCards, saveStudyStats, saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, shareQuiz, loadSharedQuiz, saveStudySession, loadStudySessions, deleteStudySession } from "@/lib/user-data";
 import { Brain, Trash2, PenTool, Sparkles, Upload, FileText, BookOpen, History, TrendingDown, X, Check, BarChart3, Bookmark, Save, Eye, Play, Share2, Link as LinkIcon, Pencil, GripVertical, Zap, Target } from "lucide-react";
 import { MathRenderer } from "@/components/math-renderer";
-import FocusMode from "@/components/focus-mode";
 import QuizManager from "@/components/quiz-manager";
 import { earnBadge } from "@/lib/badges";
 
@@ -70,7 +69,6 @@ function FormulaLine({ text, showFormulas }: { text: string; showFormulas: boole
 export default function StudyPage() {
   const [tab, setTab] = useState<Tab>("quiz");
   const [mounted, setMounted] = useState(false);
-  const [showFocusMode, setShowFocusMode] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -106,14 +104,10 @@ export default function StudyPage() {
 
   return (
     <div className="page-container" style={{ paddingBottom: "24px" }}>
-      <FocusMode isOpen={showFocusMode} onClose={() => setShowFocusMode(false)} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>
           <PenTool style={{ width: "28px", height: "28px" }} /> Study
         </h1>
-        <button onClick={() => setShowFocusMode(true)} className="glass-btn" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, padding: "6px 14px" }}>
-          <Zap size={15} /> Focus Mode
-        </button>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid rgba(255,255,255,0.35)", borderRadius: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", marginBottom: "24px", overflowX: "auto", userSelect: "none", WebkitOverflowScrolling: "touch" }}>
