@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Pause, SkipForward, RotateCcw, Trophy, Target, Clock, CheckCircle, XCircle, ChevronLeft, Zap, Flame, TrendingUp, Minus } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { saveStudyStats, saveStudySession } from "@/lib/user-data";
 
 type Operation = "add" | "sub" | "mul" | "div" | "mix";
 type InputMode = "manual" | "mcq";
@@ -94,6 +96,7 @@ const OP: Record<Operation, { sym: string; label: string; color: string; glow: s
 };
 
 export default function SpeedMathPage() {
+  const { user } = useAuth();
   const [phase, setPhase] = useState<GamePhase>("setup");
   const [settings, setSettings] = useState<Settings>({
     operation: "add", digits: 2, terms: 2, questions: 10,
@@ -211,6 +214,29 @@ export default function SpeedMathPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Save stats & session when game finishes
+  useEffect(() => {
+    if (phase !== "finished" || !user || results.length === 0) return;
+    const correctCount = results.filter((r) => r.correct).length;
+    const wrongCount = results.filter((r) => !r.correct && r.userAnswer !== null).length;
+    const skippedCount = results.filter((r) => r.userAnswer === null).length;
+    const durationSeconds = Math.round(elapsed / 1000);
+    const opLabel = settings.operation !== "mix" ? OP[settings.operation].label : "Mixed";
+
+    saveStudyStats(user.id, correctCount, wrongCount, skippedCount, results.length).catch(() => {});
+    saveStudySession(user.id, {
+      session_type: "speedmath",
+      subject: `Speed Math — ${opLabel}`,
+      duration_seconds: durationSeconds,
+      cards_studied: results.length,
+      known: correctCount,
+      forgot: wrongCount,
+      dont_know: skippedCount,
+      score: correctCount,
+      total_questions: results.length,
+    }).catch(() => {});
+  }, [phase, user, results, elapsed, settings.operation]);
+
   const correctCount = results.filter((r) => r.correct).length;
   const wrongCount = results.filter((r) => !r.correct && r.userAnswer !== null).length;
   const accuracy = results.length > 0 ? Math.round((correctCount / results.length) * 100) : 0;
@@ -239,20 +265,23 @@ export default function SpeedMathPage() {
         @keyframes smSlide { 0% { opacity: 0; transform: translateY(16px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes smPop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes smPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes smGlow { 0%, 100% { box-shadow: 0 0 20px var(--glow); } 50% { box-shadow: 0 0 40px var(--glow); } }
-        .sm-input:focus { border-color: var(--os-accent) !important; box-shadow: 0 0 0 3px rgba(109,40,217,0.2), 0 0 20px rgba(109,40,217,0.1); }
-        .sm-opt { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
-        .sm-opt:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.15); }
+        .sm-input:focus { border-color: var(--os-accent) !important; box-shadow: 0 0 0 3px rgba(109,40,217,0.2), 0 0 24px rgba(109,40,217,0.12); }
+        .sm-opt { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+        .sm-opt::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.04), transparent); opacity: 0; transition: opacity 0.2s; }
+        .sm-opt:hover::before { opacity: 1; }
+        .sm-opt:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.15); }
         .sm-opt:active { transform: scale(0.97) translateY(-1px); }
         .sm-btn { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
         .sm-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
         .sm-btn:active { transform: scale(0.97); }
-        .sm-op-card { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
-        .sm-op-card:hover { transform: translateY(-2px); }
+        .sm-op-card { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+        .sm-op-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+        .sm-op-card:hover { transform: translateY(-3px); }
         .sm-op-card:active { transform: scale(0.97); }
         .sm-chip { transition: all 0.15s ease; }
         .sm-chip:hover { background: rgba(255,255,255,0.08) !important; }
         .sm-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .sm-section { border-top: 1px solid rgba(255,255,255,0.04); margin: 0 -32px; padding: 20px 32px 0; }
       `}</style>
 
       <div className="os-window" style={{ maxWidth: 700, margin: "0 auto" }}>
@@ -295,15 +324,25 @@ export default function SpeedMathPage() {
                       <button key={op} onClick={() => setSettings((s) => ({ ...s, operation: op }))}
                         className="sm-op-card"
                         style={{
-                          padding: "14px 4px 12px", borderRadius: 14, cursor: "pointer",
+                          padding: "18px 4px 14px", borderRadius: 14, cursor: "pointer",
                           border: `2px solid ${active ? c.color : "rgba(255,255,255,0.06)"}`,
-                          background: active ? `linear-gradient(180deg, ${c.color}15, ${c.color}08)` : "rgba(255,255,255,0.015)",
-                          boxShadow: active ? `0 4px 20px ${c.glow}, inset 0 1px 0 rgba(255,255,255,0.05)` : "none",
-                          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                          background: active
+                            ? `linear-gradient(180deg, ${c.color}20, ${c.color}08)`
+                            : "rgba(255,255,255,0.015)",
+                          boxShadow: active
+                            ? `0 4px 24px ${c.glow}, inset 0 1px 0 rgba(255,255,255,0.06)`
+                            : "0 1px 3px rgba(0,0,0,0.1)",
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
                           color: active ? c.color : "var(--os-text-dim)",
                         }}>
-                        <span style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, fontFamily: "monospace" }}>{c.sym}</span>
-                        <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{c.label}</span>
+                        <span style={{
+                          fontSize: 26, fontWeight: 800, lineHeight: 1, fontFamily: "monospace",
+                          textShadow: active ? `0 0 12px ${c.glow}` : "none",
+                        }}>{c.sym}</span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em",
+                          opacity: active ? 1 : 0.6,
+                        }}>{c.label}</span>
                       </button>
                     );
                   })}
@@ -444,35 +483,45 @@ export default function SpeedMathPage() {
                 <div style={{ padding: "24px 32px 28px" }}>
                   {/* Question Display */}
                   <div style={{
-                    textAlign: "center", padding: "32px 24px", borderRadius: 18, marginBottom: 28,
-                    background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.05)",
+                    textAlign: "center", padding: "36px 24px", borderRadius: 20, marginBottom: 28,
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.008))",
+                    border: "1px solid rgba(255,255,255,0.05)",
                     position: "relative", overflow: "hidden",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)",
                   }}>
                     <div style={{
-                      position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                      background: `linear-gradient(90deg, transparent, ${OP[currentQ.op].color}60, transparent)`,
+                      position: "absolute", top: 0, left: "20%", right: "20%", height: 2,
+                      background: `linear-gradient(90deg, transparent, ${OP[currentQ.op].color}80, transparent)`,
+                      borderRadius: "0 0 4px 4px",
                     }} />
                     <div style={{
-                      fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em",
-                      color: OP[currentQ.op].color, marginBottom: 10,
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em",
+                      color: OP[currentQ.op].color, marginBottom: 12,
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     }}>
                       <span style={{
-                        width: 6, height: 6, borderRadius: "50%",
-                        background: OP[currentQ.op].color, boxShadow: `0 0 8px ${OP[currentQ.op].glow}`,
+                        width: 7, height: 7, borderRadius: "50%",
+                        background: OP[currentQ.op].color,
+                        boxShadow: `0 0 10px ${OP[currentQ.op].glow}`,
                       }} />
                       {OP[currentQ.op].label}
+                      <span style={{
+                        width: 7, height: 7, borderRadius: "50%",
+                        background: OP[currentQ.op].color,
+                        boxShadow: `0 0 10px ${OP[currentQ.op].glow}`,
+                      }} />
                     </div>
                     <div style={{
-                      fontSize: 42, fontWeight: 800, color: "var(--os-text-primary)",
+                      fontSize: 44, fontWeight: 800, color: "var(--os-text-primary)",
                       fontFamily: "'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace",
                       letterSpacing: -2, lineHeight: 1.2,
                     }}>
                       {currentQ.expression}
-                      <span style={{ color: OP[currentQ.op].color, margin: "0 6px", fontWeight: 400 }}>=</span>
+                      <span style={{ color: OP[currentQ.op].color, margin: "0 8px", fontWeight: 300 }}>=</span>
                       <span style={{
                         color: OP[currentQ.op].color,
                         animation: "smPulse 1.5s ease infinite",
+                        textShadow: `0 0 20px ${OP[currentQ.op].glow}`,
                       }}>?</span>
                     </div>
                   </div>
@@ -508,17 +557,19 @@ export default function SpeedMathPage() {
                         <button key={i} onClick={() => { setSelectedOption(opt); submitAnswer(opt); }}
                           className="sm-opt"
                           style={{
-                            padding: "20px 16px", borderRadius: 14,
+                            padding: "22px 16px", borderRadius: 16,
                             border: "1.5px solid rgba(255,255,255,0.06)",
-                            background: "rgba(255,255,255,0.015)",
-                            color: "var(--os-text-primary)", fontSize: 22, fontWeight: 700, cursor: "pointer",
+                            background: "linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.008))",
+                            color: "var(--os-text-primary)", fontSize: 24, fontWeight: 700, cursor: "pointer",
                             fontFamily: "'JetBrains Mono', monospace",
-                            display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 14,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.04)",
                           }}>
                         <span style={{
-                          width: 24, height: 24, borderRadius: 7, fontSize: 11, fontWeight: 800,
+                          width: 28, height: 28, borderRadius: 8, fontSize: 12, fontWeight: 800,
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          background: "rgba(255,255,255,0.05)", color: "var(--os-text-dim)",
+                          background: "rgba(255,255,255,0.06)", color: "var(--os-text-dim)",
+                          border: "1px solid rgba(255,255,255,0.04)",
                         }}>{i + 1}</span>
                         {opt}
                         </button>
@@ -672,7 +723,7 @@ function ResultStat({ icon, label, value, color }: { icon: React.ReactNode; labe
 }
 
 const lbl: React.CSSProperties = { fontSize: 10, fontWeight: 700, color: "var(--os-text-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, display: "block" };
-const chipBase: React.CSSProperties = { padding: "8px 6px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.015)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 600, textAlign: "center" };
+const chipBase: React.CSSProperties = { padding: "8px 6px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 600, textAlign: "center", position: "relative", overflow: "hidden" };
 const ghostBtn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.03)", color: "var(--os-text-secondary)", cursor: "pointer", fontSize: 12, fontWeight: 500 };
 const actBtn: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "12px 18px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 };
 const kbd: React.CSSProperties = { display: "inline-block", padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 10, fontFamily: "monospace", fontWeight: 700 };

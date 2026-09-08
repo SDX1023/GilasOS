@@ -89,7 +89,7 @@ export async function saveStudyStats(
 export interface StudySession {
   id: string;
   user_id: string;
-  session_type: "flashcards" | "quiz";
+  session_type: "flashcards" | "quiz" | "speedmath";
   subject: string;
   module: string | null;
   deck_title: string | null;
@@ -106,7 +106,7 @@ export interface StudySession {
 export async function saveStudySession(
   userId: string,
   session: {
-    session_type: "flashcards" | "quiz";
+    session_type: "flashcards" | "quiz" | "speedmath";
     subject: string;
     module?: string;
     deck_title?: string;
