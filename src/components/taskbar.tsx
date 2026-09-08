@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Sparkles, Layers, CheckSquare, Users, Trophy, Archive } from "lucide-react";
+import { BookOpen, Sparkles, Layers, FileText, CheckSquare, Users, Trophy, Archive, BarChart3 } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#60a5fa" },
   { icon: Sparkles, title: "Study", href: "/flashcards", color: "#a78bfa" },
   { icon: Layers, title: "My Decks", href: "/decks", color: "#c084fc" },
+  { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#fbbf24" },
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#34d399" },
   { icon: Users, title: "Friends", href: "/friends", color: "#22d3ee" },
   { icon: Trophy, title: "Leaderboard", href: "/leaderboard", color: "#facc15" },
   { icon: Archive, title: "Archive", href: "/archive", color: "#f87171" },
+  { icon: BarChart3, title: "Analytics", href: "/analytics", color: "#0ea5e9" },
 ];
 
 export function Taskbar() {
