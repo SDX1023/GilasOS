@@ -160,17 +160,6 @@ export function Navbar() {
               }}>
                 <Award size={15} />
               </Link>
-              <GlobalSearch />
-              <button onClick={() => setShowCustomize(true)}
-                className="nav-link"
-                style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 12,
-                  fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <Palette size={15} />
-              </button>
             </div>
           </div>
 
@@ -192,6 +181,24 @@ export function Navbar() {
               ) : (
                 <Sun size={15} />
               )}
+            </button>
+            <Link href="/badges" style={{
+              padding: 6, borderRadius: 12, background: "none", border: "none",
+              color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
+              alignItems: "center", justifyContent: "center", width: 32, height: 32, textDecoration: "none",
+            }} title="Badges">
+              <Award size={15} />
+            </Link>
+            <GlobalSearch />
+            <button onClick={() => setShowCustomize(true)}
+              style={{
+                padding: 6, borderRadius: 12, background: "none", border: "none",
+                color: "var(--os-text-dim)", cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center", width: 32, height: 32,
+              }}
+              title="Customize"
+            >
+              <Palette size={15} />
             </button>
 
             <div style={{ position: "relative" }} ref={menuRef}>
