@@ -706,7 +706,7 @@ export default function DeckStudyPage() {
       const result = dontKnow ? "dont_know" as const : correct ? "known" as const : "forgot" as const;
       logCardResult(user.id, deckId, current.front, current.back, result).catch(() => {});
       if (result !== "known") {
-        saveWrongAnswer(user.id, current.front, current.back, deckId, "", current.hint || "").catch(() => {});
+        saveWrongAnswer(user.id, current.front, current.back, deckId, "", current.hint || "").catch((e) => console.error("saveWrongAnswer failed:", e));
       }
 
       const key = `${current.front}:::${current.back}`;

@@ -554,7 +554,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const current = queue[queueIndex];
     if (user && current) {
       logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "dont_know").catch(() => {});
-      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch(() => {});
+      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch((e) => console.error("saveWrongAnswer failed:", e));
     }
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);
@@ -571,7 +571,7 @@ export default function FlashcardStudyClient({ slug }: { slug: string[] }) {
     const current = queue[queueIndex];
     if (user && current) {
       logCardResult(user.id, reviewer?.id || `${courseSlug}/${moduleSlug}/${reviewerSlug}`, current.front, current.back, "forgot").catch(() => {});
-      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch(() => {});
+      saveWrongAnswer(user.id, current.front, current.back, reviewer?.title || "", `${courseSlug}/${moduleSlug}`, current.hint || "").catch((e) => console.error("saveWrongAnswer failed:", e));
     }
     updateLevel(current, -1);
     const newQueue = queue.filter((_, i) => i !== queueIndex);

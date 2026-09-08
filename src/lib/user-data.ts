@@ -591,9 +591,10 @@ export async function saveWrongAnswer(userId: string, front: string, back: strin
     .eq("mastered", false)
     .maybeSingle();
   if (existing) return;
-  await supabase.from("wrong_answers").insert({
+  const { error } = await supabase.from("wrong_answers").insert({
     user_id: userId, front, back, source: source || "", subject: subject || "", hint: hint || "",
   });
+  if (error) console.error("saveWrongAnswer error:", error.message, error);
 }
 
 export async function loadWeakCards(userId: string, deckId?: string): Promise<{ front: string; back: string; deck_id: string; forgot: number; known: number; dont_know: number }[]> {
