@@ -434,17 +434,22 @@ body {
 .os-window-controls {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .os-window-controls button {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  padding: 0;
 }
 
 .os-window-controls button::after {
@@ -466,7 +471,8 @@ body {
 
 .os-window-controls .close:hover {
   background: #ff4040;
-  box-shadow: 0 0 8px rgba(255, 95, 87, 0.4);
+  box-shadow: 0 0 10px rgba(255, 95, 87, 0.5);
+  transform: scale(1.15);
 }
 
 .os-window-controls .minimize {
@@ -475,7 +481,8 @@ body {
 
 .os-window-controls .minimize:hover {
   background: #ffa500;
-  box-shadow: 0 0 8px rgba(255, 189, 46, 0.4);
+  box-shadow: 0 0 10px rgba(255, 189, 46, 0.5);
+  transform: scale(1.15);
 }
 
 .os-window-controls .maximize {
@@ -484,7 +491,8 @@ body {
 
 .os-window-controls .maximize:hover {
   background: #1aad30;
-  box-shadow: 0 0 8px rgba(40, 200, 64, 0.4);
+  box-shadow: 0 0 10px rgba(40, 200, 64, 0.5);
+  transform: scale(1.15);
 }
 
 .os-window-body {
