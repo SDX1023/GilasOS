@@ -104,35 +104,16 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
     >
       <style>{`
         .notebook-page {
-          --line-color: rgba(139,92,246,0.06);
-          --margin-color: rgba(239,68,68,0.12);
-          background:
-            repeating-linear-gradient(transparent, transparent 31px, var(--line-color) 31px, var(--line-color) 32px),
-            linear-gradient(90deg, var(--margin-color) 2px, transparent 2px);
-          background-position: 0 0, 56px 0;
-          padding: 28px 32px 28px 64px;
+          background: repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            rgba(139,92,246,0.035) 31px,
+            rgba(139,92,246,0.035) 32px
+          );
+          padding: 28px 32px;
           border-radius: 4px;
           position: relative;
-        }
-        .notebook-page::before {
-          content: '';
-          position: absolute;
-          left: 54px;
-          top: 0;
-          bottom: 0;
-          width: 1px;
-          background: var(--margin-color);
-          pointer-events: none;
-        }
-        .notebook-page::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 4px;
-          height: 100%;
-          background: linear-gradient(180deg, rgba(139,92,246,0.3), rgba(139,92,246,0.05));
-          border-radius: 4px 0 0 4px;
+          border-left: 3px solid rgba(139,92,246,0.15);
         }
         .notebook-page p { margin: 0.7em 0; line-height: 1.8; color: #c8ccd4; font-size: 14.5px; }
         .notebook-page h1 { font-size: 1.65rem; font-weight: 700; margin: 1.2em 0 0.6em; color: white; letter-spacing: -0.01em; }
