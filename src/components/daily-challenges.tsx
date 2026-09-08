@@ -11,20 +11,25 @@ interface Challenge {
   target: number;
   progress: number;
   completed: boolean;
-  icon: any;
   color: string;
 }
 
 const CHALLENGE_TEMPLATES = [
-  { id: "cards-20", title: "Review 20 cards", target: 20, type: "cards", icon: BookOpen, color: "#8b5cf6" },
-  { id: "cards-50", title: "Review 50 cards", target: 50, type: "cards", icon: BookOpen, color: "#6d28d9" },
-  { id: "accuracy-80", title: "Score 80%+ accuracy", target: 80, type: "accuracy", icon: Target, color: "#22c55e" },
-  { id: "accuracy-90", title: "Score 90%+ accuracy", target: 90, type: "accuracy", icon: Target, color: "#10b981" },
-  { id: "study-15", title: "Study for 15 minutes", target: 15, type: "minutes", icon: Flame, color: "#f97316" },
-  { id: "study-30", title: "Study for 30 minutes", target: 30, type: "minutes", icon: Flame, color: "#ef4444" },
-  { id: "quiz-done", title: "Complete a quiz", target: 1, type: "quizzes", icon: Trophy, color: "#eab308" },
-  { id: "streak-keep", title: "Keep your streak", target: 1, type: "streak", icon: Zap, color: "#0ea5e9" },
+  { id: "cards-20", title: "Review 20 cards", target: 20, type: "cards", icon: "BookOpen", color: "#8b5cf6" },
+  { id: "cards-50", title: "Review 50 cards", target: 50, type: "cards", icon: "BookOpen", color: "#6d28d9" },
+  { id: "accuracy-80", title: "Score 80%+ accuracy", target: 80, type: "accuracy", icon: "Target", color: "#22c55e" },
+  { id: "accuracy-90", title: "Score 90%+ accuracy", target: 90, type: "accuracy", icon: "Target", color: "#10b981" },
+  { id: "study-15", title: "Study for 15 minutes", target: 15, type: "minutes", icon: "Flame", color: "#f97316" },
+  { id: "study-30", title: "Study for 30 minutes", target: 30, type: "minutes", icon: "Flame", color: "#ef4444" },
+  { id: "quiz-done", title: "Complete a quiz", target: 1, type: "quizzes", icon: "Trophy", color: "#eab308" },
+  { id: "streak-keep", title: "Keep your streak", target: 1, type: "streak", icon: "Zap", color: "#0ea5e9" },
 ];
+
+const ICON_MAP: Record<string, any> = { BookOpen, Target, Flame, Trophy, Zap };
+
+function getIcon(name: string) {
+  return ICON_MAP[name] || BookOpen;
+}
 
 function getTodayKey(): string {
   return new Date().toDateString();
@@ -43,7 +48,6 @@ function generateDailyChallenges(): Challenge[] {
     target: t.target,
     progress: 0,
     completed: false,
-    icon: t.icon,
     color: t.color,
   }));
 }
@@ -150,7 +154,7 @@ export default function DailyChallenges() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {challenges.map((c) => {
-          const Icon = c.icon;
+          const Icon = getIcon(CHALLENGE_TEMPLATES.find((t) => t.id === c.id)?.icon || "BookOpen");
           const pct = Math.min(100, (c.progress / c.target) * 100);
           return (
             <div key={c.id} style={{
