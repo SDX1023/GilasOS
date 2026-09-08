@@ -104,66 +104,61 @@ export function MarkdownRenderer({ content, allLinksMap }: MarkdownRendererProps
     >
       <style>{`
         .notebook-page {
-          background: repeating-linear-gradient(
-            transparent,
-            transparent 31px,
-            rgba(139,92,246,0.035) 31px,
-            rgba(139,92,246,0.035) 32px
-          );
-          padding: 28px 32px;
-          border-radius: 4px;
+          background-color: rgba(255,255,255,0.025);
+          background-image: linear-gradient(rgba(139,92,246,0.03) 1px, transparent 1px);
+          background-size: 100% 32px;
+          padding: 32px 40px;
+          border-radius: 8px;
           position: relative;
-          border-left: 3px solid rgba(139,92,246,0.15);
         }
-        .notebook-page p { margin: 0.7em 0; line-height: 1.8; color: #c8ccd4; font-size: 14.5px; }
-        .notebook-page h1 { font-size: 1.65rem; font-weight: 700; margin: 1.2em 0 0.6em; color: white; letter-spacing: -0.01em; }
-        .notebook-page h2 { font-size: 1.3rem; font-weight: 700; margin: 1.5em 0 0.5em; padding-bottom: 0.3em; border-bottom: 1px solid rgba(255,255,255,0.06); color: white; }
-        .notebook-page h3 { font-size: 1.05rem; font-weight: 600; margin: 1.2em 0 0.4em; color: #c4b5fd; }
-        .notebook-page ul, .notebook-page ol { margin: 0.6em 0; padding-left: 1.4em; }
-        .notebook-page li { margin: 0.3em 0; color: #c8ccd4; line-height: 1.7; }
-        .notebook-page li::marker { color: rgba(139,92,246,0.5); }
-        .notebook-page strong { color: white; font-weight: 600; }
-        .notebook-page em { color: #a78bfa; font-style: italic; }
-        .notebook-page a { color: #60a5fa; text-decoration: none; border-bottom: 1px dashed rgba(96,165,250,0.4); }
+        .notebook-page p { margin: 4px 0; line-height: 1.75; color: var(--os-text-secondary); font-size: 14px; }
+        .notebook-page h1 { font-size: 1.5rem; font-weight: 700; margin: 1.5em 0 0.5em; color: var(--os-text-primary); letter-spacing: -0.02em; }
+        .notebook-page h2 { font-size: 1.15rem; font-weight: 600; margin: 1.4em 0 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--os-text-primary); }
+        .notebook-page h3 { font-size: 0.95rem; font-weight: 600; margin: 1.2em 0 0.3em; color: var(--os-accent); }
+        .notebook-page ul, .notebook-page ol { margin: 4px 0; padding-left: 1.4em; }
+        .notebook-page li { margin: 2px 0; color: var(--os-text-secondary); line-height: 1.7; }
+        .notebook-page li::marker { color: var(--os-accent); opacity: 0.4; }
+        .notebook-page strong { color: var(--os-text-primary); font-weight: 600; }
+        .notebook-page em { color: var(--os-accent); font-style: italic; }
+        .notebook-page a { color: #60a5fa; text-decoration: none; border-bottom: 1px dashed rgba(96,165,250,0.35); }
         .notebook-page a:hover { border-bottom-color: #60a5fa; }
-        .notebook-page blockquote { border-left: 3px solid #8b5cf6; padding: 0.5em 1em; margin: 0.8em 0; background: rgba(139,92,246,0.06); border-radius: 0 8px 8px 0; font-style: italic; color: #b4b8c4; }
-        .notebook-page code { color: #f472b6; background: rgba(255,255,255,0.05); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.88em; border: 1px solid rgba(255,255,255,0.06); }
-        .notebook-page pre { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 0.8em 0; }
-        .notebook-page pre code { color: #e2e8f0; background: none; border: none; padding: 0; }
-        .notebook-page hr { border: none; border-top: 1px dashed rgba(255,255,255,0.08); margin: 1.5em 0; }
-        .notebook-page table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 13px; }
-        .notebook-page th, .notebook-page td { border: 1px solid rgba(255,255,255,0.06); padding: 8px 12px; text-align: left; }
-        .notebook-page th { background: rgba(139,92,246,0.08); font-weight: 600; color: #c4b5fd; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .notebook-page td { color: #c8ccd4; }
+        .notebook-page blockquote { border-left: 2.5px solid var(--os-accent); padding: 8px 16px; margin: 10px 0; background: rgba(139,92,246,0.04); border-radius: 0 6px 6px 0; font-style: italic; color: var(--os-text-secondary); font-size: 13.5px; }
+        .notebook-page code { color: #f472b6; background: rgba(255,255,255,0.05); padding: 2px 5px; border-radius: 4px; font-size: 0.85em; }
+        .notebook-page pre { background: rgba(0,0,0,0.25); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 10px 0; }
+        .notebook-page pre code { color: var(--os-text-primary); background: none; padding: 0; }
+        .notebook-page hr { border: none; height: 1px; background: rgba(255,255,255,0.06); margin: 1.5em 0; }
+        .notebook-page table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+        .notebook-page th, .notebook-page td { border: 1px solid rgba(255,255,255,0.06); padding: 7px 12px; text-align: left; }
+        .notebook-page th { background: rgba(139,92,246,0.05); font-weight: 600; color: var(--os-accent); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .notebook-page td { color: var(--os-text-secondary); }
 
-        .nb-highlight { background: rgba(234,179,8,0.2); color: #fbbf24; padding: 1px 5px; border-radius: 3px; font-weight: 500; }
-        .nb-highlight.nb-important { background: rgba(239,68,68,0.2); color: #f87171; }
-        .nb-highlight.nb-question { background: rgba(59,130,246,0.2); color: #60a5fa; }
-        .nb-underline { text-decoration: underline; text-decoration-color: rgba(139,92,246,0.5); text-underline-offset: 3px; }
+        .nb-highlight { background: rgba(234,179,8,0.15); color: #fbbf24; padding: 1px 5px; border-radius: 3px; font-weight: 500; }
+        .nb-highlight.nb-important { background: rgba(239,68,68,0.15); color: #f87171; }
+        .nb-highlight.nb-question { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .nb-underline { text-decoration: underline; text-decoration-color: rgba(139,92,246,0.4); text-underline-offset: 3px; }
 
         .notebook-callout {
           display: flex; gap: 10px; align-items: flex-start;
-          padding: 12px 16px; margin: 12px 0; border-radius: 8px;
-          font-size: 13.5px; line-height: 1.6; color: #c8ccd4;
-          border-left: 3px solid; background: rgba(255,255,255,0.02);
+          padding: 10px 14px; margin: 10px 0; border-radius: 6px;
+          font-size: 13px; line-height: 1.6; color: var(--os-text-secondary);
+          border-left: 2.5px solid; background: rgba(255,255,255,0.02);
         }
-        .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
-        .callout-label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
-        .notebook-callout-warn { border-color: #f59e0b; background: rgba(245,158,11,0.06); }
+        .callout-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+        .callout-label { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+        .notebook-callout-warn { border-color: #f59e0b; background: rgba(245,158,11,0.04); }
         .notebook-callout-warn .callout-label { color: #fbbf24; }
-        .notebook-callout-info { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+        .notebook-callout-info { border-color: #3b82f6; background: rgba(59,130,246,0.04); }
         .notebook-callout-info .callout-label { color: #60a5fa; }
-        .notebook-callout-success { border-color: #22c55e; background: rgba(34,197,94,0.06); }
+        .notebook-callout-success { border-color: #22c55e; background: rgba(34,197,94,0.04); }
         .notebook-callout-success .callout-label { color: #4ade80; }
-        .notebook-callout-tip { border-color: #a855f7; background: rgba(168,85,247,0.06); }
+        .notebook-callout-tip { border-color: #a855f7; background: rgba(168,85,247,0.04); }
         .notebook-callout-tip .callout-label { color: #c084fc; }
-        .notebook-callout-note { border-color: #64748b; background: rgba(100,116,139,0.06); }
+        .notebook-callout-note { border-color: #64748b; background: rgba(100,116,139,0.04); }
         .notebook-callout-note .callout-label { color: #94a3b8; }
-        .notebook-callout-default { border-color: rgba(255,255,255,0.15); }
+        .notebook-callout-default { border-color: rgba(255,255,255,0.1); }
 
         @media (max-width: 640px) {
-          .notebook-page { padding: 20px 16px 20px 20px; }
-          .notebook-page::before, .notebook-page::after { display: none; }
+          .notebook-page { padding: 20px 16px; }
         }
       `}</style>
       <div
