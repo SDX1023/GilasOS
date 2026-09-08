@@ -357,17 +357,27 @@ export default function SpeedMathPage() {
                 <div>
                   <label style={lbl}>Timer</label>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {(["stopwatch", "countdown"] as TimerMode[]).map((m) => (
-                      <button key={m} onClick={() => setSettings((s) => ({ ...s, timerMode: m }))} className="sm-chip"
-                        style={{
-                          ...chipBase, flex: 1,
-                          background: settings.timerMode === m ? "var(--os-accent)" : undefined,
-                          color: settings.timerMode === m ? "#fff" : undefined,
-                          borderColor: settings.timerMode === m ? "var(--os-accent)" : undefined,
-                        }}>
-                        {m === "stopwatch" ? "⏱ Stopwatch" : "⏳ Countdown"}
-                      </button>
-                    ))}
+                    {(["stopwatch", "countdown"] as TimerMode[]).map((m) => {
+                      const active = settings.timerMode === m;
+                      return (
+                        <button key={m} onClick={() => setSettings((s) => ({ ...s, timerMode: m }))} className="sm-chip"
+                          style={{
+                            flex: 1, padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                            border: `1.5px solid ${active ? "var(--os-accent)" : "rgba(255,255,255,0.06)"}`,
+                            background: active
+                              ? "linear-gradient(180deg, rgba(109,40,217,0.25), rgba(109,40,217,0.12))"
+                              : "rgba(255,255,255,0.02)",
+                            color: active ? "#fff" : "var(--os-text-dim)",
+                            fontSize: 12, fontWeight: active ? 700 : 500, textAlign: "center",
+                            boxShadow: active
+                              ? "0 2px 12px rgba(109,40,217,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
+                              : "none",
+                            transition: "all 0.15s ease",
+                          }}>
+                          {m === "stopwatch" ? "⏱ Stopwatch" : "⏳ Countdown"}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 {settings.timerMode === "countdown" && (
@@ -376,17 +386,27 @@ export default function SpeedMathPage() {
                 <div>
                   <label style={lbl}>Input Mode</label>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {(["manual", "mcq"] as InputMode[]).map((m) => (
-                      <button key={m} onClick={() => setSettings((s) => ({ ...s, inputMode: m }))} className="sm-chip"
-                        style={{
-                          ...chipBase, flex: 1,
-                          background: settings.inputMode === m ? "var(--os-accent)" : undefined,
-                          color: settings.inputMode === m ? "#fff" : undefined,
-                          borderColor: settings.inputMode === m ? "var(--os-accent)" : undefined,
-                        }}>
-                        {m === "manual" ? "⌨ Type" : "🔘 MCQ"}
-                      </button>
-                    ))}
+                    {(["manual", "mcq"] as InputMode[]).map((m) => {
+                      const active = settings.inputMode === m;
+                      return (
+                        <button key={m} onClick={() => setSettings((s) => ({ ...s, inputMode: m }))} className="sm-chip"
+                          style={{
+                            flex: 1, padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                            border: `1.5px solid ${active ? "var(--os-accent)" : "rgba(255,255,255,0.06)"}`,
+                            background: active
+                              ? "linear-gradient(180deg, rgba(109,40,217,0.25), rgba(109,40,217,0.12))"
+                              : "rgba(255,255,255,0.02)",
+                            color: active ? "#fff" : "var(--os-text-dim)",
+                            fontSize: 12, fontWeight: active ? 700 : 500, textAlign: "center",
+                            boxShadow: active
+                              ? "0 2px 12px rgba(109,40,217,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
+                              : "none",
+                            transition: "all 0.15s ease",
+                          }}>
+                          {m === "manual" ? "⌨ Type" : "🔘 MCQ"}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -695,15 +715,28 @@ function Chips({ label, options, value, onChange }: { label: string; options: nu
   return (
     <div>
       <label style={lbl}>{label}</label>
-      <div style={{ display: "flex", gap: 5 }}>
-        {options.map((o) => (
-          <button key={o} onClick={() => onChange(o)} className="sm-chip"
-            style={{
-              ...chipBase, background: value === o ? "var(--os-accent)" : undefined,
-              color: value === o ? "#fff" : undefined,
-              borderColor: value === o ? "var(--os-accent)" : undefined,
-            }}>{o}</button>
-        ))}
+      <div style={{ display: "flex", gap: 6 }}>
+        {options.map((o) => {
+          const active = value === o;
+          return (
+            <button key={o} onClick={() => onChange(o)} className="sm-chip"
+              style={{
+                flex: 1, padding: "10px 4px", borderRadius: 10, cursor: "pointer",
+                border: `1.5px solid ${active ? "var(--os-accent)" : "rgba(255,255,255,0.06)"}`,
+                background: active
+                  ? "linear-gradient(180deg, rgba(109,40,217,0.25), rgba(109,40,217,0.12))"
+                  : "rgba(255,255,255,0.02)",
+                color: active ? "#fff" : "var(--os-text-dim)",
+                fontSize: 13, fontWeight: active ? 700 : 500, textAlign: "center",
+                boxShadow: active
+                  ? "0 2px 12px rgba(109,40,217,0.25), inset 0 1px 0 rgba(255,255,255,0.1)"
+                  : "none",
+                transition: "all 0.15s ease",
+              }}>
+              {o}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
