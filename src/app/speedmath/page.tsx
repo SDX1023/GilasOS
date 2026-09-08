@@ -59,7 +59,7 @@ function generateQuestion(settings: Operation, digits: number, terms: number): Q
   }
 
   let answer = operands[0];
-  const symbols: Record<Operation, string> = { add: "+", sub: "−", mul: "×", div: "÷" };
+  const symbols: Record<Operation, string> = { add: "+", sub: "−", mul: "×", div: "÷", mix: "?" };
   for (let i = 1; i < operands.length; i++) {
     switch (op) {
       case "add": answer += operands[i]; break;
@@ -172,7 +172,7 @@ export default function SpeedMathPage() {
     }
   }, [currentQ, currentIndex, questions.length, questionStart]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (phase === "playing") {
       if (e.key === "Enter") {
         e.preventDefault();
