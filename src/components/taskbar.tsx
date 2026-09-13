@@ -6,7 +6,7 @@ import { BookOpen, Sparkles, Layers, FileText, CheckSquare, Users, Trophy, Archi
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#60a5fa" },
-  { icon: Sparkles, title: "Study", href: "/flashcards", color: "#a78bfa" },
+  { icon: Sparkles, title: "Study", href: "/study", color: "#a78bfa" },
   { icon: Layers, title: "My Decks", href: "/decks", color: "#c084fc" },
   { icon: Calculator, title: "Speed Math", href: "/speedmath", color: "#f97316" },
   { icon: Puzzle, title: "Match Game", href: "/match", color: "#22d3ee" },

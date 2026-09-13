@@ -1430,12 +1430,17 @@ a:active {
 @media (max-width: 768px) {
   .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr 1fr; }
-  .page-container { padding: 16px 12px; padding-bottom: 100px; }
+  .page-container { padding: 12px 10px; padding-bottom: 90px; }
+  .page-title { font-size: 20px; }
+  .page-header { margin-bottom: 16px; }
   .flashcard-header { flex-direction: column; align-items: stretch; }
-  .flashcard-actions { justify-content: flex-start; }
-  .flashcard-actions .glass-btn { font-size: 12px; padding: 6px 10px; }
-  .flashcard-actions .glass-btn svg { width: 14px; height: 14px; }
-  .taskbar { bottom: 12px; padding: 6px 10px; gap: 2px; }
+  .flashcard-actions { justify-content: flex-start; gap: 6px; }
+  .flashcard-actions .glass-btn { font-size: 11px; padding: 5px 8px; }
+  .flashcard-actions .glass-btn svg { width: 13px; height: 13px; }
+  .taskbar {
+    bottom: 10px; padding: 6px 10px; border-radius: 14px;
+    gap: 1px; max-width: calc(100vw - 24px); overflow-x: auto;
+  }
   .taskbar-item { padding: 8px 10px; font-size: 0; }
   .taskbar-item svg { width: 18px; height: 18px; }
   .taskbar-time { display: none; }
@@ -1445,15 +1450,25 @@ a:active {
   .archive-table-wrap table { min-width: 480px; }
   .nav-desktop { display: none !important; }
   .nav-mobile-btn { display: flex !important; }
-  .page-header { margin-bottom: 20px; }
-  .page-title { font-size: 22px; }
   .theme-overlay-container { opacity: 0.10 !important; }
+  .os-window {
+    width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 160px) !important;
+    border-radius: 14px;
+  }
+  .os-window-body { padding: 20px; }
+  .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .feature-card { padding: 14px 12px; }
+  .feature-card .icon { font-size: 20px; }
+  .flashcard-grid { grid-template-columns: 1fr; }
+  .upload-zone { padding: 24px; }
+  .notification { bottom: 70px; right: 12px; left: 12px; min-width: auto; }
 }
 
 @media (max-width: 480px) {
   .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
-  .page-container { padding: 12px 10px; padding-bottom: 100px; }
+  .page-container { padding: 10px 8px; padding-bottom: 80px; }
   .theme-overlay-container { opacity: 0.08 !important; }
 }
 
@@ -1717,65 +1732,6 @@ a:active {
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 768px) {
-  .taskbar {
-    bottom: 10px;
-    padding: 6px 10px;
-    border-radius: 14px;
-    gap: 1px;
-    max-width: calc(100vw - 24px);
-    overflow-x: auto;
-    justify-content: center;
-  }
-
-  .taskbar-time {
-    font-size: 10px;
-    padding: 0 8px;
-  }
-
-  .os-window {
-    width: calc(100vw - 24px) !important;
-    max-height: calc(100vh - 160px) !important;
-    border-radius: 14px;
-  }
-
-  .os-window-body {
-    padding: 20px;
-  }
-
-  .hero h1 {
-    font-size: 36px;
-  }
-
-  .feature-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .feature-card {
-    padding: 14px 12px;
-  }
-
-  .feature-card .icon {
-    font-size: 20px;
-  }
-
-  .flashcard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .upload-zone {
-    padding: 24px;
-  }
-
-  .notification {
-    bottom: 70px;
-    right: 12px;
-    left: 12px;
-    min-width: auto;
-  }
-}
-
 @media (max-width: 480px) {
   .hero h1 {
     font-size: 28px;

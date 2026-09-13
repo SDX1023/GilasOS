@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, updateQuizQuestions } from "@/lib/user-data";
+import { saveQuiz, loadSavedQuizzes, deleteSavedQuiz, renameSavedQuiz, updateQuizQuestions, shareQuiz } from "@/lib/user-data";
+import { getSupabase } from "@/lib/supabase";
 import { MathRenderer } from "@/components/math-renderer";
 import { ImageOcclusionCreator } from "@/components/image-occlusion-creator";
-import { Plus, Trash2, Play, Save, Pencil, Check, X, ArrowLeft, Sparkles, Image as ImageIcon, Eye, Download } from "lucide-react";
+import { Plus, Trash2, Play, Save, Pencil, Check, X, ArrowLeft, Sparkles, Image as ImageIcon, Eye, Download, Share2, Link as LinkIcon } from "lucide-react";
 import jsPDF from "jspdf";
 
 type View = "list" | "edit" | "take" | "results";
@@ -118,6 +119,14 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   const [preGeneratedOptions, setPreGeneratedOptions] = useState<Record<number, string[]>>({});
   const [generatingOptions, setGeneratingOptions] = useState(false);
 
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareQuizId, setShareQuizId] = useState<string | null>(null);
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     loadSavedQuizzes(userId).then((data) => { setQuizzes(data); setLoading(false); });
   }, [userId]);
@@ -154,6 +163,37 @@ export default function QuizManager({ userId }: QuizManagerProps) {
     setRenamingId(null);
     setRenamingTitle("");
     if (activeQuiz?.id === quizId) setActiveQuiz((prev: any) => prev ? { ...prev, title: renamingTitle.trim() } : prev);
+  }
+
+  function handleShareQuiz(id: string) {
+    setShareQuizId(id);
+    setShareRecipient("");
+    setShareError("");
+    setShared(false);
+    setCopied(false);
+    setShowShareModal(true);
+  }
+
+  async function handleShareSubmit() {
+    if (!shareQuizId || !userId) return;
+    setSharing(true);
+    setShareError("");
+    let recipientUserId = "";
+    if (shareRecipient.trim()) {
+      const supabase = getSupabase();
+      const { data: recipient } = await supabase.from("user_profiles").select("user_id").eq("username", shareRecipient.trim()).maybeSingle();
+      if (!recipient) { setShareError("User not found"); setSharing(false); return; }
+      recipientUserId = recipient.user_id;
+    }
+    const code = await shareQuiz(userId, shareQuizId, recipientUserId || undefined);
+    if (code) {
+      const url = `${window.location.origin}/shared-quiz/${code}`;
+      navigator.clipboard.writeText(url).then(() => setCopied(true)).catch(() => {});
+      setShared(true);
+    } else {
+      setShareError("Failed to share quiz");
+    }
+    setSharing(false);
   }
 
   async function handleGenerateDistractors() {
@@ -529,6 +569,23 @@ export default function QuizManager({ userId }: QuizManagerProps) {
   if (view === "list") {
     return (
       <div style={{ maxWidth: 672, margin: "0 auto", padding: "0 16px" }}>
+        {showShareModal && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowShareModal(false)}>
+            <div className="glass-panel" style={{ width: 400, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Share Quiz</h3>
+              <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Or enter username manually</label>
+              <input className="glass-input" value={shareRecipient} onChange={(e) => setShareRecipient(e.target.value)} placeholder="Leave empty for anyone with link" />
+              {shareError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{shareError}</p>}
+              {shared && copied && <p style={{ fontSize: 12, color: "#22c55e", marginTop: 4 }}>Link copied to clipboard!</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                <button onClick={() => setShowShareModal(false)} className="glass-btn glass-btn-ghost" style={{ flex: 1 }}>Cancel</button>
+                <button onClick={handleShareSubmit} disabled={sharing || shared} className="glass-btn glass-btn-primary" style={{ flex: 1 }}>
+                  {sharing ? "Sharing..." : shared ? "Shared!" : "Share"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1 }}>
@@ -596,6 +653,9 @@ export default function QuizManager({ userId }: QuizManagerProps) {
                       <Download size={12} />
                     </button>
                   )}
+                  <button onClick={() => handleShareQuiz(q.id)} className="glass-btn" style={{ padding: "6px 12px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }} title="Share">
+                    <Share2 size={12} />
+                  </button>
                   {!isRenaming && (
                     <button onClick={() => { setRenamingId(q.id); setRenamingTitle(q.title); }} style={{ padding: 4, borderRadius: 4, color: "var(--os-text-secondary)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }} title="Rename">
                       <Pencil size={14} />
@@ -1024,6 +1084,11 @@ export default function QuizManager({ userId }: QuizManagerProps) {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={() => { setQuizStarted(false); }} className="glass-btn-primary" style={{ padding: "8px 24px" }}>Try Again</button>
             <button onClick={() => setView("list")} className="glass-btn" style={{ padding: "8px 24px" }}>Back to Quizzes</button>
+            {activeQuiz && (
+              <button onClick={() => handleShareQuiz(activeQuiz.id)} className="glass-btn" style={{ padding: "8px 24px", display: "flex", alignItems: "center", gap: 6 }}>
+                <Share2 size={14} /> Share
+              </button>
+            )}
           </div>
         </div>
 
