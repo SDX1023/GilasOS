@@ -261,7 +261,7 @@ function TodoApp() {
               {filtered.map((todo) => {
                 const todoDeck = decks.find((d) => d.id === todo.deck);
                 return (
-                  <div key={todo.id} className="glass-card" style={{ padding: 16, opacity: todo.completed ? 0.5 : 1 }}>
+                  <div key={todo.id} className="glass-card" style={{ padding: 16, opacity: todo.completed ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
                     {editingId === todo.id ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <input className="glass-input" value={editValues.title} onChange={(e) => setEditValues({ ...editValues, title: e.target.value })} autoFocus onKeyDown={(e) => e.key === "Enter" && saveEdit()} />
@@ -280,11 +280,12 @@ function TodoApp() {
                     ) : (
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                         <button onClick={() => toggleTodo(todo.id)} style={{
-                          marginTop: 2, width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                          marginTop: 2, width: 26, height: 26, borderRadius: 6, flexShrink: 0,
                           border: `2px solid ${todo.completed ? "var(--os-accent)" : "rgba(255,255,255,0.15)"}`,
                           background: todo.completed ? "var(--os-accent)" : "transparent",
                           color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>{todo.completed && <Check size={12} />}</button>
+                          transition: "all 0.15s ease", pointerEvents: "auto",
+                        }}>{todo.completed && <Check size={14} />}</button>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                             <span style={{ fontWeight: 500, textDecoration: todo.completed ? "line-through" : "none", color: todo.completed ? "var(--os-text-dim)" : "var(--os-text-primary)" }}>{todo.title}</span>
