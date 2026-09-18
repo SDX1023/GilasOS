@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Sparkles, Layers, FileText, CheckSquare, Users, Trophy, Archive, BarChart3, Calculator, Puzzle } from "lucide-react";
+import { BookOpen, Sparkles, Layers, FileText, CheckSquare, Users, Trophy, Archive, BarChart3, Calculator, Swords } from "lucide-react";
 
 const features = [
   { icon: BookOpen, title: "Subjects", href: "/subjects", color: "#60a5fa" },
   { icon: Sparkles, title: "Study", href: "/study", color: "#a78bfa" },
   { icon: Layers, title: "My Decks", href: "/decks", color: "#c084fc" },
   { icon: Calculator, title: "Speed Math", href: "/speedmath", color: "#f97316" },
-  { icon: Puzzle, title: "Match Game", href: "/match", color: "#22d3ee" },
+  { icon: Swords, title: "Scrims", href: "/scrims", color: "#f97316" },
   { icon: FileText, title: "PDF to Cards", href: "/pdf-to-cards", color: "#fbbf24" },
   { icon: CheckSquare, title: "Tasks", href: "/tasks", color: "#34d399" },
   { icon: Users, title: "Friends", href: "/friends", color: "#22d3ee" },
