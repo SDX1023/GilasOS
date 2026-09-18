@@ -149,12 +149,53 @@ export default function ScrimsPage() {
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "txt" || ext === "md") {
+      const reader = new FileReader();
+      reader.onload = (ev) => setDocText(ev.target?.result as string);
+      reader.readAsText(file);
+    } else if (ext === "pdf") {
+      parsePdf(file);
+    } else if (ext === "docx") {
+      parseDocx(file);
+    } else {
+      setError("Unsupported file type. Use .txt, .md, .pdf, or .docx");
+    }
+  }
+
+  async function parsePdf(file: File) {
+    setGenerating(true);
+    setError("");
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map((item: any) => item.str).join(" ") + "\n";
+      }
       setDocText(text);
-    };
-    reader.readAsText(file);
+    } catch {
+      setError("Failed to parse PDF. Try converting to .txt first.");
+    }
+    setGenerating(false);
+  }
+
+  async function parseDocx(file: File) {
+    setGenerating(true);
+    setError("");
+    try {
+      const mammoth = await import("mammoth");
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      setDocText(result.value);
+    } catch {
+      setError("Failed to parse DOCX. Try converting to .txt first.");
+    }
+    setGenerating(false);
   }
 
   function resetScrim() {
@@ -196,8 +237,8 @@ export default function ScrimsPage() {
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "var(--os-text-primary)" }}>Upload Document</h3>
             <label className="glass-btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "20px 16px", cursor: "pointer", border: "2px dashed rgba(255,255,255,0.12)", borderRadius: 12, width: "100%", marginBottom: 12 }}>
               <Upload size={18} />
-              <span style={{ fontSize: 13 }}>Choose .txt file</span>
-              <input type="file" accept=".txt,.md" onChange={handleFileUpload} style={{ display: "none" }} />
+              <span style={{ fontSize: 13 }}>Upload PDF, DOCX, or TXT</span>
+              <input type="file" accept=".txt,.md,.pdf,.docx" onChange={handleFileUpload} style={{ display: "none" }} />
             </label>
             <p style={{ fontSize: 11, color: "var(--os-text-dim)", textAlign: "center" }}>or paste your text below</p>
           </div>
