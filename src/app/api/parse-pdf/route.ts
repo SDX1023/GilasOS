@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require("pdf-parse/lib/pdf-parse.js");
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,14 +13,8 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const data = new Uint8Array(buffer);
-    const pdf = await getDocument({ data }).promise;
-    let text = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map((item: any) => item.str).join(" ") + "\n";
-    }
+    const data = await pdfParse(buffer);
+    const text = data.text || "";
     if (!text.trim()) {
       return NextResponse.json({ error: "PDF appears to be image-based (scanned). Convert to text first." }, { status: 400 });
     }
