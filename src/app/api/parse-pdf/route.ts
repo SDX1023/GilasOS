@@ -4,8 +4,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Polyfill Uint8Array.toHex if missing (needed by pdfjs-dist v6)
-if (typeof Uint8Array.prototype.toHex !== "function") {
-  (Uint8Array.prototype as any).toHex = function () {
+if (typeof (Uint8Array.prototype as any).toHex !== "function") {
+  (Uint8Array.prototype as any).toHex = function (this: Uint8Array) {
     return Array.from(this).map((b: number) => b.toString(16).padStart(2, "0")).join("");
   };
 }
