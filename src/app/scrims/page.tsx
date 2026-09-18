@@ -70,8 +70,8 @@ export default function ScrimsPage() {
 
   useEffect(() => {
     if (user) {
-      loadScrimResults(user.id).then(setScrimHistory);
-      loadSavedScrims(user.id).then(setSavedScrims);
+      loadScrimResults(user.id).then(setScrimHistory).catch(() => {});
+      loadSavedScrims(user.id).then(setSavedScrims).catch(() => {});
     }
   }, [user]);
 
@@ -225,10 +225,10 @@ export default function ScrimsPage() {
 
   async function handleSaveScrim() {
     if (!user || !questions.length) return;
-    const id = await saveScrim(user.id, docTitle || "Untitled Scrim", docText, JSON.stringify(questions));
-    if (id) {
-      loadSavedScrims(user.id).then(setSavedScrims);
-    }
+    try {
+      const id = await saveScrim(user.id, docTitle || "Untitled Scrim", docText, JSON.stringify(questions));
+      if (id) loadSavedScrims(user.id).then(setSavedScrims).catch(() => {});
+    } catch {}
   }
 
   function handleLoadSavedScrim(saved: SavedScrim) {
