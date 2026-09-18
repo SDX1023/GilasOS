@@ -167,23 +167,17 @@ export default function ScrimsPage() {
     setGenerating(true);
     setError("");
     try {
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, useSystemFonts: true }).promise;
-      let text = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map((item: any) => item.str).join(" ") + "\n";
-      }
-      if (!text.trim()) {
-        setError("PDF appears to be image-based (scanned). Try OCR or convert to .txt first.");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/parse-pdf", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to parse PDF");
       } else {
-        setDocText(text);
+        setDocText(data.text);
       }
-    } catch (e: any) {
-      setError(`Failed to parse PDF: ${e?.message || "Unknown error"}`);
+    } catch {
+      setError("Failed to parse PDF. Try converting to .txt first.");
     }
     setGenerating(false);
   }
