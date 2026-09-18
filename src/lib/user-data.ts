@@ -808,3 +808,38 @@ export async function deleteScrimResult(userId: string, id: string) {
   const supabase = getSupabase();
   await supabase.from("scrim_results").delete().eq("id", id).eq("user_id", userId);
 }
+
+// Saved Scrims (replayable)
+export interface SavedScrim {
+  id: string;
+  user_id: string;
+  title: string;
+  doc_text: string;
+  questions_json: string;
+  created_at: string;
+}
+
+export async function saveScrim(userId: string, title: string, docText: string, questionsJson: string): Promise<string | null> {
+  const supabase = getSupabase();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const { error } = await supabase.from("saved_scrims").insert({
+    id, user_id: userId, title, doc_text: docText, questions_json: questionsJson,
+  });
+  if (error) return null;
+  return id;
+}
+
+export async function loadSavedScrims(userId: string): Promise<SavedScrim[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("saved_scrims")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return (data || []) as SavedScrim[];
+}
+
+export async function deleteSavedScrim(userId: string, id: string) {
+  const supabase = getSupabase();
+  await supabase.from("saved_scrims").delete().eq("id", id).eq("user_id", userId);
+}

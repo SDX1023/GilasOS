@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Swords, Upload, FileText, Clock, Zap, Check, X, ArrowLeft, RotateCcw, Trophy, Flame, Timer, Loader2, Trash2, History } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveStudySession, saveScrimResult, loadScrimResults, deleteScrimResult, ScrimResult } from "@/lib/user-data";
+import { saveStudySession, saveScrimResult, loadScrimResults, deleteScrimResult, ScrimResult, saveScrim, loadSavedScrims, deleteSavedScrim, SavedScrim } from "@/lib/user-data";
 
 interface ScrimQuestion {
   question: string;
@@ -61,6 +61,7 @@ export default function ScrimsPage() {
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const [flashAnswer, setFlashAnswer] = useState("");
   const [scrimHistory, setScrimHistory] = useState<ScrimResult[]>([]);
+  const [savedScrims, setSavedScrims] = useState<SavedScrim[]>([]);
   const [docTitle, setDocTitle] = useState("Untitled Document");
   const [scrimStartTime, setScrimStartTime] = useState(0);
 
@@ -68,7 +69,10 @@ export default function ScrimsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user) loadScrimResults(user.id).then(setScrimHistory);
+    if (user) {
+      loadScrimResults(user.id).then(setScrimHistory);
+      loadSavedScrims(user.id).then(setSavedScrims);
+    }
   }, [user]);
 
   const startScrim = useCallback(async (text: string) => {
@@ -219,6 +223,35 @@ export default function ScrimsPage() {
     setGenerating(false);
   }
 
+  async function handleSaveScrim() {
+    if (!user || !questions.length) return;
+    const id = await saveScrim(user.id, docTitle || "Untitled Scrim", docText, JSON.stringify(questions));
+    if (id) {
+      loadSavedScrims(user.id).then(setSavedScrims);
+    }
+  }
+
+  function handleLoadSavedScrim(saved: SavedScrim) {
+    const qs: ScrimQuestion[] = JSON.parse(saved.questions_json);
+    const shuffled = [...qs].sort(() => Math.random() - 0.5);
+    setQuestions(shuffled);
+    setCurrentIdx(0);
+    setResults([]);
+    setStreak(0);
+    setDocText(saved.doc_text);
+    setDocTitle(saved.title);
+    setScrimStartTime(Date.now());
+    setView("playing");
+    const diff = shuffled[0].difficulty as keyof typeof DIFFICULTY_CONFIG;
+    setTimeLeft(DIFFICULTY_CONFIG[diff].time);
+  }
+
+  async function handleDeleteSavedScrim(id: string) {
+    if (!user) return;
+    await deleteSavedScrim(user.id, id);
+    setSavedScrims((prev) => prev.filter((s) => s.id !== id));
+  }
+
   function resetScrim() {
     setView("upload");
     setDocText("");
@@ -323,6 +356,35 @@ export default function ScrimsPage() {
                         </p>
                       </div>
                       <button onClick={() => handleDeleteScrim(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", padding: 4, flexShrink: 0 }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {savedScrims.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "var(--os-text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+                <Swords size={16} /> Saved Scrims
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {savedScrims.map((s) => {
+                  const qs: ScrimQuestion[] = JSON.parse(s.questions_json);
+                  return (
+                    <div key={s.id} className="glass-card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</p>
+                        <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2 }}>
+                          {qs.length} questions · {new Date(s.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button onClick={() => handleLoadSavedScrim(s)} className="glass-btn glass-btn-primary" style={{ padding: "6px 14px", fontSize: 12, flexShrink: 0 }}>
+                        Play
+                      </button>
+                      <button onClick={() => handleDeleteSavedScrim(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", padding: 4, flexShrink: 0 }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -467,9 +529,12 @@ export default function ScrimsPage() {
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginBottom: 24, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 12, marginBottom: 24, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={resetScrim} className="glass-btn glass-btn-primary" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 6 }}>
               <RotateCcw size={16} /> New Scrim
+            </button>
+            <button onClick={handleSaveScrim} className="glass-btn" style={{ padding: "10px 24px", display: "flex", alignItems: "center", gap: 6 }}>
+              <FileText size={16} /> Save Scrim
             </button>
           </div>
 
