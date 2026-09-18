@@ -754,3 +754,57 @@ export async function getDoomscrollProgress(userId: string): Promise<{ current: 
 
   return { current: Math.round(current * 10) / 10, target: settings.benchmark_target, type: settings.benchmark_type, unlocked };
 }
+
+// Scrims
+export interface ScrimResult {
+  id: string;
+  user_id: string;
+  document_title: string;
+  score: number;
+  total: number;
+  timed_out: number;
+  duration_seconds: number;
+  questions_json: string;
+  created_at: string;
+}
+
+export async function saveScrimResult(
+  userId: string,
+  documentTitle: string,
+  score: number,
+  total: number,
+  timedOut: number,
+  durationSeconds: number,
+  questionsJson: string
+): Promise<string | null> {
+  const supabase = getSupabase();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const { error } = await supabase.from("scrim_results").insert({
+    id,
+    user_id: userId,
+    document_title: documentTitle,
+    score,
+    total,
+    timed_out: timedOut,
+    duration_seconds: durationSeconds,
+    questions_json: questionsJson,
+  });
+  if (error) return null;
+  return id;
+}
+
+export async function loadScrimResults(userId: string, limit = 20): Promise<ScrimResult[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("scrim_results")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data || []) as ScrimResult[];
+}
+
+export async function deleteScrimResult(userId: string, id: string) {
+  const supabase = getSupabase();
+  await supabase.from("scrim_results").delete().eq("id", id).eq("user_id", userId);
+}

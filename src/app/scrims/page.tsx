@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Swords, Upload, FileText, Clock, Zap, Check, X, ArrowLeft, RotateCcw, Trophy, Flame, Timer, Loader2 } from "lucide-react";
+import { Swords, Upload, FileText, Clock, Zap, Check, X, ArrowLeft, RotateCcw, Trophy, Flame, Timer, Loader2, Trash2, History } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { saveStudySession } from "@/lib/user-data";
+import { saveStudySession, saveScrimResult, loadScrimResults, deleteScrimResult, ScrimResult } from "@/lib/user-data";
 
 interface ScrimQuestion {
   question: string;
@@ -23,19 +23,25 @@ const DIFFICULTY_CONFIG = {
 function matchAnswer(userInput: string, correctAnswer: string): boolean {
   const normalize = (s: string) =>
     s.toLowerCase()
-      .replace(/[^\w\s\d]/g, "")
+      .replace(/[^\w\s\d]/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\b(a|an|the|is|are|was|were|of|in|on|at|to|for|and|or)\b/g, "")
       .replace(/\s+/g, " ")
       .trim();
+
   const user = normalize(userInput);
-  const correct = normalize(correctAnswer);
-  if (!user || !correct) return false;
-  if (user === correct) return true;
-  if (correct.includes(user) && user.length >= 3) return true;
-  if (user.includes(correct) && correct.length >= 3) return true;
-  const userWords = user.split(" ");
-  const correctWords = correct.split(" ");
-  const overlap = userWords.filter((w) => correctWords.includes(w)).length;
-  return overlap / correctWords.length >= 0.6;
+  if (!user) return false;
+
+  const alternatives = correctAnswer.split("/").map((a) => normalize(a));
+  return alternatives.some((correct) => {
+    if (!correct) return false;
+    if (user === correct) return true;
+    const userWords = user.split(" ").filter(Boolean);
+    const correctWords = correct.split(" ").filter(Boolean);
+    if (userWords.length === 0 || correctWords.length === 0) return false;
+    const matchCount = userWords.filter((w) => correctWords.includes(w)).length;
+    return matchCount / correctWords.length >= 0.6;
+  });
 }
 
 export default function ScrimsPage() {
@@ -53,9 +59,17 @@ export default function ScrimsPage() {
   const [error, setError] = useState("");
   const [streak, setStreak] = useState(0);
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
+  const [flashAnswer, setFlashAnswer] = useState("");
+  const [scrimHistory, setScrimHistory] = useState<ScrimResult[]>([]);
+  const [docTitle, setDocTitle] = useState("Untitled Document");
+  const [scrimStartTime, setScrimStartTime] = useState(0);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) loadScrimResults(user.id).then(setScrimHistory);
+  }, [user]);
 
   const startScrim = useCallback(async (text: string) => {
     setGenerating(true);
@@ -77,6 +91,7 @@ export default function ScrimsPage() {
       setCurrentIdx(0);
       setResults([]);
       setStreak(0);
+      setScrimStartTime(Date.now());
       setView("playing");
       const diff = shuffled[0].difficulty as keyof typeof DIFFICULTY_CONFIG;
       setTimeLeft(DIFFICULTY_CONFIG[diff].time);
@@ -105,11 +120,13 @@ export default function ScrimsPage() {
     const q = questions[currentIdx];
     setResults((prev) => [...prev, { correct: false, question: q, userAnswer: "", timedOut: true }]);
     setFlash("wrong");
+    setFlashAnswer(q.answer);
     setStreak(0);
     setTimeout(() => {
       setFlash(null);
+      setFlashAnswer("");
       advanceQuestion();
-    }, 800);
+    }, 1200);
   }
 
   function handleSubmit() {
@@ -119,16 +136,19 @@ export default function ScrimsPage() {
     setResults((prev) => [...prev, { correct: isCorrect, question: q, userAnswer, timedOut: false }]);
     if (isCorrect) {
       setFlash("correct");
+      setFlashAnswer("");
       setStreak((s) => s + 1);
     } else {
       setFlash("wrong");
+      setFlashAnswer(q.answer);
       setStreak(0);
     }
     setUserAnswer("");
     setTimeout(() => {
       setFlash(null);
+      setFlashAnswer("");
       advanceQuestion();
-    }, 800);
+    }, 1200);
   }
 
   function advanceQuestion() {
@@ -136,7 +156,10 @@ export default function ScrimsPage() {
       setView("results");
       if (user) {
         const correct = results.filter((r) => r.correct).length + (flash === "correct" ? 1 : 0);
-        saveStudySession(user.id, { session_type: "scrims", subject: "Scrims", score: correct, total_questions: questions.length, duration_seconds: 0 });
+        const timedOut = results.filter((r) => r.timedOut).length;
+        const duration = Math.round((Date.now() - scrimStartTime) / 1000);
+        saveStudySession(user.id, { session_type: "scrims", subject: "Scrims", score: correct, total_questions: questions.length, duration_seconds: duration });
+        saveScrimResult(user.id, docTitle, correct, questions.length, timedOut, duration, JSON.stringify(results.map((r) => ({ q: r.question.question, a: r.question.answer, userA: r.userAnswer, correct: r.correct, timedOut: r.timedOut, diff: r.question.difficulty }))));
       }
     } else {
       setCurrentIdx((i) => i + 1);
@@ -206,7 +229,15 @@ export default function ScrimsPage() {
     setResults([]);
     setStreak(0);
     setFlash(null);
+    setFlashAnswer("");
     setError("");
+    if (user) loadScrimResults(user.id).then(setScrimHistory);
+  }
+
+  async function handleDeleteScrim(id: string) {
+    if (!user) return;
+    await deleteScrimResult(user.id, id);
+    setScrimHistory((prev) => prev.filter((s) => s.id !== id));
   }
 
   if (!user) {
@@ -274,6 +305,32 @@ export default function ScrimsPage() {
               <div style={{ width: 8, height: 8, borderRadius: 2, background: DIFFICULTY_CONFIG.hard.color }} /> Hard: 60s
             </div>
           </div>
+
+          {scrimHistory.length > 0 && (
+            <div style={{ marginTop: 32 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "var(--os-text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+                <History size={16} /> Recent Scrims
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {scrimHistory.map((s) => {
+                  const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+                  return (
+                    <div key={s.id} className="glass-card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: "var(--os-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.document_title}</p>
+                        <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 2 }}>
+                          {s.score}/{s.total} ({pct}%) · {s.timed_out} timed out · {new Date(s.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button onClick={() => handleDeleteScrim(s.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--os-text-dim)", padding: 4, flexShrink: 0 }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -291,13 +348,18 @@ export default function ScrimsPage() {
       <div className="page-container" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         {flash && (
           <div style={{
-            position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+            position: "fixed", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             background: flash === "correct" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-            animation: "fadeInOut 0.8s ease-in-out",
+            animation: "fadeInOut 1.2s ease-in-out",
           }}>
-            <div style={{ fontSize: 72, fontWeight: 800, color: flash === "correct" ? "#22c55e" : "#ef4444" }}>
+            <div style={{ fontSize: 64, fontWeight: 800, color: flash === "correct" ? "#22c55e" : "#ef4444", marginBottom: flashAnswer ? 8 : 0 }}>
               {flash === "correct" ? "CORRECT" : "WRONG"}
             </div>
+            {flashAnswer && (
+              <div style={{ fontSize: 20, color: "var(--os-text-secondary)", fontWeight: 500 }}>
+                Answer: <span style={{ color: "#22c55e" }}>{flashAnswer}</span>
+              </div>
+            )}
           </div>
         )}
 
