@@ -168,18 +168,22 @@ export default function ScrimsPage() {
     setError("");
     try {
       const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "";
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true }).promise;
       let text = "";
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         text += content.items.map((item: any) => item.str).join(" ") + "\n";
       }
-      setDocText(text);
-    } catch {
-      setError("Failed to parse PDF. Try converting to .txt first.");
+      if (!text.trim()) {
+        setError("PDF appears to be image-based (scanned). Try OCR or convert to .txt first.");
+      } else {
+        setDocText(text);
+      }
+    } catch (e: any) {
+      setError(`Failed to parse PDF: ${e?.message || "Unknown error"}`);
     }
     setGenerating(false);
   }
