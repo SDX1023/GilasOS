@@ -198,7 +198,7 @@ BEGIN
   UPDATE custom_decks SET card_count = 26, updated_at = now() WHERE id = _deck_id;
 
   -- ============================================================
-  -- DECK 6: World War I (26 cards)
+  -- DECK 6: World War I (39 cards)
   -- ============================================================
   INSERT INTO custom_decks (user_id, title, description, card_count, course_id)
   VALUES (_user_id, 'World War I', 'Causes, figures, battles, treaties and weapons 1914-1918', 39, _course_id)
@@ -247,7 +247,7 @@ BEGIN
   UPDATE custom_decks SET card_count = 39, updated_at = now() WHERE id = _deck_id;
 
   -- ============================================================
-  -- DECK 7: World War II (34 cards)
+  -- DECK 7: World War II (95 cards)
   -- ============================================================
   INSERT INTO custom_decks (user_id, title, description, card_count, course_id)
   VALUES (_user_id, 'World War II', 'Figures, operations, battles, equipment 1939-1945', 95, _course_id)
@@ -352,7 +352,7 @@ BEGIN
   UPDATE custom_decks SET card_count = 95, updated_at = now() WHERE id = _deck_id;
 
   -- ============================================================
-  -- DECK 8: Cold War and Modern World (28 cards)
+  -- DECK 8: Cold War and Modern World (42 cards)
   -- ============================================================
   INSERT INTO custom_decks (user_id, title, description, card_count, course_id)
   VALUES (_user_id, 'Cold War and Modern World', 'Figures, treaties, crises and decolonization 1945-present', 42, _course_id)
