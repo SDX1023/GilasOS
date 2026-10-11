@@ -29,7 +29,7 @@ DO $$
 DECLARE
   _user_id   UUID;
   _course_id UUID;
-  _deck_id   UUID;
+  _deck_id   TEXT;
 BEGIN
   -- 1. Find the user
   SELECT id INTO _user_id FROM auth.users WHERE email = 'si.davidsdx@gmail.com';
