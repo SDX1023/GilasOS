@@ -9,6 +9,11 @@
 ALTER TABLE custom_deck_cards ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
 ALTER TABLE custom_decks ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES deck_courses(id) ON DELETE SET NULL;
 
+-- Ensure UUID defaults exist (some databases lack them; the app generates IDs client-side instead)
+ALTER TABLE custom_decks ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE deck_courses ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE custom_deck_cards ALTER COLUMN id SET DEFAULT gen_random_uuid();
+
 -- Idempotency: remove previous import of these 8 decks so re-running never duplicates
 DELETE FROM custom_decks WHERE user_id = (SELECT id FROM auth.users WHERE email = 'si.davidsdx@gmail.com')
 AND title IN ('Age of Exploration and Colonialism',
