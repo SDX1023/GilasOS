@@ -63,9 +63,9 @@ BEGIN
   (_deck_id, _user_id, 'Spanish crown granted labor and tribute from indigenous people to colonists. Abolished 1720.', 'Encomienda system', 'System - Spanish labor', 14),
   (_deck_id, _user_id, 'Racial hierarchy: Peninsulares above Creoles above Mestizos above Mulattoes above Indians above Africans.', 'Casta System', 'System - hierarchy', 15),
   (_deck_id, _user_id, '12-15 million Africans transported. Middle Passage mortality 15-20 percent. Route: Europe (manufactured goods) to Africa to Americas (enslaved people) to Europe (raw materials).', 'Middle Passage and Triangular Trade', 'System - slave trade', 16),
-  (_deck_id, _user_id, 'Small, maneuverable Portuguese ship. Lateen sails allowed sailing against the wind.', 'a Caravel', 'Equipment - ship', 17),
-  (_deck_id, _user_id, 'Larger, heavily armed ship used for trade and colonization.', 'a Carrack', 'Equipment - ship', 18),
-  (_deck_id, _user_id, 'Multi-decked Spanish ship used for transatlantic trade.', 'a Galleon', 'Equipment - ship', 19),
+  (_deck_id, _user_id, 'Small, maneuverable Portuguese ship. Lateen sails allowed sailing against the wind.', 'Caravel', 'Equipment - ship', 17),
+  (_deck_id, _user_id, 'Larger, heavily armed ship used for trade and colonization.', 'Carrack', 'Equipment - ship', 18),
+  (_deck_id, _user_id, 'Multi-decked Spanish ship used for transatlantic trade.', 'Galleon', 'Equipment - ship', 19),
   (_deck_id, _user_id, 'What navigation tools were used in the Age of Exploration?', 'Compass, astrolabe, cross-staff, quadrant, and log line.', 'Equipment - navigation', 20);
   UPDATE custom_decks SET card_count = 21, updated_at = now() WHERE id = _deck_id;
 
@@ -206,7 +206,7 @@ BEGIN
 
   INSERT INTO custom_deck_cards (deck_id, user_id, front, back, hint, sort_order) VALUES
   (_deck_id, _user_id, 'Militarism, Alliances, Imperialism, Nationalism.', 'causes of WWI (MAIN)', 'Causes - MAIN', 0),
-  (_deck_id, _user_id, 'Heir to the Austro-Hungarian throne. Assassinated June 28, 1914 in Sarajevo by Gavrilo Princip, a 19-year-old Bosnian Serb and Black Hand member.', 'Archduke Franz Ferdinand and who killed him', 'WWI - trigger', 1),
+  (_deck_id, _user_id, 'Heir to the Austro-Hungarian throne. Assassinated June 28, 1914 in Sarajevo by Gavrilo Princip, a 19-year-old Bosnian Serb and Black Hand member.', 'Archduke Franz Ferdinand (killed by Gavrilo Princip)', 'WWI - trigger', 1),
   (_deck_id, _user_id, 'German Emperor. Gave Austria-Hungary the blank check.', 'Kaiser Wilhelm II', 'WWI - Germany', 2),
   (_deck_id, _user_id, 'Russian Emperor. Mobilized against Austria-Hungary. Abdicated March 1917.', 'Tsar Nicholas II', 'WWI - Russia', 3),
   (_deck_id, _user_id, 'U.S. President. Declared war April 1917. Fourteen Points and the League of Nations.', 'Woodrow Wilson', 'WWI - USA', 4),
