@@ -373,22 +373,6 @@ export default function ArchivePage() {
                     <button onClick={() => setConfirmDeleteCat(cat.id)} style={{ padding: "6px 6px", background: "rgba(0,0,0,0.15)", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={10} /></button>
         </div>
       )}
-
-      {/* Search */}
-      <div style={{ marginBottom: 16 }}>
-        <input
-          value={archiveSearch}
-          onChange={(e) => setArchiveSearch(e.target.value)}
-          placeholder="Search competitions..."
-          style={{
-            width: "100%", padding: "8px 12px", fontSize: 13, borderRadius: 10,
-            background: "rgba(0,0,0,0.2)", border: "1px solid var(--os-glass-border)",
-            color: "var(--os-text-primary)", outline: "none",
-          }}
-          onFocus={(e) => e.currentTarget.style.borderColor = "var(--os-accent)"}
-          onBlur={(e) => e.currentTarget.style.borderColor = "var(--os-glass-border)"}
-        />
-      </div>
               </>
             )}
           </div>
@@ -408,6 +392,17 @@ export default function ArchivePage() {
             )}
           </>
         )}
+      </div>
+
+      {/* Search */}
+      <div style={{ marginBottom: 20, maxWidth: 420 }}>
+        <input
+          className="glass-input"
+          value={archiveSearch}
+          onChange={(e) => setArchiveSearch(e.target.value)}
+          placeholder="Search competitions..."
+          style={{ width: "100%" }}
+        />
       </div>
 
       {/* Sub-tabs: type filter */}
