@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon, FolderOpen, FolderPlus } from "lucide-react";
+import { Archive, Plus, Trash2, Pencil, Check, X, Calendar, ExternalLink, Link as LinkIcon, FolderOpen, FolderPlus, Upload, FileText, Loader2 } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -40,6 +40,62 @@ function LinksInput({ links, labels, setLinks, setLabels }: { links: string[]; l
       <button onClick={() => { setLinks([...links, ""]); setLabels([...labels, ""]); }} style={{ background: "none", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: 8, color: "var(--os-text-dim)", cursor: "pointer", padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 4, alignSelf: "flex-start" }}>
         <Plus size={12} /> Add Link
       </button>
+    </div>
+  );
+}
+
+function ArchiveFileUpload({ links, labels, setLinks, setLabels }: { links: string[]; labels: string[]; setLinks: (v: string[]) => void; setLabels: (v: string[]) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const supabase = getSupabase();
+      const uploadedUrls: string[] = [];
+      const uploadedLabels: string[] = [];
+      for (const file of Array.from(files)) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `${Date.now()}_${safeName}`;
+        const { error } = await supabase.storage.from("archive-files").upload(path, file, { contentType: file.type || undefined });
+        if (error) throw error;
+        const { data } = supabase.storage.from("archive-files").getPublicUrl(path);
+        uploadedUrls.push(data.publicUrl);
+        uploadedLabels.push(file.name);
+      }
+      // Replace a single trailing empty link row if present, otherwise append
+      const nextLinks = [...links];
+      const nextLabels = [...labels];
+      if (nextLinks.length === 1 && !nextLinks[0].trim()) {
+        nextLinks[0] = uploadedUrls[0];
+        nextLabels[0] = uploadedLabels[0];
+        for (let i = 1; i < uploadedUrls.length; i++) {
+          nextLinks.push(uploadedUrls[i]);
+          nextLabels.push(uploadedLabels[i]);
+        }
+      } else {
+        nextLinks.push(...uploadedUrls);
+        nextLabels.push(...uploadedLabels);
+      }
+      setLinks(nextLinks);
+      setLabels(nextLabels);
+    } catch (e: any) {
+      setUploadError(e?.message || "Upload failed. Make sure the archive-files storage bucket exists.");
+    }
+    setUploading(false);
+  };
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <label className="glass-btn glass-btn-ghost" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, cursor: uploading ? "wait" : "pointer", opacity: uploading ? 0.6 : 1 }}>
+        {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+        {uploading ? "Uploading..." : "Upload files (PDF, DOCX, etc.)"}
+        <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.xls,.xlsx,.ppt,.pptx,.csv,.zip,.png,.jpg,.jpeg" onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} disabled={uploading} style={{ display: "none" }} />
+      </label>
+      {uploadError && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{uploadError}</p>}
+      {!uploadError && <p style={{ fontSize: 11, color: "var(--os-text-dim)", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}><FileText size={10} /> Uploaded files are saved as links on this entry.</p>}
     </div>
   );
 }
@@ -433,6 +489,7 @@ export default function ArchivePage() {
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Links</label>
             <LinksInput links={newLinks} labels={newLabels} setLinks={setNewLinks} setLabels={setNewLabels} />
+            <ArchiveFileUpload links={newLinks} labels={newLabels} setLinks={setNewLinks} setLabels={setNewLabels} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={addEntry} className="glass-btn glass-btn-primary">Add</button>
@@ -524,6 +581,7 @@ export default function ArchivePage() {
                         <div>
                           <label style={{ fontSize: 12, color: "var(--os-text-dim)", display: "block", marginBottom: 6 }}>Links</label>
                           <LinksInput links={editLinks} labels={editLabels} setLinks={setEditLinks} setLabels={setEditLabels} />
+                          <ArchiveFileUpload links={editLinks} labels={editLabels} setLinks={setEditLinks} setLabels={setEditLabels} />
                         </div>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                           <button onClick={() => saveEdit(entry.id)} className="glass-btn" style={{ padding: "6px 14px", fontSize: 12, background: "rgba(16,185,129,0.1)", color: "#10b981", borderColor: "rgba(16,185,129,0.3)" }}><Check size={14} /> Save</button>
